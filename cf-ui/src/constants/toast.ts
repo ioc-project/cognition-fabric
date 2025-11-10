@@ -1,0 +1,1 @@
+export const DEFAULT_TOAST_TIME_OUT = 3500;

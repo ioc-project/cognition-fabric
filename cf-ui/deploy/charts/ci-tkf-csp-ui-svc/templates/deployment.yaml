@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.serviceName }}
+  namespace: '{{ .Release.Namespace }}'
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.serviceName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.serviceName }}
+    spec:
+      imagePullSecrets:
+        - name: regcred    
+      containers:
+      - name: {{ .Values.serviceName }}
+        image: {{ .Values.docker.registry }}/{{ .Values.docker.image }}:{{ .Values.tagversion }}
+        imagePullPolicy: Always
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 999
+          allowPrivilegeEscalation: false
+        ports:
+        - containerPort: {{ .Values.servicePort }}
+        envFrom:
+          - configMapRef:
+              name: {{ .Release.Name }}-configmap

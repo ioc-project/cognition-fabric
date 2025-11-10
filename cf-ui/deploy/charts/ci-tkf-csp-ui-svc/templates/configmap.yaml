@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-configmap
+  namespace: '{{ .Release.Namespace }}'
+data:
+  VITE_API_URL: '{{ .Values.api.url }}'
+  VITE_APP_CLIENT_PORT: '{{ .Values.servicePort }}'
+  VITE_APP_LOG_LEVEL: '{{ .Values.logLevel }}'
+  VITE_IAM_PRODUCT_ID: '{{ .Values.iam.productId }}'
+  VITE_IAM_UI: '{{ .Values.iam.ui }}'
+  VITE_IAM_API: '{{ .Values.iam.api }}'
+  VITE_IAM_OIDC_ISSUER: '{{ .Values.iam.oidc.issuer }}'
+  VITE_IAM_OIDC_CLIENT_ID: '{{ .Values.iam.oidc.clientId }}'
+  VITE_IAM_OIDC_SCOPES: '{{ .Values.iam.oidc.scopes }}'
+  VITE_CCI_UI: '{{ .Values.cci.ui }}'
+  VITE_CCI_OIDC_ISSUER: '{{ .Values.cci.oidc.issuer }}'
+  VITE_CCI_OIDC_CLIENT_ID: '{{ .Values.cci.oidc.clientId }}'
+  VITE_CCI_OIDC_SCOPES: '{{ .Values.cci.oidc.scopes }}'
+  VITE_SEGMENT_ID: '{{ .Values.analytics.segment_id }}'
+  VITE_AUTH_PROVIDER: '{{ .Values.authProvider }}'

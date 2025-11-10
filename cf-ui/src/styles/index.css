@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: 'CiscoSans';
+  font-weight: lighter;
+  font-style: 'normal';
+  src:
+    url('../assets/fonts/CiscoSansTTLight.eot') format('embedded-opentype'),
+    url('../assets/fonts/CiscoSansTTLight.woff2') format('woff2');
+}
+  
+@font-face {
+  font-family: 'CiscoSans';
+  font-weight: normal;
+  font-style: 'normal';
+  src:
+    url('../assets/fonts/CiscoSansTTRegular.eot') format('embedded-opentype'),
+    url('../assets/fonts/CiscoSansTTRegular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'CiscoSans';
+  font-weight: 500;
+  font-style: 'normal';
+  src:
+    url('../assets/fonts/CiscoSansTTMedium.eot') format('embedded-opentype'),
+    url('../assets/fonts/CiscoSansTTMedium.woff') format('woff');
+}
+
+@font-face {
+  font-family: 'CiscoSans';
+  font-weight: 700;
+  font-style: 'normal';
+  src:
+    url('../assets/fonts/CiscoSansTTBold.eot') format('embedded-opentype'),
+    url('../assets/fonts/CiscoSansTTBold.woff2') format('woff2');
+}
+
+.mds-footer {
+  padding-left: 20px !important;
+  padding-right: 20px !important;
+}
+
+.mds-rebuild-nav {
+  height: calc(100vh - 56px) !important;
+}
+
+.mds-rebuild-drawer-provider {
+  z-index: 1000 !important;
+}
+
+.mds-rebuild-drawer-animation-container {
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
+
+.mds-toast {
+  z-index: 1100 !important;
+}
+
+div[role=listbox] {
+  z-index: 1200 !important;
+}
+
+.mds-rebuild-input-frame .mds-rebuild-input.mds-rebuild-input-size-md {
+  max-width: 100vw !important;
+}
+
+.mds-rebuild-text-area.mds-rebuild-text-area-size-md {
+  max-width: 100% !important;
+}
+
+.mds-rebuild-text-area.mds-rebuild-text-area-size-md > .mds-rebuild-text-area-element {
+  height: 100% !important;
+}
+
+.mds-rebuild-modal-overlay {
+  z-index: 2000 !important;
+}
+
+.mds-rebuild-select {
+  max-width: 100% !important;
+}
+
+.mds-popover-rebuild {
+  z-index: 2500 !important;
+}
+
+.overlay {
+  background-color: rgba(0,0,0,0.3);
+  z-index: 5000;
+}
+
+.ant-upload.ant-upload-select-picture-card {
+  width: 100% !important;
+}
+
+.mds-upload .ant-upload.ant-upload-select-picture-card > .ant-upload svg {
+  margin: 0 auto;
+  margin-bottom: 5px;
+}
+
+.mds-upload-xl .ant-upload, .mds-upload-xl .mds-upload-image-container {
+  width: 100% !important;
+  height: 100px !important;
+}
+
+.mds-popover-rebuild.mds-popover-rebuild-size-md {
+  max-width: 100% !important;
+}
+
+.markdown>* {
+  all: revert;
+  /* margin: 0; */
+}
+
+.air-logo {
+  fill: var(--brand-accent-icon-active);
+}
+
+.welcome-blur {
+  -webkit-backdrop-filter: blur(64px);
+  backdrop-filter: blur(64px);
+}
+
+.mds-rebuild-drawer-footer {
+  padding: 0 !important;
+}
+
+.mds-rebuild-header .mds-header-profile-and-tenant > .mds-icon-phosphor:last-child {
+  padding: 0 !important;
+}
