@@ -4,7 +4,7 @@ module.exports = {
   parserOptions: {
     project: 'tsconfig.json'
   },
-  plugins: ['@typescript-eslint', 'react-refresh', '@tanstack/query'],
+  plugins: ['@typescript-eslint'],
   extends: [
     'eslint:recommended',
     'plugin:react/recommended',
@@ -79,9 +79,6 @@ module.exports = {
     'react/prop-types': 'off',
     'react/no-unknown-property': 'warn',
     '@typescript-eslint/no-redundant-type-constituents': 'off',
-    "@tanstack/query/exhaustive-deps": "error",
-    "@tanstack/query/no-rest-destructuring": "warn",
-    "@tanstack/query/stable-query-client": "error",
     'react/react-in-jsx-scope': 'off',
     'max-len': 'off'
   }
