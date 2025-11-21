@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./ci/docker/Dockerfile.next
+    image: ci-tkf-csp-ui-svc:latest
+    container_name: ci-tkf-csp-ui-svc
+    ports:
+      - '3000:3000'
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
