@@ -32,4 +32,6 @@ do
 done
 
 echo BUILDING DOCKER ${DOCKER_IMAGE}
-docker build --no-cache -t ${DOCKER_IMAGE} --build-arg ARTIFACTORY_PASSWORD=${ARTIFACTORY_PASSWORD} -f ./ci/docker/Dockerfile .
+docker build --no-cache -t ${DOCKER_IMAGE} \
+  --secret id=npmrc,src=$HOME/.npmrc \
+  -f ./ci/docker/Dockerfile.next .

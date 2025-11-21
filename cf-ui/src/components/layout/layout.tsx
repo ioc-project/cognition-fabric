@@ -1,25 +1,19 @@
-import {Outlet} from 'react-router-dom';
-import {NavBar} from './nav-bar';
-import {SideBar} from './side-bar';
-import {Container} from '@magnetic/container';
-import {Helmet} from 'react-helmet-async';
+'use client';
 
-export const Layout = () => {
+import {Sidebar} from './sidebar';
+import {NavBar} from './navbar';
+
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+export const Layout = ({children}: LayoutProps) => {
   return (
-    <div className="flex">
-      <Helmet
-        bodyAttributes={{
-          style: 'background-color: var(--base-bg-weak-default);' as any
-        }}
-      />
-      <NavBar />
-      <SideBar />
-      <div className="flex flex-1 flex-col">
-        <main className="h-full overflow-y-auto pt-[56px]">
-          <Container style={{borderRadius: '0', height: 'calc(100vh - 56px)', overflowY: 'auto', padding: 24}}>
-            <Outlet />
-          </Container>
-        </main>
+    <div className="flex h-screen bg-gray-50 dark:bg-gray-900">
+      <Sidebar />
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <NavBar />
+        <main className="flex-1 overflow-y-auto p-8">{children}</main>
       </div>
     </div>
   );

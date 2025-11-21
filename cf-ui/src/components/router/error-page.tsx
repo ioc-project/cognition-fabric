@@ -1,8 +1,8 @@
-import {Button} from '@magnetic/button';
-import {Container} from '@magnetic/container';
+'use client';
+
+import {Button} from '@/components/ui/button';
 import {FallbackProps} from 'react-error-boundary';
-import {useRouteError, isRouteErrorResponse} from 'react-router-dom';
-import {Empty} from '@magnetic/icons';
+import {AlertCircle, Info} from 'lucide-react';
 
 interface ErrorPageProps extends FallbackProps {
   className?: string;
@@ -11,12 +11,9 @@ interface ErrorPageProps extends FallbackProps {
 }
 
 export const ErrorPage = ({error, className, showRefreshButton = true, info = true, resetErrorBoundary}: ErrorPageProps) => {
-  const errorRouter = useRouteError();
   let errorMessage: string;
 
-  if (isRouteErrorResponse(errorRouter)) {
-    errorMessage = error.error?.message || error.statusText;
-  } else if (error instanceof Error) {
+  if (error instanceof Error) {
     errorMessage = error.message;
   } else if (typeof error === 'string') {
     errorMessage = error;
@@ -26,10 +23,10 @@ export const ErrorPage = ({error, className, showRefreshButton = true, info = tr
   }
 
   return (
-    <Container className={`text-center py-20 ${className} mt-4 mx-2`}>
+    <div className={`text-center py-20 ${className} mt-4 mx-2 container`}>
       <div>
         <div className="p-3 inline-flex items-center align-center rounded-full">
-          {info ? <Empty.Info className="w-14 h-14 text-background" /> : <Empty.Negative className="w-14 h-14 text-background" />}
+          {info ? <Info className="w-14 h-14" /> : <AlertCircle className="w-14 h-14 text-destructive" />}
         </div>
       </div>
       <h1 className="text-[40px]">Oops!</h1>
@@ -52,6 +49,6 @@ export const ErrorPage = ({error, className, showRefreshButton = true, info = tr
           Refresh
         </Button>
       )}
-    </Container>
+    </div>
   );
 };
