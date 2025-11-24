@@ -50,6 +50,31 @@
     border-color: hsl(var(--border));
   }
 
+  .sidebar-text {
+    font-family: Inter, sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 20px;
+    letter-spacing: 0.25px;
+  }
+
+  .empty-state-title {
+    font-family: 'Sharp Sans', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    line-height: 28px;
+    letter-spacing: 0;
+    text-align: center;
+  }
+
+  .empty-state-button {
+    font-family: Inter, sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    line-height: 125%;
+    letter-spacing: 0;
+  }
+
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));

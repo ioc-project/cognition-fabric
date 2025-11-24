@@ -1,10 +1,11 @@
 'use client';
 
-import {Search, ChevronDown, Bell, MoreVertical, User, Settings, LogOut, HelpCircle, Sun, Moon} from 'lucide-react';
+import {Bell, MoreVertical, User, Settings, LogOut, HelpCircle, Sun, Moon} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {useThemeStore} from '@/store';
 import {useRouter} from 'next/navigation';
+import Image from 'next/image';
 
 export function NavBar() {
   const theme = useThemeStore((state) => state.theme);
@@ -23,29 +24,8 @@ export function NavBar() {
 
   return (
     <div className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-8">
-      <div className="flex items-center gap-4 flex-1">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600">
-              <span></span>
-              <ChevronDown className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            <DropdownMenuItem>
-              <span></span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
-          <input
-            type="text"
-            placeholder=""
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+      <div className="flex items-center">
+        <Image src="/outshift-logo.svg" alt="Outshift" width={120} height={40} className="dark:invert" />
       </div>
 
       <div className="flex items-center gap-4">

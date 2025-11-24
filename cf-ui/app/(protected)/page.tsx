@@ -1,11 +1,7 @@
 'use client';
 
-import {Layout} from '@/components/layout/layout';
+import {Home} from '@/components/home/home';
 
 export default function HomePage() {
-  return (
-    <Layout>
-      <div className="h-full"></div>
-    </Layout>
-  );
+  return <Home />;
 }

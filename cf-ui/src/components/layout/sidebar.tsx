@@ -1,6 +1,6 @@
 'use client';
 
-import {Home, Boxes, Database, Bot} from 'lucide-react';
+import {Home, Boxes, Database, Package} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
 
@@ -8,24 +8,15 @@ export function Sidebar() {
   const pathname = usePathname();
 
   const menuItems = [
-    {id: 'home', href: '/', icon: Home},
-    {id: 'workspaces', href: '/workspaces', icon: Boxes},
-    {id: 'data-sources', href: '/data-sources', icon: Database},
-    {id: 'mas', href: '/mas', icon: Bot}
+    {id: 'home', href: '/', icon: Home, label: 'Home'},
+    {id: 'workspaces', href: '/workspaces', icon: Boxes, label: 'Workspaces'},
+    {id: 'data-sources', href: '/data-sources', icon: Database, label: 'Data Sources'},
+    {id: 'software', href: '/software', icon: Package, label: 'Software'}
   ];
 
   return (
     <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-semibold">C</span>
-          </div>
-          <span className="text-gray-900 dark:text-white font-semibold"></span>
-        </div>
-      </div>
-
-      <nav className="flex-1 p-4">
+      <nav className="flex-1 p-4 pt-6">
         <ul className="space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -42,7 +33,7 @@ export function Sidebar() {
                   }`}
                 >
                   <Icon className="w-5 h-5" />
-                  <span></span>
+                  <span className="sidebar-text">{item.label}</span>
                 </Link>
               </li>
             );
