@@ -4,7 +4,8 @@ import Image from 'next/image';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
-import {useEffect, useState} from 'react';
+import {useState, useEffect} from 'react';
+import {signIn, useSession} from 'next-auth/react';
 import {useRouter} from 'next/navigation';
 
 function LoginForm() {
@@ -21,16 +22,18 @@ function LoginForm() {
     setLoading(true);
 
     try {
-      // Simulate async auth (replace with Keycloak later)
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      const result = await signIn('credentials', {
+        username,
+        password,
+        redirect: false
+      });
 
-      if (username === 'admin' && password === 'admin') {
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('user', JSON.stringify({username: 'admin'}));
-        router.push('/');
-      } else {
+      if (result?.error) {
         setError('Invalid username or password');
         setLoading(false);
+      } else if (result?.ok) {
+        router.push('/');
+        router.refresh();
       }
     } catch (err) {
       setError('An error occurred during login. Please try again.');
@@ -122,20 +125,28 @@ function LoginForm() {
 }
 
 export default function Login() {
-  const [isChecking, setIsChecking] = useState(true);
+  const {data: session, status} = useSession();
   const router = useRouter();
 
+  // Redirect if already authenticated
   useEffect(() => {
-    // Check if already authenticated
-    const isAuth = localStorage.getItem('isAuthenticated');
-    if (isAuth === 'true') {
+    if (status === 'authenticated') {
       router.push('/');
-    } else {
-      setIsChecking(false);
     }
-  }, [router]);
+  }, [status, router]);
 
-  if (isChecking) {
+  if (status === 'authenticated') {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500" />
+          <p className="text-gray-600">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'loading') {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-4">
