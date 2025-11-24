@@ -7,6 +7,7 @@ import {Button} from '@/components/ui/button';
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from '@/components/ui/dialog';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
+import {parseError} from '@/lib/utils';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Name is required').min(2, 'Name must be at least 2 characters'),
@@ -36,10 +37,10 @@ export function AddUserDialog({open, onOpenChange, onSuccess}: AddUserDialogProp
       form.reset();
       onOpenChange(false);
     } catch (error) {
-      console.error('Error adding user:', error);
+      const errorMessage = parseError(error);
       form.setError('root', {
         type: 'manual',
-        message: 'Failed to add user. Please try again.'
+        message: errorMessage
       });
     }
   };

@@ -1,55 +1,70 @@
 'use client';
 
 import {useState, useEffect} from 'react';
-import {Plus, Users, Key, MoreVertical, Trash2, Edit, Boxes, Calendar} from 'lucide-react';
+import {Plus, Users, Key, MoreVertical, Trash2, Edit, Boxes, Calendar, AlertCircle} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
 import {EmptyState} from '@/components/ui/empty-state';
 import {Loading} from '@/components/ui/loading';
 import {StatCard} from '@/components/ui/stat-card';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
+import {Alert, AlertDescription} from '@/components/ui/alert';
+import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {CreateWorkspaceDialog} from './create-workspace-dialog';
 import {workspaceApi} from '@/api';
-import type {Workspace} from '@/api/types';
 import {useRouter, useSearchParams} from 'next/navigation';
+import {parseError, safeGetDate} from '@/lib/utils';
+import {useWorkspaces} from '@/hooks/useApi';
 
 export function Workspaces() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {workspaces, isLoading: loading, error: swrError, mutate} = useWorkspaces();
+  const [error, setError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{open: boolean; workspaceId: string | null; workspaceName: string}>({
+    open: false,
+    workspaceId: null,
+    workspaceName: ''
+  });
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    fetchWorkspaces();
     if (searchParams.get('create') === 'true') {
       setIsCreateDialogOpen(true);
     }
   }, [searchParams]);
 
-  const fetchWorkspaces = async () => {
-    try {
-      const response = await workspaceApi.list();
-      setWorkspaces(response.workspaces);
-    } catch (error) {
-      console.error('Error fetching workspaces:', error);
-      setWorkspaces([]);
-    } finally {
-      setLoading(false);
+  // Set error from SWR
+  useEffect(() => {
+    if (swrError) {
+      setError(swrError);
     }
-  };
+  }, [swrError]);
 
   const handleWorkspaceCreated = (workspaceId: string) => {
     router.push(`/workspaces/${workspaceId}`);
   };
 
-  const handleDeleteWorkspace = async (workspaceId: string) => {
+  const handleDeleteWorkspace = async () => {
+    if (!deleteConfirm.workspaceId) return;
+
+    setDeleting(true);
+    setError(null);
     try {
-      await workspaceApi.delete(workspaceId);
-      await fetchWorkspaces();
+      await workspaceApi.delete(deleteConfirm.workspaceId);
+      await mutate();
+      setDeleteConfirm({open: false, workspaceId: null, workspaceName: ''});
     } catch (error) {
-      console.error('Error deleting workspace:', error);
+      const errorMessage = parseError(error);
+      setError(`Failed to delete workspace: ${errorMessage}`);
+    } finally {
+      setDeleting(false);
     }
+  };
+
+  const openDeleteConfirm = (workspaceId: string, workspaceName: string) => {
+    setDeleteConfirm({open: true, workspaceId, workspaceName});
   };
 
   const handleEditWorkspace = (workspaceId: string) => {
@@ -94,6 +109,13 @@ export function Workspaces() {
         </Button>
       </div>
 
+      {error && (
+        <Alert variant="destructive" dismissible onDismiss={() => setError(null)} className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid gap-6 md:grid-cols-3 mb-8">
         <StatCard label="Total Workspaces" value={workspaces.length} />
         <StatCard label="Total Users" value={totalUsers} />
@@ -126,7 +148,7 @@ export function Workspaces() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Calendar className="w-4 h-4" />
-                      <span>{new Date(workspace.created_at).toLocaleDateString()}</span>
+                      <span>{safeGetDate(workspace.created_at)?.toLocaleDateString() || 'N/A'}</span>
                     </div>
                   </div>
                 </div>
@@ -149,7 +171,7 @@ export function Workspaces() {
                     <DropdownMenuItem
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteWorkspace(workspace.id);
+                        openDeleteConfirm(workspace.id, workspace.name);
                       }}
                       className="text-red-600 dark:text-red-400"
                     >
@@ -165,6 +187,17 @@ export function Workspaces() {
       </Card>
 
       <CreateWorkspaceDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} onSuccess={handleWorkspaceCreated} />
+
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm({open, workspaceId: null, workspaceName: ''})}
+        onConfirm={handleDeleteWorkspace}
+        title="Delete Workspace"
+        description={`Are you sure you want to delete "${deleteConfirm.workspaceName}"? This action cannot be undone and will remove all associated users and API keys.`}
+        confirmText="Delete Workspace"
+        variant="destructive"
+        loading={deleting}
+      />
     </div>
   );
 }

@@ -1,38 +1,18 @@
 'use client';
 
-import {Plus, Zap, Users, Database, ArrowRight} from 'lucide-react';
+import {Plus, Zap, Users, Database, ArrowRight, AlertCircle} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
 import {Loading} from '@/components/ui/loading';
 import {StatCard} from '@/components/ui/stat-card';
+import {Alert, AlertDescription} from '@/components/ui/alert';
 import {useRouter} from 'next/navigation';
-import {useEffect, useState} from 'react';
-import {workspaceApi} from '@/api';
-import type {Workspace} from '@/api/types';
+import {safeGetDate} from '@/lib/utils';
+import {useWorkspaces} from '@/hooks/useApi';
 
 export function Home() {
   const router = useRouter();
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchWorkspaces = async () => {
-      try {
-        const response = await workspaceApi.list();
-        setWorkspaces(response.workspaces);
-        setError(null);
-      } catch (error) {
-        console.error('Error fetching workspaces:', error);
-        setError('Unable to load workspaces. Showing empty state.');
-        setWorkspaces([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchWorkspaces();
-  }, []);
+  const {workspaces, isLoading: loading, error} = useWorkspaces();
 
   const handleCreateWorkspace = () => {
     router.push('/workspaces?create=true');
@@ -130,6 +110,13 @@ export function Home() {
         <p className="text-gray-600 dark:text-gray-400">Here&apos;s what&apos;s happening with your workspaces</p>
       </div>
 
+      {error && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <Card>
           <CardHeader className="pb-3">
@@ -216,7 +203,7 @@ export function Home() {
               >
                 <div>
                   <h3 className="mb-1">{workspace.name}</h3>
-                  <p className="text-sm text-gray-600">Created {new Date(workspace.created_at).toLocaleDateString()}</p>
+                  <p className="text-sm text-gray-600">Created {safeGetDate(workspace.created_at)?.toLocaleDateString() || 'N/A'}</p>
                 </div>
                 <div className="flex items-center gap-4 text-sm text-gray-600">
                   <div className="flex items-center gap-1">

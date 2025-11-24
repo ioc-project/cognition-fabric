@@ -7,6 +7,7 @@ import {Button} from '@/components/ui/button';
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from '@/components/ui/dialog';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
+import {parseError} from '@/lib/utils';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Workspace name is required').min(3, 'Workspace name must be at least 3 characters')
@@ -35,10 +36,10 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
       form.reset();
       onSuccess(response.id);
     } catch (error) {
-      console.error('Error creating workspace:', error);
+      const errorMessage = parseError(error);
       form.setError('name', {
         type: 'manual',
-        message: 'Failed to create workspace. Please try again.'
+        message: errorMessage
       });
     }
   };
