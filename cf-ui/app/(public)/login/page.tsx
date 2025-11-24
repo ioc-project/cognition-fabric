@@ -4,9 +4,8 @@ import Image from 'next/image';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
-import {useState, useEffect} from 'react';
+import {useState} from 'react';
 import {signIn, useSession} from 'next-auth/react';
-import {useRouter} from 'next/navigation';
 
 function LoginForm() {
   const [username, setUsername] = useState('');
@@ -14,7 +13,6 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,15 +23,13 @@ function LoginForm() {
       const result = await signIn('credentials', {
         username,
         password,
-        redirect: false
+        callbackUrl: '/',
+        redirect: true
       });
 
       if (result?.error) {
         setError('Invalid username or password');
         setLoading(false);
-      } else if (result?.ok) {
-        router.push('/');
-        router.refresh();
       }
     } catch (err) {
       setError('An error occurred during login. Please try again.');
@@ -125,26 +121,7 @@ function LoginForm() {
 }
 
 export default function Login() {
-  const {data: session, status} = useSession();
-  const router = useRouter();
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (status === 'authenticated') {
-      router.push('/');
-    }
-  }, [status, router]);
-
-  if (status === 'authenticated') {
-    return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500" />
-          <p className="text-gray-600">Redirecting...</p>
-        </div>
-      </div>
-    );
-  }
+  const {status} = useSession();
 
   if (status === 'loading') {
     return (
@@ -152,6 +129,17 @@ export default function Login() {
         <div className="flex flex-col items-center gap-4">
           <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500" />
           <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'authenticated') {
+    return (
+      <div className="flex min-h-screen w-full items-center justify-center bg-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500" />
+          <p className="text-gray-600">Redirecting...</p>
         </div>
       </div>
     );

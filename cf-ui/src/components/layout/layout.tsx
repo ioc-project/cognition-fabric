@@ -2,6 +2,7 @@
 
 import {Sidebar} from './sidebar';
 import {NavBar} from './navbar';
+import {NodeRoute} from '../router/node-route';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -13,7 +14,9 @@ export const Layout = ({children}: LayoutProps) => {
       <NavBar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
-        <main className="flex-1 overflow-y-auto p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto p-8">
+          <NodeRoute>{children}</NodeRoute>
+        </main>
       </div>
     </div>
   );

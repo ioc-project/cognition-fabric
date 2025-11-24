@@ -13,11 +13,19 @@ if (!process.env.NEXTAUTH_SECRET) {
 
 export default withAuth(
   function middleware(req) {
+    if (req.nextauth.token && req.nextUrl.pathname === '/login') {
+      return NextResponse.redirect(new URL('/', req.url));
+    }
     return NextResponse.next();
   },
   {
     callbacks: {
-      authorized: ({token}) => !!token
+      authorized: ({token, req}) => {
+        if (req.nextUrl.pathname === '/login') {
+          return true;
+        }
+        return !!token;
+      }
     },
     pages: {
       signIn: '/login'
@@ -26,5 +34,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ['/((?!login|api|_next/static|_next/image|favicon.ico|.*\\.png|.*\\.jpg|.*\\.svg|.*\\.ico).*)']
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\.png|.*\\.jpg|.*\\.svg|.*\\.ico).*)']
 };
