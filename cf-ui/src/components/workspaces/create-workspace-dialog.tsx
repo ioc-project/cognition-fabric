@@ -52,8 +52,14 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={handleOpenChange} modal={true}>
+      <DialogContent 
+        className="sm:max-w-[425px]"
+        onInteractOutside={(e) => {
+          // Prevent closing when clicking theme toggle or other UI elements
+          e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>Create New Workspace</DialogTitle>
           <DialogDescription>Create a new workspace to organize your team and projects</DialogDescription>

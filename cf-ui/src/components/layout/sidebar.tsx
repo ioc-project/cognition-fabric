@@ -15,7 +15,7 @@ export function Sidebar() {
   ];
 
   return (
-    <div className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col">
+    <div className="w-64 bg-card border-r border-border flex flex-col">
       <nav className="flex-1 p-4 pt-6">
         <ul className="space-y-1">
           {menuItems.map((item) => {
@@ -29,7 +29,7 @@ export function Sidebar() {
                   className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
                     isActive
                       ? 'bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      : 'text-muted-foreground hover:bg-accent/50'
                   }`}
                 >
                   <Icon className="w-5 h-5" />

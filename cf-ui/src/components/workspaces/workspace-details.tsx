@@ -63,7 +63,7 @@ export function WorkspaceDetails() {
       )}
 
       <Tabs defaultValue="users" className="space-y-0">
-        <TabsList className="bg-transparent border-b border-gray-200 dark:border-gray-700 rounded-none h-auto p-0 w-full justify-start mb-6">
+        <TabsList className="bg-transparent border-b border-border rounded-none h-auto p-0 w-full justify-start mb-6">
           <TabsTrigger
             value="users"
             className="data-[state=active]:border-b-2 data-[state=active]:border-[#0051AF] data-[state=active]:text-[#0051AF] data-[state=inactive]:text-gray-900 dark:data-[state=inactive]:text-gray-300 rounded-none pb-2 px-6 font-medium text-base tracking-[0.15px] bg-transparent"

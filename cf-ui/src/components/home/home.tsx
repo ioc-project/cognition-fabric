@@ -38,7 +38,7 @@ export function Home() {
           </p>
         </div>
 
-        <Card className="mb-8 border-2 border-blue-100 dark:border-blue-900 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950 dark:to-gray-800">
+        <Card className="mb-8 border-2 border-blue-100 dark:border-blue-900 bg-gradient-to-br from-blue-50 to-white dark:from-blue-950 dark:to-background">
           <CardContent className="p-8">
             <div className="flex flex-col items-center text-center">
               <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-6">

@@ -77,7 +77,7 @@ export function ApiKeysList({workspaceId}: ApiKeysListProps) {
           </DialogHeader>
           {newApiKey ? (
             <div className="py-4">
-              <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+              <div className="p-4 bg-muted rounded-lg">
                 <div className="flex items-center justify-between gap-2">
                   <code className="text-sm font-mono break-all dark:text-white">{newApiKey}</code>
                   <Button size="sm" variant="outline" onClick={() => handleCopy(newApiKey)}>

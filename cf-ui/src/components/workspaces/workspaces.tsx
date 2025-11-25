@@ -132,7 +132,7 @@ export function Workspaces() {
             {workspaces.map((workspace) => (
               <div
                 key={workspace.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
                 onClick={() => handleEditWorkspace(workspace.id)}
               >
                 <div className="flex-1">

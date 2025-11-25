@@ -12,7 +12,7 @@ interface EmptyStateProps {
 
 export function EmptyState({icon: Icon, title, description, actionLabel, onAction}: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center p-6 pb-12 gap-4 bg-[#F5F8FD] dark:bg-gray-800/50 shadow-[0px_4px_4px_rgba(200,213,245,0.33)] rounded-lg">
+    <div className="flex flex-col items-center p-6 pb-12 gap-4 bg-[#F5F8FD] dark:bg-muted shadow-[0px_4px_4px_rgba(200,213,245,0.33)] rounded-lg">
       <div className="flex flex-col justify-center items-center pb-2 gap-3 max-w-4xl">
         <div className="relative w-56 h-56 flex items-center justify-center">
           <div className="absolute left-2 top-20 w-7 h-30 bg-purple-100 dark:bg-purple-900/40 opacity-40 rounded-[30px] rotate-[25deg]" />

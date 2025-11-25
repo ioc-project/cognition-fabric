@@ -6,21 +6,22 @@ import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 import {useThemeStore} from '@/store';
 import {signOut} from 'next-auth/react';
 import Image from 'next/image';
+import {useCallback} from 'react';
 
 export function NavBar() {
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
+  }, [theme, setTheme]);
 
   const handleLogout = async () => {
     await signOut({callbackUrl: '/login'});
   };
 
   return (
-    <div className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-8">
+    <div className="h-16 bg-card border-b border-border flex items-center justify-between px-8">
       <div className="flex items-center">
         <Image src="/outshift-logo.svg" alt="Outshift" width={0} height={0} className="dark:invert h-12 w-auto" priority />
       </div>
@@ -28,24 +29,20 @@ export function NavBar() {
       <div className="flex items-center gap-4">
         <button
           onClick={toggleTheme}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          className="p-2 hover:bg-accent rounded-lg transition-colors"
           title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         >
-          {theme === 'dark' ? (
-            <Sun className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-          ) : (
-            <Moon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-          )}
+          {theme === 'dark' ? <Sun className="w-5 h-5 text-muted-foreground" /> : <Moon className="w-5 h-5 text-muted-foreground" />}
         </button>
 
-        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-          <Bell className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+        <button className="p-2 hover:bg-accent rounded-lg">
+          <Bell className="w-5 h-5 text-muted-foreground" />
         </button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-              <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            <button className="p-2 hover:bg-accent rounded-lg transition-colors">
+              <MoreVertical className="w-5 h-5 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 z-[60] mt-4">

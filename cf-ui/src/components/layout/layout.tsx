@@ -3,14 +3,15 @@
 import {Sidebar} from './sidebar';
 import {NavBar} from './navbar';
 import {NodeRoute} from '../router/node-route';
+import {memo} from 'react';
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
-export const Layout = ({children}: LayoutProps) => {
+export const Layout = memo(({children}: LayoutProps) => {
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="flex flex-col h-screen bg-background">
       <NavBar />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar />
@@ -20,4 +21,6 @@ export const Layout = ({children}: LayoutProps) => {
       </div>
     </div>
   );
-};
+});
+
+Layout.displayName = 'Layout';
