@@ -105,11 +105,6 @@ export function Home() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="mb-2 dark:text-white">Welcome back</h1>
-        <p className="text-gray-600 dark:text-gray-400">Here&apos;s what&apos;s happening with your workspaces</p>
-      </div>
-
       {error && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />

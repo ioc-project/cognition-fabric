@@ -5,7 +5,9 @@ export const WorkspaceSchema = z.object({
   name: z.string(),
   created_at: z.string().datetime(),
   users: z.array(z.any()).default([]),
-  api_keys: z.array(z.any()).default([])
+  api_keys: z.array(z.any()).default([]),
+  mas_count: z.number().int().nonnegative().optional(),
+  kep_count: z.number().int().nonnegative().optional()
 });
 
 export type Workspace = z.infer<typeof WorkspaceSchema>;

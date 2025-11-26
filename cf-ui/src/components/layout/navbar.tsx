@@ -21,12 +21,12 @@ export function NavBar() {
   };
 
   return (
-    <div className="h-16 bg-card border-b border-border flex items-center justify-between px-8">
+    <div className="h-[52px] bg-[hsl(var(--navbar-background))] border-b border-[hsl(var(--navbar-border))] flex items-center justify-between py-[10px] px-4 gap-2 relative z-[100]">
       <div className="flex items-center">
-        <Image src="/outshift-logo.svg" alt="Outshift" width={0} height={0} className="dark:invert h-12 w-auto" priority />
+        <Image src="/outshift-logo.svg" alt="Outshift" width={210} height={40} className="dark:invert h-10 w-[210px]" priority />
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         <button
           onClick={toggleTheme}
           className="p-2 hover:bg-accent rounded-lg transition-colors"
@@ -45,7 +45,7 @@ export function NavBar() {
               <MoreVertical className="w-5 h-5 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56 z-[60] mt-4">
+          <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem>
               <User className="w-4 h-4 mr-2" />
               <span></span>

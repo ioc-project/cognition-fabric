@@ -1,19 +1,18 @@
 'use client';
 
 import {useState, useEffect} from 'react';
-import {Plus, Users, Key, MoreVertical, Trash2, Edit, Boxes, Calendar, AlertCircle} from 'lucide-react';
+import {Plus, MoreVertical, Trash2, Boxes, AlertCircle, FolderOpen} from 'lucide-react';
 import {Button} from '@/components/ui/button';
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
+import {Card} from '@/components/ui/card';
 import {EmptyState} from '@/components/ui/empty-state';
 import {Loading} from '@/components/ui/loading';
-import {StatCard} from '@/components/ui/stat-card';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {Alert, AlertDescription} from '@/components/ui/alert';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {CreateWorkspaceDialog} from './create-workspace-dialog';
 import {workspaceApi} from '@/api';
 import {useRouter, useSearchParams} from 'next/navigation';
-import {parseError, safeGetDate} from '@/lib/utils';
+import {parseError} from '@/lib/utils';
 import {useWorkspaces} from '@/hooks/useApi';
 
 export function Workspaces() {
@@ -82,7 +81,7 @@ export function Workspaces() {
           <EmptyState
             icon={Boxes}
             title="No workspaces yet"
-            description="Create a workspace to organize your team, manage API keys, and configure data sources for your knowledge graphs and agent systems."
+            description="Create a workspace to organize your TKF resources - Multi-Agentic Systems, Knowledge Adapters, and Reasoners."
             actionLabel="Create Your First Workspace"
             onAction={() => setIsCreateDialogOpen(true)}
           />
@@ -93,98 +92,73 @@ export function Workspaces() {
     );
   }
 
-  const totalUsers = workspaces.reduce((sum, ws) => sum + (ws.users?.length || 0), 0);
-  const totalApiKeys = workspaces.reduce((sum, ws) => sum + (ws.api_keys?.length || 0), 0);
-
   return (
-    <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold dark:text-white">Workspaces</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your workspaces and team collaboration</p>
+    <div className="space-y-6 px-12 pt-4 relative z-0">
+      <div className="flex items-center justify-between">
+        <div className="flex flex-col justify-center items-start gap-1">
+          <h1 className="page-title-text">Workspaces</h1>
+          <p className="page-title-description">Organize your TKF resources into logical spaces</p>
         </div>
-        <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
+        <Button
+          onClick={() => setIsCreateDialogOpen(true)}
+          variant="outline"
+          className="gap-2 border-border hover:bg-accent/50 transition-colors"
+          size="default"
+        >
           <Plus className="w-4 h-4" />
           Create Workspace
         </Button>
       </div>
 
       {error && (
-        <Alert variant="destructive" dismissible onDismiss={() => setError(null)} className="mb-6">
+        <Alert variant="destructive" dismissible onDismiss={() => setError(null)}>
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <div className="grid gap-6 md:grid-cols-3 mb-8">
-        <StatCard label="Total Workspaces" value={workspaces.length} />
-        <StatCard label="Total Users" value={totalUsers} />
-        <StatCard label="Active API Keys" value={totalApiKeys} />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>All Workspaces</CardTitle>
-          <CardDescription>View and manage all your workspaces</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {workspaces.map((workspace) => (
-              <div
-                key={workspace.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-accent/50 transition-colors cursor-pointer"
-                onClick={() => handleEditWorkspace(workspace.id)}
-              >
-                <div className="flex-1">
-                  <h3 className="font-semibold dark:text-white mb-1">{workspace.name}</h3>
-                  <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                    <div className="flex items-center gap-1.5">
-                      <Users className="w-4 h-4" />
-                      <span>{workspace.users?.length || 0} users</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Key className="w-4 h-4" />
-                      <span>{workspace.api_keys?.length || 0} API keys</span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="w-4 h-4" />
-                      <span>{safeGetDate(workspace.created_at)?.toLocaleDateString() || 'N/A'}</span>
-                    </div>
-                  </div>
+      <div className="space-y-3">
+        {workspaces.map((workspace) => (
+          <Card
+            key={workspace.id}
+            className="py-2 px-4 hover:shadow-lg transition-shadow cursor-pointer flex items-start gap-4"
+            onClick={() => handleEditWorkspace(workspace.id)}
+          >
+            <div className="flex items-start justify-between gap-4 w-full">
+              <div className="flex items-start gap-4">
+                <div className="pt-0.5">
+                  <FolderOpen className="w-5 h-5 text-muted-foreground" />
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="icon">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditWorkspace(workspace.id);
-                      }}
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openDeleteConfirm(workspace.id, workspace.name);
-                      }}
-                      className="text-red-600 dark:text-red-400"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <div className="flex-1">
+                  <h3 className="card-title mb-1">{workspace.name}</h3>
+                  <p className="card-info text-muted-foreground">
+                    {workspace.mas_count || 0} MAS • {workspace.kep_count || 0} KEPs • {workspace.users?.length || 0} Users
+                  </p>
+                </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="w-4 h-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openDeleteConfirm(workspace.id, workspace.name);
+                    }}
+                    className="text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </Card>
+        ))}
+      </div>
 
       <CreateWorkspaceDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} onSuccess={handleWorkspaceCreated} />
 
@@ -193,7 +167,7 @@ export function Workspaces() {
         onOpenChange={(open) => setDeleteConfirm({open, workspaceId: null, workspaceName: ''})}
         onConfirm={handleDeleteWorkspace}
         title="Delete Workspace"
-        description={`Are you sure you want to delete "${deleteConfirm.workspaceName}"? This action cannot be undone and will remove all associated users and API keys.`}
+        description={`Are you sure you want to delete "${deleteConfirm.workspaceName}"? This action cannot be undone and will remove all associated resources.`}
         confirmText="Delete Workspace"
         variant="destructive"
         loading={deleting}

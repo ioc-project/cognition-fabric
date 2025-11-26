@@ -46,17 +46,11 @@ function LoginForm() {
           type="text"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          placeholder=" "
+          placeholder="Username"
           required
           disabled={loading}
-          className="peer h-[48px] w-full rounded-md border border-gray-300 bg-white px-3 pt-4 text-[15px] text-gray-900 placeholder-transparent transition focus:border-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:bg-gray-50 disabled:cursor-not-allowed"
+          className="h-[32px] w-full rounded-md border-2 border-[#889099] bg-transparent px-[10px] py-[6px] text-[14px] text-[#DDDDDD] placeholder:text-[#889099] transition focus:border-[#889099] focus:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
         />
-        <Label
-          htmlFor="username"
-          className="absolute left-3 top-[-9px] bg-white px-1 text-[11px] font-medium text-gray-600 transition-all peer-placeholder-shown:top-3 peer-placeholder-shown:text-[15px] peer-placeholder-shown:font-normal peer-placeholder-shown:text-gray-400 peer-focus:top-[-9px] peer-focus:text-[11px] peer-focus:font-medium peer-focus:text-blue-600"
-        >
-          Username
-        </Label>
       </div>
 
       <div className="relative">
@@ -65,24 +59,18 @@ function LoginForm() {
           type={showPassword ? 'text' : 'password'}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          placeholder=" "
+          placeholder="Password"
           required
           disabled={loading}
-          className="peer h-[48px] w-full rounded-md border border-gray-300 bg-white px-3 pt-4 pr-10 text-[15px] text-gray-900 placeholder-transparent transition focus:border-blue-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:bg-gray-50 disabled:cursor-not-allowed"
+          className="h-[32px] w-full rounded-md border-2 border-[#889099] bg-transparent px-[10px] py-[6px] pr-10 text-[14px] text-[#DDDDDD] placeholder:text-[#889099] transition focus:border-[#889099] focus:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
         />
-        <Label
-          htmlFor="password"
-          className="absolute left-3 top-[-9px] bg-white px-1 text-[11px] font-medium text-gray-600 transition-all peer-placeholder-shown:top-3 peer-placeholder-shown:text-[15px] peer-placeholder-shown:font-normal peer-placeholder-shown:text-gray-400 peer-focus:top-[-9px] peer-focus:text-[11px] peer-focus:font-medium peer-focus:text-blue-600"
-        >
-          Password
-        </Label>
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600 focus-visible:text-gray-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 rounded p-0.5"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7E868F] transition hover:text-[#889099] focus-visible:outline-none rounded p-0.5"
         >
           {showPassword ? (
-            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
               <path
                 fillRule="evenodd"
@@ -91,7 +79,7 @@ function LoginForm() {
               />
             </svg>
           ) : (
-            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+            <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
               <path
                 fillRule="evenodd"
                 d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z"
@@ -112,7 +100,7 @@ function LoginForm() {
       <Button
         type="submit"
         disabled={loading}
-        className="mt-1 flex h-[44px] w-full items-center justify-center rounded-md bg-gradient-to-r from-yellow-300 to-blue-400 text-[15px] font-semibold text-slate-900 transition hover:from-yellow-400 hover:to-blue-500 focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+        className="mt-1 flex h-[32px] w-full items-center justify-center rounded-md bg-gradient-to-r from-yellow-300 to-blue-400 border-2 border-[#889099] px-[10px] py-[6px] text-[14px] font-bold text-[#333333] transition hover:from-yellow-400 hover:to-blue-500 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
       >
         {loading ? 'Signing in...' : 'Sign In'}
       </Button>

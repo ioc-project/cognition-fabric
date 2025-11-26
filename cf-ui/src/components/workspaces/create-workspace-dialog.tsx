@@ -53,16 +53,15 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange} modal={true}>
-      <DialogContent 
+      <DialogContent
         className="sm:max-w-[425px]"
         onInteractOutside={(e) => {
-          // Prevent closing when clicking theme toggle or other UI elements
           e.preventDefault();
         }}
       >
         <DialogHeader>
           <DialogTitle>Create New Workspace</DialogTitle>
-          <DialogDescription>Create a new workspace to organize your team and projects</DialogDescription>
+          <DialogDescription>Create a new workspace to manage and organize your TKF resources</DialogDescription>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
