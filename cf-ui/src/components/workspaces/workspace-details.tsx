@@ -3,12 +3,9 @@
 import {useParams, useRouter} from 'next/navigation';
 import {ArrowLeft, AlertCircle} from 'lucide-react';
 import {Button} from '@/components/ui/button';
-import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Loading} from '@/components/ui/loading';
 import {Alert, AlertDescription} from '@/components/ui/alert';
-import {UsersList} from '@/components/users/users-list';
-import {ApiKeysList} from '@/components/api-keys/api-keys-list';
-import {SoftwareList} from '@/components/software/software-list';
+import {EmptyState} from '@/components/ui/empty-state';
 import {useWorkspace, useUsers, useApiKeys} from '@/hooks/useApi';
 
 export function WorkspaceDetails() {
@@ -39,10 +36,9 @@ export function WorkspaceDetails() {
   return (
     <div>
       <div className="flex flex-row justify-between items-center mb-6">
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white" style={{fontFamily: 'Sharp Sans', fontSize: '24px', lineHeight: '32px'}}>
-            {workspace.name}
-          </h1>
+        <div className="flex flex-col justify-center items-start gap-1">
+          <h1 className="page-title-text">{workspace.name}</h1>
+          <p className="page-title-description">Workspace Context: scope for MAS, Adapters, Reasoners, and Queries</p>
         </div>
 
         <div className="flex items-center gap-2">
@@ -62,32 +58,31 @@ export function WorkspaceDetails() {
         </Alert>
       )}
 
-      <Tabs defaultValue="users" className="space-y-0">
-        <TabsList className="bg-transparent border-b border-border rounded-none h-auto p-0 w-full justify-start mb-6">
-          <TabsTrigger
-            value="users"
-            className="data-[state=active]:border-b-2 data-[state=active]:border-[#0051AF] data-[state=active]:text-[#0051AF] data-[state=inactive]:text-gray-900 dark:data-[state=inactive]:text-gray-300 rounded-none pb-2 px-6 font-medium text-base tracking-[0.15px] bg-transparent"
-            style={{fontFamily: 'Inter', fontWeight: 500, fontSize: '16px', lineHeight: '24px', letterSpacing: '0.15px'}}
-          >
-            Users
-          </TabsTrigger>
-          <TabsTrigger
-            value="software"
-            className="data-[state=active]:border-b-2 data-[state=active]:border-[#0051AF] data-[state=active]:text-[#0051AF] data-[state=inactive]:text-gray-900 dark:data-[state=inactive]:text-gray-300 rounded-none pb-2 px-6 font-medium text-base tracking-[0.15px] bg-transparent"
-            style={{fontFamily: 'Inter', fontWeight: 500, fontSize: '16px', lineHeight: '24px', letterSpacing: '0.15px'}}
-          >
-            Software
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="users" className="mt-0 flex justify-center">
-          <UsersList workspaceId={workspaceId} />
-        </TabsContent>
-
-        <TabsContent value="software" className="mt-0 flex justify-center">
-          <SoftwareList workspaceId={workspaceId} />
-        </TabsContent>
-      </Tabs>
+      {/* Simplified workspace details per design: only MAS section */}
+      {(workspace.mas_count ?? 0) === 0 ? (
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <EmptyState
+            icon={ArrowLeft}
+            title="Register a Multi‑Agent System to get started"
+            description="A MAS is required before adding Knowledge Adapters or Reasoners in this workspace."
+            actionLabel="Register MAS"
+            onAction={() => router.push(`/workspaces/${workspaceId}/mas?create=true`)}
+          />
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="p-4 border rounded-lg bg-card">
+            <h2 className="text-base font-medium mb-2">Multi‑Agent Systems</h2>
+            <p className="text-sm text-muted-foreground mb-4">Registered MAS for this workspace.</p>
+            <div className="text-sm text-muted-foreground">MAS list will appear here.</div>
+          </div>
+          <div className="flex gap-3">
+            <Button size="sm" variant="outline" onClick={() => router.push(`/workspaces/${workspaceId}/mas?create=true`)}>
+              Register MAS
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

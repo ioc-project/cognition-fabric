@@ -1,6 +1,7 @@
 'use client';
 
 import {Sidebar} from './sidebar';
+import {usePathname} from 'next/navigation';
 import {NavBar} from './navbar';
 import {NodeRoute} from '../router/node-route';
 import {memo} from 'react';
@@ -10,6 +11,9 @@ interface LayoutProps {
 }
 
 export const Layout = memo(({children}: LayoutProps) => {
+  const pathname = usePathname();
+  const onWorkspaceList = pathname === '/workspaces';
+
   return (
     <div className="flex flex-col h-screen bg-background">
       <NavBar />

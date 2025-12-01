@@ -1,10 +1,9 @@
 'use client';
 
 import {useState} from 'react';
-import {Plus, Key, Copy, Trash2, Calendar, AlertCircle, Package} from 'lucide-react';
+import {Plus, Key, Copy, Trash2, Calendar, AlertCircle} from 'lucide-react';
 import {Button} from '@/components/ui/button';
-import {Card, CardContent, CardHeader} from '@/components/ui/card';
-import {EmptyState} from '@/components/ui/empty-state';
+import {ListShell} from '@/components/ui/list-shell';
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from '@/components/ui/dialog';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {useApiKeys} from '@/hooks/useApi';
@@ -49,25 +48,25 @@ export function ApiKeysList({workspaceId}: ApiKeysListProps) {
 
   return (
     <>
-      <Card className="w-full max-w-5xl">
-        <CardHeader>
-          <div className="flex items-center justify-end">
-            <Button onClick={() => setIsGenerateKeyDialogOpen(true)} variant="outline" className="gap-2 border-2">
-              <Plus className="w-4 h-4" />
-              Generate Key
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <EmptyState
-            icon={Key}
-            title="No API keys"
-            description="Generate API keys to access this workspace."
-            actionLabel="Generate Key"
-            onAction={() => setIsGenerateKeyDialogOpen(true)}
-          />
-        </CardContent>
-      </Card>
+      <ListShell
+        title="API Keys"
+        description="Manage API keys for this workspace"
+        headerRight={
+          <Button onClick={() => setIsGenerateKeyDialogOpen(true)} variant="outline" className="gap-2 border-2">
+            <Plus className="w-4 h-4" />
+            Generate Key
+          </Button>
+        }
+        empty={{
+          icon: Key,
+          title: 'No API keys',
+          description: 'Generate API keys to access this workspace.',
+          actionLabel: 'Generate Key',
+          onAction: () => setIsGenerateKeyDialogOpen(true)
+        }}
+      >
+        {/* TODO: render API keys list when available */}
+      </ListShell>
 
       <Dialog open={isGenerateKeyDialogOpen} onOpenChange={setIsGenerateKeyDialogOpen}>
         <DialogContent>

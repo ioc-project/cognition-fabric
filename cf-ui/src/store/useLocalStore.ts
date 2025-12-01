@@ -18,7 +18,7 @@ export const useLocalStore = create<LocalStore>(
     }),
     {
       name: 'ci-tkf-csp-ui-svc-local-store',
-      storage: createJSONStorage(() => localStorage)
+      storage: createJSONStorage(() => (typeof window !== 'undefined' ? window.localStorage : (undefined as unknown as Storage)))
     }
   )
 );

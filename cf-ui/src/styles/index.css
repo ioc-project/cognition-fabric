@@ -22,13 +22,28 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
     --radius: 0.5rem;
-    --sidebar-hover: 214.3 31.8% 91.4%;
-    --sidebar-active: 210 40% 96.1%;
-    --sidebar-border: 220 50% 99%;
+    --sidebar-hover: 216.7 100% 95.5%;
+    --sidebar-active: 216.7 100% 95.5%;
+    --sidebar-border: 222.5 68% 90%;
+    --sidebar-text: 214 9% 38%;
+    --sidebar-text-active: 210 80% 48%;
+    --sidebar-text-hover: 212.3 9% 8.45%;
+    --sidebar-icon: 214 9% 38%;
+    --sidebar-icon-active: 210 80% 48%;
     --navbar-background: 222 68% 96%;
     --navbar-border: 222 58% 91%;
     --main-background: 220 71% 97%;
     --main-border: 220 50% 99%;
+    --main-border: 220 50% 99%;
+
+    --list-card-radius: 8px;
+    --list-card-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --list-card-hover-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --list-card-border: 0.5px solid #e5e7eb;
+    --list-card-padding: 24px;
+    --list-grid-gap: 24px;
+    --list-card-min: 320px;
+    --sidebar-active-border: 210 80% 48%;
   }
 
   .dark {
@@ -54,10 +69,24 @@
     --sidebar-hover: 217.2 32.6% 20%;
     --sidebar-active: 217.2 32.6% 25%;
     --sidebar-border: 217.2 32.6% 20%;
-    --navbar-background: 217.2 32.6% 10%;
+    --sidebar-text: 0 0% 100%;
+    --sidebar-text-active: 0 0% 100%;
+    --sidebar-text-hover: 0 0% 100%;
+    --sidebar-icon: 0 0% 100%;
+    --sidebar-icon-active: 0 0% 100%;
+    --navbar-background: 222.2 84% 4.9%;
     --navbar-border: 217.2 32.6% 20%;
     --main-background: 222.2 84% 4.9%;
     --main-border: 217.2 32.6% 20%;
+    --sidebar-active-border: 0 0% 100%;
+
+    --list-card-radius: 8px;
+    --list-card-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.35);
+    --list-card-hover-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.35), 0 2px 4px -2px rgba(0, 0, 0, 0.35);
+    --list-card-border: 0.5px solid hsl(var(--border));
+    --list-card-padding: 24px;
+    --list-grid-gap: 24px;
+    --list-card-min: 320px;
   }
 
   * {
@@ -67,6 +96,25 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+  }
+
+  .list-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--list-card-min), 1fr));
+    gap: var(--list-grid-gap);
+  }
+
+  .list-card {
+    background-color: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    border: var(--list-card-border);
+    border-radius: var(--list-card-radius);
+    padding: var(--list-card-padding);
+    box-shadow: var(--list-card-shadow);
+    transition: box-shadow 150ms ease;
+  }
+  .list-card:hover {
+    box-shadow: var(--list-card-hover-shadow);
   }
 
   .bg-card {

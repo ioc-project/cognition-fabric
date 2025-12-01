@@ -6,5 +6,19 @@ export const swrKeys = {
   workspace: (id: string) => ['workspace', id] as const,
   users: (workspaceId: string) => ['users', workspaceId] as const,
   apiKeys: (workspaceId: string) => ['api-keys', workspaceId] as const,
-  software: (workspaceId: string) => ['software', workspaceId] as const
+  software: (workspaceId: string) => ['software', workspaceId] as const,
+  softwareTemplates: () => ['software-templates'] as const
+};
+
+import {fetchAPI} from '@/api/endpoints';
+
+export const swrFetcher = async (url: string) => {
+  if (url.startsWith('/')) {
+    return fetchAPI(url, {method: 'GET'});
+  }
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`${res.status} ${res.statusText}`);
+  }
+  return res.json();
 };

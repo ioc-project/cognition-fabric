@@ -3,9 +3,9 @@
 import Image from 'next/image';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
-import {Label} from '@/components/ui/label';
 import {useState} from 'react';
 import {signIn, useSession} from 'next-auth/react';
+import LavaLamp from '@/components/ui/lava-lamp';
 
 function LoginForm() {
   const [username, setUsername] = useState('');
@@ -146,8 +146,11 @@ export default function Login() {
         </div>
       </div>
 
-      <div className="flex min-h-screen w-1/2 flex-col items-center justify-center bg-white px-8">
-        <div className="flex w-full max-w-[440px] flex-col items-start">
+      <div className="relative flex min-h-screen w-1/2 flex-col items-center justify-center bg-white px-8 overflow-hidden">
+        <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
+          <LavaLamp speed={0.12} />
+        </div>
+        <div className="relative z-10 flex w-full max-w-[440px] flex-col items-start">
           <h2 className="font-cisco mb-1 whitespace-nowrap text-[28px] font-bold leading-tight tracking-tight text-[#00142B]">
             Cognitive State Protocol
           </h2>

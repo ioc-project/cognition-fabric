@@ -5,6 +5,7 @@ import {SWRConfig} from 'swr';
 import {SessionProvider} from 'next-auth/react';
 import {ErrorPage} from '@/components/router/error-page';
 import {ThemeProvider} from './theme-provider';
+import {swrFetcher} from '@/lib/swr-config';
 
 export function Providers({children}: {children: React.ReactNode}) {
   return (
@@ -17,7 +18,7 @@ export function Providers({children}: {children: React.ReactNode}) {
               revalidateOnReconnect: true,
               dedupingInterval: 60000,
               errorRetryCount: 3,
-              fetcher: (url: string) => fetch(url).then((res) => res.json())
+              fetcher: swrFetcher
             }}
           >
             {children}

@@ -11,14 +11,12 @@ import {
   DeleteUserResponse,
   CreateApiKeyResponse,
   ListApiKeysResponse,
-  CreateSoftwareRequest,
-  CreateSoftwareResponse,
   ListSoftwaresResponse,
-  Software,
-  UpdateSoftwareRequest,
-  UpdateSoftwareResponse,
-  DeleteSoftwareResponse
+  ListSoftwareTemplatesResponse,
+  Software
 } from './types';
+import {WorkspaceSchema, ListWorkspacesResponseSchema, UserSchema, ListUsersResponseSchema, ListApiKeysResponseSchema} from './types/workspace';
+import {SoftwareSchema, ListSoftwaresResponseSchema, ListSoftwareTemplatesResponseSchema} from './types/software';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
@@ -33,14 +31,23 @@ class ApiError extends Error {
   }
 }
 
-async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
+export async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
+  const controller = new AbortController();
+  const timeout = typeof options?.signal === 'undefined' ? 15000 : undefined;
+  let timeoutId: NodeJS.Timeout | undefined;
+  if (typeof timeout === 'number') {
+    timeoutId = setTimeout(() => controller.abort('Request timeout'), timeout);
+  }
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
+    signal: options?.signal ?? controller.signal,
     headers: {
       'Content-Type': 'application/json',
       ...options?.headers
     }
   });
+
+  if (timeoutId) clearTimeout(timeoutId);
 
   if (!response.ok) {
     let errorMessage = response.statusText;
@@ -67,18 +74,21 @@ export const workspaceApi = {
   },
 
   list: async (): Promise<ListWorkspacesResponse> => {
-    return fetchAPI('/api/workspaces');
+    const data = await fetchAPI<ListWorkspacesResponse>('/api/workspaces');
+    return ListWorkspacesResponseSchema.parse(data);
   },
 
   get: async (id: string): Promise<Workspace> => {
-    return fetchAPI(`/api/workspaces/${id}`);
+    const data = await fetchAPI<Workspace>(`/api/workspaces/${id}`);
+    return WorkspaceSchema.parse(data);
   },
 
   update: async (id: string, data: UpdateWorkspaceRequest): Promise<Workspace> => {
-    return fetchAPI(`/api/workspaces/${id}`, {
+    const res = await fetchAPI<Workspace>(`/api/workspaces/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data)
     });
+    return WorkspaceSchema.parse(res);
   },
 
   delete: async (id: string): Promise<void> => {
@@ -97,11 +107,13 @@ export const userApi = {
   },
 
   list: async (workspaceId: string): Promise<ListUsersResponse> => {
-    return fetchAPI(`/api/workspaces/${workspaceId}/users`);
+    const data = await fetchAPI<ListUsersResponse>(`/api/workspaces/${workspaceId}/users`);
+    return ListUsersResponseSchema.parse(data);
   },
 
   get: async (workspaceId: string, userId: string): Promise<User> => {
-    return fetchAPI(`/api/workspaces/${workspaceId}/users/${userId}`);
+    const data = await fetchAPI<User>(`/api/workspaces/${workspaceId}/users/${userId}`);
+    return UserSchema.parse(data);
   },
 
   delete: async (workspaceId: string, userId: string): Promise<DeleteUserResponse> => {
@@ -119,7 +131,8 @@ export const apiKeyApi = {
   },
 
   list: async (workspaceId: string): Promise<ListApiKeysResponse> => {
-    return fetchAPI(`/api/workspaces/${workspaceId}/api-keys`);
+    const data = await fetchAPI<ListApiKeysResponse>(`/api/workspaces/${workspaceId}/api-keys`);
+    return ListApiKeysResponseSchema.parse(data);
   },
 
   delete: async (workspaceId: string, keyId: string): Promise<void> => {
@@ -130,31 +143,19 @@ export const apiKeyApi = {
 };
 
 export const softwareApi = {
-  create: async (workspaceId: string, data: CreateSoftwareRequest): Promise<CreateSoftwareResponse> => {
-    return fetchAPI(`/api/workspaces/${workspaceId}/softwares`, {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-  },
-
   list: async (workspaceId: string): Promise<ListSoftwaresResponse> => {
-    return fetchAPI(`/api/workspaces/${workspaceId}/softwares`);
+    const data = await fetchAPI<ListSoftwaresResponse>(`/api/workspaces/${workspaceId}/softwares`);
+    return ListSoftwaresResponseSchema.parse(data);
   },
-
   get: async (workspaceId: string, softwareId: string): Promise<Software> => {
-    return fetchAPI(`/api/workspaces/${workspaceId}/softwares/${softwareId}`);
-  },
+    const data = await fetchAPI<Software>(`/api/workspaces/${workspaceId}/softwares/${softwareId}`);
+    return SoftwareSchema.parse(data);
+  }
+};
 
-  update: async (workspaceId: string, softwareId: string, data: UpdateSoftwareRequest): Promise<UpdateSoftwareResponse> => {
-    return fetchAPI(`/api/workspaces/${workspaceId}/softwares/${softwareId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
-  },
-
-  delete: async (workspaceId: string, softwareId: string): Promise<DeleteSoftwareResponse> => {
-    return fetchAPI(`/api/workspaces/${workspaceId}/softwares/${softwareId}`, {
-      method: 'DELETE'
-    });
+export const softwareTemplatesApi = {
+  list: async (): Promise<ListSoftwareTemplatesResponse> => {
+    const data = await fetchAPI<ListSoftwareTemplatesResponse>('/api/softwares?type=knowledge-adapter-templates');
+    return ListSoftwareTemplatesResponseSchema.parse(data);
   }
 };
