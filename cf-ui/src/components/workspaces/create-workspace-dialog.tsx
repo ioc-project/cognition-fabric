@@ -4,6 +4,8 @@ import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {Button} from '@/components/ui/button';
+import {mutate as swrMutate} from 'swr';
+import {swrKeys} from '@/lib/swr-config';
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from '@/components/ui/dialog';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
@@ -33,6 +35,7 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
     try {
       const {workspaceApi} = await import('@/api');
       const response = await workspaceApi.create({name: values.name});
+      await swrMutate(swrKeys.workspaces());
       form.reset();
       onSuccess(response.id);
     } catch (error) {
