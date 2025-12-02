@@ -4,7 +4,7 @@ import {useState} from 'react';
 import {Plus, Key, Copy, Trash2, Calendar, AlertCircle} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {ListShell} from '@/components/ui/list-shell';
-import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from '@/components/ui/dialog';
+import {Modal} from '@/components/ui/modal';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {useApiKeys} from '@/hooks/useApi';
 import {toast} from 'sonner';
@@ -77,55 +77,54 @@ export function ApiKeysList({workspaceId}: ApiKeysListProps) {
         {/* TODO: render API keys list when available */}
       </ListShell>
 
-      <Dialog open={isGenerateKeyDialogOpen} onOpenChange={setIsGenerateKeyDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Generate API Key</DialogTitle>
-            <DialogDescription>{newApiKey ? 'Your API key has been generated' : 'Generate a new API key for this workspace'}</DialogDescription>
-          </DialogHeader>
-          {newApiKey ? (
-            <div className="py-4">
-              <div className="p-4 bg-muted rounded-lg">
-                <div className="flex items-center justify-between gap-2">
-                  <code className="text-sm font-mono break-all dark:text-white">{newApiKey}</code>
-                  <Button size="sm" variant="outline" onClick={() => handleCopy(newApiKey)}>
-                    <Copy className="w-4 h-4" />
-                  </Button>
-                </div>
-              </div>
-              <p className="text-sm text-red-600 dark:text-red-400 mt-4 flex items-start gap-2">
-                <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                Make sure to copy your API key now. You won&apos;t be able to see it again!
-              </p>
-            </div>
+      <Modal
+        open={isGenerateKeyDialogOpen}
+        onOpenChange={setIsGenerateKeyDialogOpen}
+        title="Generate API Key"
+        description={newApiKey ? 'Your API key has been generated' : 'Generate a new API key for this workspace'}
+        footer={
+          newApiKey ? (
+            <Button
+              onClick={() => {
+                setIsGenerateKeyDialogOpen(false);
+                setNewApiKey(null);
+              }}
+            >
+              Done
+            </Button>
           ) : (
-            <div className="py-4">
-              <p className="page-description">This will generate a new API key that can be used to access your workspace resources.</p>
-            </div>
-          )}
-          <DialogFooter>
-            {newApiKey ? (
-              <Button
-                onClick={() => {
-                  setIsGenerateKeyDialogOpen(false);
-                  setNewApiKey(null);
-                }}
-              >
-                Done
+            <div className="flex w-full items-center justify-between">
+              <Button variant="outline" onClick={() => setIsGenerateKeyDialogOpen(false)}>
+                Cancel
               </Button>
-            ) : (
-              <>
-                <Button variant="outline" onClick={() => setIsGenerateKeyDialogOpen(false)}>
-                  Cancel
+              <Button onClick={handleGenerateKey} disabled={creating}>
+                {creating ? 'Generating...' : 'Generate Key'}
+              </Button>
+            </div>
+          )
+        }
+      >
+        {newApiKey ? (
+          <div className="py-4">
+            <div className="p-4 bg-muted rounded-lg">
+              <div className="flex items-center justify-between gap-2">
+                <code className="text-sm font-mono break-all dark:text-white">{newApiKey}</code>
+                <Button size="sm" variant="outline" onClick={() => handleCopy(newApiKey)}>
+                  <Copy className="w-4 h-4" />
                 </Button>
-                <Button onClick={handleGenerateKey} disabled={creating}>
-                  {creating ? 'Generating...' : 'Generate Key'}
-                </Button>
-              </>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+              </div>
+            </div>
+            <p className="text-sm text-red-600 dark:text-red-400 mt-4 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              Make sure to copy your API key now. You won&apos;t be able to see it again!
+            </p>
+          </div>
+        ) : (
+          <div className="py-4">
+            <p className="page-description">This will generate a new API key that can be used to access your workspace resources.</p>
+          </div>
+        )}
+      </Modal>
 
       <ConfirmDialog
         open={deleteKeyConfirm.open}

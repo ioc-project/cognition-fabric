@@ -2,7 +2,7 @@
 
 import {ReactNode} from 'react';
 import {Button} from '@/components/ui/button';
-import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from '@/components/ui/dialog';
+import {Modal} from '@/components/ui/modal';
 
 interface FormDialogProps {
   open: boolean;
@@ -33,30 +33,26 @@ export function FormDialog({
   isLoading = false,
   loadingLabel = 'Loading...'
 }: FormDialogProps) {
-  const handleCancel = () => {
-    if (onCancel) {
-      onCancel();
-    }
-    onOpenChange(false);
-  };
+  const footer = (
+    <div className="flex w-full items-center justify-between">
+      <Button
+        variant="outline"
+        onClick={() => {
+          onCancel?.();
+          onOpenChange(false);
+        }}
+      >
+        {cancelLabel}
+      </Button>
+      <Button onClick={onConfirm} disabled={confirmDisabled || isLoading}>
+        {isLoading ? loadingLabel : confirmLabel}
+      </Button>
+    </div>
+  );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          {description && <DialogDescription>{description}</DialogDescription>}
-        </DialogHeader>
-        <div className="py-4">{children}</div>
-        <DialogFooter>
-          <Button variant="outline" onClick={handleCancel}>
-            {cancelLabel}
-          </Button>
-          <Button onClick={onConfirm} disabled={confirmDisabled || isLoading}>
-            {isLoading ? loadingLabel : confirmLabel}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <Modal open={open} onOpenChange={onOpenChange} title={title} description={description} footer={footer}>
+      <div className="py-4">{children}</div>
+    </Modal>
   );
 }

@@ -4,7 +4,7 @@ import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import {Button} from '@/components/ui/button';
-import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from '@/components/ui/dialog';
+import {Modal} from '@/components/ui/modal';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {parseError} from '@/lib/utils';
@@ -52,53 +52,50 @@ export function AddUserDialog({open, onOpenChange, onSuccess}: AddUserDialogProp
     onOpenChange(open);
   };
 
+  const footer = (
+    <div className="flex w-full items-center justify-between">
+      <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+        Cancel
+      </Button>
+      <Button type="submit" form="add-user-form" disabled={form.formState.isSubmitting}>
+        {form.formState.isSubmitting ? 'Adding...' : 'Add User'}
+      </Button>
+    </div>
+  );
+
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add New User</DialogTitle>
-          <DialogDescription>Add a new user to the workspace</DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({field}) => (
-                <FormItem>
-                  <FormLabel>Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter user name" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              render={({field}) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input type="email" placeholder="Enter user email" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            {form.formState.errors.root && <FormMessage>{form.formState.errors.root.message}</FormMessage>}
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting ? 'Adding...' : 'Add User'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+    <Modal open={open} onOpenChange={handleOpenChange} title="Add New User" description="Add a new user to the workspace" footer={footer}>
+      <Form {...form}>
+        <form id="add-user-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({field}) => (
+              <FormItem>
+                <FormLabel>Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Enter user name" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({field}) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input type="email" placeholder="Enter user email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {form.formState.errors.root && <FormMessage>{form.formState.errors.root.message}</FormMessage>}
+        </form>
+      </Form>
+    </Modal>
   );
 }

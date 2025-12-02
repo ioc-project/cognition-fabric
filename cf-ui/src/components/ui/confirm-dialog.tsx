@@ -1,64 +1,77 @@
-import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from '@/components/ui/dialog';
 import {Button} from '@/components/ui/button';
+import {Modal} from '@/components/ui/modal';
 import {AlertTriangle} from 'lucide-react';
 
 interface ConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void | Promise<void>;
+  onCancel?: () => void;
   title: string;
   description: string;
   confirmText?: string;
   cancelText?: string;
   variant?: 'default' | 'destructive';
   loading?: boolean;
+  disableCancelDuringProcessing?: boolean;
+  closeOnConfirmSuccess?: boolean;
 }
 
 export function ConfirmDialog({
   open,
   onOpenChange,
   onConfirm,
+  onCancel,
   title,
   description,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   variant = 'default',
-  loading = false
+  loading = false,
+  disableCancelDuringProcessing = false,
+  closeOnConfirmSuccess = true
 }: ConfirmDialogProps) {
   const handleConfirm = async () => {
-    await onConfirm();
-    onOpenChange(false);
+    try {
+      await onConfirm();
+      if (closeOnConfirmSuccess) onOpenChange(false);
+    } catch {
+      // keep dialog open on error
+    }
   };
 
+  const footer = (
+    <div className="flex w-full items-center justify-between">
+      <Button
+        variant="outline"
+        onClick={() => {
+          onCancel?.();
+          onOpenChange(false);
+        }}
+        disabled={disableCancelDuringProcessing && !!loading}
+      >
+        {cancelText}
+      </Button>
+      <Button variant={variant === 'destructive' ? 'destructive' : 'default'} onClick={handleConfirm} disabled={loading}>
+        {loading ? 'Processing...' : confirmText}
+      </Button>
+    </div>
+  );
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <div className="flex items-center gap-3">
-            {variant === 'destructive' && (
-              <div className="rounded-full bg-red-100 dark:bg-red-900/20 p-2">
-                <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
-              </div>
-            )}
-            <DialogTitle>{title}</DialogTitle>
+    <Modal
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      icon={
+        variant === 'destructive' ? (
+          <div className="rounded-full bg-red-100 dark:bg-red-900/20 p-2">
+            <AlertTriangle aria-hidden="true" className="w-5 h-5 text-red-600 dark:text-red-400" />
           </div>
-          <DialogDescription className="pt-2">{description}</DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="w-full">
-          <div className="flex w-full items-center justify-between">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-              {cancelText}
-            </Button>
-            <Button
-              variant={variant === 'destructive' ? 'destructive' : 'default'}
-              onClick={handleConfirm}
-              disabled={loading}
-            >
-              {loading ? 'Processing...' : confirmText}
-            </Button>
-          </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        ) : undefined
+      }
+      footer={footer}
+    />
   );
 }

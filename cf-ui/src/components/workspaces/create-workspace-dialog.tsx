@@ -6,7 +6,7 @@ import * as z from 'zod';
 import {Button} from '@/components/ui/button';
 import {mutate as swrMutate} from 'swr';
 import {swrKeys} from '@/lib/swr-config';
-import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from '@/components/ui/dialog';
+import {Modal} from '@/components/ui/modal';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {parseError} from '@/lib/utils';
@@ -54,50 +54,48 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
     onOpenChange(open);
   };
 
+  const footer = (
+    <div className="flex w-full items-center justify-between">
+      <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+        Cancel
+      </Button>
+      <Button type="submit" form="create-workspace-form" disabled={form.formState.isSubmitting} variant="sidebar">
+        {form.formState.isSubmitting ? 'Creating...' : 'Create Workspace'}
+      </Button>
+    </div>
+  );
+
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange} modal={true}>
-      <DialogContent
-        className="sm:max-w-[480px] p-6 gap-4"
-        onInteractOutside={(e) => {
-          e.preventDefault();
-        }}
-      >
-        <DialogHeader>
-          <DialogTitle>Create New Workspace</DialogTitle>
-          <DialogDescription>Create a new workspace to manage and organize your TKF resources</DialogDescription>
-        </DialogHeader>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({field}) => (
-                <FormItem>
-                  <div className="space-y-2">
-                    <FormLabel>Workspace Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter workspace name" {...field} />
-                    </FormControl>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                disabled={form.formState.isSubmitting}
-                className="bg-[hsl(var(--sidebar-active))] hover:bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-text-active))] border border-[hsl(var(--sidebar-border))]"
-              >
-                {form.formState.isSubmitting ? 'Creating...' : 'Create Workspace'}
-              </Button>
-            </DialogFooter>
-          </form>
-        </Form>
-      </DialogContent>
-    </Dialog>
+    <Modal
+      open={open}
+      onOpenChange={handleOpenChange}
+      title="Create New Workspace"
+      description="Create a new workspace to manage and organize your TKF resources"
+      onInteractOutside={(e) => {
+        e.preventDefault();
+      }}
+      contentClassName="sm:max-w-[480px] p-6 gap-4"
+      footer={footer}
+    >
+      <Form {...form}>
+        <form id="create-workspace-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({field}) => (
+              <FormItem>
+                <div className="space-y-2">
+                  <FormLabel>Workspace Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter workspace name" {...field} />
+                  </FormControl>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </form>
+      </Form>
+    </Modal>
   );
 }

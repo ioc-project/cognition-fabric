@@ -100,11 +100,7 @@ export function Workspaces() {
             <h1 className="page-title">Workspaces</h1>
             <p className="page-description">Organize your resources into spaces</p>
           </div>
-          <Button
-            onClick={() => setIsCreateDialogOpen(true)}
-            className="gap-2 bg-[hsl(var(--sidebar-active))] hover:bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-text-active))] border border-[hsl(var(--sidebar-border))]"
-            size="default"
-          >
+          <Button onClick={() => setIsCreateDialogOpen(true)} variant="sidebar" className="gap-2" size="default">
             <Plus className="w-4 h-4" />
             Create Workspace
           </Button>

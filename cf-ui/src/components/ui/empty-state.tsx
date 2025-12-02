@@ -31,10 +31,7 @@ export function EmptyState({icon: Icon, title, description, actionLabel, onActio
           </div>
 
           {actionLabel && onAction && (
-            <Button
-              onClick={onAction}
-              className="empty-state-button px-4 py-1.5 h-8 bg-[hsl(var(--sidebar-active))] hover:bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-text-active))] rounded border border-[hsl(var(--sidebar-border))]"
-            >
+            <Button onClick={onAction} variant="sidebar" size="xs" className="empty-state-button">
               {actionLabel}
             </Button>
           )}
