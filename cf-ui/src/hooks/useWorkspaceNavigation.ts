@@ -1,11 +1,11 @@
 'use client';
 
 import {useRouter} from 'next/navigation';
-import {useWorkspaceContext} from '@/providers/workspace-context';
+import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 
 export function useWorkspaceNavigation() {
   const router = useRouter();
-  const {workspaceId} = useWorkspaceContext();
+  const {workspaceId} = useCurrentWorkspace();
 
   const currentId = workspaceId || undefined;
   const base = currentId ? `/workspaces/${currentId}` : '/workspaces';

@@ -5,14 +5,14 @@ import {Boxes, Database, FolderOpen, BarChart3, ChevronDown, ChevronRight, Packa
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments} from 'next/navigation';
 import {useWorkspaceNavigation} from '@/hooks/useWorkspaceNavigation';
-import {useWorkspaceContext} from '@/providers/workspace-context';
+import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 
 export function Sidebar() {
   const pathname = usePathname();
   const segments = useSelectedLayoutSegments();
   const {currentId: wsId, base: wsBase} = useWorkspaceNavigation();
 
-  const {workspace} = useWorkspaceContext();
+  const {workspace} = useCurrentWorkspace();
   const workspaceName = workspace?.name || (wsId ? `Workspace ${wsId.slice(0, 8)}` : '');
 
   const [wsOpen, setWsOpen] = useState<boolean>(true);

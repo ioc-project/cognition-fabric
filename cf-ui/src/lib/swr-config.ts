@@ -10,7 +10,7 @@ export const swrKeys = {
   softwareTemplates: () => ['software-templates'] as const
 };
 
-import {fetchAPI} from '@/api/endpoints';
+import {fetchAPI} from '@/api';
 
 export const swrFetcher = async (url: string) => {
   if (url.startsWith('/')) {

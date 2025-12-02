@@ -14,7 +14,6 @@ import {workspaceApi} from '@/api';
 import {useRouter, useSearchParams} from 'next/navigation';
 import {parseError} from '@/lib/utils';
 import {useWorkspaces} from '@/hooks/useApi';
-import {useLocalStore} from '@/store/useLocalStore';
 
 export function Workspaces() {
   const router = useRouter();
@@ -62,9 +61,7 @@ export function Workspaces() {
     setDeleteConfirm({open: true, workspaceId, workspaceName});
   };
 
-  const {setSelectedWorkspace} = useLocalStore();
-  const handleEditWorkspace = (workspaceId: string, workspaceName?: string) => {
-    setSelectedWorkspace(workspaceId, workspaceName);
+  const handleEditWorkspace = (workspaceId: string) => {
     router.push(`/workspaces/${workspaceId}`);
   };
 
@@ -72,9 +69,9 @@ export function Workspaces() {
     return <Loading />;
   }
 
-  if (workspaces.length === 0) {
-    return (
-      <>
+  return (
+    <>
+      {workspaces.length === 0 ? (
         <div className="fixed inset-0 left-64 top-16 flex items-center justify-center px-8">
           <ListShell
             empty={{
@@ -86,78 +83,74 @@ export function Workspaces() {
             }}
           />
         </div>
-
-        <CreateWorkspaceDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} onSuccess={handleWorkspaceCreated} />
-      </>
-    );
-  }
-
-  return (
-    <div className="space-y-8 px-8 pt-4 relative z-0">
-      <div className="w-full">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col justify-center items-start gap-1">
-            <h1 className="page-title">Workspaces</h1>
-            <p className="page-description">Organize your resources into spaces</p>
-          </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)} variant="sidebar" className="gap-2" size="default">
-            <Plus className="w-4 h-4" />
-            Create Workspace
-          </Button>
-        </div>
-      </div>
-
-      {error && (
-        <Alert variant="destructive" dismissible onDismiss={() => setError(null)}>
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      <div className="w-full">
-        <div className="list-grid">
-          {workspaces.map((workspace) => (
-            <Card
-              key={workspace.id}
-              variant="list"
-              className="cursor-pointer hover:shadow-md transition-shadow duration-200"
-              onClick={() => handleEditWorkspace(workspace.id, workspace.name)}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="rounded-lg bg-[hsl(var(--accent))] w-12 h-12 flex items-center justify-center mb-4">
-                    <FolderOpen className="w-5 h-5 text-card-foreground" />
-                  </div>
-                  <h4 className="card-title truncate pr-12">{workspace.name}</h4>
-                  <p className="card-info mt-1 whitespace-nowrap overflow-hidden text-ellipsis pr-12">
-                    {workspace.mas_count || 0} MAS · {workspace.kep_count || 0} KEPs · {workspace.users?.length || 0}{' '}
-                    {(workspace.users?.length || 0) === 1 ? 'User' : 'Users'}
-                  </p>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 z-10">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openDeleteConfirm(workspace.id, workspace.name);
-                      }}
-                      className="text-destructive"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+      ) : (
+        <div className="space-y-8 px-8 pt-4 relative z-0">
+          <div className="w-full">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col justify-center items-start gap-1">
+                <h1 className="page-title">Workspaces</h1>
+                <p className="page-description">Organize your resources into spaces</p>
               </div>
-            </Card>
-          ))}
+              <Button onClick={() => setIsCreateDialogOpen(true)} variant="sidebar" className="gap-2" size="default">
+                <Plus className="w-4 h-4" />
+                Create Workspace
+              </Button>
+            </div>
+          </div>
+
+          {error && (
+            <Alert variant="destructive" dismissible onDismiss={() => setError(null)}>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="w-full">
+            <div className="list-grid">
+              {workspaces.map((workspace) => (
+                <Card
+                  key={workspace.id}
+                  variant="list"
+                  className="cursor-pointer hover:shadow-md transition-shadow duration-200"
+                  onClick={() => handleEditWorkspace(workspace.id)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="rounded-lg bg-[hsl(var(--accent))] w-12 h-12 flex items-center justify-center mb-4">
+                        <FolderOpen className="w-5 h-5 text-card-foreground" />
+                      </div>
+                      <h4 className="card-title truncate pr-12">{workspace.name}</h4>
+                      <p className="card-info mt-1 whitespace-nowrap overflow-hidden text-ellipsis pr-12">
+                        {workspace.mas_count || 0} MAS · {workspace.kep_count || 0} KEPs · {workspace.users?.length || 0}{' '}
+                        {(workspace.users?.length || 0) === 1 ? 'User' : 'Users'}
+                      </p>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0 z-10">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openDeleteConfirm(workspace.id, workspace.name);
+                          }}
+                          className="text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       <CreateWorkspaceDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} onSuccess={handleWorkspaceCreated} />
 
@@ -171,6 +164,6 @@ export function Workspaces() {
         variant="destructive"
         loading={deleting}
       />
-    </div>
+    </>
   );
 }

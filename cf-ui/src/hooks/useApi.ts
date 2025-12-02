@@ -6,6 +6,7 @@ import {workspaceApi, userApi, apiKeyApi, softwareApi, softwareTemplatesApi} fro
 import type {ListSoftwareTemplatesResponse} from '@/api/types';
 import {swrKeys} from '@/lib/swr-config';
 import {parseError} from '@/lib/utils';
+import {useInvalidateMutation, useSWRResource} from './useSWRResource';
 
 export function useWorkspaces() {
   const {data, error: swrError, isLoading, mutate} = useSWR(swrKeys.workspaces(), () => workspaceApi.list());
@@ -29,30 +30,17 @@ export function useWorkspace(workspaceId: string) {
 }
 
 export function useUsers(workspaceId: string) {
-  const {data, error: swrError, isLoading, mutate} = useSWR(workspaceId ? swrKeys.users(workspaceId) : null, () => userApi.list(workspaceId));
+  const {data, isLoading, error, mutate} = useSWRResource(workspaceId ? swrKeys.users(workspaceId) : null, () => userApi.list(workspaceId));
 
-  const addUser = useCallback(
-    async (data: {name: string; email: string}) => {
-      const res = await userApi.create(workspaceId, {name: data.name, email: data.email});
-      await mutate();
-      return res;
-    },
-    [workspaceId, mutate]
+  const {run: addUser} = useInvalidateMutation(swrKeys.users(workspaceId), (payload: {name: string; email: string}) =>
+    userApi.create(workspaceId, {name: payload.name, email: payload.email})
   );
-
-  const removeUser = useCallback(
-    async (userId: string) => {
-      const res = await userApi.delete(workspaceId, userId);
-      await mutate();
-      return res;
-    },
-    [workspaceId, mutate]
-  );
+  const {run: removeUser} = useInvalidateMutation(swrKeys.users(workspaceId), (userId: string) => userApi.delete(workspaceId, userId));
 
   return {
     users: Array.isArray(data) ? data : [],
     isLoading,
-    error: swrError ? parseError(swrError) : null,
+    error,
     mutate,
     addUser,
     removeUser
@@ -60,26 +48,15 @@ export function useUsers(workspaceId: string) {
 }
 
 export function useApiKeys(workspaceId: string) {
-  const {data, error: swrError, isLoading, mutate} = useSWR(workspaceId ? swrKeys.apiKeys(workspaceId) : null, () => apiKeyApi.list(workspaceId));
+  const {data, isLoading, error, mutate} = useSWRResource(workspaceId ? swrKeys.apiKeys(workspaceId) : null, () => apiKeyApi.list(workspaceId));
 
-  const generateApiKey = useCallback(async () => {
-    const res = await apiKeyApi.create(workspaceId);
-    await mutate();
-    return res;
-  }, [workspaceId, mutate]);
-
-  const deleteApiKey = useCallback(
-    async (keyId: string) => {
-      await apiKeyApi.delete(workspaceId, keyId);
-      await mutate();
-    },
-    [workspaceId, mutate]
-  );
+  const {run: generateApiKey} = useInvalidateMutation(swrKeys.apiKeys(workspaceId), () => apiKeyApi.create(workspaceId));
+  const {run: deleteApiKey} = useInvalidateMutation(swrKeys.apiKeys(workspaceId), (keyId: string) => apiKeyApi.delete(workspaceId, keyId));
 
   return {
     apiKeys: data?.api_keys || [],
     isLoading,
-    error: swrError ? parseError(swrError) : null,
+    error,
     mutate,
     generateApiKey,
     deleteApiKey

@@ -7,20 +7,11 @@ import {Loading} from '@/components/ui/loading';
 import {Alert, AlertDescription} from '@/components/ui/alert';
 import {EmptyState} from '@/components/ui/empty-state';
 import {useUsers, useApiKeys} from '@/hooks/useApi';
-import {useLocalStore} from '@/store/useLocalStore';
-import {useEffect} from 'react';
-import {useWorkspaceContext} from '@/providers/workspace-context';
+import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 
 export function WorkspaceDetails() {
   const router = useRouter();
-  const {workspaceId, workspace, isLoading: workspaceLoading} = useWorkspaceContext();
-  const {setSelectedWorkspace} = useLocalStore();
-
-  useEffect(() => {
-    if (workspace && (workspace as any).id) {
-      setSelectedWorkspace((workspace as any).id, (workspace as any).name);
-    }
-  }, [workspace?.id, workspace?.name, setSelectedWorkspace]);
+  const {workspaceId, workspace, isLoading: workspaceLoading} = useCurrentWorkspace();
 
   const {isLoading: usersLoading, error: usersError} = useUsers(workspaceId || '');
   const {isLoading: keysLoading, error: keysError} = useApiKeys(workspaceId || '');

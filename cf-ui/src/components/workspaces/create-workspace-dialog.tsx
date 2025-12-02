@@ -10,6 +10,7 @@ import {Modal} from '@/components/ui/modal';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {parseError} from '@/lib/utils';
+import {workspaceApi} from '@/api';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Workspace name is required').min(3, 'Workspace name must be at least 3 characters')
@@ -33,7 +34,6 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
 
   const onSubmit = async (values: FormValues) => {
     try {
-      const {workspaceApi} = await import('@/api');
       const response = await workspaceApi.create({name: values.name});
       await swrMutate(swrKeys.workspaces());
       form.reset();
