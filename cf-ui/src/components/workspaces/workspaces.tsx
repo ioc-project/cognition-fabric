@@ -169,8 +169,8 @@ export function Workspaces() {
         open={deleteConfirm.open}
         onOpenChange={(open) => setDeleteConfirm({open, workspaceId: null, workspaceName: ''})}
         onConfirm={handleDeleteWorkspace}
-        title="Delete Workspace"
-        description={`Are you sure you want to delete "${deleteConfirm.workspaceName}"? This action cannot be undone and will remove all associated resources.`}
+        title={`Delete ${deleteConfirm.workspaceName || 'Workspace'}`}
+        description={`Delete "${deleteConfirm.workspaceName}"? This action is permanent and cannot be undone.`}
         confirmText="Delete Workspace"
         variant="destructive"
         loading={deleting}

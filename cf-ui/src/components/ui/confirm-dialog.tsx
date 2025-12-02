@@ -44,13 +44,19 @@ export function ConfirmDialog({
           </div>
           <DialogDescription className="pt-2">{description}</DialogDescription>
         </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
-            {cancelText}
-          </Button>
-          <Button variant={variant === 'destructive' ? 'destructive' : 'default'} onClick={handleConfirm} disabled={loading}>
-            {loading ? 'Processing...' : confirmText}
-          </Button>
+        <DialogFooter className="w-full">
+          <div className="flex w-full items-center justify-between">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
+              {cancelText}
+            </Button>
+            <Button
+              variant={variant === 'destructive' ? 'destructive' : 'default'}
+              onClick={handleConfirm}
+              disabled={loading}
+            >
+              {loading ? 'Processing...' : confirmText}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
