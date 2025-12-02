@@ -49,7 +49,7 @@ function LoginForm() {
           placeholder="Username"
           required
           disabled={loading}
-          className="h-[32px] w-full rounded-md border-2 border-[#889099] bg-transparent px-[10px] py-[6px] text-[14px] text-[#DDDDDD] placeholder:text-[#889099] transition focus:border-[#889099] focus:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-[32px] w-full rounded-md border-2 border-neutral-border bg-transparent px-[10px] py-[6px] text-[14px] text-neutral-faint placeholder:text-neutral-border transition focus:border-neutral-border focus:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
         />
       </div>
 
@@ -62,12 +62,12 @@ function LoginForm() {
           placeholder="Password"
           required
           disabled={loading}
-          className="h-[32px] w-full rounded-md border-2 border-[#889099] bg-transparent px-[10px] py-[6px] pr-10 text-[14px] text-[#DDDDDD] placeholder:text-[#889099] transition focus:border-[#889099] focus:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="h-[32px] w-full rounded-md border-2 border-neutral-border bg-transparent px-[10px] py-[6px] pr-10 text-[14px] text-neutral-faint placeholder:text-neutral-border transition focus:border-neutral-border focus:outline-none focus-visible:ring-0 disabled:opacity-50 disabled:cursor-not-allowed"
         />
         <button
           type="button"
           onClick={() => setShowPassword(!showPassword)}
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7E868F] transition hover:text-[#889099] focus-visible:outline-none rounded p-0.5"
+          className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-border transition hover:text-neutral-border focus-visible:outline-none rounded p-0.5"
         >
           {showPassword ? (
             <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
@@ -100,7 +100,7 @@ function LoginForm() {
       <Button
         type="submit"
         disabled={loading}
-        className="mt-1 flex h-[32px] w-full items-center justify-center rounded-md bg-gradient-to-r from-yellow-300 to-blue-400 border-2 border-[#889099] px-[10px] py-[6px] text-[14px] font-bold text-[#333333] transition hover:from-yellow-400 hover:to-blue-500 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+        className="mt-1 flex h-[32px] w-full items-center justify-center rounded-md bg-gradient-to-r from-yellow-300 to-blue-400 border-2 border-neutral-border px-[10px] py-[6px] text-[14px] font-bold text-neutral-strong transition hover:from-yellow-400 hover:to-blue-500 focus-visible:outline-none active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
       >
         {loading ? 'Signing in...' : 'Sign In'}
       </Button>
@@ -137,7 +137,7 @@ export default function Login() {
     <div className="flex min-h-screen w-full">
       <div className="relative flex min-h-screen w-1/2 flex-col items-center justify-center overflow-hidden">
         <Image src="/login-image.jpg" alt="Login background" fill className="z-0 object-cover" priority />
-        <div className="absolute inset-0 z-10 bg-[#00142BB2]" />
+        <div className="absolute inset-0 z-10 bg-overlay" />
         <div className="relative z-20 flex flex-col items-center gap-4">
           <Image src="/outshift-logo.svg" alt="Outshift by Cisco" width={205.33} height={84.49} className="mb-2" />
           <h1 className="font-cisco shadow-cisco mb-2 whitespace-nowrap text-[40px] font-extrabold leading-[100%] tracking-normal text-white">
@@ -151,7 +151,7 @@ export default function Login() {
           <LavaLamp speed={0.12} />
         </div>
         <div className="relative z-10 flex w-full max-w-[440px] flex-col items-start">
-          <h2 className="font-cisco mb-1 whitespace-nowrap text-[28px] font-bold leading-tight tracking-tight text-[#00142B]">
+          <h2 className="font-cisco mb-1 whitespace-nowrap text-[28px] font-bold leading-tight tracking-tight text-neutral-alt">
             Cognitive State Protocol
           </h2>
           <p className="font-cisco mb-8 text-[16px] leading-relaxed font-normal text-gray-600">Access and manage agent knowledge</p>

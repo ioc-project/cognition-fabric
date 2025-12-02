@@ -1,13 +1,7 @@
 import {NextAuthOptions} from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import crypto from 'crypto';
-
 if (!process.env.NEXTAUTH_SECRET) {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('NEXTAUTH_SECRET must be set in production');
-  }
-  console.warn('⚠️  NEXTAUTH_SECRET not set - auto-generating for development');
-  process.env.NEXTAUTH_SECRET = crypto.randomBytes(32).toString('base64');
+  throw new Error('NEXTAUTH_SECRET is not set. Please add NEXTAUTH_SECRET to your .env.local (use a long random string).');
 }
 
 export const authOptions: NextAuthOptions = {

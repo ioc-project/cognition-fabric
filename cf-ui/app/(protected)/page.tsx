@@ -1,7 +1,5 @@
-'use client';
+import {redirect} from 'next/navigation';
 
-import {Home} from '@/components/home/home';
-
-export default function HomePage() {
-  return <Home />;
+export default function LandingPage() {
+  redirect('/workspaces');
 }

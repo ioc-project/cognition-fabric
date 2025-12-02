@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './tokens.css';
 
 @layer base {
   :root {
@@ -50,7 +51,7 @@
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 217.2 32.6% 10%;
-    --card-foreground: 210 40% 98%;
+    --card-foreground: 0 0% 100%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
     --primary: 210 40% 98%;
@@ -121,6 +122,42 @@
     background-color: hsl(var(--card)) !important;
   }
 
+  .text-card-foreground {
+    color: hsl(var(--card-foreground));
+  }
+
+  .card-title {
+    font-size: 0.875rem; /* text-sm */
+    line-height: 1; /* leading-none */
+    font-weight: 500; /* medium */
+    color: hsl(var(--card-foreground));
+  }
+
+  .card-info {
+    font-size: 0.75rem;
+    color: hsl(var(--card-foreground));
+  }
+
+  .card-stats {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+    color: hsl(var(--card-foreground));
+  }
+
+  .page-title {
+    font-size: 1.5rem;
+    line-height: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    color: hsl(var(--foreground));
+  }
+
+  .page-description {
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: hsl(var(--muted-foreground));
+  }
+
   .bg-popover {
     background-color: hsl(var(--popover)) !important;
   }
@@ -160,61 +197,6 @@
     font-size: 14px;
     line-height: 125%;
     letter-spacing: 0;
-  }
-
-  .page-title-description {
-    font-family: Inter, sans-serif;
-    font-weight: 400;
-    font-size: 14px;
-    line-height: 20px;
-    letter-spacing: 0;
-    display: flex;
-    align-items: center;
-    color: #23282e;
-  }
-
-  .dark .page-title-description {
-    color: #cccccc;
-  }
-
-  .page-title-text {
-    font-family: 'CiscoSans', sans-serif;
-    font-weight: 700;
-    font-size: 16px;
-    line-height: 18px;
-    display: flex;
-    align-items: center;
-    color: #00142b;
-  }
-
-  .dark .page-title-text {
-    color: #ffffff;
-  }
-
-  .card-title {
-    font-family: Inter, sans-serif;
-    font-weight: 600;
-    font-size: 16px;
-    line-height: 22px;
-    letter-spacing: 0;
-    color: #23282e;
-  }
-
-  .dark .card-title {
-    color: #ffffff;
-  }
-
-  .card-info {
-    font-family: Inter, sans-serif;
-    font-weight: 400;
-    font-size: 14px;
-    line-height: 20px;
-    letter-spacing: 0;
-    color: #23282e;
-  }
-
-  .dark .card-info {
-    color: #cccccc;
   }
 
   body {

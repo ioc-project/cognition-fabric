@@ -54,7 +54,7 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
   return (
     <Dialog open={open} onOpenChange={handleOpenChange} modal={true}>
       <DialogContent
-        className="sm:max-w-[425px]"
+        className="sm:max-w-[480px] p-6 gap-4"
         onInteractOutside={(e) => {
           e.preventDefault();
         }}
@@ -64,16 +64,18 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
           <DialogDescription>Create a new workspace to manage and organize your TKF resources</DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField
               control={form.control}
               name="name"
               render={({field}) => (
                 <FormItem>
-                  <FormLabel>Workspace Name</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter workspace name" {...field} />
-                  </FormControl>
+                  <div className="space-y-2">
+                    <FormLabel>Workspace Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter workspace name" {...field} />
+                    </FormControl>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -82,7 +84,11 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
               <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={form.formState.isSubmitting}>
+              <Button
+                type="submit"
+                disabled={form.formState.isSubmitting}
+                className="bg-[hsl(var(--sidebar-active))] hover:bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-text-active))] border border-[hsl(var(--sidebar-border))]"
+              >
                 {form.formState.isSubmitting ? 'Creating...' : 'Create Workspace'}
               </Button>
             </DialogFooter>

@@ -8,18 +8,23 @@ export function cn(...inputs: ClassValue[]) {
 export const parseError = (error: unknown): string => {
   if (!error) return 'Unknown error';
   if (typeof error === 'string') return error;
+
   if (typeof error === 'object' && error && 'response' in (error as Record<string, unknown>)) {
     const resp = (error as any).response;
-    if (resp?.data?.error && typeof resp.data.error === 'string') return resp.data.error;
-    if (resp?.data?.message && typeof resp.data.message === 'string') return resp.data.message;
-    if (typeof resp?.data === 'string') return resp.data;
+    const data = resp?.data;
+    if (data) {
+      if (typeof data === 'string') return data;
+      if (typeof data === 'object') {
+        if (typeof (data as any).error === 'string') return (data as any).error;
+        if (typeof (data as any).message === 'string') return (data as any).message;
+      }
+    }
+    if (typeof resp?.statusText === 'string') return resp.statusText;
   }
+
   if (error instanceof Error) return error.message || 'Error occurred';
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return 'Unknown error';
-  }
+
+  return 'Unknown error';
 };
 
 export const safeGetDate = (date?: string | number | Date | null | undefined): null | Date => {

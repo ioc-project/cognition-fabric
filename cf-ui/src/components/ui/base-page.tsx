@@ -15,6 +15,8 @@ export const BasePage: React.FC<React.PropsWithChildren<BasePageProps>> = ({
   useBreadcrumbs,
   customDescription,
   customInfo,
+  titleClassName,
+  descriptionClassName,
   kind = 'primary'
 }) => {
   const pathname = usePathname();
@@ -50,10 +52,10 @@ export const BasePage: React.FC<React.PropsWithChildren<BasePageProps>> = ({
       )}
 
       <div className="flex flex-col gap-2 justify-between flex-wrap">
-        <div className="flex flex-row gap-2 justify-between flex-wrap items-center">
+        <div className="flex flex-row gap-2 justify-between flex-wrap items-center mb-8">
           <div className="pb-2 space-y-1">
-            {title && <h1 className={cn('font-bold tracking-tight', kind === 'secondary' ? 'text-2xl' : 'text-3xl')}>{title}</h1>}
-            {description && <p className="text-sm italic text-muted-foreground">{description}</p>}
+            {title && <h1 className={titleClassName ? cn(titleClassName) : 'page-title'}>{title}</h1>}
+            {description && <p className={descriptionClassName ? cn(descriptionClassName) : 'page-description'}>{description}</p>}
             {customDescription && <>{customDescription}</>}
           </div>
           {callToAction && <div>{callToAction}</div>}
@@ -109,4 +111,6 @@ interface BasePageProps {
   callToAction?: ReactNode;
   customInfo?: ReactNode;
   kind?: 'primary' | 'secondary';
+  titleClassName?: string;
+  descriptionClassName?: string;
 }

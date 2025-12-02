@@ -14,6 +14,7 @@ import {workspaceApi} from '@/api';
 import {useRouter, useSearchParams} from 'next/navigation';
 import {parseError} from '@/lib/utils';
 import {useWorkspaces} from '@/hooks/useApi';
+import {useLocalStore} from '@/store/useLocalStore';
 
 export function Workspaces() {
   const router = useRouter();
@@ -61,7 +62,9 @@ export function Workspaces() {
     setDeleteConfirm({open: true, workspaceId, workspaceName});
   };
 
-  const handleEditWorkspace = (workspaceId: string) => {
+  const {setSelectedWorkspace} = useLocalStore();
+  const handleEditWorkspace = (workspaceId: string, workspaceName?: string) => {
+    setSelectedWorkspace(workspaceId, workspaceName);
     router.push(`/workspaces/${workspaceId}`);
   };
 
@@ -74,12 +77,8 @@ export function Workspaces() {
       <>
         <div className="fixed inset-0 left-64 top-16 flex items-center justify-center px-8">
           <ListShell
-            title="Workspaces"
-            description="Organize your TKF resources into logical spaces"
-            actionLabel="Create Your First Workspace"
-            onAction={() => setIsCreateDialogOpen(true)}
             empty={{
-              icon: Boxes,
+              icon: FolderOpen,
               title: 'No workspaces yet',
               description: 'Create a workspace to organize your TKF resources - Multi-Agentic Systems, Knowledge Adapters, and Reasoners.',
               actionLabel: 'Create Your First Workspace',
@@ -94,17 +93,16 @@ export function Workspaces() {
   }
 
   return (
-    <div className="space-y-6 px-8 pt-4 relative z-0">
+    <div className="space-y-8 px-8 pt-4 relative z-0">
       <div className="w-full">
         <div className="flex items-center justify-between">
           <div className="flex flex-col justify-center items-start gap-1">
-            <h1 className="page-title-text">Workspaces</h1>
-            <p className="page-title-description">Organize your TKF resources into logical spaces</p>
+            <h1 className="page-title">Workspaces</h1>
+            <p className="page-description">Organize your resources into spaces</p>
           </div>
           <Button
             onClick={() => setIsCreateDialogOpen(true)}
-            variant="outline"
-            className="gap-2 border-border hover:bg-accent/50 transition-colors"
+            className="gap-2 bg-[hsl(var(--sidebar-active))] hover:bg-[hsl(var(--sidebar-hover))] text-[hsl(var(--sidebar-text-active))] border border-[hsl(var(--sidebar-border))]"
             size="default"
           >
             <Plus className="w-4 h-4" />
@@ -127,15 +125,15 @@ export function Workspaces() {
               key={workspace.id}
               variant="list"
               className="cursor-pointer hover:shadow-md transition-shadow duration-200"
-              onClick={() => handleEditWorkspace(workspace.id)}
+              onClick={() => handleEditWorkspace(workspace.id, workspace.name)}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="rounded-lg bg-[hsl(var(--accent))] w-12 h-12 flex items-center justify-center mb-4">
-                    <FolderOpen className="w-5 h-5 text-muted-foreground" />
+                    <FolderOpen className="w-5 h-5 text-card-foreground" />
                   </div>
-                  <h3 className="text-gray-900 dark:text-white mb-1 leading-6 truncate pr-12">{workspace.name}</h3>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm leading-5 whitespace-nowrap overflow-hidden text-ellipsis pr-12">
+                  <h4 className="card-title truncate pr-12">{workspace.name}</h4>
+                  <p className="card-info mt-1 whitespace-nowrap overflow-hidden text-ellipsis pr-12">
                     {workspace.mas_count || 0} MAS · {workspace.kep_count || 0} KEPs · {workspace.users?.length || 0}{' '}
                     {(workspace.users?.length || 0) === 1 ? 'User' : 'Users'}
                   </p>

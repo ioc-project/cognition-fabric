@@ -1,20 +1,22 @@
 'use client';
 
 import {useState, useCallback} from 'react';
-import {toast} from 'sonner';
 import {parseError} from '@/lib/utils';
 
-export function useErrorHandler() {
+type ErrorHandlerOptions = {
+  notify?: (message: string) => void;
+};
+
+export function useErrorHandler(options?: ErrorHandlerOptions) {
   const [error, setError] = useState<string | null>(null);
 
   const handleError = useCallback((err: unknown, message?: string) => {
     const errorMessage = parseError(err);
     const fullMessage = message ? `${message}: ${errorMessage}` : errorMessage;
     setError(fullMessage);
-    toast.error(fullMessage);
-    console.error(err);
+    if (options?.notify) options.notify(fullMessage);
     return errorMessage;
-  }, []);
+  }, [options?.notify]);
 
   const clearError = useCallback(() => {
     setError(null);

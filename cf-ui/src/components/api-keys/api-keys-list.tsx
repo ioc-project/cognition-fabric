@@ -7,6 +7,7 @@ import {ListShell} from '@/components/ui/list-shell';
 import {Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle} from '@/components/ui/dialog';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {useApiKeys} from '@/hooks/useApi';
+import {toast} from 'sonner';
 
 interface ApiKeysListProps {
   workspaceId: string;
@@ -21,21 +22,29 @@ export function ApiKeysList({workspaceId}: ApiKeysListProps) {
   const [deleting, setDeleting] = useState(false);
 
   const handleGenerateKey = async () => {
-    setCreating(true);
-    const result = await generateApiKey();
-    if (result.success && result.data) {
-      setNewApiKey(result.data.key);
+    try {
+      setCreating(true);
+      const result = await generateApiKey();
+      setNewApiKey(result.key);
+    } catch (e) {
+      toast.error('Failed to generate API key');
+    } finally {
+      setCreating(false);
     }
-    setCreating(false);
   };
 
   const handleDeleteApiKey = async () => {
     if (!deleteKeyConfirm.keyId) return;
 
-    setDeleting(true);
-    await deleteApiKey(deleteKeyConfirm.keyId);
-    setDeleteKeyConfirm({open: false, keyId: null});
-    setDeleting(false);
+    try {
+      setDeleting(true);
+      await deleteApiKey(deleteKeyConfirm.keyId);
+      setDeleteKeyConfirm({open: false, keyId: null});
+    } catch (e) {
+      toast.error('Failed to delete API key');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const openDeleteKeyConfirm = (keyId: string) => {
@@ -91,9 +100,7 @@ export function ApiKeysList({workspaceId}: ApiKeysListProps) {
             </div>
           ) : (
             <div className="py-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                This will generate a new API key that can be used to access your workspace resources.
-              </p>
+              <p className="page-description">This will generate a new API key that can be used to access your workspace resources.</p>
             </div>
           )}
           <DialogFooter>

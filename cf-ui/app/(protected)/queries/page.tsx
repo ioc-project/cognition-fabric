@@ -1,13 +1,17 @@
 'use client';
+import {BasePage} from '@/components/ui/base-page';
 
-export default function SavedQueriesPage() {
+export default function SavedQueries() {
   return (
     <div className="px-12 pt-4">
-      <div className="flex flex-col justify-center items-start gap-1 mb-6">
-        <h1 className="page-title-text">Saved Queries</h1>
-        <p className="page-title-description">Create and manage saved queries under MAS in this workspace</p>
-      </div>
-      {/* TODO: Index of saved queries with MAS filter */}
+      <BasePage
+        title="Saved Queries"
+        description="Create and manage saved queries under MAS in this workspace"
+        titleClassName="page-title-text"
+        descriptionClassName="page-title-description"
+      >
+        {/* TODO: Index of saved queries with filter */}
+      </BasePage>
     </div>
   );
 }

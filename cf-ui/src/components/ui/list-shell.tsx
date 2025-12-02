@@ -21,25 +21,29 @@ interface ListShellProps {
 
 export function ListShell({title, description, actionLabel, onAction, headerRight, empty, children}: ListShellProps) {
   const hasContent = !!children;
+  const showHeaderAction = hasContent && !!actionLabel && !!onAction;
+  const hasHeader = !!title || !!description || showHeaderAction || !!headerRight;
 
   return (
     <Card className="w-full max-w-5xl">
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col">
-            {title ? <h2 className="card-title">{title}</h2> : null}
-            {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+      {hasHeader ? (
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col">
+              {title ? <h2 className="text-sm text-gray-600 dark:text-white leading-none">{title}</h2> : null}
+              {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
+            </div>
+            <div className="flex items-center gap-2">
+              {showHeaderAction ? (
+                <Button variant="outline" className="gap-2 border-2" onClick={onAction}>
+                  {actionLabel}
+                </Button>
+              ) : null}
+              {headerRight}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {actionLabel && onAction ? (
-              <Button variant="outline" className="gap-2 border-2" onClick={onAction}>
-                {actionLabel}
-              </Button>
-            ) : null}
-            {headerRight}
-          </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
+      ) : null}
       <CardContent>
         {hasContent ? (
           children
@@ -50,6 +54,7 @@ export function ListShell({title, description, actionLabel, onAction, headerRigh
             description={empty.description}
             actionLabel={empty.actionLabel}
             onAction={empty.onAction}
+            variant="inset"
           />
         ) : null}
       </CardContent>
