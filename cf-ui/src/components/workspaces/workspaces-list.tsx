@@ -10,12 +10,13 @@ import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 import {Alert, AlertDescription} from '@/components/ui/alert';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {CreateWorkspaceDialog} from './create-workspace-dialog';
-import {workspaceApi} from '@/api';
+import {workspaceApi} from '@/api/endpoints';
 import {useRouter, useSearchParams} from 'next/navigation';
 import {parseError} from '@/lib/utils';
 import {useWorkspaces} from '@/hooks/useApi';
+import type {Workspace} from '@/api/types';
 
-export function Workspaces() {
+export function WorkspacesList() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -76,7 +77,7 @@ export function Workspaces() {
           <ListShell
             empty={{
               icon: FolderOpen,
-              title: 'No workspaces yet',
+              title: 'No workspaces',
               description: 'Create a workspace to organize your TKF resources - Multi-Agentic Systems, Knowledge Adapters, and Reasoners.',
               actionLabel: 'Create Your First Workspace',
               onAction: () => setIsCreateDialogOpen(true)
@@ -107,7 +108,7 @@ export function Workspaces() {
 
           <div className="w-full">
             <div className="list-grid">
-              {workspaces.map((workspace) => (
+              {workspaces.map((workspace: Workspace) => (
                 <Card
                   key={workspace.id}
                   variant="list"

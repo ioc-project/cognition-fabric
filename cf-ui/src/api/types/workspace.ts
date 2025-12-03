@@ -5,7 +5,6 @@ export const WorkspaceSchema = z.object({
   name: z.string(),
   created_at: z.string().datetime(),
   users: z.array(z.any()).default([]),
-  api_keys: z.array(z.any()).default([]),
   mas_count: z.number().int().nonnegative().optional(),
   kep_count: z.number().int().nonnegative().optional(),
   reasoner_count: z.number().int().nonnegative().optional()
@@ -71,27 +70,6 @@ export const DeleteUserResponseSchema = z.object({
 });
 
 export type DeleteUserResponse = z.infer<typeof DeleteUserResponseSchema>;
-
-export const ApiKeySchema = z.object({
-  id: z.string().uuid(),
-  key_preview: z.string(),
-  created_at: z.string().datetime()
-});
-
-export type ApiKey = z.infer<typeof ApiKeySchema>;
-
-export const CreateApiKeyResponseSchema = z.object({
-  key: z.string().regex(/^tkf_[a-f0-9]{32}$/, 'Invalid API key format')
-});
-
-export type CreateApiKeyResponse = z.infer<typeof CreateApiKeyResponseSchema>;
-
-export const ListApiKeysResponseSchema = z.object({
-  api_keys: z.array(ApiKeySchema),
-  total: z.number().int().nonnegative()
-});
-
-export type ListApiKeysResponse = z.infer<typeof ListApiKeysResponseSchema>;
 
 export const ValidationErrorDetailSchema = z.object({
   loc: z.array(z.string()),

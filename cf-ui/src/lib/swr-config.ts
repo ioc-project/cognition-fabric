@@ -7,10 +7,10 @@ export const swrKeys = {
   users: (workspaceId: string) => ['users', workspaceId] as const,
   apiKeys: (workspaceId: string) => ['api-keys', workspaceId] as const,
   software: (workspaceId: string) => ['software', workspaceId] as const,
-  softwareTemplates: () => ['software-templates'] as const
+  softwareTemplates: (templateType: 'KnowledgeAdapterTemplates' | 'ReasonerTemplates') => ['software-templates', templateType] as const
 };
 
-import {fetchAPI} from '@/api';
+import {fetchAPI} from '@/api/client';
 
 export const swrFetcher = async (url: string) => {
   if (url.startsWith('/')) {

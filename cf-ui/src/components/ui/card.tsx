@@ -7,7 +7,7 @@ type CardProps = React.HTMLAttributes<HTMLDivElement> & {
 };
 
 const Card = React.forwardRef<HTMLDivElement, CardProps>(({className, variant = 'default', ...props}, ref) => {
-  const base = 'bg-card text-card-foreground';
+  const base = 'bg-card text-card-foreground soft-card';
   const styles = variant === 'list' ? 'list-card' : 'rounded-xl border shadow-[0px_3px_8px_rgba(0,0,0,0.08)]';
 
   return <div ref={ref} className={cn(base, styles, className)} {...props} />;

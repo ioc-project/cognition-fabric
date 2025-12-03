@@ -14,10 +14,10 @@ export function WorkspaceDetails() {
   const {workspaceId, workspace, isLoading: workspaceLoading} = useCurrentWorkspace();
 
   const {isLoading: usersLoading, error: usersError} = useUsers(workspaceId || '');
-  const {isLoading: keysLoading, error: keysError} = useApiKeys(workspaceId || '');
+  const {isLoading: iamLoading, error: iamError} = useApiKeys();
 
-  const loading = workspaceLoading || usersLoading || keysLoading;
-  const error = usersError || keysError;
+  const loading = workspaceLoading || usersLoading || iamLoading;
+  const error = usersError || iamError;
 
   if (loading) {
     return <Loading />;
@@ -49,25 +49,25 @@ export function WorkspaceDetails() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <div className="p-4 border rounded-lg bg-card">
+        <div className="p-4 border rounded-lg bg-card soft-card">
           <div className="flex flex-col gap-6">
             <h4 className="card-title">Multi‑Agent Systems</h4>
             <p className="card-stats">{workspace.mas_count ?? 0}</p>
           </div>
         </div>
-        <div className="p-4 border rounded-lg bg-card">
+        <div className="p-4 border rounded-lg bg-card soft-card">
           <div className="flex flex-col gap-6">
             <h4 className="card-title">Knowledge Adapters</h4>
             <p className="card-stats">{workspace.kep_count ?? 0}</p>
           </div>
         </div>
-        <div className="p-4 border rounded-lg bg-card">
+        <div className="p-4 border rounded-lg bg-card soft-card">
           <div className="flex flex-col gap-6">
             <h4 className="card-title">Reasoners</h4>
             <p className="card-stats">{workspace.reasoner_count ?? 0}</p>
           </div>
         </div>
-        <div className="p-4 border rounded-lg bg-card">
+        <div className="p-4 border rounded-lg bg-card soft-card">
           <div className="flex flex-col gap-6">
             <h4 className="card-title">Users</h4>
             <p className="card-stats">{workspace.users?.length ?? 0}</p>
@@ -96,7 +96,7 @@ export function WorkspaceDetails() {
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="p-4 border rounded-lg bg-card">
+          <div className="p-4 border rounded-lg bg-card soft-card">
             <h2 className="text-base font-medium mb-2">Multi‑Agent Systems</h2>
             <p className="text-sm text-muted-foreground mb-4">Registered MAS for this workspace.</p>
             <div className="text-sm text-muted-foreground">MAS list will appear here.</div>

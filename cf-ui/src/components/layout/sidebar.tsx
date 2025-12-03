@@ -1,7 +1,7 @@
 'use client';
 
-import {useMemo, useState} from 'react';
-import {Boxes, Database, FolderOpen, BarChart3, ChevronDown, ChevronRight, Package, Brain, History} from 'lucide-react';
+import {useEffect, useMemo, useState} from 'react';
+import {Boxes, Database, FolderOpen, BarChart3, ChevronDown, ChevronRight, Package, Brain, History, Key, Settings} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments} from 'next/navigation';
 import {useWorkspaceNavigation} from '@/hooks/useWorkspaceNavigation';
@@ -16,6 +16,7 @@ export function Sidebar() {
   const workspaceName = workspace?.name || (wsId ? `Workspace ${wsId.slice(0, 8)}` : '');
 
   const [wsOpen, setWsOpen] = useState<boolean>(true);
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(true);
 
   const topLevelItems = useMemo(
     () => [
@@ -30,7 +31,7 @@ export function Sidebar() {
         id: 'software',
         href: '/software',
         icon: Package,
-        label: 'Software',
+        label: 'Software Templates',
         isActive: () => segments[0] === 'software'
       }
     ],
@@ -112,6 +113,32 @@ export function Sidebar() {
               <NavItem href={item.href} icon={item.icon} label={item.label} active={item.isActive()} />
             </li>
           ))}
+
+          <li className="mt-1">
+            <button
+              type="button"
+              onClick={() => setSettingsOpen((o) => !o)}
+              className="group w-full flex items-center justify-between px-2 py-1.5 rounded-md transition-colors focus-visible:outline-none text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))] hover:border hover:border-[hsl(var(--sidebar-border))] focus-visible:border focus-visible:border-[hsl(var(--sidebar-border))]"
+            >
+              <span className="sidebar-text flex items-center gap-2">
+                <Settings className="w-5 h-5 transition-colors text-[hsl(var(--sidebar-icon))] group-hover:text-[hsl(var(--sidebar-icon-active))]" />
+                Settings
+              </span>
+              {settingsOpen ? (
+                <ChevronDown className="w-4 h-4 text-[hsl(var(--sidebar-icon))]" />
+              ) : (
+                <ChevronRight className="w-4 h-4 text-[hsl(var(--sidebar-icon))]" />
+              )}
+            </button>
+
+            {settingsOpen && (
+              <ul className="mt-1 ml-8 space-y-1">
+                <li>
+                  <NavItem href={'/settings/api-keys'} icon={Key} label={'API Keys'} active={pathname.startsWith('/settings/api-keys')} />
+                </li>
+              </ul>
+            )}
+          </li>
 
           {wsId && (
             <li aria-hidden className="my-2">

@@ -1,12 +1,6 @@
-import {fetchAPI} from './client';
-import {
-  CreateWorkspaceRequest,
-  CreateWorkspaceResponse,
-  ListWorkspacesResponse,
-  Workspace,
-  UpdateWorkspaceRequest
-} from './types';
-import {WorkspaceSchema, ListWorkspacesResponseSchema} from './types/workspace';
+import {fetchAPI} from '../client';
+import {CreateWorkspaceRequest, CreateWorkspaceResponse, ListWorkspacesResponse, Workspace, UpdateWorkspaceRequest} from '../types';
+import {WorkspaceSchema, ListWorkspacesResponseSchema} from '../types/workspace';
 
 export const workspaceApi = {
   create: async (data: CreateWorkspaceRequest): Promise<CreateWorkspaceResponse> => {

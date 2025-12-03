@@ -1,6 +1,6 @@
-import {fetchAPI} from './client';
-import {CreateUserRequest, CreateUserResponse, ListUsersResponse, User, DeleteUserResponse} from './types';
-import {UserSchema, ListUsersResponseSchema} from './types/workspace';
+import {fetchAPI} from '../client';
+import {CreateUserRequest, CreateUserResponse, ListUsersResponse, User, DeleteUserResponse} from '../types';
+import {UserSchema, ListUsersResponseSchema} from '../types/workspace';
 
 export const userApi = {
   create: async (workspaceId: string, data: CreateUserRequest): Promise<CreateUserResponse> => {

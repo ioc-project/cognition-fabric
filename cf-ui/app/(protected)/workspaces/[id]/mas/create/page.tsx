@@ -11,12 +11,7 @@ export default function CreateMas() {
 
   return (
     <div className="p-8 max-w-3xl mx-auto w-full">
-      <BasePage
-        title="Create Multi‑Agent System"
-        description="Stub page for navigation testing. Form wiring will be added later."
-        titleClassName="page-title-text"
-        descriptionClassName="page-title-description"
-      >
+      <BasePage title="Create Multi‑Agent System" description="Stub page for navigation testing. Form wiring will be added later.">
         <div className="p-4 border rounded-lg bg-card">
           <p className="text-sm text-muted-foreground mb-4">
             This is a placeholder page for creating a MAS in workspace <code className="font-mono">{workspaceId}</code>.

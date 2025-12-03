@@ -25,7 +25,7 @@ export function ListShell({title, description, actionLabel, onAction, headerRigh
   const hasHeader = !!title || !!description || showHeaderAction || !!headerRight;
 
   return (
-    <Card className="w-full max-w-5xl">
+    <Card className="w-full max-w-5xl mx-auto mb-0">
       {hasHeader ? (
         <CardHeader>
           <div className="flex items-center justify-between">

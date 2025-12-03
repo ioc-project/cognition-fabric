@@ -7,6 +7,8 @@ import {cn} from '@/lib/utils';
 
 export const BasePage: React.FC<React.PropsWithChildren<BasePageProps>> = ({
   tabs,
+  activeTabKey,
+  onTabChange,
   title,
   description,
   children,
@@ -22,14 +24,17 @@ export const BasePage: React.FC<React.PropsWithChildren<BasePageProps>> = ({
   const pathname = usePathname();
 
   const isSelected = useMemo(
-    () => (path: string) => {
-      return pathname?.startsWith(path) || false;
+    () => (tab: TabItem) => {
+      if (onTabChange) {
+        return !!activeTabKey && tab.key ? activeTabKey === tab.key : false;
+      }
+      return pathname?.startsWith(tab.link) || false;
     },
-    [pathname]
+    [pathname, activeTabKey, onTabChange]
   );
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col space-y-8">
       {useBreadcrumbs && breadcrumbs && breadcrumbs.length > 0 && (
         <nav className="flex" aria-label="Breadcrumb">
           <ol className="inline-flex items-center space-x-1 md:space-x-3">
@@ -51,9 +56,9 @@ export const BasePage: React.FC<React.PropsWithChildren<BasePageProps>> = ({
         </nav>
       )}
 
-      <div className="flex flex-col gap-2 justify-between flex-wrap">
-        <div className="flex flex-row gap-2 justify-between flex-wrap items-center mb-8">
-          <div className="pb-2 space-y-1">
+      <div className="w-full space-y-8">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col justify-center items-start gap-1">
             {title && <h1 className={titleClassName ? cn(titleClassName) : 'page-title'}>{title}</h1>}
             {description && <p className={descriptionClassName ? cn(descriptionClassName) : 'page-description'}>{description}</p>}
             {customDescription && <>{customDescription}</>}
@@ -62,26 +67,24 @@ export const BasePage: React.FC<React.PropsWithChildren<BasePageProps>> = ({
         </div>
         {customInfo && <>{customInfo}</>}
         {tabs && tabs.length > 0 && (
-          <div className="border-b border-border">
-            <nav className="-mb-px flex space-x-8">
-              {tabs.map((tab, index) => (
-                <Link
-                  key={index}
-                  href={tab.link}
-                  className={cn(
-                    'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm min-w-20 flex justify-center',
-                    isSelected(tab.link)
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border',
-                    tab.disable && 'opacity-50 pointer-events-none'
-                  )}
-                  aria-disabled={tab.disable}
-                >
-                  {tab.title}
-                </Link>
-              ))}
-            </nav>
-          </div>
+          <nav className="subnav">
+            {tabs.map((tab, index) => (
+              <Link
+                key={index}
+                href={tab.link}
+                className={cn('subnav__item', isSelected(tab) ? 'subnav__item--active' : '', tab.disable && 'opacity-50 pointer-events-none')}
+                onClick={(e) => {
+                  if (onTabChange && tab.key) {
+                    e.preventDefault();
+                    onTabChange(tab.key);
+                  }
+                }}
+                aria-disabled={tab.disable}
+              >
+                {tab.title}
+              </Link>
+            ))}
+          </nav>
         )}
       </div>
       <div className="flex flex-col gap-4">{children}</div>
@@ -92,6 +95,7 @@ export const BasePage: React.FC<React.PropsWithChildren<BasePageProps>> = ({
 interface TabItem {
   link: string;
   disable?: boolean;
+  key?: string;
   title: string;
 }
 
@@ -103,6 +107,8 @@ interface BreadcrumbItem {
 
 interface BasePageProps {
   tabs?: TabItem[];
+  activeTabKey?: string;
+  onTabChange?: (key: string) => void;
   useBreadcrumbs?: boolean;
   breadcrumbs?: BreadcrumbItem[];
   title?: string;

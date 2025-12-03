@@ -51,6 +51,10 @@ const config: Config = {
           subtle: 'hsl(var(--text-subtle))',
           faint: 'hsl(var(--text-faint))',
           border: 'hsl(var(--border-neutral))'
+        },
+        nav: {
+          indicator: 'rgb(var(--nav-indicator-active-rgb))',
+          link: 'rgb(var(--nav-link-active-rgb))'
         }
       },
       borderRadius: {

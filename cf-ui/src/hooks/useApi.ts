@@ -1,8 +1,7 @@
 'use client';
 
-import {useCallback} from 'react';
 import useSWR from 'swr';
-import {workspaceApi, userApi, apiKeyApi, softwareApi, softwareTemplatesApi} from '@/api';
+import {workspaceApi, userApi, apiKeyApi, softwareApi} from '@/api/endpoints';
 import type {ListSoftwareTemplatesResponse} from '@/api/types';
 import {swrKeys} from '@/lib/swr-config';
 import {parseError} from '@/lib/utils';
@@ -47,37 +46,34 @@ export function useUsers(workspaceId: string) {
   };
 }
 
-export function useApiKeys(workspaceId: string) {
-  const {data, isLoading, error, mutate} = useSWRResource(workspaceId ? swrKeys.apiKeys(workspaceId) : null, () => apiKeyApi.list(workspaceId));
+export function useApiKeys() {
+  const {data: rolesData, isLoading: rolesLoading, error: rolesError, mutate: mutateRoles} = useSWR('iam-roles', () => apiKeyApi.roles());
+  const {data: usersData, isLoading: usersLoading, error: usersError, mutate: mutateUsers} = useSWR('iam-users', () => apiKeyApi.users());
 
-  const {run: generateApiKey} = useInvalidateMutation(swrKeys.apiKeys(workspaceId), () => apiKeyApi.create(workspaceId));
-  const {run: deleteApiKey} = useInvalidateMutation(swrKeys.apiKeys(workspaceId), (keyId: string) => apiKeyApi.delete(workspaceId, keyId));
+  const {run: generateApiKey} = useInvalidateMutation('iam-create-api-key', (payload: {name: string; roles: string[]}) =>
+    apiKeyApi.create({name: payload.name, roles: payload.roles})
+  );
+
+  const rawError = (rolesError || usersError) as unknown as {status?: number} | null;
+  const normalizedError = rawError ? (rawError.status === 404 ? null : parseError(rawError as unknown as Error)) : null;
 
   return {
-    apiKeys: data?.api_keys || [],
-    isLoading,
-    error,
-    mutate,
-    generateApiKey,
-    deleteApiKey
+    roles: rolesData?.roles || [],
+    users: usersData?.users || [],
+    isLoading: rolesLoading || usersLoading,
+    error: normalizedError,
+    mutateRoles,
+    mutateUsers,
+    generateApiKey
   };
 }
 
-export function useSoftware(workspaceId: string) {
-  const {data, error: swrError, isLoading, mutate} = useSWR(workspaceId ? swrKeys.software(workspaceId) : null, () => softwareApi.list(workspaceId));
+// Workspace-scoped software removed per new API; templates are global.
 
+export function useSoftwareTemplates(templateType: 'KnowledgeAdapterTemplates' | 'ReasonerTemplates') {
+  const {data, error, isLoading, mutate} = useSWR(swrKeys.softwareTemplates(templateType), () => softwareApi.listByType(templateType));
   return {
-    software: data?.softwares || [],
-    isLoading,
-    error: swrError ? parseError(swrError) : null,
-    mutate
-  };
-}
-
-export function useSoftwareTemplates() {
-  const {data, error, isLoading, mutate} = useSWR(swrKeys.softwareTemplates(), () => softwareTemplatesApi.list());
-  return {
-    templates: (data?.softwares || []) as ListSoftwareTemplatesResponse['softwares'],
+    templates: (Array.isArray(data) ? data : []) as ListSoftwareTemplatesResponse,
     isLoading,
     error: error ? parseError(error) : null,
     mutate

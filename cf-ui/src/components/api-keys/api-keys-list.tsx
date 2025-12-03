@@ -1,140 +1,44 @@
 'use client';
 
 import {useState} from 'react';
-import {Plus, Key, Copy, Trash2, Calendar, AlertCircle} from 'lucide-react';
+import {Plus, KeyRound, AlertCircle} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {ListShell} from '@/components/ui/list-shell';
-import {Modal} from '@/components/ui/modal';
-import {ConfirmDialog} from '@/components/ui/confirm-dialog';
+import {Loading} from '@/components/ui/loading';
+import {Alert, AlertDescription} from '@/components/ui/alert';
+import {CreateApiKeyDialog} from './create-api-key-dialog';
 import {useApiKeys} from '@/hooks/useApi';
-import {toast} from 'sonner';
+import {parseError} from '@/lib/utils';
 
-interface ApiKeysListProps {
-  workspaceId: string;
-}
+export function ApiKeysList() {
+  const {isLoading, error} = useApiKeys();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-export function ApiKeysList({workspaceId}: ApiKeysListProps) {
-  const {apiKeys, generateApiKey, deleteApiKey} = useApiKeys(workspaceId);
-  const [isGenerateKeyDialogOpen, setIsGenerateKeyDialogOpen] = useState(false);
-  const [newApiKey, setNewApiKey] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [deleteKeyConfirm, setDeleteKeyConfirm] = useState<{open: boolean; keyId: string | null}>({open: false, keyId: null});
-  const [deleting, setDeleting] = useState(false);
-
-  const handleGenerateKey = async () => {
-    try {
-      setCreating(true);
-      const result = await generateApiKey();
-      setNewApiKey(result.key);
-    } catch (e) {
-      toast.error('Failed to generate API key');
-    } finally {
-      setCreating(false);
-    }
-  };
-
-  const handleDeleteApiKey = async () => {
-    if (!deleteKeyConfirm.keyId) return;
-
-    try {
-      setDeleting(true);
-      await deleteApiKey(deleteKeyConfirm.keyId);
-      setDeleteKeyConfirm({open: false, keyId: null});
-    } catch (e) {
-      toast.error('Failed to delete API key');
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const openDeleteKeyConfirm = (keyId: string) => {
-    setDeleteKeyConfirm({open: true, keyId});
-  };
-
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-  };
+  if (isLoading) {
+    return <Loading />;
+  }
 
   return (
     <>
-      <ListShell
-        title="API Keys"
-        description="Manage API keys for this workspace"
-        headerRight={
-          <Button onClick={() => setIsGenerateKeyDialogOpen(true)} variant="outline" className="gap-2 border-2">
-            <Plus className="w-4 h-4" />
-            Generate Key
-          </Button>
-        }
-        empty={{
-          icon: Key,
-          title: 'No API keys',
-          description: 'Generate API keys to access this workspace.',
-          actionLabel: 'Generate Key',
-          onAction: () => setIsGenerateKeyDialogOpen(true)
+      <div className="fixed inset-0 left-64 top-16 flex items-center justify-center px-8">
+        <ListShell
+          empty={{
+            icon: KeyRound,
+            title: 'No API keys',
+            description: 'Create an API key to authenticate requests across MAS, KEPs, and Reasoners.',
+            actionLabel: 'Create Your First API Key',
+            onAction: () => setIsCreateDialogOpen(true)
+          }}
+        />
+      </div>
+
+      <CreateApiKeyDialog
+        open={isCreateDialogOpen}
+        onOpenChange={setIsCreateDialogOpen}
+        onSuccess={() => {
+          // No list to refresh yet; close dialog after success
+          setIsCreateDialogOpen(false);
         }}
-      >
-        {/* TODO: render API keys list when available */}
-      </ListShell>
-
-      <Modal
-        open={isGenerateKeyDialogOpen}
-        onOpenChange={setIsGenerateKeyDialogOpen}
-        title="Generate API Key"
-        description={newApiKey ? 'Your API key has been generated' : 'Generate a new API key for this workspace'}
-        footer={
-          newApiKey ? (
-            <Button
-              onClick={() => {
-                setIsGenerateKeyDialogOpen(false);
-                setNewApiKey(null);
-              }}
-            >
-              Done
-            </Button>
-          ) : (
-            <div className="flex w-full items-center justify-between">
-              <Button variant="outline" onClick={() => setIsGenerateKeyDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleGenerateKey} disabled={creating}>
-                {creating ? 'Generating...' : 'Generate Key'}
-              </Button>
-            </div>
-          )
-        }
-      >
-        {newApiKey ? (
-          <div className="py-4">
-            <div className="p-4 bg-muted rounded-lg">
-              <div className="flex items-center justify-between gap-2">
-                <code className="text-sm font-mono break-all dark:text-white">{newApiKey}</code>
-                <Button size="sm" variant="outline" onClick={() => handleCopy(newApiKey)}>
-                  <Copy className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-            <p className="text-sm text-red-600 dark:text-red-400 mt-4 flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-              Make sure to copy your API key now. You won&apos;t be able to see it again!
-            </p>
-          </div>
-        ) : (
-          <div className="py-4">
-            <p className="page-description">This will generate a new API key that can be used to access your workspace resources.</p>
-          </div>
-        )}
-      </Modal>
-
-      <ConfirmDialog
-        open={deleteKeyConfirm.open}
-        onOpenChange={(open) => setDeleteKeyConfirm({open, keyId: null})}
-        onConfirm={handleDeleteApiKey}
-        title="Delete API Key"
-        description="Are you sure you want to delete this API key? Any applications using this key will lose access immediately. This action cannot be undone."
-        confirmText="Delete Key"
-        variant="destructive"
-        loading={deleting}
       />
     </>
   );

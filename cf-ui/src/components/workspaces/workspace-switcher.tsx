@@ -2,7 +2,7 @@
 
 import {ChevronDown, FolderOpen} from 'lucide-react';
 import {useMemo, useState} from 'react';
-import {usePathname} from 'next/navigation';
+import type {Workspace} from '@/api/types';
 import {useWorkspaces} from '@/hooks/useApi';
 import {Button} from '@/components/ui/button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
@@ -10,10 +10,9 @@ import {useWorkspaceNavigation} from '@/hooks/useWorkspaceNavigation';
 
 export function WorkspaceSwitcher() {
   const {workspaces} = useWorkspaces();
-  const pathname = usePathname();
   const {currentId, goToWorkspace} = useWorkspaceNavigation();
 
-  const current = workspaces.find((w) => w.id === currentId);
+  const current = workspaces.find((w: Workspace) => w.id === currentId);
 
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
@@ -21,7 +20,7 @@ export function WorkspaceSwitcher() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return workspaces;
-    return workspaces.filter((w) => w.name.toLowerCase().includes(q));
+    return workspaces.filter((w: Workspace) => w.name.toLowerCase().includes(q));
   }, [query, workspaces]);
 
   const handleSelect = (id: string) => {
@@ -61,7 +60,7 @@ export function WorkspaceSwitcher() {
           {filtered.length === 0 ? (
             <div className="px-3 py-2 text-sm text-muted-foreground">No matching workspaces</div>
           ) : (
-            filtered.map((w) => (
+            filtered.map((w: Workspace) => (
               <DropdownMenuItem
                 key={w.id}
                 onClick={() => handleSelect(w.id)}

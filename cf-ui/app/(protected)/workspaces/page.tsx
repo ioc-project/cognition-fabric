@@ -1,7 +1,7 @@
 'use client';
 
-import {Workspaces} from '@/components/workspaces/workspaces';
+import {WorkspacesList} from '@/components/workspaces/workspaces-list';
 
 export default function WorkspacesPage() {
-  return <Workspaces />;
+  return <WorkspacesList />;
 }

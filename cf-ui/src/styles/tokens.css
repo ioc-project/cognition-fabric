@@ -7,7 +7,6 @@
   --text-subtle: 0 0% 80%;
   --text-faint: 0 0% 87%;
   --border-neutral: 210 5% 55%;
-  --overlay-alt: 210 100% 8%;
 }
 
 .dark {
@@ -16,16 +15,3 @@
   --brand-foreground: 0 0% 100%;
 }
 
-.bg-brand {
-  background-color: hsl(var(--brand));
-}
-.hover\:bg-brand-hover:hover {
-  background-color: hsl(var(--brand-hover));
-}
-.text-brand-foreground {
-  color: hsl(var(--brand-foreground));
-}
-
-.bg-overlay {
-  background-color: hsl(var(--overlay-alt) / 0.7);
-}

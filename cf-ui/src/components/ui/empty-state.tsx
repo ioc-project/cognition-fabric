@@ -13,8 +13,8 @@ interface EmptyStateProps {
 export function EmptyState({icon: Icon, title, description, actionLabel, onAction, variant = 'standalone'}: EmptyStateProps) {
   const containerClassName =
     variant === 'inset'
-      ? 'flex flex-col items-center p-10 py-16 gap-6 rounded-lg min-h-[300px]'
-      : 'flex flex-col items-center p-10 py-16 gap-6 bg-card shadow-[0px_4px_4px_rgba(0,0,0,0.1)] dark:shadow-[0px_4px_4px_rgba(0,0,0,0.35)] rounded-lg min-h-[340px]';
+      ? 'flex flex-col items-center p-10 py-12 gap-6 rounded-lg min-h-[300px]'
+      : 'flex flex-col items-center p-10 py-12 gap-6 bg-card soft-card shadow-[0px_4px_4px_rgba(0,0,0,0.1)] dark:shadow-[0px_4px_4px_rgba(0,0,0,0.35)] rounded-lg min-h-[340px]';
   return (
     <div className={containerClassName}>
       <div className="flex flex-col justify-center items-center pb-2 gap-4 max-w-4xl">
