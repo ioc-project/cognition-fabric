@@ -1,10 +1,6 @@
-from sqlalchemy.orm import declarative_base
 from sqlalchemy import Column, String, DateTime, JSON, text, Index
-from typing import Optional, Dict, Any
-from datetime import datetime
-import uuid
 
-Base = declarative_base()
+from server.database.relational_db.models import Base
 
 
 class Software(Base):
