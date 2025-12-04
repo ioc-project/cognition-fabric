@@ -79,7 +79,7 @@ export function WorkspaceSwitcher() {
 
         <div className="border-t border-border my-1" />
 
-        <DropdownMenuItem onClick={() => goToWorkspace(normalizedCurrentId ?? '')} className="gap-2 px-3">
+        <DropdownMenuItem onClick={() => normalizedCurrentId && goToWorkspace(normalizedCurrentId)} className="gap-2 px-3">
           <FolderOpen className="w-4 h-4 text-muted-foreground" />
           <span>View current workspace</span>
         </DropdownMenuItem>
