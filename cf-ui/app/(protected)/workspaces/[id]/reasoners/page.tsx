@@ -11,7 +11,7 @@ export default function ReasonersList() {
       <BasePage
         title="Reasoners"
         description="Manage Reasoners in this workspace"
-        
+
       >
         <div className="card-info text-muted-foreground">TODO: Reasoners list for workspace {workspaceId}.</div>
       </BasePage>

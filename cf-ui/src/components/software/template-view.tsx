@@ -1,6 +1,6 @@
 'use client';
 import React, {useState} from 'react';
-import {Card, CardContent, CardHeader, CardTitle, CardDescription} from '@/components/ui/card';
+import {Card, CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {Select, SelectTrigger, SelectValue, SelectContent, SelectItem} from '@/components/ui/select';
@@ -107,7 +107,7 @@ export function TemplateView({template}: {template: Template}) {
                     <div key={idx} className="space-y-6">
                       <div className="space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {(rs.resource?.attributes || []).map((attr: any, aIdx: number) => (
+                          {((rs.resource?.attributes as Array<Record<string, any>>) || []).map((attr: Record<string, any>, aIdx: number) => (
                             <div key={aIdx} className="space-y-2">
                               <Label>{attr.key}</Label>
                               <Input
@@ -120,7 +120,7 @@ export function TemplateView({template}: {template: Template}) {
                         </div>
                       </div>
 
-                      {(rs.scopeSpans || []).map((scopeSpan: any, ssIdx: number) => (
+                      {((rs.scopeSpans as Array<Record<string, any>>) || []).map((scopeSpan: Record<string, any>, ssIdx: number) => (
                         <div key={ssIdx} className="space-y-3">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
@@ -133,11 +133,10 @@ export function TemplateView({template}: {template: Template}) {
                             </div>
                           </div>
 
-                          {(scopeSpan.spans || []).length > 0 && (
+                          {((scopeSpan.spans as Array<Record<string, any>>) || []).length > 0 && (
                             <div className="space-y-3">
-                              {(scopeSpan.spans || []).map((span: any, spIdx: number) => (
+                              {((scopeSpan.spans as Array<Record<string, any>>) || []).map((span: Record<string, any>, spIdx: number) => (
                                 <div key={spIdx} className="space-y-4">
-                                  {/* Basic  Info */}
                                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="space-y-2">
                                       <Label>Name</Label>
@@ -179,23 +178,23 @@ export function TemplateView({template}: {template: Template}) {
                                     </div>
                                     <div className="space-y-2">
                                       <Label>Duration (ms)</Label>
-                                      <Input value={String(computeDurationMs(span.startTimeUnixNano, span.endTimeUnixNano))} disabled readOnly />
+                                      <Input value={String(computeDurationMs(String(span.startTimeUnixNano ?? ''), String(span.endTimeUnixNano ?? '')))} disabled readOnly />
                                     </div>
                                   </div>
 
                                   {Array.isArray(span.attributes) && span.attributes.length > 0 && (
                                     <div className="space-y-3">
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {span.attributes.map((attr: any, attrIdx: number) => (
+                                        {span.attributes.map((attr: Record<string, any>, attrIdx: number) => (
                                           <div key={attrIdx} className="space-y-2">
                                             <Label>{attr.key}</Label>
                                             <Input
                                               value={
-                                                attr.value?.stringValue ??
+                                                String(attr.value?.stringValue ??
                                                 attr.value?.intValue ??
                                                 attr.value?.doubleValue ??
                                                 attr.value?.boolValue ??
-                                                ''
+                                                '')
                                               }
                                               disabled
                                               readOnly
@@ -222,7 +221,7 @@ export function TemplateView({template}: {template: Template}) {
                                           </div>
                                           {Array.isArray(event.attributes) && event.attributes.length > 0 && (
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                              {event.attributes.map((attr: any, eaIdx: number) => (
+                                              {(event.attributes as Array<Record<string, any>>).map((attr: Record<string, any>, eaIdx: number) => (
                                                 <div key={eaIdx} className="space-y-2">
                                                   <Label>{attr.key}</Label>
                                                   <Input
@@ -263,7 +262,9 @@ export function TemplateView({template}: {template: Template}) {
 }
 
 function computeDurationMs(start?: string, end?: string) {
-  if (!start || !end) return '';
+  if (!start || !end) {
+    return '';
+  }
   const ms = Number(end) / 1_000_000 - Number(start) / 1_000_000;
   return Math.max(0, Math.round(ms)).toString();
 }

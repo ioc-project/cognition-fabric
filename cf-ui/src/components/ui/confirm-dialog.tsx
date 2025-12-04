@@ -33,7 +33,9 @@ export function ConfirmDialog({
   const handleConfirm = async () => {
     try {
       await onConfirm();
-      if (closeOnConfirmSuccess) onOpenChange(false);
+      if (closeOnConfirmSuccess) {
+        onOpenChange(false);
+      }
     } catch {
       // keep dialog open on error
     }

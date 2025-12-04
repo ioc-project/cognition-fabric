@@ -1,7 +1,7 @@
 'use client';
 
 import {useState, useEffect} from 'react';
-import {Plus, MoreVertical, Trash2, Boxes, AlertCircle, FolderOpen} from 'lucide-react';
+import {Plus, MoreVertical, Trash2, AlertCircle, FolderOpen} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {ListShell} from '@/components/ui/list-shell';
@@ -44,7 +44,9 @@ export function WorkspacesList() {
   };
 
   const handleDeleteWorkspace = async () => {
-    if (!deleteConfirm.workspaceId) return;
+    if (!deleteConfirm.workspaceId) {
+      return;
+    }
 
     setDeleting(true);
     setError(null);

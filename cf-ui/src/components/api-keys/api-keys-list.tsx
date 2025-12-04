@@ -1,17 +1,14 @@
 'use client';
 
 import {useState} from 'react';
-import {Plus, KeyRound, AlertCircle} from 'lucide-react';
-import {Button} from '@/components/ui/button';
+import {KeyRound} from 'lucide-react';
 import {ListShell} from '@/components/ui/list-shell';
 import {Loading} from '@/components/ui/loading';
-import {Alert, AlertDescription} from '@/components/ui/alert';
 import {CreateApiKeyDialog} from './create-api-key-dialog';
 import {useApiKeys} from '@/hooks/useApi';
-import {parseError} from '@/lib/utils';
 
 export function ApiKeysList() {
-  const {isLoading, error} = useApiKeys();
+  const {isLoading} = useApiKeys();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   if (isLoading) {

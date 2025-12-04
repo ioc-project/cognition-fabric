@@ -27,14 +27,18 @@ export async function fetchAPI<T>(endpoint: string, options?: RequestInit): Prom
     }
   });
 
-  if (timeoutId) clearTimeout(timeoutId);
+  if (timeoutId) {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     let errorMessage = response.statusText;
     try {
       const errorData = await response.json();
-      errorMessage = (errorData as any).message || (errorData as any).error || errorMessage;
-    } catch {}
+      errorMessage = (errorData).message || (errorData).error || errorMessage;
+    } catch {
+      // Failed to parse error response as JSON
+    }
     throw new ApiError(errorMessage, response.status, response.statusText);
   }
 

@@ -12,7 +12,7 @@ export const authOptions: NextAuthOptions = {
         username: {label: 'Username', type: 'text'},
         password: {label: 'Password', type: 'password'}
       },
-      async authorize(credentials) {
+      authorize(credentials) {
         if (credentials?.username === 'admin' && credentials?.password === 'admin') {
           return {
             id: '1',
@@ -29,13 +29,13 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login'
   },
   callbacks: {
-    async jwt({token, user}) {
+    jwt({token, user}) {
       if (user && typeof (user as {username?: string}).username === 'string') {
         token.username = (user as {username?: string}).username;
       }
       return token;
     },
-    async session({session, token}) {
+    session({session, token}) {
       if (session.user && token.username) {
         (session.user as {username?: string}).username = token.username;
       }

@@ -6,23 +6,37 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export const parseError = (error: unknown): string => {
-  if (!error) return 'Unknown error';
-  if (typeof error === 'string') return error;
+  if (!error) {
+    return 'Unknown error';
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
 
   if (typeof error === 'object' && error && 'response' in (error as Record<string, unknown>)) {
     const resp = (error as any).response;
     const data = resp?.data;
     if (data) {
-      if (typeof data === 'string') return data;
+      if (typeof data === 'string') {
+        return data;
+      }
       if (typeof data === 'object') {
-        if (typeof (data as any).error === 'string') return (data as any).error;
-        if (typeof (data as any).message === 'string') return (data as any).message;
+        if (typeof (data).error === 'string') {
+          return (data).error;
+        }
+        if (typeof (data).message === 'string') {
+          return (data).message;
+        }
       }
     }
-    if (typeof resp?.statusText === 'string') return resp.statusText;
+    if (typeof resp?.statusText === 'string') {
+      return resp.statusText;
+    }
   }
 
-  if (error instanceof Error) return error.message || 'Error occurred';
+  if (error instanceof Error) {
+    return error.message || 'Error occurred';
+  }
 
   return 'Unknown error';
 };

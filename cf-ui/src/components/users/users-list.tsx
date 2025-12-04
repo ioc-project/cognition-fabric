@@ -34,7 +34,9 @@ export function UsersList({workspaceId}: UsersListProps) {
   };
 
   const handleDeleteUser = async () => {
-    if (!deleteUserConfirm.userId) return;
+    if (!deleteUserConfirm.userId) {
+      return;
+    }
 
     try {
       setDeleting(true);

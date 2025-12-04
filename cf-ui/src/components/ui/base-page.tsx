@@ -18,8 +18,7 @@ export const BasePage: React.FC<React.PropsWithChildren<BasePageProps>> = ({
   customDescription,
   customInfo,
   titleClassName,
-  descriptionClassName,
-  kind = 'primary'
+  descriptionClassName
 }) => {
   const pathname = usePathname();
 

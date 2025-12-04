@@ -12,14 +12,17 @@ export function WorkspaceSwitcher() {
   const {workspaces} = useWorkspaces();
   const {currentId, goToWorkspace} = useWorkspaceNavigation();
 
-  const current = workspaces.find((w: Workspace) => w.id === currentId);
+  const normalizedCurrentId = Array.isArray(currentId) ? currentId[0] : currentId;
+  const current = workspaces.find((w: Workspace) => w.id === normalizedCurrentId);
 
   const [query, setQuery] = useState('');
   const [open, setOpen] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return workspaces;
+    if (!q) {
+      return workspaces;
+    }
     return workspaces.filter((w: Workspace) => w.name.toLowerCase().includes(q));
   }, [query, workspaces]);
 
@@ -48,7 +51,9 @@ export function WorkspaceSwitcher() {
               if (e.key === 'Enter') {
                 e.preventDefault();
                 const first = filtered[0];
-                if (first) handleSelect(first.id);
+                if (first) {
+                  handleSelect(first.id);
+                }
               }
             }}
             placeholder="Search workspaces..."
@@ -64,7 +69,7 @@ export function WorkspaceSwitcher() {
               <DropdownMenuItem
                 key={w.id}
                 onClick={() => handleSelect(w.id)}
-                className={`${currentId === w.id ? 'bg-[hsl(var(--sidebar-active))]' : ''} px-3`}
+                className={`${normalizedCurrentId === w.id ? 'bg-[hsl(var(--sidebar-active))]' : ''} px-3`}
               >
                 <span className="truncate">{w.name}</span>
               </DropdownMenuItem>
@@ -74,7 +79,7 @@ export function WorkspaceSwitcher() {
 
         <div className="border-t border-border my-1" />
 
-        <DropdownMenuItem onClick={() => goToWorkspace(currentId ?? '')} className="gap-2 px-3">
+        <DropdownMenuItem onClick={() => goToWorkspace(normalizedCurrentId ?? '')} className="gap-2 px-3">
           <FolderOpen className="w-4 h-4 text-muted-foreground" />
           <span>View current workspace</span>
         </DropdownMenuItem>

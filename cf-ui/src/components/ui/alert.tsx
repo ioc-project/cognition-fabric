@@ -25,8 +25,8 @@ const Alert = React.forwardRef<
     VariantProps<typeof alertVariants> & {
       dismissible?: boolean;
       onDismiss?: () => void;
-    }
->(({className, variant, dismissible, onDismiss, children, ...props}, ref) => (
+        }
+        >(({className, variant, dismissible, onDismiss, children, ...props}, ref) => (
   <div ref={ref} role="alert" className={cn(alertVariants({variant}), className)} {...props}>
     {children}
     {dismissible && onDismiss && (
@@ -39,7 +39,7 @@ const Alert = React.forwardRef<
       </button>
     )}
   </div>
-));
+        ));
 Alert.displayName = 'Alert';
 
 const AlertTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(({className, ...props}, ref) => (

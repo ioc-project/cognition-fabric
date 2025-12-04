@@ -2,7 +2,6 @@
 
 import useSWR from 'swr';
 import {workspaceApi, userApi, apiKeyApi, softwareApi} from '@/api/endpoints';
-import type {ListSoftwareTemplatesResponse} from '@/api/types';
 import {swrKeys} from '@/lib/swr-config';
 import {parseError} from '@/lib/utils';
 import {useInvalidateMutation, useSWRResource} from './useSWRResource';
@@ -25,7 +24,9 @@ export function useWorkspace(workspaceId: string) {
     } catch (e) {
       const list = await workspaceApi.list();
       const found = list.workspaces.find((w) => w.id === workspaceId);
-      if (!found) throw e;
+      if (!found) {
+        throw e;
+      }
       return found;
     }
   });
@@ -81,7 +82,7 @@ export function useApiKeys() {
 export function useSoftwareTemplates(templateType: 'KnowledgeAdapterTemplates' | 'ReasonerTemplates') {
   const {data, error, isLoading, mutate} = useSWR(swrKeys.softwareTemplates(templateType), () => softwareApi.listByType(templateType));
   return {
-    templates: (Array.isArray(data) ? data : []) as ListSoftwareTemplatesResponse,
+    templates: (Array.isArray(data) ? data : []),
     isLoading,
     error: error ? parseError(error) : null,
     mutate

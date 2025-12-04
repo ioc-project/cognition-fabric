@@ -22,14 +22,20 @@ export function SoftwareTemplateDetails({id, type}: {id: string; type?: 'Knowled
         setError(undefined);
         const list = type ? await softwareApi.listByType(type) : await softwareApi.listAll();
         const found = list.find((t) => t.id === id);
-        if (isMounted) setTemplate(found);
-      } catch (e: any) {
-        if (isMounted) setError(e?.message || 'Failed to load template');
+        if (isMounted) {
+          setTemplate(found);
+        }
+      } catch (e: unknown) {
+        if (isMounted) {
+          setError((e as Error)?.message || 'Failed to load template');
+        }
       } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     }
-    load();
+    void load();
     return () => {
       isMounted = false;
     };
