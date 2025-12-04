@@ -178,7 +178,11 @@ export function TemplateView({template}: {template: Template}) {
                                     </div>
                                     <div className="space-y-2">
                                       <Label>Duration (ms)</Label>
-                                      <Input value={String(computeDurationMs(String(span.startTimeUnixNano ?? ''), String(span.endTimeUnixNano ?? '')))} disabled readOnly />
+                                      <Input
+                                        value={String(computeDurationMs(String(span.startTimeUnixNano ?? ''), String(span.endTimeUnixNano ?? '')))}
+                                        disabled
+                                        readOnly
+                                      />
                                     </div>
                                   </div>
 
@@ -189,13 +193,13 @@ export function TemplateView({template}: {template: Template}) {
                                           <div key={attrIdx} className="space-y-2">
                                             <Label>{attr.key}</Label>
                                             <Input
-                                              value={
-                                                String(attr.value?.stringValue ??
-                                                attr.value?.intValue ??
-                                                attr.value?.doubleValue ??
-                                                attr.value?.boolValue ??
-                                                '')
-                                              }
+                                              value={String(
+                                                attr.value?.stringValue ??
+                                                  attr.value?.intValue ??
+                                                  attr.value?.doubleValue ??
+                                                  attr.value?.boolValue ??
+                                                  ''
+                                              )}
                                               disabled
                                               readOnly
                                             />

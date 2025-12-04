@@ -82,7 +82,7 @@ export function useApiKeys() {
 export function useSoftwareTemplates(templateType: 'KnowledgeAdapterTemplates' | 'ReasonerTemplates') {
   const {data, error, isLoading, mutate} = useSWR(swrKeys.softwareTemplates(templateType), () => softwareApi.listByType(templateType));
   return {
-    templates: (Array.isArray(data) ? data : []),
+    templates: Array.isArray(data) ? data : [],
     isLoading,
     error: error ? parseError(error) : null,
     mutate

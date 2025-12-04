@@ -64,7 +64,12 @@ export function SoftwareTemplateDetails({id, type}: {id: string; type?: 'Knowled
     );
   }
 
-  const pageTitle = type === 'KnowledgeAdapterTemplates' ? 'Knowledge Template Details' : type === 'ReasonerTemplates' ? 'Reasoner Template Details' : 'Template Details';
+  const pageTitle =
+    type === 'KnowledgeAdapterTemplates'
+      ? 'Knowledge Template Details'
+      : type === 'ReasonerTemplates'
+        ? 'Reasoner Template Details'
+        : 'Template Details';
 
   return (
     <BasePage title={pageTitle}>
