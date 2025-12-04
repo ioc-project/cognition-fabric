@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
+import {Loader} from '@/components/ui/loader';
 import {useState} from 'react';
 import {signIn, useSession} from 'next-auth/react';
 import LavaLamp from '@/components/ui/lava-lamp';
@@ -114,10 +115,7 @@ export default function Login() {
   if (status === 'loading') {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500" />
-          <p className="text-gray-600">Loading...</p>
-        </div>
+        <Loader size="lg" />
       </div>
     );
   }
@@ -125,10 +123,7 @@ export default function Login() {
   if (status === 'authenticated') {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-white">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-blue-500" />
-          <p className="text-gray-600">Redirecting...</p>
-        </div>
+        <Loader size="lg" />
       </div>
     );
   }

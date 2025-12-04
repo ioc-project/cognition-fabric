@@ -6,6 +6,7 @@ import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {ListShell} from '@/components/ui/list-shell';
 import {Loading} from '@/components/ui/loading';
+import {BasePage} from '@/components/ui/base-page';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {Alert, AlertDescription} from '@/components/ui/alert';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
@@ -86,27 +87,22 @@ export function WorkspacesList() {
         </div>
       ) : (
         <div className="space-y-8 px-8 pt-4 relative z-0">
-          <div className="w-full">
-            <div className="flex items-center justify-between">
-              <div className="flex flex-col justify-center items-start gap-1">
-                <h1 className="page-title">Workspaces</h1>
-                <p className="page-description">Organize your resources into spaces</p>
-              </div>
+          <BasePage
+            title="Workspaces"
+            callToAction={
               <Button onClick={() => setIsCreateDialogOpen(true)} variant="sidebar" className="gap-2" size="default">
                 <Plus className="w-4 h-4" />
                 Create Workspace
               </Button>
-            </div>
-          </div>
+            }
+          >
+            {error && (
+              <Alert variant="destructive" dismissible onDismiss={() => setError(null)}>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
 
-          {error && (
-            <Alert variant="destructive" dismissible onDismiss={() => setError(null)}>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <div className="w-full">
             <div className="list-grid">
               {workspaces.map((workspace: Workspace) => (
                 <Card
@@ -149,7 +145,7 @@ export function WorkspacesList() {
                 </Card>
               ))}
             </div>
-          </div>
+          </BasePage>
         </div>
       )}
 

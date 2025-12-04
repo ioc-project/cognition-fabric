@@ -10,13 +10,21 @@ import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 export function Sidebar() {
   const pathname = usePathname();
   const segments = useSelectedLayoutSegments();
-  const {currentId: wsId, base: wsBase} = useWorkspaceNavigation();
+  const isWorkspaceRoute = segments[0] === 'workspaces';
 
-  const {workspace} = useCurrentWorkspace();
+  const {currentId: wsIdRaw, base: wsBaseRaw} = useWorkspaceNavigation();
+  const {workspace: workspaceRaw} = useCurrentWorkspace();
+  const wsId = isWorkspaceRoute ? wsIdRaw : undefined;
+  const wsBase = isWorkspaceRoute ? wsBaseRaw : '';
+  const workspace = isWorkspaceRoute ? workspaceRaw : undefined;
   const workspaceName = workspace?.name || (wsId ? `Workspace ${wsId.slice(0, 8)}` : '');
 
-  const [wsOpen, setWsOpen] = useState<boolean>(true);
+  const [wsOpen, setWsOpen] = useState<boolean>(false);
   const [settingsOpen, setSettingsOpen] = useState<boolean>(true);
+
+  useEffect(() => {
+    setWsOpen(isWorkspaceRoute);
+  }, [isWorkspaceRoute]);
 
   const topLevelItems = useMemo(
     () => [

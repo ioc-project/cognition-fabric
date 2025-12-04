@@ -1,7 +1,6 @@
+import {AlertTriangle} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Modal} from '@/components/ui/modal';
-import {AlertTriangle} from 'lucide-react';
-
 interface ConfirmDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;

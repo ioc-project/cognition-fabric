@@ -6,7 +6,8 @@ import {Button} from '@/components/ui/button';
 import {Loading} from '@/components/ui/loading';
 import {Alert, AlertDescription} from '@/components/ui/alert';
 import {EmptyState} from '@/components/ui/empty-state';
-import {useUsers, useApiKeys} from '@/hooks/useApi';
+import {BasePage} from '@/components/ui/base-page';
+import {useUsers} from '@/hooks/useApi';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 
 export function WorkspaceDetails() {
@@ -14,10 +15,9 @@ export function WorkspaceDetails() {
   const {workspaceId, workspace, isLoading: workspaceLoading} = useCurrentWorkspace();
 
   const {isLoading: usersLoading, error: usersError} = useUsers(workspaceId || '');
-  const {isLoading: iamLoading, error: iamError} = useApiKeys();
 
-  const loading = workspaceLoading || usersLoading || iamLoading;
-  const error = usersError || iamError;
+  const loading = workspaceLoading || usersLoading;
+  const error = usersError || null;
 
   if (loading) {
     return <Loading />;
@@ -38,16 +38,7 @@ export function WorkspaceDetails() {
   }
 
   return (
-    <div>
-      <div className="flex flex-row justify-between items-center mb-8">
-        <div className="flex flex-col justify-center items-start gap-1">
-          <h1 className="page-title">{workspace.name}</h1>
-          <p className="page-description">Workspace Context: scope for MAS, Adapters, Reasoners, and Queries</p>
-        </div>
-
-        <div className="flex items-center gap-2" />
-      </div>
-
+    <BasePage title={workspace.name}>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <div className="p-4 border rounded-lg bg-card soft-card">
           <div className="flex flex-col gap-6">
@@ -108,6 +99,6 @@ export function WorkspaceDetails() {
           </div>
         </div>
       )}
-    </div>
+    </BasePage>
   );
 }

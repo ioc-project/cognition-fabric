@@ -3,7 +3,9 @@
 import {Package} from 'lucide-react';
 import {BasePage} from '@/components/ui/base-page';
 import {Card} from '@/components/ui/card';
+import {Button} from '@/components/ui/button';
 import {ListShell} from '@/components/ui/list-shell';
+import {LoaderRelative} from '@/components/ui/loading';
 import {softwareApi} from '@/api/endpoints';
 import {useState, useMemo, useEffect} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
@@ -48,7 +50,6 @@ export function SoftwareList() {
     <div className="px-8 pt-4">
       <BasePage
         title="Software Templates"
-        description="Knowledge Adapter and Reasoner templates."
         tabs={tabs}
         activeTabKey={templateType === 'ALL' ? undefined : templateType}
         onTabChange={(key) => {
@@ -62,7 +63,7 @@ export function SoftwareList() {
           }
         }}
       >
-        {isLoading && <div className="text-sm text-muted-foreground">Loading templates...</div>}
+        {isLoading && <LoaderRelative className="py-8" />}
         {error && !isLoading && <div className="text-sm text-red-600 dark:text-red-400">Failed to load templates: {String(error)}</div>}
         {!isLoading && !error && templates.length === 0 && (
           <div className="w-full max-w-5xl mx-auto flex items-center justify-center min-h-[calc(100vh-16rem)]">
@@ -74,8 +75,8 @@ export function SoftwareList() {
                   templateType === 'KnowledgeAdapterTemplates'
                     ? 'There are no knowledge adapter templates available.'
                     : templateType === 'ReasonerTemplates'
-                    ? 'There are no Reasoner templates available.'
-                    : 'There are no software templates available.'
+                      ? 'There are no Reasoner templates available.'
+                      : 'There are no software templates available.'
               }}
             />
           </div>
@@ -84,29 +85,57 @@ export function SoftwareList() {
           <div className="w-full">
             <div className="list-grid">
               {templates.map((tpl) => (
-                <Card key={tpl.id} variant="list" className="transition-shadow duration-200">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="rounded-lg bg-[hsl(var(--accent))] w-12 h-12 flex items-center justify-center mb-4">
-                        <Package className="w-5 h-5 text-card-foreground" />
-                      </div>
-                      <h4 className="card-title truncate pr-12">
-                        {tpl.type === 'KnowledgeAdapterTemplates' ? 'Knowledge Adapter Template' : tpl.type === 'ReasonerTemplates' ? 'Reasoner Template' : tpl.type}
-                      </h4>
-                      <div className="mt-3 text-sm text-card-foreground space-y-1">
-                        <div>ID: {tpl.id}</div>
-                        <div>Created: {new Date(tpl.created_at).toISOString().slice(0, 10)}</div>
-                        <div>Updated: {new Date(tpl.updated_at).toISOString().slice(0, 10)}</div>
-                      </div>
+                <Card key={tpl.id} variant="list" className="transition-shadow duration-200 flex flex-col">
+                  {/* Header with Type */}
+                  <div className="pb-4 mb-5 border-b border-border/50">
+                    <div className="text-sm font-medium text-foreground">
+                      {tpl.type === 'KnowledgeAdapterTemplates' ? 'Knowledge Adapter' : tpl.type === 'ReasonerTemplates' ? 'Reasoner' : tpl.type}
                     </div>
-                    <div className="flex items-start">
-                      <a
-                        className="text-sm font-medium text-[hsl(var(--sidebar-text-active))] hover:underline"
-                        href={`/software/${tpl.id}?type=${encodeURIComponent(tpl.type)}`}
-                      >
-                        View Details
-                      </a>
+                    <div className="text-xs text-muted-foreground mt-1">Template</div>
+                  </div>
+
+                  <div className="mb-6">
+                    <div className="text-xs font-medium text-muted-foreground mb-2">Template ID</div>
+                    <div className="text-xs text-foreground font-mono break-all leading-relaxed">{tpl.id}</div>
+                  </div>
+
+                  <div className="space-y-3 mb-8">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-medium text-muted-foreground">Created</span>
+                      <span className="text-sm text-foreground">
+                        {new Date(tpl.created_at).toLocaleString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false
+                        })}
+                      </span>
                     </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-medium text-muted-foreground">Last Updated</span>
+                      <span className="text-sm text-foreground">
+                        {new Date(tpl.updated_at).toLocaleString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false
+                        })}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto">
+                    <Button
+                      variant="sidebar"
+                      className="w-full"
+                      onClick={() => router.push(`/software/${tpl.id}?type=${encodeURIComponent(tpl.type)}`)}
+                    >
+                      View Details
+                    </Button>
                   </div>
                 </Card>
               ))}

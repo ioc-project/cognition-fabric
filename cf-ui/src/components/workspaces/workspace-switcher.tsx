@@ -36,7 +36,7 @@ export function WorkspaceSwitcher() {
           <ChevronDown className="w-4 h-4 text-muted-foreground" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-72 p-0 bg-popover text-popover-foreground border" onCloseAutoFocus={(e) => e.preventDefault()}>
+      <DropdownMenuContent align="end" className="w-72 p-0 text-popover-foreground border" onCloseAutoFocus={(e) => e.preventDefault()}>
         <div className="px-3 pt-3 pb-2">
           <div className="text-xs font-medium text-muted-foreground mb-2">Workspaces</div>
           <input

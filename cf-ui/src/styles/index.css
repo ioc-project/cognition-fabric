@@ -49,7 +49,7 @@
     --list-card-border: 0.5px solid hsl(var(--border));
     --list-card-padding: 24px;
     --list-grid-gap: 24px;
-    --list-card-min: 320px;
+    --list-card-min: 420px;
     --sidebar-active-border: 210 80% 48%;
   }
 
@@ -93,7 +93,7 @@
     --list-card-border: 0.5px solid hsl(var(--border));
     --list-card-padding: 24px;
     --list-grid-gap: 24px;
-    --list-card-min: 320px;
+    --list-card-min: 420px;
     --soft-card-bg: var(--card);
   }
 
@@ -155,10 +155,14 @@
   }
 
   .page-title {
-    font-size: 1.5rem;
-    line-height: 2rem;
+    font-family: 'Sharp Sans', sans-serif;
     font-weight: 700;
-    letter-spacing: -0.015em;
+    font-size: 24px;
+    line-height: 32px;
+    color: #3c4551;
+  }
+
+  .dark .page-title {
     color: hsl(var(--foreground));
   }
 

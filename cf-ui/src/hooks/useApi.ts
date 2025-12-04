@@ -19,11 +19,21 @@ export function useWorkspaces() {
 }
 
 export function useWorkspace(workspaceId: string) {
-  const {data, isLoading, mutate} = useSWR(workspaceId ? swrKeys.workspace(workspaceId) : null, () => workspaceApi.get(workspaceId));
+  const {data, error, isLoading, mutate} = useSWR(workspaceId ? swrKeys.workspace(workspaceId) : null, async () => {
+    try {
+      return await workspaceApi.get(workspaceId);
+    } catch (e) {
+      const list = await workspaceApi.list();
+      const found = list.workspaces.find((w) => w.id === workspaceId);
+      if (!found) throw e;
+      return found;
+    }
+  });
 
   return {
-    workspace: data || null,
+    workspace: (data as any) || null,
     isLoading,
+    error: error ? parseError(error as Error) : null,
     mutate
   };
 }
@@ -67,8 +77,6 @@ export function useApiKeys() {
     generateApiKey
   };
 }
-
-// Workspace-scoped software removed per new API; templates are global.
 
 export function useSoftwareTemplates(templateType: 'KnowledgeAdapterTemplates' | 'ReasonerTemplates') {
   const {data, error, isLoading, mutate} = useSWR(swrKeys.softwareTemplates(templateType), () => softwareApi.listByType(templateType));

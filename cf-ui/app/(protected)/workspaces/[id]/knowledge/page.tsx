@@ -8,7 +8,7 @@ export default function KnowledgeAdaptersList() {
   const workspaceId = params.id as string;
   return (
     <div className="px-12 pt-4">
-      <BasePage title="Knowledge Adapters" description="Manage Knowledge Adapters in this workspace">
+      <BasePage title="Knowledge Adapters">
         <div className="card-info text-muted-foreground">Todo: Knowledge Adapters List.</div>
       </BasePage>
     </div>
