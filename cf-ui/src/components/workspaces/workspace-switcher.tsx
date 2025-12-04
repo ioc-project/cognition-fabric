@@ -12,7 +12,7 @@ export function WorkspaceSwitcher() {
   const {workspaces} = useWorkspaces();
   const {currentId, goToWorkspace} = useWorkspaceNavigation();
 
-  const normalizedCurrentId = Array.isArray(currentId) ? currentId[0] : currentId;
+  const normalizedCurrentId: string | undefined = Array.isArray(currentId) ? currentId[0] : currentId;
   const current = workspaces.find((w: Workspace) => w.id === normalizedCurrentId);
 
   const [query, setQuery] = useState('');
