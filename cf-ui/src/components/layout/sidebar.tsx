@@ -43,7 +43,7 @@ export function Sidebar() {
         isActive: () => segments[0] === 'software'
       }
     ],
-    [wsId]
+    [segments]
   );
 
   const workspaceChildren = useMemo(
@@ -91,7 +91,7 @@ export function Sidebar() {
         isActive: () => segments[0] === 'workspaces' && segments[1] === wsId && segments[2] === 'summary'
       }
     ],
-    [wsBase]
+    [wsBase, wsId, segments]
   );
 
   const NavItem = ({href, icon: Icon, label, active}: {href: string; icon: any; label: string; active: boolean}) => (

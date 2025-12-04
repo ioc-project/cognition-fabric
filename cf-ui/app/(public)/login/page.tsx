@@ -6,7 +6,6 @@ import {Input} from '@/components/ui/input';
 import {Loader} from '@/components/ui/loader';
 import {useState} from 'react';
 import {signIn, useSession} from 'next-auth/react';
-import LavaLamp from '@/components/ui/lava-lamp';
 
 function LoginForm() {
   const [username, setUsername] = useState('');
@@ -132,24 +131,18 @@ export default function Login() {
     <div className="flex min-h-screen w-full">
       <div className="relative flex min-h-screen w-1/2 flex-col items-center justify-center overflow-hidden">
         <Image src="/login-image.jpg" alt="Login background" fill className="z-0 object-cover" priority />
-        <div className="absolute inset-0 z-10 bg-overlay" />
+        <div className="absolute inset-0 z-10 bg-[#00142BB2]" />
         <div className="relative z-20 flex flex-col items-center gap-4">
-          <Image src="/outshift-logo.svg" alt="Outshift by Cisco" width={205.33} height={84.49} className="mb-2" />
-          <h1 className="font-cisco shadow-cisco mb-2 whitespace-nowrap text-[40px] font-extrabold leading-[100%] tracking-normal text-white">
-            Trusted Knowledge Fabric Management
-          </h1>
+          <Image src="/outshift-logo.png" alt="Outshift by Cisco" width={205} height={84} className="mb-2" />
         </div>
       </div>
 
-      <div className="relative flex min-h-screen w-1/2 flex-col items-center justify-center bg-white px-8 overflow-hidden">
-        <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
-          <LavaLamp speed={0.12} />
-        </div>
-        <div className="relative z-10 flex w-full max-w-[440px] flex-col items-start">
-          <h2 className="font-cisco mb-1 whitespace-nowrap text-[28px] font-bold leading-tight tracking-tight text-neutral-alt">
-            Cognitive State Protocol
-          </h2>
-          <p className="font-cisco mb-8 text-[16px] leading-relaxed font-normal text-gray-600">Access and manage agent knowledge</p>
+      <div className="relative flex min-h-screen w-1/2 flex-col items-center justify-center bg-white px-8">
+        <div className="relative z-10 flex w-full max-w-[600px] flex-col items-start">
+          <h2 className="font-cisco mb-1 text-[28px] font-bold leading-tight tracking-tight text-neutral-alt">Trusted Knowledge Fabric Management</h2>
+          <p className="font-cisco mb-8 text-[16px] leading-relaxed font-normal text-gray-600 whitespace-nowrap">
+            Configure and manage multi-agent systems and their knowledge
+          </p>
           <LoginForm />
         </div>
       </div>
