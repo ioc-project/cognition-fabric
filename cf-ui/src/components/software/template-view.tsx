@@ -21,7 +21,7 @@ export function TemplateView({template}: {template: Template}) {
   const [viewMode, setViewMode] = useState<'card' | 'json'>('card');
 
   return (
-    <Card variant="list" className="flex flex-col max-h-[calc(100vh-200px)]">
+    <Card variant="list" className="flex flex-col max-h-[calc(100vh-150px)] mx-16">
       <div className="flex-shrink-0 flex justify-end p-6 pb-0">
         <Button variant="sidebar" size="sm" onClick={() => setViewMode(viewMode === 'card' ? 'json' : 'card')}>
           {viewMode === 'card' ? 'View JSON' : 'View Card'}
@@ -45,7 +45,7 @@ export function TemplateView({template}: {template: Template}) {
 
             {extraction && (
               <section className="space-y-4 mb-6">
-                <h2 className="text-sm font-semibold text-muted-foreground">Extraction Config</h2>
+                <h2 className="form-section-header">Extraction Config</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Use CRF</Label>
@@ -101,7 +101,7 @@ export function TemplateView({template}: {template: Template}) {
 
             {resourceSpans?.length > 0 && (
               <section className="space-y-4">
-                <h2 className="text-base font-semibold">Config</h2>
+                <h2 className="form-section-header">Config</h2>
                 <div className="rounded-lg border p-4">
                   {resourceSpans.map((rs, idx) => (
                     <div key={idx} className="space-y-6">

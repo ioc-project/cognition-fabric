@@ -166,6 +166,194 @@
     color: hsl(var(--foreground));
   }
 
+  .form-section-header {
+    font-family: Inter, sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+    line-height: 24px;
+    letter-spacing: 0.15px;
+  }
+
+  label {
+    font-family: Inter, sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    letter-spacing: 0.1px;
+    color: #3c4551;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .dark label {
+    color: hsl(var(--foreground));
+  }
+
+  input[type='text'],
+  input[type='email'],
+  input[type='password'],
+  input[type='search'],
+  input[type='number'],
+  input[type='tel'],
+  input[type='url'],
+  button[role='combobox'],
+  select {
+    height: 36px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 2px solid #d5dff7;
+    background-color: #fbfcfe;
+    font-size: 14px;
+    color: inherit;
+    outline: none !important;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+  }
+
+  input[type='text']::placeholder,
+  input[type='email']::placeholder,
+  input[type='password']::placeholder,
+  input[type='search']::placeholder,
+  input[type='number']::placeholder,
+  input[type='tel']::placeholder,
+  input[type='url']::placeholder {
+    color: #777d85;
+  }
+
+  input[type='text']:focus,
+  input[type='email']:focus,
+  input[type='password']:focus,
+  input[type='search']:focus,
+  input[type='number']:focus,
+  input[type='tel']:focus,
+  input[type='url']:focus,
+  input[type='text']:focus-visible,
+  input[type='email']:focus-visible,
+  input[type='password']:focus-visible,
+  input[type='search']:focus-visible,
+  input[type='number']:focus-visible,
+  input[type='tel']:focus-visible,
+  input[type='url']:focus-visible,
+  button[role='combobox']:focus,
+  button[role='combobox']:focus-visible,
+  select:focus,
+  select:focus-visible {
+    border: 2px solid #0051af;
+    outline: none !important;
+  }
+
+  /* Dark mode borders */
+  .dark input[type='text'],
+  .dark input[type='email'],
+  .dark input[type='password'],
+  .dark input[type='search'],
+  .dark input[type='number'],
+  .dark input[type='tel'],
+  .dark input[type='url'],
+  .dark button[role='combobox'],
+  .dark select {
+    border-color: hsl(var(--border));
+  }
+
+  .dark input[type='text']:focus,
+  .dark input[type='email']:focus,
+  .dark input[type='password']:focus,
+  .dark input[type='search']:focus,
+  .dark input[type='number']:focus,
+  .dark input[type='tel']:focus,
+  .dark input[type='url']:focus,
+  .dark input[type='text']:focus-visible,
+  .dark input[type='email']:focus-visible,
+  .dark input[type='password']:focus-visible,
+  .dark input[type='search']:focus-visible,
+  .dark input[type='number']:focus-visible,
+  .dark input[type='tel']:focus-visible,
+  .dark input[type='url']:focus-visible,
+  .dark button[role='combobox']:focus,
+  .dark button[role='combobox']:focus-visible,
+  .dark select:focus,
+  .dark select:focus-visible {
+    border-color: hsl(var(--ring));
+  }
+
+  input[type='text'][aria-invalid='true'],
+  input[type='email'][aria-invalid='true'],
+  input[type='password'][aria-invalid='true'],
+  input[type='search'][aria-invalid='true'],
+  input[type='number'][aria-invalid='true'],
+  input[type='tel'][aria-invalid='true'],
+  input[type='url'][aria-invalid='true'] {
+    border-color: hsl(var(--destructive));
+  }
+
+  input[type='text']:disabled,
+  input[type='email']:disabled,
+  input[type='password']:disabled,
+  input[type='search']:disabled,
+  input[type='number']:disabled,
+  input[type='tel']:disabled,
+  input[type='url']:disabled {
+    pointer-events: none;
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  input[type='text']::selection,
+  input[type='email']::selection,
+  input[type='password']::selection,
+  input[type='search']::selection,
+  input[type='number']::selection,
+  input[type='tel']::selection,
+  input[type='url']::selection {
+    background-color: hsl(var(--primary));
+    color: #3c4551;
+  }
+
+  .dark input[type='text'],
+  .dark input[type='email'],
+  .dark input[type='password'],
+  .dark input[type='search'],
+  .dark input[type='number'],
+  .dark input[type='tel'],
+  .dark input[type='url'] {
+    border-color: hsl(var(--input));
+    background-color: hsl(var(--soft-card-bg));
+    color: hsl(var(--foreground));
+  }
+
+  .dark input[type='text']::placeholder,
+  .dark input[type='email']::placeholder,
+  .dark input[type='password']::placeholder,
+  .dark input[type='search']::placeholder,
+  .dark input[type='number']::placeholder,
+  .dark input[type='tel']::placeholder,
+  .dark input[type='url']::placeholder {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .dark input[type='text']:focus-visible,
+  .dark input[type='email']:focus-visible,
+  .dark input[type='password']:focus-visible,
+  .dark input[type='search']:focus-visible,
+  .dark input[type='number']:focus-visible,
+  .dark input[type='tel']:focus-visible,
+  .dark input[type='url']:focus-visible {
+    border-color: hsl(var(--ring));
+  }
+
+  .dark input[type='text']::selection,
+  .dark input[type='email']::selection,
+  .dark input[type='password']::selection,
+  .dark input[type='search']::selection,
+  .dark input[type='number']::selection,
+  .dark input[type='tel']::selection,
+  .dark input[type='url']::selection {
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+  }
+
   .page-description {
     font-size: 0.875rem;
     line-height: 1.25rem;
