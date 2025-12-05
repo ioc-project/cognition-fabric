@@ -1,3 +1,9 @@
+export interface BreadcrumbItem {
+  link: string;
+  text: string;
+  active?: boolean;
+}
+
 export const routes = {
   home: '/',
   login: '/login',
@@ -75,3 +81,52 @@ export function getWorkspaceBasePath(workspaceId: string | null | undefined): st
 export function isRouteActive(currentPath: string, route: string): boolean {
   return currentPath.startsWith(route);
 }
+
+export const breadcrumbs = {
+  softwareDetails: (templateId: string): BreadcrumbItem[] => [
+    {link: routes.software.list, text: 'Software Templates'},
+    {link: '', text: templateId, active: true}
+  ],
+
+  workspaceDetails: (workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: '', text: workspaceName, active: true}
+  ],
+
+  workspaceMAS: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+    {link: '', text: 'Multi-Agent Systems', active: true}
+  ],
+
+  createMAS: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+    {link: routes.workspaces.mas.list(workspaceId), text: 'Multi-Agent Systems'},
+    {link: '', text: 'Create', active: true}
+  ],
+
+  workspaceKnowledge: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+    {link: '', text: 'Knowledge Adapters', active: true}
+  ],
+
+  workspaceReasoners: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+    {link: '', text: 'Reasoners', active: true}
+  ],
+
+  workspaceReasoningHistory: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+    {link: '', text: 'Reasoning History', active: true}
+  ],
+
+  workspaceSummary: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+    {link: '', text: 'Summary', active: true}
+  ]
+} as const;

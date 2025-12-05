@@ -9,7 +9,7 @@ import {EmptyState} from '@/components/ui/empty-state';
 import {BasePage} from '@/components/ui/base-page';
 import {useUsers} from '@/hooks/useApi';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
-import {routes} from '@/constants/routes';
+import {routes, breadcrumbs} from '@/constants/routes';
 
 export function WorkspaceDetails() {
   const router = useRouter();
@@ -39,7 +39,7 @@ export function WorkspaceDetails() {
   }
 
   return (
-    <BasePage title={workspace.name}>
+    <BasePage title={workspace.name} useBreadcrumbs breadcrumbs={breadcrumbs.workspaceDetails(workspace.name)}>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <div className="p-4 border rounded-lg bg-card soft-card">
           <div className="flex flex-col gap-6">

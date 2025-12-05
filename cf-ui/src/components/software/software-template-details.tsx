@@ -8,6 +8,7 @@ import {EmptyState} from '@/components/ui/empty-state';
 import {Alert, AlertDescription} from '@/components/ui/alert';
 import {AlertCircle, FileCode} from 'lucide-react';
 import {BasePage} from '@/components/ui/base-page';
+import {routes, breadcrumbs} from '@/constants/routes';
 
 export function SoftwareTemplateDetails({id, type}: {id: string; type?: 'KnowledgeAdapterTemplates' | 'ReasonerTemplates'}) {
   const [template, setTemplate] = useState<any | undefined>(undefined);
@@ -72,7 +73,7 @@ export function SoftwareTemplateDetails({id, type}: {id: string; type?: 'Knowled
         : 'Template Details';
 
   return (
-    <BasePage title={pageTitle}>
+    <BasePage title={pageTitle} useBreadcrumbs breadcrumbs={breadcrumbs.softwareDetails(template.id)}>
       <TemplateView template={template} />
     </BasePage>
   );
