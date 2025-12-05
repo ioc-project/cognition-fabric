@@ -128,11 +128,7 @@ export function SoftwareList() {
                   </div>
 
                   <div className="mt-auto">
-                    <Button
-                      variant="sidebar"
-                      className="w-full"
-                      onClick={() => router.push(routes.software.details(tpl.id, tpl.type))}
-                    >
+                    <Button variant="sidebar" className="w-full" onClick={() => router.push(routes.software.details(tpl.id, tpl.type))}>
                       View Details
                     </Button>
                   </div>
