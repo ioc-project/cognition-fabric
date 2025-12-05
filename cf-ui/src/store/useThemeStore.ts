@@ -20,7 +20,7 @@ export const useThemeStore = create<ThemeStore>(
     }),
     {
       name: 'ci-tkf-csp-ui-svc-theme-store',
-      storage: createJSONStorage(() => localStorage)
+      storage: createJSONStorage(() => (typeof window !== 'undefined' ? window.localStorage : (undefined as unknown as Storage)))
     }
   )
 );

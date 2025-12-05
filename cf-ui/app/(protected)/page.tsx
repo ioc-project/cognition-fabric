@@ -1,11 +1,5 @@
-'use client';
+import {redirect} from 'next/navigation';
 
-import {Layout} from '@/components/layout/layout';
-
-export default function HomePage() {
-  return (
-    <Layout>
-      <div className="h-full"></div>
-    </Layout>
-  );
+export default function LandingPage() {
+  redirect('/workspaces');
 }

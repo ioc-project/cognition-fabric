@@ -1,17 +1,28 @@
-import {NextRequest, NextResponse} from 'next/server';
+import {withAuth} from 'next-auth/middleware';
+import {NextResponse} from 'next/server';
 
-export function middleware(request: NextRequest) {
-  const {pathname} = request.nextUrl;
-
-  const publicRoutes = ['/login'];
-
-  if (publicRoutes.includes(pathname)) {
+export default withAuth(
+  function middleware(req) {
+    if (req.nextauth.token && req.nextUrl.pathname === '/login') {
+      return NextResponse.redirect(new URL('/', req.url));
+    }
     return NextResponse.next();
+  },
+  {
+    callbacks: {
+      authorized: ({token, req}) => {
+        if (req.nextUrl.pathname === '/login') {
+          return true;
+        }
+        return !!token;
+      }
+    },
+    pages: {
+      signIn: '/login'
+    }
   }
-
-  return NextResponse.next();
-}
+);
 
 export const config = {
-  matcher: ['/((?!_next|api|favicon.ico|.*\\.).*)']
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico|.*\\.png|.*\\.jpg|.*\\.svg|.*\\.ico).*)']
 };

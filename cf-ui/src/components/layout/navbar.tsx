@@ -1,74 +1,55 @@
 'use client';
 
-import {Search, ChevronDown, Bell, MoreVertical, User, Settings, LogOut, HelpCircle, Sun, Moon} from 'lucide-react';
-import {Button} from '@/components/ui/button';
+import {MoreVertical, User, Settings, LogOut, HelpCircle, Sun, Moon} from 'lucide-react';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {useThemeStore} from '@/store';
-import {useRouter} from 'next/navigation';
+import {signOut} from 'next-auth/react';
+import Image from 'next/image';
+import {useCallback} from 'react';
+import WorkspaceSwitcher from '@/components/workspaces/workspace-switcher';
 
 export function NavBar() {
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
-  const router = useRouter();
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
-  };
+  }, [theme, setTheme]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('isAuthenticated');
-    localStorage.removeItem('user');
-    router.push('/login');
+  const handleLogout = async () => {
+    await signOut({callbackUrl: '/login'});
   };
 
   return (
-    <div className="h-16 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-8">
-      <div className="flex items-center gap-4 flex-1">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600">
-              <span></span>
-              <ChevronDown className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
-            <DropdownMenuItem>
-              <span></span>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
-          <input
-            type="text"
-            placeholder=""
-            className="w-full pl-10 pr-4 py-2 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+    <div className="h-[52px] bg-[hsl(var(--navbar-background))] border-b border-[hsl(var(--navbar-border))] flex items-center justify-between px-4 gap-2 relative z-[100]">
+      <div className="flex items-center gap-3 px-2 sm:px-4">
+        <div className="relative h-[45px] w-32 sm:w-40 ml-2 sm:ml-4">
+          <Image
+            src={theme === 'dark' ? '/outshift-logo.png' : '/outshift-logo-light.png'}
+            alt="Outshift"
+            fill
+            sizes="(min-width: 640px) 160px, 128px"
+            className="object-contain"
+            priority
           />
         </div>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
+        <WorkspaceSwitcher />
+
         <button
           onClick={toggleTheme}
-          className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+          className="p-2 hover:bg-accent rounded-lg transition-colors"
           title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         >
-          {theme === 'dark' ? (
-            <Sun className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-          ) : (
-            <Moon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-          )}
-        </button>
-
-        <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-          <Bell className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          {theme === 'dark' ? <Sun className="w-5 h-5 text-muted-foreground" /> : <Moon className="w-5 h-5 text-muted-foreground" />}
         </button>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-              <MoreVertical className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+            <button className="p-2 hover:bg-accent rounded-lg transition-colors">
+              <MoreVertical className="w-5 h-5 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">

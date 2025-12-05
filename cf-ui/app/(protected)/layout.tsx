@@ -1,7 +1,13 @@
-'use client';
+import {Layout} from '@/components/layout/layout';
+import {getSession} from '@/lib/auth';
+import {redirect} from 'next/navigation';
 
-import {AuthGuard} from '../../providers/auth-guard';
+export default async function ProtectedLayout({children}: {children: React.ReactNode}) {
+  const session = await getSession();
 
-export default function ProtectedLayout({children}: {children: React.ReactNode}) {
-  return <AuthGuard>{children}</AuthGuard>;
+  if (!session) {
+    redirect('/login');
+  }
+
+  return <Layout>{children}</Layout>;
 }
