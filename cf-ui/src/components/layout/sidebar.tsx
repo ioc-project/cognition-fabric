@@ -6,6 +6,7 @@ import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments} from 'next/navigation';
 import {useWorkspaceNavigation} from '@/hooks/useWorkspaceNavigation';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
+import {routes, isRouteActive} from '@/constants/routes';
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -30,14 +31,14 @@ export function Sidebar() {
     () => [
       {
         id: 'workspaces',
-        href: '/workspaces',
+        href: routes.workspaces.list,
         icon: FolderOpen,
         label: 'Workspaces',
         isActive: () => segments[0] === 'workspaces' || segments.length === 0
       },
       {
         id: 'software',
-        href: '/software',
+        href: routes.software.list,
         icon: Package,
         label: 'Software Templates',
         isActive: () => segments[0] === 'software'
@@ -99,8 +100,8 @@ export function Sidebar() {
       href={href}
       className={`group flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors focus-visible:outline-none ${
         active
-          ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))] border-[0.5px] border-[hsl(var(--sidebar-border))] custom-border-org'
-          : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))] hover:border hover:border-[hsl(var(--sidebar-border))] focus-visible:border focus-visible:border-[hsl(var(--sidebar-border))]'
+          ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))]'
+          : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))]'
       }`}
     >
       <Icon
@@ -126,7 +127,7 @@ export function Sidebar() {
             <button
               type="button"
               onClick={() => setSettingsOpen((o) => !o)}
-              className="group w-full flex items-center justify-between px-2 py-1.5 rounded-md transition-colors focus-visible:outline-none text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))] hover:border hover:border-[hsl(var(--sidebar-border))] focus-visible:border focus-visible:border-[hsl(var(--sidebar-border))]"
+              className="group w-full flex items-center justify-between px-2 py-1.5 rounded-md transition-colors focus-visible:outline-none text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))]"
             >
               <span className="sidebar-text flex items-center gap-2">
                 <Settings className="w-5 h-5 transition-colors text-[hsl(var(--sidebar-icon))] group-hover:text-[hsl(var(--sidebar-icon-active))]" />
@@ -142,7 +143,7 @@ export function Sidebar() {
             {settingsOpen && (
               <ul className="mt-1 ml-8 space-y-1">
                 <li>
-                  <NavItem href={'/settings/api-keys'} icon={Key} label={'API Keys'} active={pathname.startsWith('/settings/api-keys')} />
+                  <NavItem href={routes.settings.apiKeys} icon={Key} label={'API Keys'} active={isRouteActive(pathname, routes.settings.apiKeys)} />
                 </li>
               </ul>
             )}
@@ -159,7 +160,7 @@ export function Sidebar() {
               <button
                 type="button"
                 onClick={() => setWsOpen((o) => !o)}
-                className="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))] hover:border hover:border-[hsl(var(--sidebar-border))] focus-visible:border focus-visible:border-[hsl(var(--sidebar-border))]"
+                className="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))]"
               >
                 <span className="sidebar-text truncate font-medium mr-2">{workspaceName}</span>
                 {wsOpen ? (

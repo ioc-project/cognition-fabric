@@ -10,6 +10,7 @@ import {softwareApi} from '@/api/endpoints';
 import {useState, useMemo, useEffect} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
 import useSWR from 'swr';
+import {routes} from '@/constants/routes';
 
 export function SoftwareList() {
   const router = useRouter();
@@ -23,8 +24,7 @@ export function SoftwareList() {
     } else {
       setTemplateType('ALL');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   const {
     data: templates = [],
@@ -39,9 +39,9 @@ export function SoftwareList() {
 
   const tabs = useMemo(
     () => [
-      {key: 'ALL', title: 'All Templates', link: '/software'},
-      {key: 'KnowledgeAdapterTemplates', title: 'Knowledge Adapters', link: '/software?type=KnowledgeAdapterTemplates'},
-      {key: 'ReasonerTemplates', title: 'Reasoners', link: '/software?type=ReasonerTemplates'}
+      {key: 'ALL', title: 'All Templates', link: routes.software.list},
+      {key: 'KnowledgeAdapterTemplates', title: 'Knowledge Adapters', link: routes.software.listByType('KnowledgeAdapterTemplates')},
+      {key: 'ReasonerTemplates', title: 'Reasoners', link: routes.software.listByType('ReasonerTemplates')}
     ],
     []
   );
@@ -56,10 +56,9 @@ export function SoftwareList() {
           const k = key as 'ALL' | 'KnowledgeAdapterTemplates' | 'ReasonerTemplates';
           setTemplateType(k);
           if (k === 'ALL') {
-            router.push('/software');
+            router.push(routes.software.list);
           } else {
-            const qp = new URLSearchParams({type: k}).toString();
-            router.push(`/software?${qp}`);
+            router.push(routes.software.listByType(k));
           }
         }}
       >
@@ -132,7 +131,7 @@ export function SoftwareList() {
                     <Button
                       variant="sidebar"
                       className="w-full"
-                      onClick={() => router.push(`/software/${tpl.id}?type=${encodeURIComponent(tpl.type)}`)}
+                      onClick={() => router.push(routes.software.details(tpl.id, tpl.type))}
                     >
                       View Details
                     </Button>

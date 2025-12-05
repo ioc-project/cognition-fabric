@@ -1,5 +1,6 @@
 import {fetchAPI} from '../client';
 import {CreateApiKeyRequest, CreateApiKeyResponse} from '../types';
+import {apiRoutes} from '@/constants/routes';
 
 export const apiKeyApi = {
   roles: async (): Promise<{roles: string[]}> => {
@@ -11,7 +12,7 @@ export const apiKeyApi = {
   },
 
   create: async (payload: CreateApiKeyRequest): Promise<CreateApiKeyResponse> => {
-    return fetchAPI(`/api/iam/api-keys`, {
+    return fetchAPI(apiRoutes.apiKeys.create, {
       method: 'POST',
       body: JSON.stringify(payload)
     });

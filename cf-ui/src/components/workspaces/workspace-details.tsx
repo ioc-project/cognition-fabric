@@ -9,6 +9,7 @@ import {EmptyState} from '@/components/ui/empty-state';
 import {BasePage} from '@/components/ui/base-page';
 import {useUsers} from '@/hooks/useApi';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
+import {routes} from '@/constants/routes';
 
 export function WorkspaceDetails() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export function WorkspaceDetails() {
           title="Workspace not found"
           description="The requested workspace could not be found."
           actionLabel="Back to Workspaces"
-          onAction={() => router.push('/workspaces')}
+          onAction={() => router.push(routes.workspaces.list)}
         />
       </div>
     );
@@ -81,7 +82,7 @@ export function WorkspaceDetails() {
               title="No Multi‑Agent Systems exist in this workspace."
               description="Create a MAS to link adapters, add reasoners, and run queries."
               actionLabel="Create Multi‑Agent System"
-              onAction={() => router.push(`/workspaces/${workspaceId}/mas/create`)}
+              onAction={() => router.push(routes.workspaces.mas.create(workspaceId!))}
             />
           </div>
         </div>
@@ -93,7 +94,7 @@ export function WorkspaceDetails() {
             <div className="text-sm text-muted-foreground">MAS list will appear here.</div>
           </div>
           <div className="flex gap-3">
-            <Button size="sm" variant="outline" onClick={() => router.push(`/workspaces/${workspaceId}/mas/create`)}>
+            <Button size="sm" variant="outline" onClick={() => router.push(routes.workspaces.mas.create(workspaceId!))}>
               Create MAS
             </Button>
           </div>

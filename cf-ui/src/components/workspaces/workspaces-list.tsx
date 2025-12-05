@@ -16,6 +16,7 @@ import {useRouter, useSearchParams} from 'next/navigation';
 import {parseError} from '@/lib/utils';
 import {useWorkspaces} from '@/hooks/useApi';
 import type {Workspace} from '@/api/types';
+import {routes} from '@/constants/routes';
 
 export function WorkspacesList() {
   const router = useRouter();
@@ -40,7 +41,7 @@ export function WorkspacesList() {
   }, [swrError]);
 
   const handleWorkspaceCreated = (workspaceId: string) => {
-    router.push(`/workspaces/${workspaceId}`);
+    router.push(routes.workspaces.details(workspaceId));
   };
 
   const handleDeleteWorkspace = async () => {
@@ -66,7 +67,7 @@ export function WorkspacesList() {
   };
 
   const handleEditWorkspace = (workspaceId: string) => {
-    router.push(`/workspaces/${workspaceId}`);
+    router.push(routes.workspaces.details(workspaceId));
   };
 
   if (loading) {

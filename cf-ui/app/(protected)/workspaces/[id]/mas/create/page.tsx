@@ -3,6 +3,7 @@
 import {useParams, useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
 import {BasePage} from '@/components/ui/base-page';
+import {routes} from '@/constants/routes';
 
 export default function CreateMas() {
   const params = useParams();
@@ -17,7 +18,7 @@ export default function CreateMas() {
             This is a placeholder page for creating a MAS in workspace <code className="font-mono">{workspaceId}</code>.
           </p>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.push(`/workspaces/${workspaceId}`)}>
+            <Button variant="outline" onClick={() => router.push(routes.workspaces.details(workspaceId))}>
               Back to Overview
             </Button>
             <Button disabled title="Form implementation pending">
