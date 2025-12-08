@@ -6,18 +6,16 @@ import {Label} from '@/components/ui/label';
 import {Select, SelectTrigger, SelectValue, SelectContent, SelectItem} from '@/components/ui/select';
 import {MultiSelect} from '@/components/ui/multi-select';
 import {Button} from '@/components/ui/button';
+import type {Template, AttributeValue, KeyValue} from '@/types/template-config';
 
-type Template = {
-  id: string;
-  type: 'KnowledgeAdapterTemplates' | 'ReasonerTemplates' | string;
-  config?: any;
-  created_at?: string;
-  updated_at?: string;
-};
+function getAttributeDisplayValue(value?: AttributeValue): string {
+  if (!value) return '';
+  return String(value.stringValue ?? value.intValue ?? value.doubleValue ?? value.boolValue ?? '');
+}
 
 export function TemplateView({template}: {template: Template}) {
   const extraction = template?.config?.extraction;
-  const resourceSpans: any[] = template?.config?.resourceSpans || [];
+  const resourceSpans = template?.config?.resourceSpans || [];
   const [viewMode, setViewMode] = useState<'card' | 'json'>('card');
 
   return (
@@ -107,20 +105,16 @@ export function TemplateView({template}: {template: Template}) {
                     <div key={idx} className="space-y-6">
                       <div className="space-y-3">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {((rs.resource?.attributes as Array<Record<string, any>>) || []).map((attr: Record<string, any>, aIdx: number) => (
+                          {(rs.resource?.attributes || []).map((attr: KeyValue, aIdx: number) => (
                             <div key={aIdx} className="space-y-2">
                               <Label>{attr.key}</Label>
-                              <Input
-                                value={attr.value?.stringValue ?? attr.value?.intValue ?? attr.value?.doubleValue ?? attr.value?.boolValue ?? ''}
-                                disabled
-                                readOnly
-                              />
+                              <Input value={getAttributeDisplayValue(attr.value)} disabled readOnly />
                             </div>
                           ))}
                         </div>
                       </div>
 
-                      {((rs.scopeSpans as Array<Record<string, any>>) || []).map((scopeSpan: Record<string, any>, ssIdx: number) => (
+                      {(rs.scopeSpans || []).map((scopeSpan, ssIdx: number) => (
                         <div key={ssIdx} className="space-y-3">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
@@ -133,9 +127,9 @@ export function TemplateView({template}: {template: Template}) {
                             </div>
                           </div>
 
-                          {((scopeSpan.spans as Array<Record<string, any>>) || []).length > 0 && (
+                          {(scopeSpan.spans || []).length > 0 && (
                             <div className="space-y-3">
-                              {((scopeSpan.spans as Array<Record<string, any>>) || []).map((span: Record<string, any>, spIdx: number) => (
+                              {(scopeSpan.spans || []).map((span, spIdx: number) => (
                                 <div key={spIdx} className="space-y-4">
                                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="space-y-2">
@@ -189,20 +183,10 @@ export function TemplateView({template}: {template: Template}) {
                                   {Array.isArray(span.attributes) && span.attributes.length > 0 && (
                                     <div className="space-y-3">
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        {span.attributes.map((attr: Record<string, any>, attrIdx: number) => (
+                                        {span.attributes.map((attr: KeyValue, attrIdx: number) => (
                                           <div key={attrIdx} className="space-y-2">
                                             <Label>{attr.key}</Label>
-                                            <Input
-                                              value={String(
-                                                attr.value?.stringValue ??
-                                                  attr.value?.intValue ??
-                                                  attr.value?.doubleValue ??
-                                                  attr.value?.boolValue ??
-                                                  ''
-                                              )}
-                                              disabled
-                                              readOnly
-                                            />
+                                            <Input value={getAttributeDisplayValue(attr.value)} disabled readOnly />
                                           </div>
                                         ))}
                                       </div>
@@ -211,7 +195,7 @@ export function TemplateView({template}: {template: Template}) {
 
                                   {Array.isArray(span.events) && span.events.length > 0 && (
                                     <div className="space-y-3">
-                                      {span.events.map((event: any, evIdx: number) => (
+                                      {span.events.map((event, evIdx: number) => (
                                         <div key={evIdx} className="space-y-3">
                                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             <div className="space-y-2">
@@ -225,20 +209,10 @@ export function TemplateView({template}: {template: Template}) {
                                           </div>
                                           {Array.isArray(event.attributes) && event.attributes.length > 0 && (
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                              {(event.attributes as Array<Record<string, any>>).map((attr: Record<string, any>, eaIdx: number) => (
+                                              {event.attributes.map((attr: KeyValue, eaIdx: number) => (
                                                 <div key={eaIdx} className="space-y-2">
                                                   <Label>{attr.key}</Label>
-                                                  <Input
-                                                    value={
-                                                      attr.value?.stringValue ??
-                                                      attr.value?.intValue ??
-                                                      attr.value?.doubleValue ??
-                                                      attr.value?.boolValue ??
-                                                      ''
-                                                    }
-                                                    disabled
-                                                    readOnly
-                                                  />
+                                                  <Input value={getAttributeDisplayValue(attr.value)} disabled readOnly />
                                                 </div>
                                               ))}
                                             </div>

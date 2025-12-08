@@ -1,7 +1,20 @@
 'use client';
 
 import {useEffect, useMemo, useState} from 'react';
-import {Boxes, Database, FolderOpen, BarChart3, ChevronDown, ChevronRight, Package, Brain, History, Key, Settings} from 'lucide-react';
+import {
+  Boxes,
+  Database,
+  FolderOpen,
+  BarChart3,
+  ChevronDown,
+  ChevronRight,
+  Package,
+  Brain,
+  History,
+  Key,
+  Settings,
+  type LucideIcon
+} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments} from 'next/navigation';
 import {useWorkspaceNavigation} from '@/hooks/useWorkspaceNavigation';
@@ -95,7 +108,7 @@ export function Sidebar() {
     [wsBase, wsId, segments]
   );
 
-  const NavItem = ({href, icon: Icon, label, active}: {href: string; icon: any; label: string; active: boolean}) => (
+  const NavItem = ({href, icon: Icon, label, active}: {href: string; icon: LucideIcon; label: string; active: boolean}) => (
     <Link
       href={href}
       className={`group flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors focus-visible:outline-none ${

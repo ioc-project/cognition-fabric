@@ -5,6 +5,21 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+interface ErrorResponse {
+  response?: {
+    data?: unknown;
+    statusText?: string;
+  };
+}
+
+function isErrorResponse(error: unknown): error is ErrorResponse {
+  return typeof error === 'object' && error !== null && 'response' in error;
+}
+
+function isObjectWithProperty(obj: unknown, prop: string): obj is Record<string, unknown> {
+  return typeof obj === 'object' && obj !== null && prop in obj;
+}
+
 export const parseError = (error: unknown): string => {
   if (!error) {
     return 'Unknown error';
@@ -13,23 +28,21 @@ export const parseError = (error: unknown): string => {
     return error;
   }
 
-  if (typeof error === 'object' && error && 'response' in (error as Record<string, unknown>)) {
-    const resp = (error as any).response;
+  if (isErrorResponse(error)) {
+    const resp = error.response;
     const data = resp?.data;
     if (data) {
       if (typeof data === 'string') {
         return data;
       }
-      if (typeof data === 'object') {
-        if (typeof data.error === 'string') {
-          return data.error;
-        }
-        if (typeof data.message === 'string') {
-          return data.message;
-        }
+      if (isObjectWithProperty(data, 'error') && typeof data.error === 'string') {
+        return data.error;
+      }
+      if (isObjectWithProperty(data, 'message') && typeof data.message === 'string') {
+        return data.message;
       }
     }
-    if (typeof resp?.statusText === 'string') {
+    if (typeof resp?.statusText === 'string' && resp.statusText) {
       return resp.statusText;
     }
   }
