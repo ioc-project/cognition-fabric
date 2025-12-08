@@ -1,11 +1,8 @@
 'use client';
 
-import {useForm} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import {Button} from '@/components/ui/button';
-import {Modal} from '@/components/ui/modal';
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
+import {FormModal} from '@/components/ui/form-modal';
+import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {useApiKeys} from '@/hooks/useApi';
 
@@ -25,59 +22,26 @@ interface CreateApiKeyDialogProps {
 export function CreateApiKeyDialog({open, onOpenChange, onSuccess}: CreateApiKeyDialogProps) {
   const {roles, generateApiKey, isLoading} = useApiKeys();
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      name: '',
-      roles: []
-    }
-  });
-
-  const onSubmit = async (values: FormValues) => {
-    try {
-      const response = await generateApiKey({name: values.name, roles: values.roles});
-      form.reset();
-      onSuccess({id: response.id, apiKey: response['api-key']});
-    } catch (error) {
-      form.setError('name', {
-        type: 'manual',
-        message: 'Failed to create API key'
-      });
-    }
+  const handleSubmit = async (values: FormValues) => {
+    const response = await generateApiKey({name: values.name, roles: values.roles});
+    onSuccess({id: response.id, apiKey: response['api-key']});
   };
-
-  const handleOpenChange = (open: boolean) => {
-    if (!open) {
-      form.reset();
-    }
-    onOpenChange(open);
-  };
-
-  const footer = (
-    <div className="flex w-full items-center justify-between">
-      <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-        Cancel
-      </Button>
-      <Button type="submit" form="create-api-key-form" disabled={form.formState.isSubmitting || isLoading} variant="sidebar">
-        {form.formState.isSubmitting ? 'Creating...' : 'Create API Key'}
-      </Button>
-    </div>
-  );
 
   return (
-    <Modal
+    <FormModal
       open={open}
-      onOpenChange={handleOpenChange}
+      onOpenChange={onOpenChange}
       title="Create API Key"
       description="Provide a name and one or more roles to create an API key (IAM admin scope)."
-      onInteractOutside={(e) => {
-        e.preventDefault();
-      }}
-      contentClassName="sm:max-w-[480px] p-6 gap-4"
-      footer={footer}
+      schema={formSchema}
+      defaultValues={{name: '', roles: []}}
+      onSubmit={handleSubmit}
+      submitLabel="Create API Key"
+      isLoading={isLoading}
+      errorFieldName="name"
     >
-      <Form {...form}>
-        <form id="create-api-key-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+      {(form) => (
+        <>
           <FormField
             control={form.control}
             name="name"
@@ -127,8 +91,8 @@ export function CreateApiKeyDialog({open, onOpenChange, onSuccess}: CreateApiKey
               </FormItem>
             )}
           />
-        </form>
-      </Form>
-    </Modal>
+        </>
+      )}
+    </FormModal>
   );
 }
