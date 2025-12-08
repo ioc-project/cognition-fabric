@@ -83,6 +83,29 @@ export function isRouteActive(currentPath: string, route: string): boolean {
 }
 
 export const breadcrumbs = {
+  workspacesList: (): BreadcrumbItem[] => [
+    {link: routes.home, text: 'Home'},
+    {link: '', text: 'Workspaces', active: true}
+  ],
+
+  softwareList: (tabName?: string): BreadcrumbItem[] => {
+    if (tabName) {
+      return [
+        {link: routes.software.list, text: 'Software Templates'},
+        {link: '', text: tabName, active: true}
+      ];
+    }
+    return [
+      {link: routes.home, text: 'Home'},
+      {link: '', text: 'Software Templates', active: true}
+    ];
+  },
+
+  queriesList: (): BreadcrumbItem[] => [
+    {link: routes.home, text: 'Home'},
+    {link: '', text: 'Saved Queries', active: true}
+  ],
+
   softwareDetails: (templateId: string): BreadcrumbItem[] => [
     {link: routes.software.list, text: 'Software Templates'},
     {link: '', text: templateId, active: true}
