@@ -82,7 +82,7 @@ export function WorkspaceDetails() {
             <EmptyState
               icon={Boxes}
               title="No Multi‑Agent Systems exist in this workspace."
-              description="Create a MAS to link adapters, add reasoners, and run queries."
+              description="Create a Multi-Agent System to link adapters, add reasoners, and run queries."
               actionLabel="Create Multi‑Agent System"
               onAction={() => router.push(routes.workspaces.mas.create(workspaceId!))}
             />
@@ -92,12 +92,12 @@ export function WorkspaceDetails() {
         <div className="space-y-4">
           <div className="p-4 border rounded-lg bg-card soft-card">
             <h2 className="text-base font-medium mb-2">Multi‑Agent Systems</h2>
-            <p className="text-sm text-muted-foreground mb-4">Registered MAS for this workspace.</p>
-            <div className="text-sm text-muted-foreground">MAS list will appear here.</div>
+            <p className="text-sm text-muted-foreground mb-4">Registered Multi-Agent Systems for this workspace.</p>
+            <div className="text-sm text-muted-foreground">Multi-Agent Systems list will appear here.</div>
           </div>
           <div className="flex gap-3">
             <Button size="sm" variant="outline" onClick={() => router.push(routes.workspaces.mas.create(workspaceId!))}>
-              Create MAS
+              Create Multi-Agent System
             </Button>
           </div>
         </div>

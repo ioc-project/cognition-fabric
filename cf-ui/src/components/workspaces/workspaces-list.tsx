@@ -15,6 +15,7 @@ import {workspaceApi} from '@/api/endpoints';
 import {useRouter, useSearchParams} from 'next/navigation';
 import {parseError} from '@/lib/utils';
 import {useWorkspaces} from '@/hooks/useApi';
+import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import type {Workspace} from '@/api/types';
 import {routes} from '@/constants/routes';
 
@@ -24,18 +25,14 @@ export function WorkspacesList() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const {workspaces, isLoading: loading, error: swrError, mutate} = useWorkspaces();
   const [error, setError] = useState<string | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{open: boolean; workspaceId: string | null; workspaceName: string}>({
-    open: false,
-    workspaceId: null,
-    workspaceName: ''
-  });
-  const [deleting, setDeleting] = useState(false);
+  const deleteDialog = useConfirmDialog<{id: string; name: string}>();
 
   useEffect(() => {
     if (searchParams.get('create') === 'true') {
       setIsCreateDialogOpen(true);
     }
   }, [searchParams]);
+
   useEffect(() => {
     setError(swrError ?? null);
   }, [swrError]);
@@ -45,25 +42,16 @@ export function WorkspacesList() {
   };
 
   const handleDeleteWorkspace = async () => {
-    if (!deleteConfirm.workspaceId) {
-      return;
-    }
-
-    setDeleting(true);
-    setError(null);
-    try {
-      await workspaceApi.delete(deleteConfirm.workspaceId);
-      await mutate();
-      setDeleteConfirm({open: false, workspaceId: null, workspaceName: ''});
-    } catch (err) {
-      setError(`Failed to delete workspace: ${parseError(err)}`);
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const openDeleteConfirm = (workspaceId: string, workspaceName: string) => {
-    setDeleteConfirm({open: true, workspaceId, workspaceName});
+    await deleteDialog.confirm(async (data) => {
+      setError(null);
+      try {
+        await workspaceApi.delete(data.id);
+        await mutate();
+      } catch (err) {
+        setError(`Failed to delete workspace: ${parseError(err)}`);
+        throw err;
+      }
+    });
   };
 
   const handleEditWorkspace = (workspaceId: string) => {
@@ -82,7 +70,7 @@ export function WorkspacesList() {
             empty={{
               icon: FolderOpen,
               title: 'No workspaces',
-              description: 'Create a workspace to organize your TKF resources - Multi-Agentic Systems, Knowledge Adapters, and Reasoners.',
+              description: 'Create a workspace to organize your TKF resources - Multi-Agent Systems, Knowledge Adapters, and Reasoners.',
               actionLabel: 'Create Your First Workspace',
               onAction: () => setIsCreateDialogOpen(true)
             }}
@@ -121,8 +109,8 @@ export function WorkspacesList() {
                       </div>
                       <h4 className="card-title truncate pr-12">{workspace.name}</h4>
                       <p className="card-info mt-1 whitespace-nowrap overflow-hidden text-ellipsis pr-12">
-                        {workspace.mas_count || 0} MAS · {workspace.kep_count || 0} KEPs · {workspace.users?.length || 0}{' '}
-                        {(workspace.users?.length || 0) === 1 ? 'User' : 'Users'}
+                        {workspace.mas_count || 0} Multi-Agent Systems · {workspace.kep_count || 0} Knowledge Adapters ·{' '}
+                        {workspace.users?.length || 0} {(workspace.users?.length || 0) === 1 ? 'User' : 'Users'}
                       </p>
                     </div>
                     <DropdownMenu>
@@ -135,7 +123,7 @@ export function WorkspacesList() {
                         <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
-                            openDeleteConfirm(workspace.id, workspace.name);
+                            deleteDialog.open({id: workspace.id, name: workspace.name});
                           }}
                           className="text-destructive"
                         >
@@ -155,14 +143,14 @@ export function WorkspacesList() {
       <CreateWorkspaceDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} onSuccess={handleWorkspaceCreated} />
 
       <ConfirmDialog
-        open={deleteConfirm.open}
-        onOpenChange={(open) => setDeleteConfirm({open, workspaceId: null, workspaceName: ''})}
+        open={deleteDialog.isOpen}
+        onOpenChange={(open) => !open && deleteDialog.close()}
         onConfirm={handleDeleteWorkspace}
-        title={`Delete ${deleteConfirm.workspaceName || 'Workspace'}`}
-        description={`Delete "${deleteConfirm.workspaceName}"? This action is permanent and cannot be undone.`}
+        title={`Delete ${deleteDialog.data?.name || 'Workspace'}`}
+        description={`Delete "${deleteDialog.data?.name}"? This action is permanent and cannot be undone.`}
         confirmText="Delete Workspace"
         variant="destructive"
-        loading={deleting}
+        loading={deleteDialog.isLoading}
       />
     </>
   );

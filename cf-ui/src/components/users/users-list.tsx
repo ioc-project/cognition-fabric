@@ -8,6 +8,7 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/c
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {AddUserDialog} from './add-user-dialog';
 import {useUsers} from '@/hooks/useApi';
+import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {safeGetDate} from '@/lib/utils';
 import {toast} from 'sonner';
 
@@ -18,12 +19,7 @@ interface UsersListProps {
 export function UsersList({workspaceId}: UsersListProps) {
   const {users, addUser, removeUser} = useUsers(workspaceId);
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
-  const [deleteUserConfirm, setDeleteUserConfirm] = useState<{open: boolean; userId: string | null; userName: string}>({
-    open: false,
-    userId: null,
-    userName: ''
-  });
-  const [deleting, setDeleting] = useState(false);
+  const deleteDialog = useConfirmDialog<{id: string; name: string}>();
 
   const handleAddUser = async (data: {name: string; email: string}) => {
     try {
@@ -34,23 +30,14 @@ export function UsersList({workspaceId}: UsersListProps) {
   };
 
   const handleDeleteUser = async () => {
-    if (!deleteUserConfirm.userId) {
-      return;
-    }
-
-    try {
-      setDeleting(true);
-      await removeUser(deleteUserConfirm.userId);
-      setDeleteUserConfirm({open: false, userId: null, userName: ''});
-    } catch (e) {
-      toast.error('Failed to remove user');
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const openDeleteUserConfirm = (userId: string, userName: string) => {
-    setDeleteUserConfirm({open: true, userId, userName});
+    await deleteDialog.confirm(async (data) => {
+      try {
+        await removeUser(data.id);
+      } catch (e) {
+        toast.error('Failed to remove user');
+        throw e;
+      }
+    });
   };
 
   return (
@@ -110,7 +97,7 @@ export function UsersList({workspaceId}: UsersListProps) {
                       variant="ghost"
                       size="sm"
                       className="text-red-600 dark:text-red-400"
-                      onClick={() => openDeleteUserConfirm(user.id, user.name)}
+                      onClick={() => deleteDialog.open({id: user.id, name: user.name})}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
@@ -125,14 +112,14 @@ export function UsersList({workspaceId}: UsersListProps) {
       <AddUserDialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen} onSuccess={handleAddUser} />
 
       <ConfirmDialog
-        open={deleteUserConfirm.open}
-        onOpenChange={(open) => setDeleteUserConfirm({open, userId: null, userName: ''})}
+        open={deleteDialog.isOpen}
+        onOpenChange={(open) => !open && deleteDialog.close()}
         onConfirm={handleDeleteUser}
         title="Remove User"
-        description={`Are you sure you want to remove "${deleteUserConfirm.userName}" from this workspace? They will lose access to all workspace resources.`}
+        description={`Are you sure you want to remove "${deleteDialog.data?.name}" from this workspace? They will lose access to all workspace resources.`}
         confirmText="Remove User"
         variant="destructive"
-        loading={deleting}
+        loading={deleteDialog.isLoading}
       />
     </>
   );
