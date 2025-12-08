@@ -38,8 +38,10 @@ export function WorkspaceDetails() {
     );
   }
 
+  const workspaceName: string = workspace.name;
+
   return (
-    <BasePage title={workspace.name} useBreadcrumbs breadcrumbs={breadcrumbs.workspaceDetails(workspace.name)}>
+    <BasePage title={workspace.name} useBreadcrumbs breadcrumbs={breadcrumbs.workspaceDetails(workspaceName)}>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <div className="p-4 border rounded-lg bg-card soft-card">
           <div className="flex flex-col gap-6">

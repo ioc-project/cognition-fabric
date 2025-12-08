@@ -2,6 +2,8 @@
 
 import useSWR from 'swr';
 import {workspaceApi, userApi, apiKeyApi, softwareApi} from '@/api/endpoints';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import {Workspace} from '@/api/types';
 import {swrKeys} from '@/lib/swr-config';
 import {parseError} from '@/lib/utils';
 import {useInvalidateMutation, useSWRResource} from './useSWRResource';
@@ -32,7 +34,7 @@ export function useWorkspace(workspaceId: string) {
   });
 
   return {
-    workspace: (data as any) || null,
+    workspace: data || null,
     isLoading,
     error: error ? parseError(error as Error) : null,
     mutate

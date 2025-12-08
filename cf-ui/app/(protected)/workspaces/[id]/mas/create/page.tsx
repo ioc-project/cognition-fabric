@@ -11,14 +11,11 @@ export default function CreateMas() {
   const router = useRouter();
   const workspaceId = params.id as string;
   const {workspace} = useCurrentWorkspace();
+  const name: string = workspace?.name ?? 'Workspace';
 
   return (
     <div className="p-8 max-w-3xl mx-auto w-full">
-      <BasePage 
-        title="Create Multi‑Agent System" 
-        useBreadcrumbs 
-        breadcrumbs={breadcrumbs.createMAS(workspaceId, workspace?.name || 'Workspace')}
-      >
+      <BasePage title="Create Multi‑Agent System" useBreadcrumbs breadcrumbs={breadcrumbs.createMAS(workspaceId, name)}>
         <div className="p-4 border rounded-lg bg-card">
           <p className="text-sm text-muted-foreground mb-4">
             This is a placeholder page for creating a MAS in workspace <code className="font-mono">{workspaceId}</code>.
