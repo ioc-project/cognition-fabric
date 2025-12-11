@@ -33,7 +33,9 @@ export function useConfirmDialog<TData = Record<string, unknown>>(): UseConfirmD
 
   const confirm = useCallback(
     async (action: (data: TData) => Promise<void>) => {
-      if (!state.data) return;
+      if (!state.data) {
+        return;
+      }
 
       setIsLoading(true);
       try {

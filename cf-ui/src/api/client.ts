@@ -42,7 +42,9 @@ export async function fetchAPI<T>(endpoint: string, options?: RequestInit): Prom
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || errorMessage;
-      } catch {}
+      } catch {
+        // Failed to parse error response as JSON
+      }
 
       const error = new ApiError(errorMessage, response.status, response.statusText);
       throw error;

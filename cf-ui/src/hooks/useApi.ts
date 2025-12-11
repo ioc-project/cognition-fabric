@@ -28,7 +28,9 @@ export function useWorkspace(workspaceId: string) {
     } catch (e) {
       const list = await workspaceApi.list();
       const found = list.workspaces.find((w) => w.id === workspaceId);
-      if (!found) throw e;
+      if (!found) {
+        throw e;
+      }
       return found;
     }
   });

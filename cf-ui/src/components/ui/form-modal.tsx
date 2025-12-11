@@ -42,7 +42,7 @@ export function FormModal<TFieldValues extends FieldValues>({
   formId,
   isLoading = false,
   onInteractOutside,
-  errorFieldName
+  errorFieldName: _errorFieldName
 }: FormModalProps<TFieldValues>) {
   const form = useForm<TFieldValues>({
     resolver: zodResolver(schema),
@@ -58,9 +58,7 @@ export function FormModal<TFieldValues extends FieldValues>({
       form.reset();
     } catch (error) {
       const errorMessage = parseError(error);
-      const fieldName = errorFieldName || (Object.keys(defaultValues)[0] as keyof TFieldValues);
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      form.setError(fieldName as any, {
+      form.setError('root', {
         type: 'manual',
         message: errorMessage
       });
@@ -98,10 +96,8 @@ export function FormModal<TFieldValues extends FieldValues>({
       footer={footer}
     >
       <Form {...form}>
-        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-        <form id={generatedFormId} onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-4 py-4">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {children(form as any)}
+        <form id={generatedFormId} onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-4">
+          {children(form)}
         </form>
       </Form>
     </Modal>

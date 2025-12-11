@@ -9,7 +9,9 @@ import {Button} from '@/components/ui/button';
 import type {Template, AttributeValue, KeyValue} from '@/types/template-config';
 
 function getAttributeDisplayValue(value?: AttributeValue): string {
-  if (!value) return '';
+  if (!value) {
+    return '';
+  }
   return String(value.stringValue ?? value.intValue ?? value.doubleValue ?? value.boolValue ?? '');
 }
 

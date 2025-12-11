@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   Boxes,
   Database,
@@ -60,11 +60,18 @@ export function Sidebar() {
     [segments]
   );
 
-  const isWorkspaceSection = (section?: string) => {
-    if (segments[0] !== 'workspaces' || segments[1] !== workspaceId) return false;
-    if (!section) return segments.length === 2 || segments[2] === 'overview';
-    return segments[2] === section;
-  };
+  const isWorkspaceSection = useCallback(
+    (section?: string) => {
+      if (segments[0] !== 'workspaces' || segments[1] !== workspaceId) {
+        return false;
+      }
+      if (!section) {
+        return segments.length === 2 || segments[2] === 'overview';
+      }
+      return segments[2] === section;
+    },
+    [segments, workspaceId]
+  );
 
   const workspaceChildren = useMemo(
     () => [
@@ -111,7 +118,7 @@ export function Sidebar() {
         isActive: () => isWorkspaceSection('summary')
       }
     ],
-    [workspaceBasePath, workspaceId, segments]
+    [workspaceBasePath, isWorkspaceSection]
   );
 
   const NavItem = ({href, icon: Icon, label, active}: {href: string; icon: LucideIcon; label: string; active: boolean}) => (
