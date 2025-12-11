@@ -2,16 +2,28 @@ import {z} from 'zod';
 
 const numberOrString = z.union([z.number(), z.string().transform((val) => (val === '' ? undefined : Number(val)))]).optional();
 
-const AttributeValueSchema: z.ZodType<any> = z.lazy(() =>
+// Using explicit type with @ts-expect-error because Zod's recursive lazy types have complex input/output types
+// The schema correctly transforms string inputs to numbers at runtime
+// @ts-expect-error Zod input type includes string but output type is number
+const AttributeValueSchema: z.ZodType<{
+  stringValue?: string;
+  intValue?: number;
+  doubleValue?: number;
+  boolValue?: boolean;
+  arrayValue?: unknown[];
+  kvlistValue?: unknown[];
+}> = z.lazy(() =>
   z.object({
     stringValue: z.string().optional(),
-    intValue: numberOrString,
-    doubleValue: numberOrString,
+    intValue: z.union([z.number(), z.string().transform(Number)]).optional(),
+    doubleValue: z.union([z.number(), z.string().transform(Number)]).optional(),
     boolValue: z.boolean().optional(),
     arrayValue: z.array(AttributeValueSchema).optional(),
     kvlistValue: z.array(KeyValueSchema).optional()
   })
 );
+
+export type AttributeValue = z.infer<typeof AttributeValueSchema>;
 
 const KeyValueSchema = z.object({
   key: z.string(),

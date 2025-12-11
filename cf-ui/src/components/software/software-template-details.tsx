@@ -9,10 +9,16 @@ import {Alert, AlertDescription} from '@/components/ui/alert';
 import {AlertCircle, FileCode} from 'lucide-react';
 import {BasePage} from '@/components/ui/base-page';
 import {breadcrumbs} from '@/constants/routes';
+import type {SoftwareTemplate} from '@/api/types/software';
+import type {Template} from '@/types/template-config';
+
+function isErrorLike(error: unknown): error is Error {
+  return error instanceof Error || (typeof error === 'object' && error !== null && 'message' in error);
+}
 
 export function SoftwareTemplateDetails({id, type}: {id: string; type?: 'KnowledgeAdapterTemplates' | 'ReasonerTemplates'}) {
-  const [template, setTemplate] = useState<any | undefined>(undefined);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [template, setTemplate] = useState<SoftwareTemplate | undefined>(undefined);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -28,7 +34,7 @@ export function SoftwareTemplateDetails({id, type}: {id: string; type?: 'Knowled
         }
       } catch (e: unknown) {
         if (isMounted) {
-          setError((e as Error)?.message || 'Failed to load template');
+          setError(isErrorLike(e) ? e.message : 'Failed to load template');
         }
       } finally {
         if (isMounted) {
@@ -76,7 +82,7 @@ export function SoftwareTemplateDetails({id, type}: {id: string; type?: 'Knowled
 
   return (
     <BasePage title={pageTitle} useBreadcrumbs breadcrumbs={breadcrumbs.softwareDetails(breadcrumbId)}>
-      <TemplateView template={template} />
+      <TemplateView template={template as unknown as Template} />
     </BasePage>
   );
 }

@@ -8,16 +8,14 @@ import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/c
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {AddUserDialog} from './add-user-dialog';
 import {useUsers} from '@/hooks/useApi';
+import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
-import {safeGetDate} from '@/lib/utils';
+import {safeGetDate, parseError} from '@/lib/utils';
 import {toast} from 'sonner';
 
-interface UsersListProps {
-  workspaceId: string;
-}
-
-export function UsersList({workspaceId}: UsersListProps) {
-  const {users, addUser, removeUser} = useUsers(workspaceId);
+export function UsersList() {
+  const {workspaceId} = useCurrentWorkspace();
+  const {users, addUser, removeUser} = useUsers(workspaceId || '');
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const deleteDialog = useConfirmDialog<{id: string; name: string}>();
 
@@ -25,7 +23,7 @@ export function UsersList({workspaceId}: UsersListProps) {
     try {
       await addUser(data);
     } catch (e) {
-      toast.error('Failed to add user');
+      toast.error(parseError(e));
     }
   };
 
@@ -34,7 +32,7 @@ export function UsersList({workspaceId}: UsersListProps) {
       try {
         await removeUser(data.id);
       } catch (e) {
-        toast.error('Failed to remove user');
+        toast.error(parseError(e));
         throw e;
       }
     });

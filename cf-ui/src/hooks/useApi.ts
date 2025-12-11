@@ -6,6 +6,10 @@ import {swrKeys} from '@/lib/swr-config';
 import {parseError} from '@/lib/utils';
 import {useInvalidateMutation} from './useSWRResource';
 
+function hasStatus(error: unknown): error is {status: number} {
+  return typeof error === 'object' && error !== null && 'status' in error && typeof (error as {status: unknown}).status === 'number';
+}
+
 export function useWorkspaces() {
   const {data, error, isLoading, mutate} = useSWR(swrKeys.workspaces(), () => workspaceApi.list());
 
@@ -32,7 +36,7 @@ export function useWorkspace(workspaceId: string) {
   return {
     workspace: data || null,
     isLoading,
-    error: error ? parseError(error as Error) : null,
+    error: error ? parseError(error) : null,
     mutate
   };
 }
@@ -62,8 +66,8 @@ export function useApiKeys() {
 
   const {run: generateApiKey} = useInvalidateMutation('iam-create-api-key', (payload: {name: string; roles: string[]}) => apiKeyApi.create(payload));
 
-  const rawError = (rolesError || usersError) as unknown as {status?: number} | null;
-  const normalizedError = rawError ? (rawError.status === 404 ? null : parseError(rawError as unknown as Error)) : null;
+  const rawError = rolesError || usersError;
+  const normalizedError = rawError && hasStatus(rawError) && rawError.status === 404 ? null : rawError ? parseError(rawError) : null;
 
   return {
     roles: rolesData?.roles || [],

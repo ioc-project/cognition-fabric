@@ -33,8 +33,8 @@ export function Sidebar() {
   const workspace = isWorkspaceRoute ? workspaceRaw : undefined;
   const workspaceName = workspace?.name || (workspaceId ? `Workspace ${workspaceId.slice(0, 8)}` : '');
 
-  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState<boolean>(false);
-  const [settingsOpen, setSettingsOpen] = useState<boolean>(true);
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(true);
 
   useEffect(() => {
     setIsWorkspaceOpen(isWorkspaceRoute);
@@ -60,6 +60,12 @@ export function Sidebar() {
     [segments]
   );
 
+  const isWorkspaceSection = (section?: string) => {
+    if (segments[0] !== 'workspaces' || segments[1] !== workspaceId) return false;
+    if (!section) return segments.length === 2 || segments[2] === 'overview';
+    return segments[2] === section;
+  };
+
   const workspaceChildren = useMemo(
     () => [
       {
@@ -67,42 +73,42 @@ export function Sidebar() {
         href: `${workspaceBasePath}`,
         icon: FolderOpen,
         label: 'Overview',
-        isActive: () => segments[0] === 'workspaces' && segments[1] === workspaceId && (segments.length === 2 || segments[2] === 'overview')
+        isActive: () => isWorkspaceSection()
       },
       {
         id: 'mas',
         href: `${workspaceBasePath}/mas`,
         icon: Boxes,
         label: 'Multi-Agent Systems',
-        isActive: () => segments[0] === 'workspaces' && segments[1] === workspaceId && segments[2] === 'mas'
+        isActive: () => isWorkspaceSection('mas')
       },
       {
         id: 'knowledge',
         href: `${workspaceBasePath}/knowledge`,
         icon: Database,
         label: 'Knowledge Adapters',
-        isActive: () => segments[0] === 'workspaces' && segments[1] === workspaceId && segments[2] === 'knowledge'
+        isActive: () => isWorkspaceSection('knowledge')
       },
       {
         id: 'reasoners',
         href: `${workspaceBasePath}/reasoners`,
         icon: Brain,
         label: 'Reasoners',
-        isActive: () => segments[0] === 'workspaces' && segments[1] === workspaceId && segments[2] === 'reasoners'
+        isActive: () => isWorkspaceSection('reasoners')
       },
       {
         id: 'history',
         href: `${workspaceBasePath}/reasoning-history`,
         icon: History,
         label: 'Reasoning History',
-        isActive: () => segments[0] === 'workspaces' && segments[1] === workspaceId && segments[2] === 'reasoning-history'
+        isActive: () => isWorkspaceSection('reasoning-history')
       },
       {
         id: 'summary',
         href: `${workspaceBasePath}/summary`,
         icon: BarChart3,
         label: 'Summary',
-        isActive: () => segments[0] === 'workspaces' && segments[1] === workspaceId && segments[2] === 'summary'
+        isActive: () => isWorkspaceSection('summary')
       }
     ],
     [workspaceBasePath, workspaceId, segments]

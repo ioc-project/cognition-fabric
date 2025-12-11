@@ -1,6 +1,6 @@
 'use client';
 
-import * as z from 'zod';
+import {z} from 'zod';
 import {mutate as swrMutate} from 'swr';
 import {swrKeys} from '@/lib/swr-config';
 import {FormModal} from '@/components/ui/form-modal';

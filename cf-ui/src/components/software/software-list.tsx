@@ -11,6 +11,7 @@ import {useState, useMemo, useEffect} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
 import useSWR from 'swr';
 import {routes, breadcrumbs} from '@/constants/routes';
+import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 
 export function SoftwareList() {
   const router = useRouter();
@@ -105,29 +106,11 @@ export function SoftwareList() {
                   <div className="space-y-3 mb-8">
                     <div className="flex flex-col gap-1">
                       <span className="text-xs font-medium text-muted-foreground">Created</span>
-                      <span className="text-sm text-foreground">
-                        {new Date(tpl.created_at).toLocaleString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: false
-                        })}
-                      </span>
+                      <span className="text-sm text-foreground">{new Date(tpl.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="text-xs font-medium text-muted-foreground">Last Updated</span>
-                      <span className="text-sm text-foreground">
-                        {new Date(tpl.updated_at).toLocaleString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: false
-                        })}
-                      </span>
+                      <span className="text-sm text-foreground">{new Date(tpl.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
                     </div>
                   </div>
 

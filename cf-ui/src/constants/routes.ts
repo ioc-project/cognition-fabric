@@ -65,12 +65,14 @@ export const apiRoutes = {
   apiKeys: {
     list: '/api/iam/api-keys',
     create: '/api/iam/api-keys',
-    delete: (id: string) => `/api/iam/api-keys/${id}`
+    delete: (id: string) => `/api/iam/api-keys/${id}`,
+    roles: '/api/iam/roles',
+    users: '/api/iam/users'
   },
 
   software: {
-    list: '/api/software-templates',
-    listByType: (type: string) => `/api/software-templates?type=${encodeURIComponent(type)}`
+    list: '/api/softwares',
+    listByType: (type: string) => `/api/softwares?type=${encodeURIComponent(type)}`
   }
 } as const;
 

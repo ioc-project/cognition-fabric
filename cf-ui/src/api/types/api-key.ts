@@ -29,3 +29,18 @@ export const ListApiKeysResponseSchema = z.object({
 });
 
 export type ListApiKeysResponse = z.infer<typeof ListApiKeysResponseSchema>;
+
+export const IamUserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string().email(),
+  created_at: z.string().optional()
+});
+
+export type IamUser = z.infer<typeof IamUserSchema>;
+
+export const IamUsersResponseSchema = z.object({
+  users: z.array(IamUserSchema)
+});
+
+export type IamUsersResponse = z.infer<typeof IamUsersResponseSchema>;

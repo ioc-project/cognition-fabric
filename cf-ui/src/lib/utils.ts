@@ -71,3 +71,12 @@ export const safeGetDate = (date?: string | number | Date | null | undefined): n
     return null;
   }
 };
+
+export const DATE_TIME_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false
+} as const;

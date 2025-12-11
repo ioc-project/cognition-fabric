@@ -15,6 +15,7 @@ import {workspaceApi} from '@/api/endpoints';
 import {useRouter, useSearchParams} from 'next/navigation';
 import {parseError} from '@/lib/utils';
 import {useWorkspaces} from '@/hooks/useApi';
+import {toast} from 'sonner';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import type {Workspace} from '@/api/types';
 import {routes} from '@/constants/routes';
@@ -43,12 +44,11 @@ export function WorkspacesList() {
 
   const handleDeleteWorkspace = async () => {
     await deleteDialog.confirm(async (data) => {
-      setError(null);
       try {
         await workspaceApi.delete(data.id);
         await mutate();
       } catch (err) {
-        setError(`Failed to delete workspace: ${parseError(err)}`);
+        toast.error(parseError(err));
         throw err;
       }
     });

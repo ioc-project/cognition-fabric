@@ -23,7 +23,7 @@ interface FormModalProps<TFieldValues extends FieldValues> {
   contentClassName?: string;
   formId?: string;
   isLoading?: boolean;
-  onInteractOutside?: (event: Event) => void;
+  onInteractOutside?: (event: Event | React.SyntheticEvent) => void;
   errorFieldName?: keyof TFieldValues;
 }
 
@@ -46,6 +46,7 @@ export function FormModal<TFieldValues extends FieldValues>({
 }: FormModalProps<TFieldValues>) {
   const form = useForm<TFieldValues>({
     resolver: zodResolver(schema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     defaultValues: defaultValues as any
   });
 
@@ -58,6 +59,7 @@ export function FormModal<TFieldValues extends FieldValues>({
     } catch (error) {
       const errorMessage = parseError(error);
       const fieldName = errorFieldName || (Object.keys(defaultValues)[0] as keyof TFieldValues);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       form.setError(fieldName as any, {
         type: 'manual',
         message: errorMessage
@@ -72,7 +74,7 @@ export function FormModal<TFieldValues extends FieldValues>({
     onOpenChange(open);
   };
 
-  const handleInteractOutside = onInteractOutside || ((e: Event) => e.preventDefault());
+  const handleInteractOutside = onInteractOutside;
 
   const footer = (
     <div className="flex w-full items-center justify-between">
@@ -96,7 +98,9 @@ export function FormModal<TFieldValues extends FieldValues>({
       footer={footer}
     >
       <Form {...form}>
+        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
         <form id={generatedFormId} onSubmit={form.handleSubmit(handleSubmit as any)} className="space-y-4 py-4">
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
           {children(form as any)}
         </form>
       </Form>

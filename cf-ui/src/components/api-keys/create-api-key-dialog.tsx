@@ -1,6 +1,6 @@
 'use client';
 
-import * as z from 'zod';
+import {z} from 'zod';
 import {FormModal} from '@/components/ui/form-modal';
 import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';

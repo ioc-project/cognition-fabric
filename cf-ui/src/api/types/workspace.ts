@@ -1,10 +1,16 @@
 import {z} from 'zod';
 
+const WorkspaceUserSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  email: z.string().email()
+});
+
 export const WorkspaceSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   created_at: z.string().datetime(),
-  users: z.array(z.any()).default([]),
+  users: z.array(WorkspaceUserSchema).default([]),
   mas_count: z.number().int().nonnegative().optional(),
   kep_count: z.number().int().nonnegative().optional(),
   reasoner_count: z.number().int().nonnegative().optional()
