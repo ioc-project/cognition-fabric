@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint:check": "next lint && prettier \"**/*.+(ts*|js*)\" --check",
-    "lint": "next lint --fix && prettier \"**/*.+(ts*|js*)\" --write",
+    "lint:check": "eslint . && prettier \"**/*.+(ts*|js*)\" --check",
+    "lint": "eslint --fix . && prettier \"**/*.+(ts*|js*)\" --write",
     "format": "prettier \"**/*.+(ts*|js*)\" --write"
   },
   "dependencies": {
@@ -33,6 +33,7 @@
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.3",
     "@hookform/resolvers": "^3.9.0",
     "@segment/analytics-next": "^1.76.0",
     "@server-sent-stream/web": "^1.0.3",

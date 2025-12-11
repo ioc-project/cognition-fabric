@@ -28,6 +28,7 @@ module.exports = {
     'build/**',
     'tests-reports/**',
     'src/config/**',
+    'next-env.d.ts',
     'postcss.config.js',
     'vite.config.ts',
     'tailwind.config.js'
