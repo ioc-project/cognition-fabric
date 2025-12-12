@@ -12,13 +12,13 @@ type ModalProps = {
   children?: ReactNode;
   footer?: ReactNode;
   contentClassName?: string;
-  onInteractOutside?: (event: Event) => void;
+  onInteractOutside?: (event: Event | React.SyntheticEvent) => void;
 };
 
 export function Modal({open, onOpenChange, title, description, icon, children, footer, contentClassName, onInteractOutside}: ModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={contentClassName} onInteractOutside={onInteractOutside as any}>
+      <DialogContent className={contentClassName} onInteractOutside={onInteractOutside}>
         {(title || description || icon) && (
           <DialogHeader>
             <div className="flex items-center gap-3">

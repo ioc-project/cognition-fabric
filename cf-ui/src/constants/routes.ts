@@ -1,3 +1,9 @@
+export interface BreadcrumbItem {
+  link: string;
+  text: string;
+  active?: boolean;
+}
+
 export const routes = {
   home: '/',
   login: '/login',
@@ -59,12 +65,14 @@ export const apiRoutes = {
   apiKeys: {
     list: '/api/iam/api-keys',
     create: '/api/iam/api-keys',
-    delete: (id: string) => `/api/iam/api-keys/${id}`
+    delete: (id: string) => `/api/iam/api-keys/${id}`,
+    roles: '/api/iam/roles',
+    users: '/api/iam/users'
   },
 
   software: {
-    list: '/api/software-templates',
-    listByType: (type: string) => `/api/software-templates?type=${encodeURIComponent(type)}`
+    list: '/api/softwares',
+    listByType: (type: string) => `/api/softwares?type=${encodeURIComponent(type)}`
   }
 } as const;
 
@@ -75,3 +83,75 @@ export function getWorkspaceBasePath(workspaceId: string | null | undefined): st
 export function isRouteActive(currentPath: string, route: string): boolean {
   return currentPath.startsWith(route);
 }
+
+export const breadcrumbs = {
+  workspacesList: (): BreadcrumbItem[] => [
+    {link: routes.home, text: 'Home'},
+    {link: '', text: 'Workspaces', active: true}
+  ],
+
+  softwareList: (tabName?: string): BreadcrumbItem[] => {
+    if (tabName) {
+      return [
+        {link: routes.software.list, text: 'Software Templates'},
+        {link: '', text: tabName, active: true}
+      ];
+    }
+    return [
+      {link: routes.home, text: 'Home'},
+      {link: '', text: 'Software Templates', active: true}
+    ];
+  },
+
+  queriesList: (): BreadcrumbItem[] => [
+    {link: routes.home, text: 'Home'},
+    {link: '', text: 'Saved Queries', active: true}
+  ],
+
+  softwareDetails: (templateId: string): BreadcrumbItem[] => [
+    {link: routes.software.list, text: 'Software Templates'},
+    {link: '', text: templateId, active: true}
+  ],
+
+  workspaceDetails: (workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: '', text: workspaceName, active: true}
+  ],
+
+  workspaceMAS: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+    {link: '', text: 'Multi-Agent Systems', active: true}
+  ],
+
+  createMAS: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+    {link: routes.workspaces.mas.list(workspaceId), text: 'Multi-Agent Systems'},
+    {link: '', text: 'Create', active: true}
+  ],
+
+  workspaceKnowledge: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+    {link: '', text: 'Knowledge Adapters', active: true}
+  ],
+
+  workspaceReasoners: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+    {link: '', text: 'Reasoners', active: true}
+  ],
+
+  workspaceReasoningHistory: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+    {link: '', text: 'Reasoning History', active: true}
+  ],
+
+  workspaceSummary: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+    {link: '', text: 'Summary', active: true}
+  ]
+} as const;

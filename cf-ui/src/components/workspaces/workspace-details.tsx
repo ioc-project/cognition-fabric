@@ -9,7 +9,7 @@ import {EmptyState} from '@/components/ui/empty-state';
 import {BasePage} from '@/components/ui/base-page';
 import {useUsers} from '@/hooks/useApi';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
-import {routes} from '@/constants/routes';
+import {routes, breadcrumbs} from '@/constants/routes';
 
 export function WorkspaceDetails() {
   const router = useRouter();
@@ -38,8 +38,10 @@ export function WorkspaceDetails() {
     );
   }
 
+  const workspaceName: string = workspace.name;
+
   return (
-    <BasePage title={workspace.name}>
+    <BasePage title={workspace.name} useBreadcrumbs breadcrumbs={breadcrumbs.workspaceDetails(workspaceName)}>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <div className="p-4 border rounded-lg bg-card soft-card">
           <div className="flex flex-col gap-6">
@@ -80,7 +82,7 @@ export function WorkspaceDetails() {
             <EmptyState
               icon={Boxes}
               title="No Multi‑Agent Systems exist in this workspace."
-              description="Create a MAS to link adapters, add reasoners, and run queries."
+              description="Create a Multi-Agent System to link adapters, add reasoners, and run queries."
               actionLabel="Create Multi‑Agent System"
               onAction={() => router.push(routes.workspaces.mas.create(workspaceId!))}
             />
@@ -90,12 +92,12 @@ export function WorkspaceDetails() {
         <div className="space-y-4">
           <div className="p-4 border rounded-lg bg-card soft-card">
             <h2 className="text-base font-medium mb-2">Multi‑Agent Systems</h2>
-            <p className="text-sm text-muted-foreground mb-4">Registered MAS for this workspace.</p>
-            <div className="text-sm text-muted-foreground">MAS list will appear here.</div>
+            <p className="text-sm text-muted-foreground mb-4">Registered Multi-Agent Systems for this workspace.</p>
+            <div className="text-sm text-muted-foreground">Multi-Agent Systems list will appear here.</div>
           </div>
           <div className="flex gap-3">
             <Button size="sm" variant="outline" onClick={() => router.push(routes.workspaces.mas.create(workspaceId!))}>
-              Create MAS
+              Create Multi-Agent System
             </Button>
           </div>
         </div>

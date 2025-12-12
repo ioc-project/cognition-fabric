@@ -1,7 +1,20 @@
 'use client';
 
-import {useEffect, useMemo, useState} from 'react';
-import {Boxes, Database, FolderOpen, BarChart3, ChevronDown, ChevronRight, Package, Brain, History, Key, Settings} from 'lucide-react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {
+  Boxes,
+  Database,
+  FolderOpen,
+  BarChart3,
+  ChevronDown,
+  ChevronRight,
+  Package,
+  Brain,
+  History,
+  Key,
+  Settings,
+  type LucideIcon
+} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments} from 'next/navigation';
 import {useWorkspaceNavigation} from '@/hooks/useWorkspaceNavigation';
@@ -13,18 +26,18 @@ export function Sidebar() {
   const segments = useSelectedLayoutSegments();
   const isWorkspaceRoute = segments[0] === 'workspaces';
 
-  const {currentId: wsIdRaw, base: wsBaseRaw} = useWorkspaceNavigation();
+  const {currentId: workspaceIdRaw, base: workspaceBasePathRaw} = useWorkspaceNavigation();
   const {workspace: workspaceRaw} = useCurrentWorkspace();
-  const wsId = isWorkspaceRoute ? wsIdRaw : undefined;
-  const wsBase = isWorkspaceRoute ? wsBaseRaw : '';
+  const workspaceId = isWorkspaceRoute ? workspaceIdRaw : undefined;
+  const workspaceBasePath = isWorkspaceRoute ? workspaceBasePathRaw : '';
   const workspace = isWorkspaceRoute ? workspaceRaw : undefined;
-  const workspaceName = workspace?.name || (wsId ? `Workspace ${wsId.slice(0, 8)}` : '');
+  const workspaceName = workspace?.name || (workspaceId ? `Workspace ${workspaceId.slice(0, 8)}` : '');
 
-  const [wsOpen, setWsOpen] = useState<boolean>(false);
-  const [settingsOpen, setSettingsOpen] = useState<boolean>(true);
+  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(true);
 
   useEffect(() => {
-    setWsOpen(isWorkspaceRoute);
+    setIsWorkspaceOpen(isWorkspaceRoute);
   }, [isWorkspaceRoute]);
 
   const topLevelItems = useMemo(
@@ -47,55 +60,68 @@ export function Sidebar() {
     [segments]
   );
 
+  const isWorkspaceSection = useCallback(
+    (section?: string) => {
+      if (segments[0] !== 'workspaces' || segments[1] !== workspaceId) {
+        return false;
+      }
+      if (!section) {
+        return segments.length === 2 || segments[2] === 'overview';
+      }
+      return segments[2] === section;
+    },
+    [segments, workspaceId]
+  );
+
   const workspaceChildren = useMemo(
     () => [
       {
         id: 'overview',
-        href: `${wsBase}`,
+        href: `${workspaceBasePath}`,
         icon: FolderOpen,
         label: 'Overview',
-        isActive: () => segments[0] === 'workspaces' && segments[1] === wsId && (segments.length === 2 || segments[2] === 'overview')
+        isActive: () => isWorkspaceSection()
       },
       {
         id: 'mas',
-        href: `${wsBase}/mas`,
+        href: `${workspaceBasePath}/mas`,
         icon: Boxes,
         label: 'Multi-Agent Systems',
-        isActive: () => segments[0] === 'workspaces' && segments[1] === wsId && segments[2] === 'mas'
+        isActive: () => isWorkspaceSection('mas')
       },
       {
         id: 'knowledge',
-        href: `${wsBase}/knowledge`,
+        href: `${workspaceBasePath}/knowledge`,
         icon: Database,
         label: 'Knowledge Adapters',
-        isActive: () => segments[0] === 'workspaces' && segments[1] === wsId && segments[2] === 'knowledge'
+        isActive: () => isWorkspaceSection('knowledge')
       },
       {
         id: 'reasoners',
-        href: `${wsBase}/reasoners`,
+        href: `${workspaceBasePath}/reasoners`,
         icon: Brain,
         label: 'Reasoners',
-        isActive: () => segments[0] === 'workspaces' && segments[1] === wsId && segments[2] === 'reasoners'
+        isActive: () => isWorkspaceSection('reasoners')
       },
       {
         id: 'history',
-        href: `${wsBase}/reasoning-history`,
+        href: `${workspaceBasePath}/reasoning-history`,
         icon: History,
         label: 'Reasoning History',
-        isActive: () => segments[0] === 'workspaces' && segments[1] === wsId && segments[2] === 'reasoning-history'
+        isActive: () => isWorkspaceSection('reasoning-history')
       },
       {
         id: 'summary',
-        href: `${wsBase}/summary`,
+        href: `${workspaceBasePath}/summary`,
         icon: BarChart3,
         label: 'Summary',
-        isActive: () => segments[0] === 'workspaces' && segments[1] === wsId && segments[2] === 'summary'
+        isActive: () => isWorkspaceSection('summary')
       }
     ],
-    [wsBase, wsId, segments]
+    [workspaceBasePath, isWorkspaceSection]
   );
 
-  const NavItem = ({href, icon: Icon, label, active}: {href: string; icon: any; label: string; active: boolean}) => (
+  const NavItem = ({href, icon: Icon, label, active}: {href: string; icon: LucideIcon; label: string; active: boolean}) => (
     <Link
       href={href}
       className={`group flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors focus-visible:outline-none ${
@@ -149,28 +175,28 @@ export function Sidebar() {
             )}
           </li>
 
-          {wsId && (
+          {workspaceId && (
             <li aria-hidden className="my-2">
               <div className="border-t border-[hsl(var(--sidebar-border))]" />
             </li>
           )}
 
-          {wsId && (
+          {workspaceId && (
             <li className="mt-2">
               <button
                 type="button"
-                onClick={() => setWsOpen((o) => !o)}
+                onClick={() => setIsWorkspaceOpen((open) => !open)}
                 className="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))]"
               >
                 <span className="sidebar-text truncate font-medium mr-2">{workspaceName}</span>
-                {wsOpen ? (
+                {isWorkspaceOpen ? (
                   <ChevronDown className="w-4 h-4 text-[hsl(var(--sidebar-icon))]" />
                 ) : (
                   <ChevronRight className="w-4 h-4 text-[hsl(var(--sidebar-icon))]" />
                 )}
               </button>
 
-              {wsOpen && (
+              {isWorkspaceOpen && (
                 <ul className="mt-1 ml-8 space-y-1">
                   {workspaceChildren.map((item) => (
                     <li key={item.id}>

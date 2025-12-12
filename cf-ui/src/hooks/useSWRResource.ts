@@ -13,7 +13,7 @@ export function useSWRResource<TData>(key: Key | null, fetcher: () => Promise<TD
   } as const;
 }
 
-export function useInvalidateMutation<TArgs extends any[], TResult>(keys: Key | Key[], fn: (...args: TArgs) => Promise<TResult>) {
+export function useInvalidateMutation<TArgs extends unknown[], TResult>(keys: Key | Key[], fn: (...args: TArgs) => Promise<TResult>) {
   const {mutate} = useSWRConfig();
   const run = async (...args: TArgs) => {
     const res = await fn(...args);

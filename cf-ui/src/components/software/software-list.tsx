@@ -10,7 +10,8 @@ import {softwareApi} from '@/api/endpoints';
 import {useState, useMemo, useEffect} from 'react';
 import {useRouter, useSearchParams} from 'next/navigation';
 import useSWR from 'swr';
-import {routes} from '@/constants/routes';
+import {routes, breadcrumbs} from '@/constants/routes';
+import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 
 export function SoftwareList() {
   const router = useRouter();
@@ -46,12 +47,17 @@ export function SoftwareList() {
     []
   );
 
+  const activeTab = tabs.find((tab) => tab.key === templateType);
+  const breadcrumbsToShow = breadcrumbs.softwareList(activeTab?.title);
+
   return (
     <div className="px-8 pt-4">
       <BasePage
         title="Software Templates"
+        useBreadcrumbs={true}
+        breadcrumbs={breadcrumbsToShow}
         tabs={tabs}
-        activeTabKey={templateType === 'ALL' ? undefined : templateType}
+        activeTabKey={templateType}
         onTabChange={(key) => {
           const k = key as 'ALL' | 'KnowledgeAdapterTemplates' | 'ReasonerTemplates';
           setTemplateType(k);
@@ -85,7 +91,6 @@ export function SoftwareList() {
             <div className="list-grid">
               {templates.map((tpl) => (
                 <Card key={tpl.id} variant="list" className="transition-shadow duration-200 flex flex-col">
-                  {/* Header with Type */}
                   <div className="pb-4 mb-5 border-b border-border/50">
                     <div className="text-sm font-medium text-foreground">
                       {tpl.type === 'KnowledgeAdapterTemplates' ? 'Knowledge Adapter' : tpl.type === 'ReasonerTemplates' ? 'Reasoner' : tpl.type}
@@ -101,29 +106,11 @@ export function SoftwareList() {
                   <div className="space-y-3 mb-8">
                     <div className="flex flex-col gap-1">
                       <span className="text-xs font-medium text-muted-foreground">Created</span>
-                      <span className="text-sm text-foreground">
-                        {new Date(tpl.created_at).toLocaleString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: false
-                        })}
-                      </span>
+                      <span className="text-sm text-foreground">{new Date(tpl.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
                     </div>
                     <div className="flex flex-col gap-1">
                       <span className="text-xs font-medium text-muted-foreground">Last Updated</span>
-                      <span className="text-sm text-foreground">
-                        {new Date(tpl.updated_at).toLocaleString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          hour12: false
-                        })}
-                      </span>
+                      <span className="text-sm text-foreground">{new Date(tpl.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
                     </div>
                   </div>
 
