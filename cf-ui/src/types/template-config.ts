@@ -78,8 +78,10 @@ export interface ExtractionConfig {
 }
 
 export interface TemplateConfig {
-  extraction?: ExtractionConfig;
-  resourceSpans?: ResourceSpan[];
+  'info-extraction'?: ExtractionConfig;
+  otel?: {
+    resourceSpans?: ResourceSpan[];
+  };
   [key: string]: unknown;
 }
 

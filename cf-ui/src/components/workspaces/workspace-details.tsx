@@ -69,24 +69,15 @@ export function WorkspaceDetails() {
         </div>
       </div>
 
-      {error && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
       {(workspace.mas_count ?? 0) === 0 ? (
-        <div className="space-y-4 mt-12">
-          <div className="max-w-4xl mx-auto">
-            <EmptyState
-              icon={Boxes}
-              title="No Multi‑Agent Systems exist in this workspace."
-              description="Create a Multi-Agent System to link adapters, add reasoners, and run queries."
-              actionLabel="Create Multi‑Agent System"
-              onAction={() => router.push(routes.workspaces.mas.create(workspaceId!))}
-            />
-          </div>
+        <div className="flex items-center justify-center flex-1">
+          <EmptyState
+            icon={Boxes}
+            title="No Multi‑Agent Systems exist in this workspace."
+            description="Create a Multi-Agent System to link adapters, add reasoners, and run queries."
+            actionLabel="Create Multi‑Agent System"
+            onAction={() => router.push(routes.workspaces.mas.create(workspaceId!))}
+          />
         </div>
       ) : (
         <div className="space-y-4">
