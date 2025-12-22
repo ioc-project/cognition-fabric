@@ -93,10 +93,24 @@ export function useReasoners(workspaceId: string) {
     (payload: CreateReasonerRequest) => reasonerApi.create(workspaceId, payload)
   );
 
-  const {run: deleteReasoner} = useInvalidateMutation(
+  const {run: runDeleteReasoner} = useInvalidateMutation(
     {keys: swrKeys.reasoners(workspaceId), prefixes: [['reasoners', workspaceId]]},
     (reasonerId: string) => reasonerApi.delete(workspaceId, reasonerId)
   );
+
+  const deleteReasoner = async (reasonerId: string) => {
+    const prev = Array.isArray(data) ? data : [];
+    await mutate(
+      prev.filter((r) => r.id !== reasonerId),
+      {revalidate: false}
+    );
+    try {
+      await runDeleteReasoner(reasonerId);
+    } catch (e) {
+      await mutate(prev, {revalidate: false});
+      throw e;
+    }
+  };
 
   return {
     reasoners: Array.isArray(data) ? data : [],
@@ -167,17 +181,31 @@ export function useKEPs(workspaceId: string) {
     kepApi.create(workspaceId, payload)
   );
 
-  const {run: deleteKEP} = useInvalidateMutation({keys: swrKeys.keps(workspaceId), prefixes: [['kep-list', workspaceId]]}, (kepId: string) =>
+  const {run: runDeleteKEP} = useInvalidateMutation({keys: swrKeys.keps(workspaceId), prefixes: [['kep-list', workspaceId]]}, (kepId: string) =>
     kepApi.delete(workspaceId, kepId)
   );
 
+  const deleteKnowledgeAdapters = async (kepId: string) => {
+    const prev = Array.isArray(data) ? data : [];
+    await mutate(
+      prev.filter((k) => k.id !== kepId),
+      {revalidate: false}
+    );
+    try {
+      await runDeleteKEP(kepId);
+    } catch (e) {
+      await mutate(prev, {revalidate: false});
+      throw e;
+    }
+  };
+
   return {
-    kepList: Array.isArray(data) ? data : [],
+    knowledgeAdapters: Array.isArray(data) ? data : [],
     isLoading,
     isValidating,
     error: error ? parseError(error) : null,
     mutate,
     addKEP,
-    deleteKEP
+    deleteKnowledgeAdapters
   } as const;
 }

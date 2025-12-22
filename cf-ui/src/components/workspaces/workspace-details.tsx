@@ -16,7 +16,7 @@ export function WorkspaceDetails() {
   const {workspaceId, workspace, isLoading: workspaceLoading} = useCurrentWorkspace();
 
   const {masList, isValidating: masValidating} = useMAS(workspaceId || '');
-  const {kepList, isValidating: kepValidating} = useKEPs(workspaceId || '');
+  const {knowledgeAdapters, isValidating: kepValidating} = useKEPs(workspaceId || '');
   const {reasoners, isValidating: reasonersValidating} = useReasoners(workspaceId || '');
 
   const loading = workspaceLoading;
@@ -42,7 +42,7 @@ export function WorkspaceDetails() {
   }, [masList]);
 
   const latestKeps = useMemo(() => {
-    return [...kepList]
+    return [...knowledgeAdapters]
       .sort((a, b) => {
         if (!a.created_at && !b.created_at) {
           return 0;
@@ -56,7 +56,7 @@ export function WorkspaceDetails() {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       })
       .slice(0, 4);
-  }, [kepList]);
+  }, [knowledgeAdapters]);
 
   const latestReasoners = useMemo(() => {
     return [...reasoners]
@@ -104,7 +104,7 @@ export function WorkspaceDetails() {
           <div className="p-4 border rounded-lg bg-card soft-card">
             <div className="flex flex-col gap-6">
               <h4 className="card-title">Knowledge Adapters</h4>
-              <p className="card-stats">{kepList.length}</p>
+              <p className="card-stats">{knowledgeAdapters.length}</p>
             </div>
           </div>
           <div className="p-4 border rounded-lg bg-card soft-card">
@@ -116,24 +116,25 @@ export function WorkspaceDetails() {
         </div>
 
         {masValidating && masList.length === 0 ? (
-          <div className="flex items-center justify-center flex-1">
+          <div className="p-6 border rounded-lg bg-card soft-card">
             <LoaderRelative />
           </div>
         ) : masList.length === 0 ? (
-          <div className="flex items-center justify-center flex-1">
+          <div className="p-6 border rounded-lg bg-card soft-card">
             <EmptyState
               icon={Boxes}
               title="No Multi‑Agentic Systems found."
               description="Create a MAS to link adapters, add reasoners, and run queries."
               actionLabel="Create Multi‑Agent Systems"
               href={routes.workspaces.mas.create(workspaceId!)}
+              variant="inset"
             />
           </div>
         ) : (
           <div className="space-y-4">
             <div className="p-6 border rounded-lg bg-card soft-card">
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-base font-medium">Latest Multi-Agentic Systems (MAS)</h2>
+                <h2 className="text-base font-medium">Latest Multi-Agentic Systems</h2>
                 <div className="flex gap-2">
                   <Button asChild size="sm" variant="sidebar">
                     <Link href={routes.workspaces.mas.list(workspaceId!)}>View All</Link>
@@ -166,12 +167,12 @@ export function WorkspaceDetails() {
               </div>
             </div>
 
-            {kepValidating && kepList.length === 0 ? (
+            {kepValidating && knowledgeAdapters.length === 0 ? (
               <div className="p-6 border rounded-lg bg-card soft-card">
                 <LoaderRelative />
               </div>
             ) : (
-              kepList.length > 0 && (
+              knowledgeAdapters.length > 0 && (
                 <div className="p-6 border rounded-lg bg-card soft-card">
                   <div className="flex items-center justify-between mb-6">
                     <h2 className="text-base font-medium">Latest Knowledge Adapters</h2>

@@ -142,7 +142,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                       <FormItem>
                         <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter description (optional)" {...field} />
+                          <Input placeholder="Enter description" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -162,7 +162,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                             {...field}
                           />
                         </FormControl>
-                        <div className="text-xs text-muted-foreground">Enter agents configuration as JSON (optional, defaults to empty object)</div>
+
                         <FormMessage />
                       </FormItem>
                     )}
@@ -181,7 +181,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                             {...field}
                           />
                         </FormControl>
-                        <div className="text-xs text-muted-foreground">Enter system configuration as JSON (optional, defaults to empty object)</div>
+
                         <FormMessage />
                       </FormItem>
                     )}

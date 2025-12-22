@@ -38,7 +38,7 @@ export default function MASDetailsPage() {
   const crumbs =
     workspace && workspaceId
       ? [
-          {link: routes.workspaces.mas.list(workspaceId), text: 'Multi-Agentic Systems (MAS)'},
+          {link: routes.workspaces.mas.list(workspaceId), text: 'Multi-Agentic Systems'},
           {link: '', text: mas?.name || 'MAS', active: true}
         ]
       : undefined;

@@ -31,14 +31,14 @@ export function KEPList({workspaceId}: KEPListProps) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {kepList = [], isLoading: loading, isValidating, error: swrError, deleteKEP} = useKEPs(workspaceId);
+  const {knowledgeAdapters = [], isLoading: loading, isValidating, error: swrError, deleteKnowledgeAdapters} = useKEPs(workspaceId);
 
-  const safeKepList: KEP[] = kepList;
+  const knowledgeAdaptersList: KEP[] = knowledgeAdapters;
 
-  const handleDeleteKEP = async () => {
+  const handleDeleteKnowledgeAdapter = async () => {
     await deleteDialog.confirm(async (data) => {
       try {
-        await deleteKEP(data.id);
+        await deleteKnowledgeAdapters(data.id);
         toast.success(`Knowledge Adapter "${data.name}" deleted successfully`);
       } catch (err) {
         const errorMessage = parseError(err);
@@ -53,7 +53,7 @@ export function KEPList({workspaceId}: KEPListProps) {
   return (
     <>
       <ConditionalSWRRenderer
-        data={kepList}
+        data={knowledgeAdaptersList}
         error={swrError}
         itemName="Knowledge Adapters"
         customIsLoading={loading || isValidating}
@@ -62,7 +62,7 @@ export function KEPList({workspaceId}: KEPListProps) {
             <ListShell
               empty={{
                 icon: Database,
-                title: 'No Knowledge Adapters',
+                title: 'No Knowledge Adapters exist in this workspace.',
                 description: 'Create a Knowledge Adapter to connect systems and ingest data.',
                 actionLabel: 'Create Knowledge Adapter',
                 href: createKepPath
@@ -97,7 +97,7 @@ export function KEPList({workspaceId}: KEPListProps) {
 
             {viewMode === 'table' ? (
               <KEPTableList
-                keps={safeKepList}
+                keps={knowledgeAdaptersList}
                 workspaceId={workspaceId}
                 selectedId={selectedId}
                 onRowClick={(kep) => {
@@ -108,7 +108,7 @@ export function KEPList({workspaceId}: KEPListProps) {
               />
             ) : (
               <KEPCardList
-                keps={safeKepList}
+                keps={knowledgeAdaptersList}
                 workspaceId={workspaceId}
                 selectedId={selectedId}
                 onCardClick={(kep) => {
@@ -130,7 +130,7 @@ export function KEPList({workspaceId}: KEPListProps) {
             deleteDialog.close();
           }
         }}
-        onConfirm={handleDeleteKEP}
+        onConfirm={handleDeleteKnowledgeAdapter}
         title={`Delete ${deleteDialog.data?.name || 'Knowledge Adapter'}`}
         description={deleteError ?? `Delete "${deleteDialog.data?.name}"? This action is permanent and cannot be undone.`}
         confirmText="Delete"

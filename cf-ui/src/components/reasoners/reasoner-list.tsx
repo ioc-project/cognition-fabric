@@ -58,8 +58,8 @@ export function ReasonerList({workspaceId}: ReasonerListProps) {
             <ListShell
               empty={{
                 icon: Brain,
-                title: 'No Reasoners',
-                description: 'Create a Reasoner to orchestrate agents and run reasoning loops.',
+                title: 'No Reasoners exist in this workspace.',
+                description: 'Create a Reasoner to orchestrate agents and run reasoning.',
                 actionLabel: 'Create Reasoner',
                 href: routes.workspaces.reasoners.create(workspaceId)
               }}

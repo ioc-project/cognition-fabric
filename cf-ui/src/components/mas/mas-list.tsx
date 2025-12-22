@@ -68,7 +68,7 @@ export function MASList({workspaceId}: MASListProps) {
       >
         <div className="space-y-8">
           <BasePage
-            title="Multi-Agentic Systems (MAS)"
+            title="Multi-Agentic Systems"
             callToAction={
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>

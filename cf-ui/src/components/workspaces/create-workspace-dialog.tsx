@@ -84,7 +84,7 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
             render={({field}) => (
               <FormItem>
                 <div className="space-y-2">
-                  <FormLabel>Users (optional)</FormLabel>
+                  <FormLabel>Users</FormLabel>
                   <FormControl>
                     <MultiSelect
                       placeholder={usersData ? (usersData.users?.length ? 'Select users' : 'No users found') : 'Loading users...'}
@@ -110,7 +110,7 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
             render={({field}) => (
               <FormItem>
                 <div className="space-y-2">
-                  <FormLabel>Config (JSON, optional)</FormLabel>
+                  <FormLabel>Config (JSON)</FormLabel>
                   <FormControl>
                     <Input placeholder='{"key":"value"}' {...field} />
                   </FormControl>

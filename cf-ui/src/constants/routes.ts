@@ -123,13 +123,11 @@ export const breadcrumbs = {
   workspaceMAS: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
     {link: routes.workspaces.list, text: 'Workspaces'},
     {link: routes.workspaces.details(workspaceId), text: workspaceName},
-    {link: '', text: 'Multi-Agentic Systems (MAS)', active: true}
+    {link: '', text: 'Multi-Agentic Systems', active: true}
   ],
 
-  createMAS: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.list, text: 'Workspaces'},
-    {link: routes.workspaces.details(workspaceId), text: workspaceName},
-    {link: routes.workspaces.mas.list(workspaceId), text: 'Multi-Agentic Systems (MAS)'},
+  createMAS: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.mas.list(workspaceId), text: 'Multi-Agentic Systems'},
     {link: '', text: 'Create', active: true}
   ],
 
@@ -139,9 +137,7 @@ export const breadcrumbs = {
     {link: '', text: 'Knowledge Adapters', active: true}
   ],
 
-  createKnowledge: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.list, text: 'Workspaces'},
-    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+  createKnowledge: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
     {link: routes.workspaces.knowledge.list(workspaceId), text: 'Knowledge Adapters'},
     {link: '', text: 'Create', active: true}
   ],
@@ -157,9 +153,7 @@ export const breadcrumbs = {
     {link: '', text: 'Reasoners', active: true}
   ],
 
-  createReasoner: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.list, text: 'Workspaces'},
-    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+  createReasoner: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
     {link: routes.workspaces.reasoners.list(workspaceId), text: 'Reasoners'},
     {link: '', text: 'Create', active: true}
   ],
