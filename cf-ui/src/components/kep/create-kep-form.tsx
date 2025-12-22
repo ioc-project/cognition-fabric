@@ -93,7 +93,7 @@ export function CreateKEPForm({workspaceId, onCancel}: CreateKEPFormProps) {
       setIsLoading(true);
       setError(null);
 
-      const response = await addKEP({
+      await addKEP({
         name: values.name,
         mas_ids: values.mas_ids,
         type: values.type,

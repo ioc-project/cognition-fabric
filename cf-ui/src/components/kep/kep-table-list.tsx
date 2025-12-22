@@ -50,7 +50,13 @@ export function KEPTableList({keps, workspaceId, selectedId, onRowClick, onOpenD
                 <DropdownMenuItem asChild>
                   <Link href={routes.workspaces.knowledge.details(workspaceId, kep.id)}>View Details</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-red-600 dark:text-red-400" onClick={() => onOpenDelete({id: kep.id, name: kep.name})}>
+                <DropdownMenuItem
+                  className="text-red-600 dark:text-red-400"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenDelete({id: kep.id, name: kep.name});
+                  }}
+                >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete
                 </DropdownMenuItem>

@@ -10,15 +10,14 @@ import {ListShell} from '@/components/ui/list-shell';
 import {BasePage} from '@/components/ui/base-page';
 import {Alert, AlertDescription} from '@/components/ui/alert';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
-import {kepApi} from '@/api/endpoints';
 import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {routes} from '@/constants/routes';
-import useSWR from 'swr';
 import type {KEP} from '@/api/types/kep';
 import {KEPTableList} from '@/components/kep/kep-table-list';
 import {KEPCardList} from '@/components/kep/kep-card-list';
+import {useKEPs} from '@/hooks/useApi';
 
 interface KEPListProps {
   workspaceId: string;
@@ -26,39 +25,30 @@ interface KEPListProps {
 
 export function KEPList({workspaceId}: KEPListProps) {
   const [error, setError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const deleteDialog = useConfirmDialog<{id: string; name: string}>();
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {
-    data: kepList = [],
-    isLoading: loading,
-    mutate: mutateKep,
-    error: swrError
-  } = useSWR<KEP[]>(['kep-list', workspaceId], () => kepApi.list(workspaceId));
+  const {kepList = [], isLoading: loading, isValidating, error: swrError, deleteKEP} = useKEPs(workspaceId);
 
   const safeKepList: KEP[] = kepList;
 
   const handleDeleteKEP = async () => {
     await deleteDialog.confirm(async (data) => {
       try {
-        await kepApi.delete(workspaceId, data.id);
-        await mutateKep();
+        await deleteKEP(data.id);
         toast.success(`Knowledge Adapter "${data.name}" deleted successfully`);
       } catch (err) {
         const errorMessage = parseError(err);
-        setError(errorMessage);
-        toast.error(`Failed to delete Knowledge Adapter: ${errorMessage}`);
+        setDeleteError(errorMessage);
+        throw err;
       }
     });
   };
 
-  // loading/empty states handled by ConditionalSWRRenderer below
-
-  const createKepPath = (routes.workspaces.knowledge as any).create
-    ? (routes.workspaces.knowledge as any).create(workspaceId)
-    : `${routes.workspaces.knowledge.list(workspaceId)}/create`;
+  const createKepPath = routes.workspaces.knowledge.create(workspaceId);
 
   return (
     <>
@@ -66,7 +56,7 @@ export function KEPList({workspaceId}: KEPListProps) {
         data={kepList}
         error={swrError}
         itemName="Knowledge Adapters"
-        customIsLoading={loading}
+        customIsLoading={loading || isValidating}
         customEmptyComponent={
           <div className="flex items-center justify-center min-h-[calc(100vh-116px)] px-8">
             <ListShell
@@ -98,7 +88,7 @@ export function KEPList({workspaceId}: KEPListProps) {
               </div>
             }
           >
-            {error && (
+            {error && !deleteDialog.isOpen && (
               <Alert variant="destructive" className="mb-6">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
@@ -134,10 +124,15 @@ export function KEPList({workspaceId}: KEPListProps) {
 
       <ConfirmDialog
         open={deleteDialog.isOpen}
-        onOpenChange={(open) => !open && deleteDialog.close()}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteError(null);
+            deleteDialog.close();
+          }
+        }}
         onConfirm={handleDeleteKEP}
         title={`Delete ${deleteDialog.data?.name || 'Knowledge Adapter'}`}
-        description={`Delete "${deleteDialog.data?.name}"? This action is permanent and cannot be undone.`}
+        description={deleteError ?? `Delete "${deleteDialog.data?.name}"? This action is permanent and cannot be undone.`}
         confirmText="Delete"
         loading={deleteDialog.isLoading}
         variant="destructive"

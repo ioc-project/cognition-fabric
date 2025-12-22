@@ -3,10 +3,9 @@
 import React, {useEffect, useState} from 'react';
 import {softwareApi} from '@/api/endpoints';
 import {TemplateView} from '@/components/software/template-view';
-import {Loading} from '@/components/ui/loading';
+import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {EmptyState} from '@/components/ui/empty-state';
-import {Alert, AlertDescription} from '@/components/ui/alert';
-import {AlertCircle, FileCode} from 'lucide-react';
+import {FileCode} from 'lucide-react';
 import {BasePage} from '@/components/ui/base-page';
 import {breadcrumbs} from '@/constants/routes';
 import type {SoftwareTemplate} from '@/api/types/software';
@@ -48,29 +47,6 @@ export function SoftwareTemplateDetails({id, type}: {id: string; type?: 'Knowled
     };
   }, [id, type]);
 
-  if (loading) {
-    return <Loading />;
-  }
-
-  if (error) {
-    return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
-    );
-  }
-
-  if (!template) {
-    return (
-      <EmptyState
-        icon={FileCode}
-        title="Template not found"
-        description="The requested template could not be found. Navigate from the list and try again."
-      />
-    );
-  }
-
   const pageTitle =
     type === 'KnowledgeAdapterTemplates'
       ? 'Knowledge Template Details'
@@ -78,11 +54,26 @@ export function SoftwareTemplateDetails({id, type}: {id: string; type?: 'Knowled
         ? 'Reasoner Template Details'
         : 'Template Details';
 
-  const breadcrumbId: string = template.id;
+  const breadcrumbId: string = template?.id || id;
 
   return (
     <BasePage title={pageTitle} useBreadcrumbs breadcrumbs={breadcrumbs.softwareDetails(breadcrumbId)}>
-      <TemplateView template={template as unknown as Template} />
+      <ConditionalSWRRenderer
+        data={template}
+        error={error}
+        customIsLoading={loading}
+        itemName="Template details"
+        errorListStateProps={{title: 'Failed to load template'}}
+        customEmptyComponent={
+          <EmptyState
+            icon={FileCode}
+            title="Template not found"
+            description="The requested template could not be found. Navigate from the list and try again."
+          />
+        }
+      >
+        <TemplateView template={template as unknown as Template} />
+      </ConditionalSWRRenderer>
     </BasePage>
   );
 }
