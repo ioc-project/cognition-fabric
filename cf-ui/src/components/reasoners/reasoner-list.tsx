@@ -1,14 +1,13 @@
 'use client';
 
 import {useState} from 'react';
-import {Plus, AlertCircle, Brain} from 'lucide-react';
+import {Plus, Brain} from 'lucide-react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {ListShell} from '@/components/ui/list-shell';
 import {BasePage} from '@/components/ui/base-page';
-import {Alert, AlertDescription} from '@/components/ui/alert';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
@@ -24,7 +23,7 @@ interface ReasonerListProps {
 
 export function ReasonerList({workspaceId}: ReasonerListProps) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const deleteDialog = useConfirmDialog<{id: string; name: string}>();
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
@@ -84,13 +83,6 @@ export function ReasonerList({workspaceId}: ReasonerListProps) {
               </div>
             }
           >
-            {error && !deleteDialog.isOpen && (
-              <Alert variant="destructive" className="mb-6">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
             {viewMode === 'table' ? (
               <ReasonerTableList
                 reasoners={reasoners}

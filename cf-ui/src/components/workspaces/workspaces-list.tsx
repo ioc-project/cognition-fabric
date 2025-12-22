@@ -16,7 +16,6 @@ import {workspaceApi} from '@/api/endpoints';
 import {useRouter, useSearchParams} from 'next/navigation';
 import {parseError} from '@/lib/utils';
 import {useWorkspaces} from '@/hooks/useApi';
-import {toast} from 'sonner';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import type {Workspace} from '@/api/types';
 import {routes} from '@/constants/routes';

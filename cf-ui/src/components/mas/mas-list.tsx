@@ -1,14 +1,13 @@
 'use client';
 
 import {useState} from 'react';
-import {Plus, AlertCircle, Boxes} from 'lucide-react';
+import {Plus, Boxes} from 'lucide-react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {ListShell} from '@/components/ui/list-shell';
 import {BasePage} from '@/components/ui/base-page';
-import {Alert, AlertDescription} from '@/components/ui/alert';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
@@ -24,7 +23,7 @@ interface MASListProps {
 
 export function MASList({workspaceId}: MASListProps) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const deleteDialog = useConfirmDialog<{id: string; name: string}>();
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
@@ -83,13 +82,6 @@ export function MASList({workspaceId}: MASListProps) {
               </div>
             }
           >
-            {error && !deleteDialog.isOpen && (
-              <Alert variant="destructive" className="mb-6">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
             {viewMode === 'table' ? (
               <MASTableList
                 masList={masList}
