@@ -41,8 +41,12 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
       ...(values.users && values.users.length > 0 ? {users: values.users} : {}),
       ...(config ? {config} : {})
     });
-    await swrMutate(swrKeys.workspaces(), undefined, {revalidate: true});
     onSuccess(response.id);
+
+    void workspaceApi
+      .get(response.id)
+      .then((workspace) => swrMutate(swrKeys.workspace(response.id), workspace, {revalidate: false}))
+      .catch(() => undefined);
   };
 
   return (

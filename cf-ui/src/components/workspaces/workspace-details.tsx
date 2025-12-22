@@ -9,20 +9,15 @@ import {EmptyState} from '@/components/ui/empty-state';
 import {BasePage} from '@/components/ui/base-page';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {routes, breadcrumbs} from '@/constants/routes';
-import {masApi, kepApi, reasonerApi} from '@/api/endpoints';
-import useSWR from 'swr';
-import type {MAS} from '@/api/types/mas';
-import type {KEP} from '@/api/types/kep';
-import type {Reasoner} from '@/api/types/reasoner';
+import {LoaderRelative} from '@/components/ui/loading';
+import {useMAS, useKEPs, useReasoners} from '@/hooks/useApi';
 
 export function WorkspaceDetails() {
   const {workspaceId, workspace, isLoading: workspaceLoading} = useCurrentWorkspace();
 
-  const {data: masList = [] as MAS[]} = useSWR<MAS[]>(workspaceId ? ['mas-list', workspaceId] : null, () => masApi.list(workspaceId!));
-  const {data: kepList = [] as KEP[]} = useSWR<KEP[]>(workspaceId ? ['kep-list', workspaceId] : null, () => kepApi.list(workspaceId!));
-  const {data: reasonersList = [] as Reasoner[]} = useSWR<Reasoner[]>(workspaceId ? ['reasoners', workspaceId] : null, () =>
-    reasonerApi.list(workspaceId!)
-  );
+  const {masList, isValidating: masValidating} = useMAS(workspaceId || '');
+  const {kepList, isValidating: kepValidating} = useKEPs(workspaceId || '');
+  const {reasoners, isValidating: reasonersValidating} = useReasoners(workspaceId || '');
 
   const loading = workspaceLoading;
   const error = null;
@@ -64,7 +59,7 @@ export function WorkspaceDetails() {
   }, [kepList]);
 
   const latestReasoners = useMemo(() => {
-    return [...reasonersList]
+    return [...reasoners]
       .sort((a, b) => {
         if (!a.created_at && !b.created_at) {
           return 0;
@@ -78,7 +73,7 @@ export function WorkspaceDetails() {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       })
       .slice(0, 4);
-  }, [reasonersList]);
+  }, [reasoners]);
 
   return (
     <BasePage title={workspaceName} useBreadcrumbs breadcrumbs={breadcrumbs.workspaceDetails(workspaceName)}>
@@ -115,12 +110,16 @@ export function WorkspaceDetails() {
           <div className="p-4 border rounded-lg bg-card soft-card">
             <div className="flex flex-col gap-6">
               <h4 className="card-title">Reasoners</h4>
-              <p className="card-stats">{reasonersList.length}</p>
+              <p className="card-stats">{reasoners.length}</p>
             </div>
           </div>
         </div>
 
-        {masList.length === 0 ? (
+        {masValidating && masList.length === 0 ? (
+          <div className="flex items-center justify-center flex-1">
+            <LoaderRelative />
+          </div>
+        ) : masList.length === 0 ? (
           <div className="flex items-center justify-center flex-1">
             <EmptyState
               icon={Boxes}
@@ -167,68 +166,80 @@ export function WorkspaceDetails() {
               </div>
             </div>
 
-            {kepList.length > 0 && (
+            {kepValidating && kepList.length === 0 ? (
               <div className="p-6 border rounded-lg bg-card soft-card">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-base font-medium">Latest Knowledge Adapters</h2>
-                  <div className="flex gap-2">
-                    <Button asChild size="sm" variant="sidebar">
-                      <Link href={routes.workspaces.knowledge.list(workspaceId!)}>View All</Link>
-                    </Button>
-                    <Button asChild size="sm" variant="sidebar">
-                      <Link href={routes.workspaces.knowledge.create(workspaceId!)}>Create</Link>
-                    </Button>
+                <LoaderRelative />
+              </div>
+            ) : (
+              kepList.length > 0 && (
+                <div className="p-6 border rounded-lg bg-card soft-card">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-base font-medium">Latest Knowledge Adapters</h2>
+                    <div className="flex gap-2">
+                      <Button asChild size="sm" variant="sidebar">
+                        <Link href={routes.workspaces.knowledge.list(workspaceId!)}>View All</Link>
+                      </Button>
+                      <Button asChild size="sm" variant="sidebar">
+                        <Link href={routes.workspaces.knowledge.create(workspaceId!)}>Create</Link>
+                      </Button>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
-                  {latestKeps.map((kep) => (
-                    <div key={kep.id} className="p-4 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors h-full">
-                      <div className="flex flex-col h-full">
-                        <div className="flex-1">
-                          <h3 className="text-sm font-medium text-foreground mb-2">{kep.name}</h3>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{kep.created_at ? new Date(kep.created_at).toLocaleDateString() : 'Unknown date'}</span>
-                          <span>{kep.mas_ids.length} MAS</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+                    {latestKeps.map((kep) => (
+                      <div key={kep.id} className="p-4 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors h-full">
+                        <div className="flex flex-col h-full">
+                          <div className="flex-1">
+                            <h3 className="text-sm font-medium text-foreground mb-2">{kep.name}</h3>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>{kep.created_at ? new Date(kep.created_at).toLocaleDateString() : 'Unknown date'}</span>
+                            <span>{kep.mas_ids.length} MAS</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )
             )}
 
-            {reasonersList.length > 0 && (
+            {reasonersValidating && reasoners.length === 0 ? (
               <div className="p-6 border rounded-lg bg-card soft-card">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-base font-medium">Latest Reasoners</h2>
-                  <div className="flex gap-2">
-                    <Button asChild size="sm" variant="sidebar">
-                      <Link href={routes.workspaces.reasoners.list(workspaceId!)}>View All</Link>
-                    </Button>
-                    <Button asChild size="sm" variant="sidebar">
-                      <Link href={routes.workspaces.reasoners.create(workspaceId!)}>Create</Link>
-                    </Button>
+                <LoaderRelative />
+              </div>
+            ) : (
+              reasoners.length > 0 && (
+                <div className="p-6 border rounded-lg bg-card soft-card">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-base font-medium">Latest Reasoners</h2>
+                    <div className="flex gap-2">
+                      <Button asChild size="sm" variant="sidebar">
+                        <Link href={routes.workspaces.reasoners.list(workspaceId!)}>View All</Link>
+                      </Button>
+                      <Button asChild size="sm" variant="sidebar">
+                        <Link href={routes.workspaces.reasoners.create(workspaceId!)}>Create</Link>
+                      </Button>
+                    </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
-                  {latestReasoners.map((r) => (
-                    <div key={r.id} className="p-4 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors h-full">
-                      <div className="flex flex-col h-full">
-                        <div className="flex-1">
-                          <h3 className="text-sm font-medium text-foreground mb-2">{r.name}</h3>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{r.created_at ? new Date(r.created_at).toLocaleDateString() : 'Unknown date'}</span>
-                          <span>{r.mas_id ? '1 MAS' : 'No MAS'}</span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+                    {latestReasoners.map((r) => (
+                      <div key={r.id} className="p-4 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors h-full">
+                        <div className="flex flex-col h-full">
+                          <div className="flex-1">
+                            <h3 className="text-sm font-medium text-foreground mb-2">{r.name}</h3>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>{r.created_at ? new Date(r.created_at).toLocaleDateString() : 'Unknown date'}</span>
+                            <span>{r.mas_id ? '1 MAS' : 'No MAS'}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )
             )}
           </div>
         )}

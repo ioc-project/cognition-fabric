@@ -27,6 +27,7 @@ export function WorkspacesList() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const {workspaces, isLoading: loading, error: swrError, mutate} = useWorkspaces();
   const [error, setError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const deleteDialog = useConfirmDialog<{id: string; name: string}>();
 
   useEffect(() => {
@@ -40,7 +41,9 @@ export function WorkspacesList() {
   }, [swrError]);
 
   const handleWorkspaceCreated = (workspaceId: string) => {
-    router.push(routes.workspaces.details(workspaceId));
+    const href = routes.workspaces.details(workspaceId);
+    router.prefetch(href);
+    router.push(href);
   };
 
   const handleDeleteWorkspace = async () => {
@@ -49,7 +52,8 @@ export function WorkspacesList() {
         await workspaceApi.delete(data.id);
         await mutate();
       } catch (err) {
-        toast.error(parseError(err));
+        const msg = parseError(err);
+        setDeleteError(msg);
         throw err;
       }
     });
@@ -124,7 +128,6 @@ export function WorkspacesList() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem
                             onClick={(e) => {
-                              e.preventDefault();
                               e.stopPropagation();
                               deleteDialog.open({id: workspace.id, name: workspace.name});
                             }}
@@ -148,10 +151,15 @@ export function WorkspacesList() {
 
       <ConfirmDialog
         open={deleteDialog.isOpen}
-        onOpenChange={(open) => !open && deleteDialog.close()}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteError(null);
+            deleteDialog.close();
+          }
+        }}
         onConfirm={handleDeleteWorkspace}
         title={`Delete ${deleteDialog.data?.name || 'Workspace'}`}
-        description={`Delete "${deleteDialog.data?.name}"? This action is permanent and cannot be undone.`}
+        description={deleteError ?? `Delete "${deleteDialog.data?.name}"? This action is permanent and cannot be undone.`}
         confirmText="Delete Workspace"
         variant="destructive"
         loading={deleteDialog.isLoading}
