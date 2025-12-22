@@ -3,7 +3,7 @@
 import {useState} from 'react';
 import {KeyRound} from 'lucide-react';
 import {ListShell} from '@/components/ui/list-shell';
-import {Loading} from '@/components/ui/loading';
+import {LoaderRelative} from '@/components/ui/loading';
 import {CreateApiKeyDialog} from './create-api-key-dialog';
 import {useApiKeys} from '@/hooks/useApi';
 
@@ -12,7 +12,11 @@ export function ApiKeysList() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
   if (isLoading) {
-    return <Loading />;
+    return (
+      <div className="p-6">
+        <LoaderRelative />
+      </div>
+    );
   }
 
   return (
@@ -22,7 +26,7 @@ export function ApiKeysList() {
           empty={{
             icon: KeyRound,
             title: 'No API keys',
-            description: 'Create an API key to authenticate requests across Multi-Agent Systems, Knowledge Adapters, and Reasoners.',
+            description: 'Create an API key to authenticate requests across Knowledge Adapters, and Reasoners.',
             actionLabel: 'Create Your First API Key',
             onAction: () => setIsCreateDialogOpen(true)
           }}

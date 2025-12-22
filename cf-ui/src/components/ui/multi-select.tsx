@@ -49,7 +49,6 @@ export function MultiSelect({
             !value.length && 'text-muted-foreground',
             className
           )}
-          aria-readonly={disabled}
         >
           <span className="truncate">{displayText}</span>
           <ChevronDown className="h-4 w-4 opacity-50 shrink-0 ml-2" />

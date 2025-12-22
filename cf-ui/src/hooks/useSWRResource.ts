@@ -13,11 +13,47 @@ export function useSWRResource<TData>(key: Key | null, fetcher: () => Promise<TD
   } as const;
 }
 
-export function useInvalidateMutation<TArgs extends unknown[], TResult>(keys: Key | Key[], fn: (...args: TArgs) => Promise<TResult>) {
+type InvalidateConfig = {
+  keys?: Key | Key[];
+  prefixes?: ReadonlyArray<ReadonlyArray<unknown>>;
+};
+
+function keyStartsWith(cacheKey: unknown, prefix: ReadonlyArray<unknown>): boolean {
+  if (!Array.isArray(cacheKey)) {
+    return false;
+  }
+  if (cacheKey.length < prefix.length) {
+    return false;
+  }
+  for (let i = 0; i < prefix.length; i++) {
+    if (cacheKey[i] !== prefix[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function useInvalidateMutation<TArgs extends unknown[], TResult>(
+  keysOrConfig: Key | Key[] | InvalidateConfig,
+  fn: (...args: TArgs) => Promise<TResult>
+) {
   const {mutate} = useSWRConfig();
   const run = async (...args: TArgs) => {
     const res = await fn(...args);
-    await mutate(keys);
+
+    const cfg: InvalidateConfig =
+      Array.isArray(keysOrConfig) || (keysOrConfig as unknown as any)?.toString
+        ? {keys: keysOrConfig as Key | Key[]}
+        : (keysOrConfig as InvalidateConfig);
+
+    if (cfg?.keys) {
+      await mutate(cfg.keys, undefined, {revalidate: true});
+    }
+
+    if (cfg?.prefixes && cfg.prefixes.length) {
+      await Promise.all(cfg.prefixes.map((p) => mutate((k) => keyStartsWith(k, p), undefined, {revalidate: true})));
+    }
+
     return res;
   };
   return {run} as const;

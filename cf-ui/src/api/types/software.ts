@@ -98,9 +98,11 @@ const ExtractionConfigSchema = z.object({
 const TemplateConfigSchema = z
   .object({
     'info-extraction': ExtractionConfigSchema.optional(),
-    otel: z.object({
-      resourceSpans: z.array(ResourceSpanSchema).optional()
-    }).optional()
+    otel: z
+      .object({
+        resourceSpans: z.array(ResourceSpanSchema).optional()
+      })
+      .optional()
   })
   .passthrough();
 

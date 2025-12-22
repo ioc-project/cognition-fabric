@@ -8,6 +8,7 @@ import {ListShell} from '@/components/ui/list-shell';
 import {LoaderRelative} from '@/components/ui/loading';
 import {softwareApi} from '@/api/endpoints';
 import {useState, useMemo, useEffect} from 'react';
+import Link from 'next/link';
 import {useRouter, useSearchParams} from 'next/navigation';
 import useSWR from 'swr';
 import {routes, breadcrumbs} from '@/constants/routes';
@@ -100,15 +101,9 @@ export function SoftwareList() {
                     </div>
                     <div className="flex gap-2">
                       {tpl.config?.['info-extraction'] && (
-                        <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-md">
-                          Info Extraction
-                        </span>
+                        <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-md">Info Extraction</span>
                       )}
-                      {tpl.config?.otel && (
-                        <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-md">
-                          OTEL
-                        </span>
-                      )}
+                      {tpl.config?.otel && <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-md">OTEL</span>}
                     </div>
                   </div>
 
@@ -129,8 +124,8 @@ export function SoftwareList() {
                   </div>
 
                   <div className="mt-auto">
-                    <Button variant="sidebar" className="w-full" onClick={() => router.push(routes.software.details(tpl.id, tpl.type))}>
-                      View Details
+                    <Button asChild variant="sidebar" className="w-full">
+                      <Link href={routes.software.details(tpl.id, tpl.type)}>View Details</Link>
                     </Button>
                   </div>
                 </Card>

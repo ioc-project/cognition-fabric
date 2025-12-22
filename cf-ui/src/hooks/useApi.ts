@@ -1,7 +1,11 @@
 'use client';
 
 import useSWR from 'swr';
-import {workspaceApi, userApi, apiKeyApi, softwareApi} from '@/api/endpoints';
+import {workspaceApi, apiKeyApi, softwareApi, reasonerApi, masApi, kepApi} from '@/api/endpoints';
+import type {Workspace, ListWorkspacesResponse} from '@/api/types/workspace';
+import type {Reasoner, CreateReasonerRequest} from '@/api/types/reasoner';
+import type {MAS, CreateMASRequest} from '@/api/types/mas';
+import type {KEP, CreateKEPRequest} from '@/api/types/kep';
 import {swrKeys} from '@/lib/swr-config';
 import {parseError} from '@/lib/utils';
 import {useInvalidateMutation} from './useSWRResource';
@@ -11,7 +15,10 @@ function hasStatus(error: unknown): error is {status: number} {
 }
 
 export function useWorkspaces() {
-  const {data, error, isLoading, mutate} = useSWR(swrKeys.workspaces(), () => workspaceApi.list());
+  const {data, error, isLoading, mutate} = useSWR<ListWorkspacesResponse>(swrKeys.workspaces(), () => workspaceApi.list(), {
+    revalidateOnMount: true,
+    dedupingInterval: 0
+  });
 
   return {
     workspaces: data?.workspaces || [],
@@ -22,7 +29,7 @@ export function useWorkspaces() {
 }
 
 export function useWorkspace(workspaceId: string) {
-  const {data, error, isLoading, mutate} = useSWR(workspaceId ? swrKeys.workspace(workspaceId) : null, async () => {
+  const {data, error, isLoading, mutate} = useSWR<Workspace | null>(workspaceId ? swrKeys.workspace(workspaceId) : null, async () => {
     try {
       return await workspaceApi.get(workspaceId);
     } catch (e) {
@@ -40,25 +47,6 @@ export function useWorkspace(workspaceId: string) {
     isLoading,
     error: error ? parseError(error) : null,
     mutate
-  };
-}
-
-export function useUsers(workspaceId: string) {
-  const {data, error, isLoading, mutate} = useSWR(workspaceId ? swrKeys.users(workspaceId) : null, () => userApi.list(workspaceId));
-
-  const {run: addUser} = useInvalidateMutation(swrKeys.users(workspaceId), (payload: {name: string; email: string}) =>
-    userApi.create(workspaceId, payload)
-  );
-
-  const {run: removeUser} = useInvalidateMutation(swrKeys.users(workspaceId), (userId: string) => userApi.delete(workspaceId, userId));
-
-  return {
-    users: Array.isArray(data) ? data : [],
-    isLoading,
-    error: error ? parseError(error) : null,
-    mutate,
-    addUser,
-    removeUser
   };
 }
 
@@ -91,4 +79,105 @@ export function useSoftwareTemplates(templateType: 'KnowledgeAdapterTemplates' |
     error: error ? parseError(error) : null,
     mutate
   };
+}
+
+export function useReasoners(workspaceId: string) {
+  const {data, error, isLoading, isValidating, mutate} = useSWR<Reasoner[]>(
+    workspaceId ? swrKeys.reasoners(workspaceId) : null,
+    () => reasonerApi.list(workspaceId),
+    {revalidateOnMount: true, dedupingInterval: 0}
+  );
+
+  const {run: addReasoner} = useInvalidateMutation(
+    {keys: swrKeys.reasoners(workspaceId), prefixes: [['reasoners', workspaceId]]},
+    (payload: CreateReasonerRequest) => reasonerApi.create(workspaceId, payload)
+  );
+
+  const {run: deleteReasoner} = useInvalidateMutation(
+    {keys: swrKeys.reasoners(workspaceId), prefixes: [['reasoners', workspaceId]]},
+    (reasonerId: string) => reasonerApi.delete(workspaceId, reasonerId)
+  );
+
+  return {
+    reasoners: Array.isArray(data) ? data : [],
+    isLoading,
+    isValidating,
+    error: error ? parseError(error) : null,
+    mutate,
+    addReasoner,
+    deleteReasoner
+  } as const;
+}
+
+export function useMAS(workspaceId: string) {
+  const {data, error, isLoading, isValidating, mutate} = useSWR<MAS[]>(
+    workspaceId ? swrKeys.mas(workspaceId) : null,
+    () => masApi.list(workspaceId),
+    {revalidateOnMount: true, dedupingInterval: 0}
+  );
+
+  const {run: runAddMAS} = useInvalidateMutation(
+    {keys: swrKeys.mas(workspaceId), prefixes: [['mas-list', workspaceId]]},
+    (payload: CreateMASRequest) => masApi.create(workspaceId, payload)
+  );
+
+  const addMAS = async (payload: CreateMASRequest) => {
+    await runAddMAS(payload);
+    await mutate(undefined, {revalidate: true});
+    return {} as MAS;
+  };
+
+  const {run: runDeleteMAS} = useInvalidateMutation({keys: swrKeys.mas(workspaceId), prefixes: [['mas-list', workspaceId]]}, (masId: string) =>
+    masApi.delete(workspaceId, masId)
+  );
+
+  const deleteMAS = async (masId: string) => {
+    const prev = Array.isArray(data) ? data : [];
+    await mutate(
+      prev.filter((m) => m.id !== masId),
+      {revalidate: false}
+    );
+    try {
+      await runDeleteMAS(masId);
+    } catch (e) {
+      await mutate(prev, {revalidate: false});
+      throw e;
+    }
+  };
+
+  return {
+    masList: Array.isArray(data) ? data : [],
+    isLoading,
+    isValidating,
+    error: error ? parseError(error) : null,
+    mutate,
+    addMAS,
+    deleteMAS
+  } as const;
+}
+
+export function useKEPs(workspaceId: string) {
+  const {data, error, isLoading, isValidating, mutate} = useSWR<KEP[]>(
+    workspaceId ? swrKeys.keps(workspaceId) : null,
+    () => kepApi.list(workspaceId),
+    {revalidateOnMount: true, dedupingInterval: 0}
+  );
+
+  const {run: addKEP} = useInvalidateMutation({keys: swrKeys.keps(workspaceId), prefixes: [['kep-list', workspaceId]]}, (payload: CreateKEPRequest) =>
+    kepApi.create(workspaceId, payload)
+  );
+
+  const {run: deleteKEP} = useInvalidateMutation({keys: swrKeys.keps(workspaceId), prefixes: [['kep-list', workspaceId]]}, (kepId: string) =>
+    kepApi.delete(workspaceId, kepId)
+  );
+
+  return {
+    kepList: Array.isArray(data) ? data : [],
+    isLoading,
+    isValidating,
+    error: error ? parseError(error) : null,
+    mutate,
+    addKEP,
+    deleteKEP
+  } as const;
 }

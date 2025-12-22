@@ -38,6 +38,9 @@ export const parseError = (error: unknown): string => {
       if (isObjectWithProperty(data, 'error') && typeof data.error === 'string') {
         return data.error;
       }
+      if (isObjectWithProperty(data, 'detail') && typeof (data as Record<string, unknown>).detail === 'string') {
+        return String((data as Record<string, unknown>).detail);
+      }
       if (isObjectWithProperty(data, 'message') && typeof data.message === 'string') {
         return data.message;
       }
