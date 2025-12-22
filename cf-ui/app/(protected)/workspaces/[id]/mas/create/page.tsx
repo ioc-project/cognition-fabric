@@ -7,7 +7,7 @@ import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 export default function CreateMas() {
   const params = useParams();
   const {workspaceId: currentId} = useCurrentWorkspace();
-  const workspaceId = (currentId || (params.id as string)) as string;
+  const workspaceId = currentId || (params.id as string);
 
   return <CreateMASForm workspaceId={workspaceId} />;
 }
