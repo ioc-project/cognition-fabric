@@ -109,7 +109,7 @@ export function Sidebar() {
         id: 'mas',
         href: `${workspaceBasePath}/mas`,
         icon: Boxes,
-        label: 'Multi-Agentic Systems (MAS)',
+        label: 'Multi-Agentic Systems',
         isActive: () => isWorkspaceSection('mas')
       },
       {

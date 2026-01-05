@@ -136,9 +136,9 @@ export function useMAS(workspaceId: string) {
   );
 
   const addMAS = async (payload: CreateMASRequest) => {
-    await runAddMAS(payload);
+    const response = await runAddMAS(payload);
     await mutate(undefined, {revalidate: true});
-    return {} as MAS;
+    return response;
   };
 
   const {run: runDeleteMAS} = useInvalidateMutation({keys: swrKeys.mas(workspaceId), prefixes: [['mas-list', workspaceId]]}, (masId: string) =>

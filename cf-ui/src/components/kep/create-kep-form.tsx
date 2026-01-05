@@ -165,7 +165,6 @@ export function CreateKEPForm({workspaceId, onCancel}: CreateKEPFormProps) {
                             align="start"
                           />
                         </FormControl>
-                        <div className="text-xs text-muted-foreground">Select at least one Multi-Agent System</div>
                         <FormMessage />
                       </FormItem>
                     )}
