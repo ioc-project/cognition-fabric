@@ -15,6 +15,7 @@ interface ListShellProps {
     description: string;
     actionLabel?: string;
     onAction?: () => void;
+    href?: string;
   };
   children?: React.ReactNode;
 }
@@ -44,7 +45,7 @@ export function ListShell({title, description, actionLabel, onAction, headerRigh
           </div>
         </CardHeader>
       ) : null}
-      <CardContent>
+      <CardContent className={!hasContent && empty ? 'flex items-center justify-center min-h-[60vh]' : undefined}>
         {hasContent ? (
           children
         ) : empty ? (
@@ -54,6 +55,7 @@ export function ListShell({title, description, actionLabel, onAction, headerRigh
             description={empty.description}
             actionLabel={empty.actionLabel}
             onAction={empty.onAction}
+            href={empty.href}
             variant="inset"
           />
         ) : null}

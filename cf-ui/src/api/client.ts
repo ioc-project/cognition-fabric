@@ -41,7 +41,11 @@ export async function fetchAPI<T>(endpoint: string, options?: RequestInit): Prom
       let errorMessage = response.statusText;
       try {
         const errorData = await response.json();
-        errorMessage = errorData.message || errorData.error || errorMessage;
+        errorMessage =
+          (errorData && typeof errorData === 'object' && 'detail' in errorData ? errorData.detail : undefined) ||
+          (errorData && typeof errorData === 'object' && 'message' in errorData ? errorData.message : undefined) ||
+          (errorData && typeof errorData === 'object' && 'error' in errorData ? errorData.error : undefined) ||
+          errorMessage;
       } catch {
         // Failed to parse error response as JSON
       }

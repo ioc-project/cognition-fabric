@@ -19,10 +19,12 @@ export const routes = {
     },
     knowledge: {
       list: (workspaceId: string) => `/workspaces/${workspaceId}/knowledge`,
+      create: (workspaceId: string) => `/workspaces/${workspaceId}/knowledge/create`,
       details: (workspaceId: string, adapterId: string) => `/workspaces/${workspaceId}/knowledge/${adapterId}`
     },
     reasoners: {
       list: (workspaceId: string) => `/workspaces/${workspaceId}/reasoners`,
+      create: (workspaceId: string) => `/workspaces/${workspaceId}/reasoners/create`,
       details: (workspaceId: string, reasonerId: string) => `/workspaces/${workspaceId}/reasoners/${reasonerId}`
     },
     reasoningHistory: (workspaceId: string) => `/workspaces/${workspaceId}/reasoning-history`,
@@ -121,13 +123,11 @@ export const breadcrumbs = {
   workspaceMAS: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
     {link: routes.workspaces.list, text: 'Workspaces'},
     {link: routes.workspaces.details(workspaceId), text: workspaceName},
-    {link: '', text: 'Multi-Agent Systems', active: true}
+    {link: '', text: 'Multi-Agentic Systems', active: true}
   ],
 
-  createMAS: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.list, text: 'Workspaces'},
-    {link: routes.workspaces.details(workspaceId), text: workspaceName},
-    {link: routes.workspaces.mas.list(workspaceId), text: 'Multi-Agent Systems'},
+  createMAS: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.mas.list(workspaceId), text: 'Multi-Agentic Systems'},
     {link: '', text: 'Create', active: true}
   ],
 
@@ -137,10 +137,25 @@ export const breadcrumbs = {
     {link: '', text: 'Knowledge Adapters', active: true}
   ],
 
+  createKnowledge: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.knowledge.list(workspaceId), text: 'Knowledge Adapters'},
+    {link: '', text: 'Create', active: true}
+  ],
+
+  knowledgeDetails: (workspaceId: string, workspaceName: string, kepName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.knowledge.list(workspaceId), text: 'Knowledge Adapters'},
+    {link: '', text: kepName, active: true}
+  ],
+
   workspaceReasoners: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
     {link: routes.workspaces.list, text: 'Workspaces'},
     {link: routes.workspaces.details(workspaceId), text: workspaceName},
     {link: '', text: 'Reasoners', active: true}
+  ],
+
+  createReasoner: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.reasoners.list(workspaceId), text: 'Reasoners'},
+    {link: '', text: 'Create', active: true}
   ],
 
   workspaceReasoningHistory: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [

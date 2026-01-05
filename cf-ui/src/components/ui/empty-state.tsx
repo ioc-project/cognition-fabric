@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import {Button} from './button';
 import {LucideIcon} from 'lucide-react';
 
@@ -7,10 +8,11 @@ interface EmptyStateProps {
   description: string;
   actionLabel?: string;
   onAction?: () => void;
+  href?: string;
   variant?: 'standalone' | 'inset';
 }
 
-export function EmptyState({icon: Icon, title, description, actionLabel, onAction, variant = 'standalone'}: EmptyStateProps) {
+export function EmptyState({icon: Icon, title, description, actionLabel, onAction, href, variant = 'standalone'}: EmptyStateProps) {
   const containerClassName =
     variant === 'inset'
       ? 'flex flex-col items-center p-10 py-12 gap-6 rounded-lg min-h-[300px]'
@@ -31,11 +33,17 @@ export function EmptyState({icon: Icon, title, description, actionLabel, onActio
             <p className="w-full max-w-md text-sm text-muted-foreground text-center">{description}</p>
           </div>
 
-          {actionLabel && onAction && (
-            <Button onClick={onAction} variant="sidebar" size="xs" className="empty-state-button">
-              {actionLabel}
-            </Button>
-          )}
+          {actionLabel &&
+            (href || onAction) &&
+            (href ? (
+              <Button asChild variant="sidebar" size="xs" className="empty-state-button">
+                <Link href={href}>{actionLabel}</Link>
+              </Button>
+            ) : (
+              <Button onClick={onAction} variant="sidebar" size="xs" className="empty-state-button">
+                {actionLabel}
+              </Button>
+            ))}
         </div>
       </div>
     </div>

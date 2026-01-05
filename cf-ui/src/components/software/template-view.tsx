@@ -16,8 +16,8 @@ function getAttributeDisplayValue(value?: AttributeValue): string {
 }
 
 export function TemplateView({template}: {template: Template}) {
-  const extraction = template?.config?.extraction;
-  const resourceSpans = template?.config?.resourceSpans || [];
+  const extraction = template?.config?.['info-extraction'];
+  const resourceSpans = template?.config?.otel?.resourceSpans || [];
   const [viewMode, setViewMode] = useState<'card' | 'json'>('card');
 
   return (

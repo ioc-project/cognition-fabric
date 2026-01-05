@@ -8,6 +8,7 @@ import {ListShell} from '@/components/ui/list-shell';
 import {LoaderRelative} from '@/components/ui/loading';
 import {softwareApi} from '@/api/endpoints';
 import {useState, useMemo, useEffect} from 'react';
+import Link from 'next/link';
 import {useRouter, useSearchParams} from 'next/navigation';
 import useSWR from 'swr';
 import {routes, breadcrumbs} from '@/constants/routes';
@@ -91,11 +92,19 @@ export function SoftwareList() {
             <div className="list-grid">
               {templates.map((tpl) => (
                 <Card key={tpl.id} variant="list" className="transition-shadow duration-200 flex flex-col">
-                  <div className="pb-4 mb-5 border-b border-border/50">
-                    <div className="text-sm font-medium text-foreground">
-                      {tpl.type === 'KnowledgeAdapterTemplates' ? 'Knowledge Adapter' : tpl.type === 'ReasonerTemplates' ? 'Reasoner' : tpl.type}
+                  <div className="pb-4 mb-5 border-b border-border/50 flex justify-between items-start">
+                    <div>
+                      <div className="text-sm font-medium text-foreground">
+                        {tpl.type === 'KnowledgeAdapterTemplates' ? 'Knowledge Adapter' : tpl.type === 'ReasonerTemplates' ? 'Reasoner' : tpl.type}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">Template</div>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">Template</div>
+                    <div className="flex gap-2">
+                      {tpl.config?.['info-extraction'] && (
+                        <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-md">Info Extraction</span>
+                      )}
+                      {tpl.config?.otel && <span className="text-xs px-2 py-1 bg-muted text-muted-foreground rounded-md">OTEL</span>}
+                    </div>
                   </div>
 
                   <div className="mb-6">
@@ -115,8 +124,8 @@ export function SoftwareList() {
                   </div>
 
                   <div className="mt-auto">
-                    <Button variant="sidebar" className="w-full" onClick={() => router.push(routes.software.details(tpl.id, tpl.type))}>
-                      View Details
+                    <Button asChild variant="sidebar" className="w-full">
+                      <Link href={routes.software.details(tpl.id, tpl.type)}>View Details</Link>
                     </Button>
                   </div>
                 </Card>

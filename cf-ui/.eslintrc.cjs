@@ -4,11 +4,10 @@ module.exports = {
   parserOptions: {
     project: 'tsconfig.json'
   },
-  plugins: ['@typescript-eslint'],
+  plugins: ['@typescript-eslint', 'unused-imports'],
   extends: [
+    'next/core-web-vitals',
     'eslint:recommended',
-    'plugin:react/recommended',
-    'plugin:react-hooks/recommended',
     'plugin:@typescript-eslint/recommended',
     'plugin:@typescript-eslint/recommended-requiring-type-checking'
   ],
@@ -42,14 +41,8 @@ module.exports = {
     'block-spacing': ['warn', 'always'],
     'brace-style': ['warn', '1tbs'],
     curly: ['warn', 'all'],
-    indent: [
-      'warn',
-      2,
-      {
-        SwitchCase: 1,
-        ignoredNodes: ['JSXElement *', 'JSXElement']
-      }
-    ],
+    // Delegate formatting to Prettier; disable conflicting indent rule
+    indent: 'off',
     'no-mixed-spaces-and-tabs': 'error',
     'no-multi-spaces': 'warn',
     'no-trailing-spaces': 'warn',
@@ -73,6 +66,16 @@ module.exports = {
     '@typescript-eslint/no-unsafe-return': 'off',
     '@typescript-eslint/no-misused-promises': 'off',
     '@typescript-eslint/no-unused-vars': ['warn', {argsIgnorePattern: '^_'}],
+    'unused-imports/no-unused-imports': 'error',
+    'unused-imports/no-unused-vars': [
+      'warn',
+      {
+        vars: 'all',
+        varsIgnorePattern: '^_',
+        args: 'after-used',
+        argsIgnorePattern: '^_'
+      }
+    ],
     '@typescript-eslint/restrict-template-expressions': 'off',
     '@typescript-eslint/unbound-method': 'off',
     '@typescript-eslint/no-unsafe-call': 'warn',

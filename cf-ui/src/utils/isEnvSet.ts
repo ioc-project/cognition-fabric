@@ -1,4 +1,4 @@
-export default (env?: unknown): boolean => {
+const isEnvSet = (env?: unknown): boolean => {
   if (typeof env === 'undefined' || env === null) {
     return false;
   }
@@ -7,3 +7,5 @@ export default (env?: unknown): boolean => {
   }
   return true;
 };
+
+export default isEnvSet;

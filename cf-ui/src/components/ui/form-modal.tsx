@@ -97,6 +97,11 @@ export function FormModal<TFieldValues extends FieldValues>({
     >
       <Form {...form}>
         <form id={generatedFormId} onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-4">
+          {form.formState.errors.root && (
+            <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md">
+              {form.formState.errors.root.message}
+            </div>
+          )}
           {children(form)}
         </form>
       </Form>

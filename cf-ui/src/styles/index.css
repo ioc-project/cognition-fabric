@@ -311,7 +311,7 @@ body {
   color: hsl(var(--accent-foreground));
 }
 
-label {
+:where(label) {
   font-family: Inter, sans-serif;
   font-weight: 500;
   font-size: 14px;
@@ -322,8 +322,7 @@ label {
   align-items: center;
   gap: 8px;
 }
-
-.dark label {
+.dark :where(label) {
   color: hsl(var(--foreground));
 }
 
@@ -656,4 +655,11 @@ div[role='listbox'] {
 
 .welcome-blur {
   backdrop-filter: blur(64px);
+}
+
+input[data-invalid='true'],
+textarea[data-invalid='true'],
+select[data-invalid='true'] {
+  border-color: hsl(var(--destructive)) !important;
+  box-shadow: inset 0 0 0 1px hsl(var(--destructive));
 }

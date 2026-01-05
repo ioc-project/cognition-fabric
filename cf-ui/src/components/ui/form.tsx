@@ -66,13 +66,18 @@ const FormItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
 });
 FormItem.displayName = 'FormItem';
 
-const FormLabel = React.forwardRef<React.ElementRef<typeof LabelPrimitive.Root>, React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>>(
-  ({className, ...props}, ref) => {
-    const {error, formItemId} = useFormField();
+const FormLabel = React.forwardRef<
+  React.ElementRef<typeof LabelPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root> & {optional?: boolean}
+>(({className, optional: _optional, children, ...props}, ref) => {
+  const {error, formItemId} = useFormField();
 
-    return <Label ref={ref} className={cn(error && 'text-destructive', className)} htmlFor={formItemId} {...props} />;
-  }
-);
+  return (
+    <Label ref={ref} className={cn(error && 'text-destructive !text-red-600 dark:!text-red-400', className)} htmlFor={formItemId} {...props}>
+      {children}
+    </Label>
+  );
+});
 FormLabel.displayName = 'FormLabel';
 
 const FormControl = React.forwardRef<React.ElementRef<typeof Slot>, React.ComponentPropsWithoutRef<typeof Slot>>(({...props}, ref) => {
@@ -84,6 +89,7 @@ const FormControl = React.forwardRef<React.ElementRef<typeof Slot>, React.Compon
       id={formItemId}
       aria-describedby={!error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`}
       aria-invalid={!!error}
+      data-invalid={error ? 'true' : undefined}
       {...props}
     />
   );
@@ -106,7 +112,7 @@ const FormMessage = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<
   }
 
   return (
-    <p ref={ref} id={formMessageId} className={cn('text-sm font-medium text-destructive', className)} {...props}>
+    <p ref={ref} id={formMessageId} className={cn('text-xs text-destructive !text-red-600 dark:!text-red-400', className)} {...props}>
       {body}
     </p>
   );

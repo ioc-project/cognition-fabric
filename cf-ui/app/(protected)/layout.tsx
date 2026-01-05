@@ -1,12 +1,27 @@
+'use client';
+
 import {Layout} from '@/components/layout/layout';
-import {getSession} from '@/lib/auth';
-import {redirect} from 'next/navigation';
+import {useSession} from 'next-auth/react';
+import {useEffect} from 'react';
+import {useRouter} from 'next/navigation';
+import {LoaderRelative} from '@/components/ui/loading';
 
-export default async function ProtectedLayout({children}: {children: React.ReactNode}) {
-  const session = await getSession();
+export default function ProtectedLayout({children}: {children: React.ReactNode}) {
+  const {status} = useSession();
+  const router = useRouter();
 
-  if (!session) {
-    redirect('/login');
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/login');
+    }
+  }, [status, router]);
+
+  if (status !== 'authenticated') {
+    return (
+      <div className="p-6">
+        <LoaderRelative />
+      </div>
+    );
   }
 
   return <Layout>{children}</Layout>;

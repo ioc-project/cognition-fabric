@@ -5,9 +5,11 @@ import {DropdownMenu, DropdownMenuTrigger, DropdownMenuContent} from '@/componen
 import {ChevronDown, Check} from 'lucide-react';
 import {cn} from '@/lib/utils';
 
+type Option = string | {label: string; value: string};
+
 export interface MultiSelectProps {
   value?: string[];
-  options: string[];
+  options: Option[];
   placeholder?: string;
   onChange?: (value: string[]) => void;
   disabled?: boolean;
@@ -26,7 +28,17 @@ export function MultiSelect({
   contentClassName,
   align = 'start'
 }: MultiSelectProps) {
-  const displayText = value.length > 0 ? value.join(', ') : placeholder;
+  const norm = React.useMemo(() => {
+    return options.map((o) => (typeof o === 'string' ? {label: o, value: o} : o));
+  }, [options]);
+
+  const displayText =
+    value.length > 0
+      ? norm
+          .filter((o) => value.includes(o.value))
+          .map((o) => o.label)
+          .join(', ')
+      : placeholder;
 
   return (
     <DropdownMenu>
@@ -37,23 +49,22 @@ export function MultiSelect({
             !value.length && 'text-muted-foreground',
             className
           )}
-          aria-readonly={disabled}
         >
           <span className="truncate">{displayText}</span>
           <ChevronDown className="h-4 w-4 opacity-50 shrink-0 ml-2" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className={cn('min-w-[200px]', contentClassName)} align={align}>
-        {options.map((option) => {
-          const isSelected = value.includes(option);
+        {norm.map((option) => {
+          const isSelected = value.includes(option.value);
           return (
             <div
-              key={option}
+              key={option.value}
               className="relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
               onClick={(e) => {
                 e.preventDefault();
                 if (!disabled && onChange) {
-                  const newValue = isSelected ? value.filter((v) => v !== option) : [...value, option];
+                  const newValue = isSelected ? value.filter((v) => v !== option.value) : [...value, option.value];
                   onChange(newValue);
                 }
               }}
@@ -67,7 +78,7 @@ export function MultiSelect({
                   <div className="h-4 w-4 rounded border border-input soft-card" />
                 )}
               </span>
-              {option}
+              {option.label}
             </div>
           );
         })}

@@ -1,4 +1,5 @@
 import {z} from 'zod';
+import {JsonRecordSchema} from '@/api/types/json';
 
 const WorkspaceUserSchema = z.object({
   id: z.string().uuid(),
@@ -9,17 +10,20 @@ const WorkspaceUserSchema = z.object({
 export const WorkspaceSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
-  created_at: z.string().datetime(),
-  users: z.array(WorkspaceUserSchema).default([]),
-  mas_count: z.number().int().nonnegative().optional(),
-  kep_count: z.number().int().nonnegative().optional(),
-  reasoner_count: z.number().int().nonnegative().optional()
+  created_at: z.string().nullable(),
+  updated_at: z.string().nullable(),
+  created_by: z.string().nullable().optional(),
+  updated_by: z.string().nullable().optional(),
+  users: z.array(z.union([WorkspaceUserSchema, z.string().uuid()])).default([]),
+  config: JsonRecordSchema.default({})
 });
 
 export type Workspace = z.infer<typeof WorkspaceSchema>;
 
 export const CreateWorkspaceRequestSchema = z.object({
-  name: z.string().min(1, 'Workspace name is required')
+  name: z.string().min(1, 'Workspace name is required').max(100),
+  users: z.array(z.string()).optional(),
+  config: z.record(z.any()).optional()
 });
 
 export type CreateWorkspaceRequest = z.infer<typeof CreateWorkspaceRequestSchema>;
@@ -38,44 +42,10 @@ export const ListWorkspacesResponseSchema = z.object({
 export type ListWorkspacesResponse = z.infer<typeof ListWorkspacesResponseSchema>;
 
 export const UpdateWorkspaceRequestSchema = z.object({
-  name: z.string().min(1, 'Workspace name is required')
+  name: z.string().min(1, 'Workspace name is required').max(100).optional()
 });
 
 export type UpdateWorkspaceRequest = z.infer<typeof UpdateWorkspaceRequestSchema>;
-
-export const UserSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string(),
-  email: z.string().email(),
-  workspace_id: z.string().uuid(),
-  workspace_name: z.string(),
-  created_at: z.string().datetime()
-});
-
-export type User = z.infer<typeof UserSchema>;
-
-export const CreateUserRequestSchema = z.object({
-  name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Valid email is required')
-});
-
-export type CreateUserRequest = z.infer<typeof CreateUserRequestSchema>;
-
-export const CreateUserResponseSchema = z.object({
-  id: z.string().uuid()
-});
-
-export type CreateUserResponse = z.infer<typeof CreateUserResponseSchema>;
-
-export const ListUsersResponseSchema = z.array(UserSchema);
-
-export type ListUsersResponse = z.infer<typeof ListUsersResponseSchema>;
-
-export const DeleteUserResponseSchema = z.object({
-  message: z.string()
-});
-
-export type DeleteUserResponse = z.infer<typeof DeleteUserResponseSchema>;
 
 export const ValidationErrorDetailSchema = z.object({
   loc: z.array(z.string()),

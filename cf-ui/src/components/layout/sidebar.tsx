@@ -1,6 +1,6 @@
 'use client';
 
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   Boxes,
   Database,
@@ -16,12 +16,13 @@ import {
   type LucideIcon
 } from 'lucide-react';
 import Link from 'next/link';
-import {usePathname, useSelectedLayoutSegments} from 'next/navigation';
+import {usePathname, useSelectedLayoutSegments, useRouter} from 'next/navigation';
 import {useWorkspaceNavigation} from '@/hooks/useWorkspaceNavigation';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {routes, isRouteActive} from '@/constants/routes';
 
 export function Sidebar() {
+  const router = useRouter();
   const pathname = usePathname();
   const segments = useSelectedLayoutSegments();
   const isWorkspaceRoute = segments[0] === 'workspaces';
@@ -31,7 +32,7 @@ export function Sidebar() {
   const workspaceId = isWorkspaceRoute ? workspaceIdRaw : undefined;
   const workspaceBasePath = isWorkspaceRoute ? workspaceBasePathRaw : '';
   const workspace = isWorkspaceRoute ? workspaceRaw : undefined;
-  const workspaceName = workspace?.name || (workspaceId ? `Workspace ${workspaceId.slice(0, 8)}` : '');
+  const workspaceName: string = String(workspace?.name ?? (workspaceId ? `Workspace ${workspaceId.slice(0, 8)}` : 'Workspace'));
 
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(true);
@@ -39,6 +40,28 @@ export function Sidebar() {
   useEffect(() => {
     setIsWorkspaceOpen(isWorkspaceRoute);
   }, [isWorkspaceRoute]);
+
+  useEffect(() => {
+    const hrefs: string[] = [];
+    hrefs.push(routes.workspaces.list, routes.software.list);
+    if (workspaceBasePath) {
+      hrefs.push(
+        `${workspaceBasePath}`,
+        `${workspaceBasePath}/mas`,
+        `${workspaceBasePath}/knowledge`,
+        `${workspaceBasePath}/reasoners`,
+        `${workspaceBasePath}/reasoning-history`,
+        `${workspaceBasePath}/summary`
+      );
+    }
+    hrefs.forEach((h) => {
+      try {
+        router.prefetch(h);
+      } catch {
+        void 0;
+      }
+    });
+  }, [router, workspaceBasePath]);
 
   const topLevelItems = useMemo(
     () => [
@@ -86,7 +109,7 @@ export function Sidebar() {
         id: 'mas',
         href: `${workspaceBasePath}/mas`,
         icon: Boxes,
-        label: 'Multi-Agent Systems',
+        label: 'Multi-Agentic Systems',
         isActive: () => isWorkspaceSection('mas')
       },
       {
@@ -121,23 +144,26 @@ export function Sidebar() {
     [workspaceBasePath, isWorkspaceSection]
   );
 
-  const NavItem = ({href, icon: Icon, label, active}: {href: string; icon: LucideIcon; label: string; active: boolean}) => (
-    <Link
-      href={href}
-      className={`group flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors focus-visible:outline-none ${
-        active
-          ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))]'
-          : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))]'
-      }`}
-    >
-      <Icon
-        className={`w-5 h-5 transition-colors ${
-          active ? 'text-[hsl(var(--sidebar-icon-active))]' : 'text-[hsl(var(--sidebar-icon))] group-hover:text-[hsl(var(--sidebar-icon-active))]'
+  const NavItem = React.memo(function NavItem({href, icon: Icon, label, active}: {href: string; icon: LucideIcon; label: string; active: boolean}) {
+    return (
+      <Link
+        href={href}
+        prefetch={false}
+        className={`group flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors focus-visible:outline-none ${
+          active
+            ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))]'
+            : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))]'
         }`}
-      />
-      <span className="sidebar-text">{label}</span>
-    </Link>
-  );
+      >
+        <Icon
+          className={`w-5 h-5 transition-colors ${
+            active ? 'text-[hsl(var(--sidebar-icon-active))]' : 'text-[hsl(var(--sidebar-icon))] group-hover:text-[hsl(var(--sidebar-icon-active))]'
+          }`}
+        />
+        <span className="sidebar-text">{label}</span>
+      </Link>
+    );
+  });
 
   return (
     <div className="w-72 bg-[hsl(var(--navbar-background))] border-r border-[hsl(var(--sidebar-border))] flex flex-col">

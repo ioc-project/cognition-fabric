@@ -8,22 +8,24 @@ import {ThemeProvider} from './theme-provider';
 import {swrFetcher} from '@/lib/swr-config';
 
 export function Providers({children}: {children: React.ReactNode}) {
+  const content = (
+    <SWRConfig
+      value={{
+        revalidateOnFocus: false,
+        revalidateOnReconnect: true,
+        dedupingInterval: 60000,
+        errorRetryCount: 3,
+        fetcher: swrFetcher
+      }}
+    >
+      {children}
+    </SWRConfig>
+  );
+
   return (
     <ThemeProvider>
       <SessionProvider>
-        <ErrorBoundary fallbackRender={(props) => <ErrorPage {...props} />}>
-          <SWRConfig
-            value={{
-              revalidateOnFocus: false,
-              revalidateOnReconnect: true,
-              dedupingInterval: 60000,
-              errorRetryCount: 3,
-              fetcher: swrFetcher
-            }}
-          >
-            {children}
-          </SWRConfig>
-        </ErrorBoundary>
+        <ErrorBoundary fallbackRender={(props) => <ErrorPage {...props} />}>{content}</ErrorBoundary>
       </SessionProvider>
     </ThemeProvider>
   );

@@ -93,7 +93,7 @@ export const BasePage: React.FC<React.PropsWithChildren<BasePageProps>> = ({
           </nav>
         )}
       </div>
-      <div className="flex flex-col gap-6 mt-2">{children}</div>
+      <div className="flex flex-col gap-6 mt-6">{children}</div>
     </div>
   );
 };

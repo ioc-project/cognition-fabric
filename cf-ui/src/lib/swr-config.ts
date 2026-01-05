@@ -7,7 +7,10 @@ export const swrKeys = {
   users: (workspaceId: string) => ['users', workspaceId] as const,
   apiKeys: (workspaceId: string) => ['api-keys', workspaceId] as const,
   software: (workspaceId: string) => ['software', workspaceId] as const,
-  softwareTemplates: (templateType: 'KnowledgeAdapterTemplates' | 'ReasonerTemplates') => ['software-templates', templateType] as const
+  softwareTemplates: (templateType: 'KnowledgeAdapterTemplates' | 'ReasonerTemplates') => ['software-templates', templateType] as const,
+  reasoners: (workspaceId: string) => ['reasoners', workspaceId] as const,
+  keps: (workspaceId: string) => ['kep-list', workspaceId] as const,
+  mas: (workspaceId: string) => ['mas-list', workspaceId] as const
 };
 
 import {fetchAPI} from '@/api/client';

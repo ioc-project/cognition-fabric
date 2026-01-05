@@ -3,10 +3,15 @@ services:
     build:
       context: .
       dockerfile: ./ci/docker/Dockerfile.next
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://host.docker.internal:8000}
     image: ci-tkf-csp-ui-svc:latest
     container_name: ci-tkf-csp-ui-svc
     ports:
       - '3000:3000'
     environment:
       - NODE_ENV=production
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-change-me}
+      - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-http://host.docker.internal:8000}
     restart: unless-stopped
