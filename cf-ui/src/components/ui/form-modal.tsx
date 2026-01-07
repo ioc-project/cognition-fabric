@@ -74,17 +74,6 @@ export function FormModal<TFieldValues extends FieldValues>({
 
   const handleInteractOutside = onInteractOutside;
 
-  const footer = (
-    <div className="flex w-full items-center justify-between">
-      <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
-        Cancel
-      </Button>
-      <Button type="submit" form={generatedFormId} disabled={form.formState.isSubmitting || isLoading} variant={submitButtonVariant}>
-        {form.formState.isSubmitting ? 'Submitting...' : submitLabel}
-      </Button>
-    </div>
-  );
-
   return (
     <Modal
       open={open}
@@ -93,7 +82,6 @@ export function FormModal<TFieldValues extends FieldValues>({
       description={description}
       onInteractOutside={handleInteractOutside}
       contentClassName={contentClassName}
-      footer={footer}
     >
       <Form {...form}>
         <form id={generatedFormId} onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4 py-4">
@@ -103,6 +91,14 @@ export function FormModal<TFieldValues extends FieldValues>({
             </div>
           )}
           {children(form)}
+          <div className="flex w-full items-center justify-between pt-4">
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={form.formState.isSubmitting || isLoading} variant={submitButtonVariant}>
+              {form.formState.isSubmitting ? 'Submitting...' : submitLabel}
+            </Button>
+          </div>
         </form>
       </Form>
     </Modal>
