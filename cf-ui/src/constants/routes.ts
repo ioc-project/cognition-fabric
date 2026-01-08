@@ -54,9 +54,9 @@ export const apiRoutes = {
   },
 
   workspaces: {
-    list: '/api/workspaces',
-    details: (id: string) => `/api/workspaces/${id}`,
-    summary: (id: string) => `/api/workspaces/${id}/summary`
+    list: '/api/workspaces/',
+    details: (id: string) => `/api/workspaces/${id}/`,
+    summary: (id: string) => `/api/workspaces/${id}/summary/`
   },
 
   users: {

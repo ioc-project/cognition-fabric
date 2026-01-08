@@ -5,8 +5,8 @@ export interface ApiConfig {
 }
 
 let apiConfig: ApiConfig = {
-  baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || '',
-  timeout: parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '15000', 10),
+  baseUrl: process.env.CSP_UI_API_BASE_URL || '',
+  timeout: parseInt(process.env.CSP_UI_API_TIMEOUT || '15000', 10),
   headers: {
     'Content-Type': 'application/json'
   }
@@ -29,8 +29,8 @@ export function updateApiConfig(updates: Partial<ApiConfig>): void {
 
 export function resetApiConfig(): void {
   apiConfig = {
-    baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL || '',
-    timeout: parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '15000', 10),
+    baseUrl: process.env.CSP_UI_API_BASE_URL || '',
+    timeout: parseInt(process.env.CSP_UI_API_TIMEOUT || '15000', 10),
     headers: {
       'Content-Type': 'application/json'
     }

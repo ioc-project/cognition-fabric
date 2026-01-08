@@ -23,7 +23,7 @@ function LoginForm() {
       const result = await signIn('credentials', {
         username,
         password,
-        callbackUrl: '/',
+        callbackUrl: '/workspaces?ensureDefault=1',
         redirect: true
       });
 
