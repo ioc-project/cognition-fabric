@@ -14,6 +14,7 @@ import {Label} from '@/components/ui/label';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes} from '@/constants/routes';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
+import {ReasonerQuery} from '@/components/reasoners/reasoner-query';
 
 export default function ReasonerDetailsPage() {
   const router = useRouter();
@@ -49,7 +50,12 @@ export default function ReasonerDetailsPage() {
       : undefined;
 
   return (
-    <BasePage title={reasoner?.name || 'Reasoner'} useBreadcrumbs breadcrumbs={crumbs}>
+    <BasePage
+      title={reasoner?.name || 'Reasoner'}
+      description={reasonerId ? `View details for reasoner ${reasonerId}` : undefined}
+      useBreadcrumbs
+      breadcrumbs={crumbs}
+    >
       <ConditionalSWRRenderer
         data={reasoner}
         error={error}
@@ -58,6 +64,7 @@ export default function ReasonerDetailsPage() {
         errorListStateProps={{title: 'Failed to load Reasoner details'}}
         emptyListStateProps={{title: 'No details found'}}
       >
+        {workspaceId && reasonerId && <ReasonerQuery workspaceId={workspaceId} reasonerId={reasonerId} />}
         <div className="flex justify-center py-4">
           <Card variant="list" className="w-full max-w-4xl">
             <CardContent className="p-8">

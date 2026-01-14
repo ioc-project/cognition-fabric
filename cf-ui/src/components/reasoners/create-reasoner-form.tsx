@@ -85,7 +85,12 @@ export function CreateReasonerForm({workspaceId}: {workspaceId: string}) {
 
   return (
     <div className="space-y-8 px-8 pt-4">
-      <BasePage title="Create Reasoner" useBreadcrumbs breadcrumbs={breadcrumbs.createReasoner(workspaceId, workspaceName)}>
+      <BasePage
+        title="Create Reasoner"
+        description="Create a reasoner for your multi-agent system"
+        useBreadcrumbs
+        breadcrumbs={breadcrumbs.createReasoner(workspaceId, workspaceName)}
+      >
         <div className="flex justify-center">
           <Card className="w-full max-w-4xl">
             <CardContent className="p-8">
@@ -142,11 +147,7 @@ export function CreateReasonerForm({workspaceId}: {workspaceId: string}) {
                       <FormItem>
                         <FormLabel>Configuration (JSON)</FormLabel>
                         <FormControl>
-                          <Textarea
-                            placeholder='Optional JSON configuration (e.g., {"reasoning_engine": "gpt-4", "max_iterations": 10})'
-                            className="font-mono text-sm min-h-[220px] resize-y"
-                            {...field}
-                          />
+                          <Textarea placeholder="Optional JSON configuration" className="font-mono text-sm min-h-[220px] resize-y" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

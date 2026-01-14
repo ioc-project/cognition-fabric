@@ -69,6 +69,7 @@ export function ReasonerList({workspaceId}: ReasonerListProps) {
         <div className="space-y-8 px-8 pt-4 relative z-0">
           <BasePage
             title="Reasoners"
+            description="View and manage all reasoners"
             callToAction={
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>

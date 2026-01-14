@@ -123,7 +123,12 @@ export function CreateKEPForm({workspaceId, onCancel}: CreateKEPFormProps) {
 
   return (
     <div className="space-y-8 px-8 pt-4">
-      <BasePage title="Create Knowledge Adapter" useBreadcrumbs breadcrumbs={breadcrumbs.createKnowledge(workspaceId, workspaceName)}>
+      <BasePage
+        title="Create Knowledge Adapter"
+        description="Create a knowledge adapter to ingest data"
+        useBreadcrumbs
+        breadcrumbs={breadcrumbs.createKnowledge(workspaceId, workspaceName)}
+      >
         <div className="flex justify-center">
           <Card className="w-full max-w-4xl">
             <CardContent className="p-8">

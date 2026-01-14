@@ -109,7 +109,12 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
 
   return (
     <div className="space-y-8 px-8 pt-4">
-      <BasePage title="Create Multi‑Agent System" useBreadcrumbs breadcrumbs={breadcrumbs.createMAS(workspaceId, workspaceName)}>
+      <BasePage
+        title="Create Multi‑Agent System"
+        description="Create a multi‑agent system for this workspace."
+        useBreadcrumbs
+        breadcrumbs={breadcrumbs.createMAS(workspaceId, workspaceName)}
+      >
         <div className="flex justify-center">
           <Card className="w-full max-w-4xl">
             <CardContent className="p-8">

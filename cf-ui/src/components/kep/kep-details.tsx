@@ -40,7 +40,12 @@ export default function KEPDetailsPage() {
   const breadcrumbItems = workspace && kep && workspaceId ? breadcrumbs.knowledgeDetails(workspaceId, workspace.name, kep.name) : undefined;
 
   return (
-    <BasePage title={kep?.name || 'Knowledge Adapter'} useBreadcrumbs breadcrumbs={breadcrumbItems}>
+    <BasePage
+      title={kep?.name || 'Knowledge Adapter'}
+      description={kepId ? `View details for knowledge adapter ${kepId}` : undefined}
+      useBreadcrumbs
+      breadcrumbs={breadcrumbItems}
+    >
       <ConditionalSWRRenderer
         data={kep}
         error={error}

@@ -72,6 +72,7 @@ export function KEPList({workspaceId}: KEPListProps) {
         <div className="space-y-8 px-8 pt-4 relative z-0">
           <BasePage
             title="Knowledge Adapters"
+            description="View and manage all knowledge adapters"
             callToAction={
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
