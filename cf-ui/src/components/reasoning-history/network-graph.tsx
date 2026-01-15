@@ -217,6 +217,10 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
     return Array.from(types).filter((t) => TYPE_COLORS[t]);
   }, [nodes]);
 
+  if (nodes.length === 0) {
+    return <div className="flex items-center justify-center h-full text-muted-foreground">No knowledge graph data available</div>;
+  }
+
   return (
     <div className="relative w-full h-full min-h-[600px]" style={{backgroundColor: '#0f172a', height: '100%'}}>
       <div className="absolute top-4 left-4 z-10">
