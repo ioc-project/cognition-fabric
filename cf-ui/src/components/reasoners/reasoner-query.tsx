@@ -101,9 +101,7 @@ export function ReasonerQuery({workspaceId, reasonerId}: ReasonerQueryProps) {
                 </Button>
               </div>
               {isResponseExpanded && (
-                <pre className="bg-muted p-4 rounded-md overflow-auto text-xs max-h-96 border border-border">
-                  {JSON.stringify(response, null, 2)}
-                </pre>
+                <pre className="bg-muted p-4 rounded-md overflow-auto text-xs max-h-96 border border-border">{JSON.stringify(response, null, 2)}</pre>
               )}
             </div>
           )}
