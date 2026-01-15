@@ -18,30 +18,18 @@ export function isNumber(value: unknown): value is number {
   return typeof value === 'number';
 }
 
-export function hasProperty<K extends string>(
-  obj: unknown,
-  key: K
-): obj is Record<K, unknown> {
+export function hasProperty<K extends string>(obj: unknown, key: K): obj is Record<K, unknown> {
   return isObject(obj) && key in obj;
 }
 
-export function hasStringProperty<K extends string>(
-  obj: unknown,
-  key: K
-): obj is Record<K, string> {
+export function hasStringProperty<K extends string>(obj: unknown, key: K): obj is Record<K, string> {
   return hasProperty(obj, key) && isString(obj[key]);
 }
 
-export function hasArrayProperty<K extends string>(
-  obj: unknown,
-  key: K
-): obj is Record<K, unknown[]> {
+export function hasArrayProperty<K extends string>(obj: unknown, key: K): obj is Record<K, unknown[]> {
   return hasProperty(obj, key) && isArray(obj[key]);
 }
 
-export function hasObjectProperty<K extends string>(
-  obj: unknown,
-  key: K
-): obj is Record<K, Record<string, unknown>> {
+export function hasObjectProperty<K extends string>(obj: unknown, key: K): obj is Record<K, Record<string, unknown>> {
   return hasProperty(obj, key) && isObject(obj[key]);
 }

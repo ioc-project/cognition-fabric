@@ -65,12 +65,7 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
             />
           }
         >
-          <ReasoningHistoryTableList
-            items={items}
-            reasonerById={reasonerById}
-            masById={masById}
-            onRowClick={handleRowClick}
-          />
+          <ReasoningHistoryTableList items={items} reasonerById={reasonerById} masById={masById} onRowClick={handleRowClick} />
         </ConditionalSWRRenderer>
       </BasePage>
     </div>
