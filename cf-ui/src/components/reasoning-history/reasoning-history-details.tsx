@@ -18,7 +18,7 @@ export default function ReasoningHistoryDetailsPage() {
   const {workspace} = useCurrentWorkspace();
   const workspaceName = workspace?.name ?? 'Workspace';
 
-  const [viewMode, setViewMode] = useState<ViewMode>('trace');
+  const [viewMode, setViewMode] = useState<ViewMode>('details');
 
   const {data, error, isLoading} = useSWR<ReasoningHistoryResponse>(
     workspaceId && historyId ? ['reasoning-history-details', workspaceId, historyId] : null,
@@ -27,8 +27,8 @@ export default function ReasoningHistoryDetailsPage() {
 
   const tabs = useMemo(
     () => [
-      {key: 'trace', title: 'Reasoning Trace', link: '#'},
       {key: 'details', title: 'Overview', link: '#'},
+      {key: 'trace', title: 'Reasoning Trace', link: '#'},
       {key: 'graph', title: 'Knowledge Graph', link: '#'}
     ],
     []
