@@ -7,6 +7,7 @@ import {Card, CardContent} from '@/components/ui/card';
 import {Label} from '@/components/ui/label';
 import {Textarea} from '@/components/ui/textarea';
 import {Button} from '@/components/ui/button';
+import {ChevronDown, ChevronUp} from 'lucide-react';
 
 interface ReasonerQueryProps {
   workspaceId: string;
@@ -18,6 +19,7 @@ export function ReasonerQuery({workspaceId, reasonerId}: ReasonerQueryProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<unknown>(null);
+  const [isResponseExpanded, setIsResponseExpanded] = useState(false);
 
   const onSubmit = async () => {
     setIsSubmitting(true);
@@ -68,6 +70,7 @@ export function ReasonerQuery({workspaceId, reasonerId}: ReasonerQueryProps) {
                   setIntent('');
                   setResponse(null);
                   setError(null);
+                  setIsResponseExpanded(false);
                 }}
                 disabled={isSubmitting}
               >
@@ -86,9 +89,22 @@ export function ReasonerQuery({workspaceId, reasonerId}: ReasonerQueryProps) {
           )}
 
           {response != null && (
-            <div className="space-y-2">
-              <Label>Response</Label>
-              <pre className="bg-muted p-2 rounded-md overflow-auto text-xs">{JSON.stringify(response, null, 2)}</pre>
+            <div className="space-y-3 mt-6">
+              <div className="sticky top-0 z-10 bg-background pb-2">
+                <Button
+                  variant="sidebar"
+                  onClick={() => setIsResponseExpanded(!isResponseExpanded)}
+                  className="w-full flex items-center justify-between"
+                >
+                  <span>View Response</span>
+                  {isResponseExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                </Button>
+              </div>
+              {isResponseExpanded && (
+                <pre className="bg-muted p-4 rounded-md overflow-auto text-xs max-h-96 border border-border">
+                  {JSON.stringify(response, null, 2)}
+                </pre>
+              )}
             </div>
           )}
         </CardContent>
