@@ -5,3 +5,4 @@ export * from './software';
 export * from './mas';
 export * from './kep';
 export * from './reasoners';
+export * from './reasoning-history';

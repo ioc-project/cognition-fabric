@@ -1,21 +1,11 @@
 'use client';
 
 import {useParams} from 'next/navigation';
-import {BasePage} from '@/components/ui/base-page';
-import {breadcrumbs} from '@/constants/routes';
-import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
+import {ReasoningHistoryList} from '@/components/reasoning-history/reasoning-history-list';
 
-export default function WorkspaceReasoningHistory() {
+export default function WorkspaceReasoningHistoryPage() {
   const params = useParams();
-  const id = params.id as string;
-  const {workspace} = useCurrentWorkspace();
-  const name: string = workspace?.name ?? 'Workspace';
+  const workspaceId = params.id as string;
 
-  return (
-    <div className="px-12 pt-4">
-      <BasePage title="Reasoning History" useBreadcrumbs breadcrumbs={breadcrumbs.workspaceReasoningHistory(id, name)}>
-        <div className="card-info text-muted-foreground">TODO: Reasoning history for workspace {id}.</div>
-      </BasePage>
-    </div>
-  );
+  return <ReasoningHistoryList workspaceId={workspaceId} />;
 }
