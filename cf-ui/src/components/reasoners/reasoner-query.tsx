@@ -50,7 +50,7 @@ export function ReasonerQuery({workspaceId, reasonerId}: ReasonerQueryProps) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault();
                   if (intent.trim() && !isSubmitting) {
-                    onSubmit();
+                    void onSubmit();
                   }
                 }
               }}

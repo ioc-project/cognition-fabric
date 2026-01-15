@@ -167,7 +167,7 @@ export const breadcrumbs = {
     {link: '', text: 'Reasoning History', active: true}
   ],
 
-  reasoningHistoryDetails: (workspaceId: string, workspaceName: string, historyId: string): BreadcrumbItem[] => [
+  reasoningHistoryDetails: (workspaceId: string, workspaceName: string, _historyId: string): BreadcrumbItem[] => [
     {link: routes.workspaces.list, text: 'Workspaces'},
     {link: routes.workspaces.details(workspaceId), text: workspaceName},
     {link: routes.workspaces.reasoningHistory.list(workspaceId), text: 'Reasoning History'},

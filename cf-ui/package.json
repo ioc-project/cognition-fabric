@@ -5,10 +5,12 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:clean": "rm -rf .next && npm run build",
     "start": "next start",
     "lint:check": "eslint . && prettier \"**/*.+(ts*|js*)\" --check",
     "lint": "eslint --fix . && prettier \"**/*.+(ts*|js*)\" --write",
-    "format": "prettier \"**/*.+(ts*|js*)\" --write"
+    "format": "prettier \"**/*.+(ts*|js*)\" --write",
+    "clean": "rm -rf .next node_modules/.cache"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",

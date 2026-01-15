@@ -1,9 +1,10 @@
 'use client';
 
 import {Info, Network, Database, TrendingUp} from 'lucide-react';
+import type {ReasoningHistoryContent, Concept, Relation} from '@/api/types/reasoning-history';
 
 interface DetailsPanelProps {
-  data: any;
+  data: ReasoningHistoryContent;
 }
 
 export function DetailsPanel({data}: DetailsPanelProps) {
@@ -12,9 +13,9 @@ export function DetailsPanel({data}: DetailsPanelProps) {
   }
 
   const evidence = data.evidence;
-  const concepts = evidence?.details?.concepts || [];
-  const relations = evidence?.details?.relations || [];
-  const domains = new Set(concepts.map((item: any) => item.attributes?.domain).filter(Boolean));
+  const concepts: Concept[] = evidence?.details?.concepts || [];
+  const relations: Relation[] = evidence?.details?.relations || [];
+  const domains = new Set(concepts.map((item) => item.attributes?.domain).filter(Boolean));
 
   return (
     <div className="h-full overflow-auto">
@@ -104,7 +105,7 @@ export function DetailsPanel({data}: DetailsPanelProps) {
           <div className="mb-8">
             <h3 className="text-lg font-medium mb-4">Evidence Paths</h3>
             <div className="space-y-3">
-              {evidence.paths.map((path: any, index: number) => (
+              {evidence.paths.map((path, index) => (
                 <div key={path.path_id} className="p-3 bg-muted/30 rounded-lg border border-border hover:border-primary/50 transition-colors">
                   <div className="flex items-start gap-3">
                     <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-medium">
@@ -122,7 +123,7 @@ export function DetailsPanel({data}: DetailsPanelProps) {
           <div className="mb-8">
             <h3 className="text-lg font-medium mb-4">Concepts</h3>
             <div className="space-y-4">
-              {concepts.map((concept: any, index: number) => (
+              {concepts.map((concept, index) => (
                 <div key={index} className="border-2 border-border rounded-lg p-4 hover:border-primary/50 transition-colors bg-background">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
@@ -144,7 +145,7 @@ export function DetailsPanel({data}: DetailsPanelProps) {
           <div className="mb-8">
             <h3 className="text-lg font-medium mb-4">Relations</h3>
             <div className="space-y-2">
-              {relations.map((rel: any, index: number) => (
+              {relations.map((rel, index) => (
                 <div key={index} className="text-sm bg-muted px-3 py-2 rounded border border-border font-mono">
                   {rel.attributes?.source_name} → <span className="text-primary font-semibold">{rel.relationship}</span> →{' '}
                   {rel.attributes?.target_name}
@@ -158,7 +159,7 @@ export function DetailsPanel({data}: DetailsPanelProps) {
           <div>
             <h3 className="text-lg font-medium mb-4">Domains</h3>
             <div className="flex flex-wrap gap-2">
-              {Array.from(domains).map((domain: any, index: number) => (
+              {Array.from(domains).map((domain, index) => (
                 <span key={index} className="px-3 py-1 bg-muted text-muted-foreground rounded-full text-sm">
                   {domain}
                 </span>

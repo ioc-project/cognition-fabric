@@ -1,34 +1,64 @@
 import {fetchAPI} from '../client';
-import {QueryHistoryListResponseSchema, QueryHistoryListItem} from '../types/reasoning-history';
+import {
+  QueryHistoryListResponseSchema,
+  QueryHistoryListItem,
+  BackendResponseSchema,
+  BackendResponse,
+  ReasoningHistoryResponse,
+  ReasoningHistoryRecord,
+  Concept,
+  Relation
+} from '../types/reasoning-history';
+import {isObject, hasArrayProperty, hasObjectProperty} from '@/utils/type-guards';
 
-function transformConceptsTopKToEvidence(data: any): any {
-  const content = data.records?.[0]?.content;
+function hasResponseDataWrapper(data: unknown): data is {response_data: {response: unknown}} {
+  return isObject(data) && hasObjectProperty(data, 'response_data') && hasObjectProperty(data.response_data, 'response');
+}
 
-  if (content?.evidence || content?.trace) {
-    return data;
+function transformConceptsTopKToEvidence(data: unknown): ReasoningHistoryResponse | unknown {
+  const actualData = hasResponseDataWrapper(data) ? data.response_data.response : data;
+
+  if (!isObject(actualData) || !hasArrayProperty(actualData, 'records')) {
+    return actualData;
   }
 
-  if (content?.concepts_top_k) {
-    const allConcepts: any[] = [];
-    const allRelations: any[] = [];
+  const parsed = BackendResponseSchema.safeParse(actualData);
+  if (!parsed.success) {
+    return actualData;
+  }
+
+  const backendData = parsed.data;
+  const firstRecord = backendData.records[0];
+
+  if (!firstRecord?.content) {
+    return actualData;
+  }
+
+  if (firstRecord.content.evidence || firstRecord.content.trace) {
+    return actualData as ReasoningHistoryResponse;
+  }
+
+  if (firstRecord.content.concepts_top_k) {
+    const allConcepts: Concept[] = [];
+    const allRelations: Relation[] = [];
     const conceptIds = new Set<string>();
     const relationIds = new Set<string>();
 
-    content.concepts_top_k.forEach((entityData: any) => {
-      entityData.results?.forEach((result: any) => {
+    firstRecord.content.concepts_top_k.forEach((entityData) => {
+      entityData.results?.forEach((result) => {
         if (result.concept && !conceptIds.has(result.concept.concept_id)) {
           allConcepts.push(result.concept);
           conceptIds.add(result.concept.concept_id);
         }
 
-        result.relations?.forEach((relation: any) => {
+        result.relations?.forEach((relation) => {
           if (!relationIds.has(relation.id)) {
             allRelations.push(relation);
             relationIds.add(relation.id);
           }
         });
 
-        result.neighbor_concepts?.forEach((concept: any) => {
+        result.neighbor_concepts?.forEach((concept) => {
           if (!conceptIds.has(concept.concept_id)) {
             allConcepts.push(concept);
             conceptIds.add(concept.concept_id);
@@ -37,27 +67,28 @@ function transformConceptsTopKToEvidence(data: any): any {
       });
     });
 
-    // Build transformed structure
-    return {
-      ...data,
-      records: [
-        {
-          id: data.records[0].id,
-          type: data.records[0].type,
-          content: {
-            evidence: {
-              details: {
-                concepts: allConcepts,
-                relations: allRelations
-              }
-            }
+    const transformedRecord: ReasoningHistoryRecord = {
+      id: firstRecord.id,
+      type: firstRecord.type,
+      content: {
+        evidence: {
+          details: {
+            concepts: allConcepts,
+            relations: allRelations
           }
         }
-      ]
+      }
     };
+
+    const response: ReasoningHistoryResponse = {
+      ...(actualData as BackendResponse),
+      records: [transformedRecord]
+    } as ReasoningHistoryResponse;
+
+    return response;
   }
 
-  return data;
+  return actualData;
 }
 
 export const reasoningHistoryApi = {
@@ -70,11 +101,9 @@ export const reasoningHistoryApi = {
     return parsed.records;
   },
 
-  get: async (workspaceId: string, historyId: string): Promise<any> => {
+  get: async (workspaceId: string, historyId: string): Promise<ReasoningHistoryResponse> => {
     const response = await fetchAPI(`/api/workspaces/${workspaceId}/reasoning_history/events/${historyId}`);
-
-    const actualData = (response as any).response_data?.response || response;
-
-    return transformConceptsTopKToEvidence(actualData);
+    const transformed = transformConceptsTopKToEvidence(response);
+    return transformed as ReasoningHistoryResponse;
   }
 };

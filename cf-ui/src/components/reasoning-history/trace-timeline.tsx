@@ -4,17 +4,18 @@ import {Check, ChevronUp, ChevronDown, Search, GitBranch, ArrowRight, Target, Sp
 import {cn} from '@/lib/utils';
 import {useState, useMemo} from 'react';
 import {Badge} from '@/components/ui/badge';
+import type {Trace, Evidence, SelectedEdge} from '@/api/types/reasoning-history';
 
 interface TraceTimelineProps {
-  trace: any;
-  evidence?: any;
+  trace: Trace | null | undefined;
+  evidence?: Evidence | null | undefined;
 }
 
 interface GroupedIteration {
   iteration: number;
   items: {
     anchor_concept: string;
-    selected: any[];
+    selected: SelectedEdge[];
     selected_paths_symbolic: string[];
     judge_reason_for_sufficiency: string;
     index: number;
@@ -24,14 +25,14 @@ interface GroupedIteration {
 export function TraceTimeline({trace, evidence}: TraceTimelineProps) {
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['top_similar', 'iteration-1', 'item-1-0']));
 
-  if (!trace?.iterations) {
-    return <div className="flex items-center justify-center h-full text-muted-foreground">No trace or evidence data available</div>;
-  }
-
   const groupedIterations = useMemo(() => {
+    if (!trace?.iterations) {
+      return [];
+    }
+
     const groups: Map<number, GroupedIteration> = new Map();
 
-    trace.iterations.forEach((item: any, index: number) => {
+    trace.iterations.forEach((item, index) => {
       const iterNum = item.iteration;
       if (!groups.has(iterNum)) {
         groups.set(iterNum, {iteration: iterNum, items: []});
@@ -46,7 +47,11 @@ export function TraceTimeline({trace, evidence}: TraceTimelineProps) {
     });
 
     return Array.from(groups.values()).sort((a, b) => a.iteration - b.iteration);
-  }, [trace.iterations]);
+  }, [trace?.iterations]);
+
+  if (!trace?.iterations) {
+    return <div className="flex items-center justify-center h-full text-muted-foreground">No trace or evidence data available</div>;
+  }
 
   const toggleSection = (key: string) => {
     setExpandedSections((prev) => {
@@ -136,7 +141,7 @@ export function TraceTimeline({trace, evidence}: TraceTimelineProps) {
 
                   {isExpanded('evidence_paths') && (
                     <div className="space-y-3 ml-6">
-                      {evidence.paths.map((path: any, index: number) => (
+                      {evidence.paths.map((path, index) => (
                         <div key={path.path_id} className="p-3 bg-muted/30 rounded-lg border border-border hover:border-primary/50 transition-colors">
                           <div className="flex items-start gap-3">
                             <span className="flex-shrink-0 w-6 h-6 bg-primary/10 text-primary rounded-full flex items-center justify-center text-xs font-medium">
@@ -176,7 +181,7 @@ export function TraceTimeline({trace, evidence}: TraceTimelineProps) {
 
                   {isExpanded('top_similar') && (
                     <div className="mt-3 ml-6 space-y-3">
-                      {trace.tope_similar_concepts.map((similar: any, idx: number) => (
+                      {trace.tope_similar_concepts.map((similar, idx) => (
                         <div key={idx} className="border rounded-lg border-[#E1E4E8] dark:border-border bg-[#FAFAFA] dark:bg-muted/20 p-3">
                           <div className="flex items-center gap-2 mb-2">
                             <Target className="w-3.5 h-3.5 text-[#1D69CC]" />
@@ -187,7 +192,7 @@ export function TraceTimeline({trace, evidence}: TraceTimelineProps) {
                             <div className="ml-5 space-y-1">
                               <span className="text-xs text-[#596069] dark:text-muted-foreground">Connected neighbors:</span>
                               <div className="flex flex-wrap gap-1.5 mt-1">
-                                {similar.firs_neighbour.map((neighbor: any, nIdx: number) => (
+                                {similar.firs_neighbour.map((neighbor, nIdx) => (
                                   <div
                                     key={nIdx}
                                     className="inline-flex items-center gap-1.5 px-2 py-1 bg-white dark:bg-muted rounded border border-[#E1E4E8] dark:border-border text-xs"
@@ -335,7 +340,7 @@ export function TraceTimeline({trace, evidence}: TraceTimelineProps) {
                                             Judge Assessment
                                           </span>
                                           <p className="text-sm text-[#596069] dark:text-muted-foreground italic">
-                                            "{itemData.judge_reason_for_sufficiency}"
+                                            &ldquo;{itemData.judge_reason_for_sufficiency}&rdquo;
                                           </p>
                                         </div>
                                       </div>

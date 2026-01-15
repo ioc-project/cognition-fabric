@@ -4,6 +4,7 @@ import path from 'path';
 const config: NextConfig = {
   output: 'standalone',
   reactStrictMode: true,
+
   env: {
     CSP_UI_API_BASE_URL: process.env.CSP_UI_API_BASE_URL,
     CSP_UI_API_TIMEOUT: process.env.CSP_UI_API_TIMEOUT

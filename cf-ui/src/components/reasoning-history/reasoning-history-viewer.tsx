@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import {TraceTimeline} from './trace-timeline';
 import {DetailsPanel} from './details-panel';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
-import type {ReasoningHistoryResponse, ReasoningHistoryContent, Concept} from '@/api/types/reasoning-history';
+import type {ReasoningHistoryResponse, ReasoningHistoryContent} from '@/api/types/reasoning-history';
 
 // Dynamically import NetworkGraph to avoid SSR issues with @xyflow/react
 const NetworkGraph = dynamic(() => import('./network-graph').then((mod) => mod.NetworkGraph), {
@@ -15,17 +15,25 @@ const NetworkGraph = dynamic(() => import('./network-graph').then((mod) => mod.N
 
 export type ViewMode = 'graph' | 'trace' | 'details';
 
+interface SelectedNodeInfo {
+  id: string;
+  name: string;
+  type: string;
+  description: string;
+  domain: string;
+}
+
 interface Props {
   data: ReasoningHistoryResponse;
   viewMode: ViewMode;
 }
 
 export function ReasoningHistoryViewer({data, viewMode}: Props) {
-  const [selectedNode, setSelectedNode] = React.useState<Concept | null>(null);
+  const [selectedNode, setSelectedNode] = React.useState<SelectedNodeInfo | null>(null);
   const [selectedEntityIndex, setSelectedEntityIndex] = React.useState(0);
 
   // Temp to handle both the eventual response structure after the evidence gathering PR is merged and what the server is currently returning.
-  const records = data.records?.map((r) => r.content as ReasoningHistoryContent) || [];
+  const records = data.records?.map((r) => r.content) || [];
   const hasMultipleEntities = records.length > 1;
 
   const isNewFormat = data.records?.[0]?.content && 'entities' in data.records[0].content;
@@ -38,7 +46,9 @@ export function ReasoningHistoryViewer({data, viewMode}: Props) {
   };
 
   const renderContent = (record: ReasoningHistoryContent | undefined) => {
-    if (!record) return <div className="flex items-center justify-center h-full text-muted-foreground">No data available</div>;
+    if (!record) {
+      return <div className="flex items-center justify-center h-full text-muted-foreground">No data available</div>;
+    }
 
     return (
       <>

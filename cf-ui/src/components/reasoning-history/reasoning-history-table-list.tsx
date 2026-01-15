@@ -26,7 +26,7 @@ export function ReasoningHistoryTableList({items, reasonerById, masById, onRowCl
       renderRow={(item) => {
         const reasoner = reasonerById.get(item.reasoner_id);
         const mas = reasoner ? masById.get(reasoner.mas_id) : null;
-        
+
         return [
           {
             content: (

@@ -34,6 +34,22 @@ export const RelationSchema = z.object({
 
 export type Relation = z.infer<typeof RelationSchema>;
 
+export const ConceptTopKResultSchema = z.object({
+  distance: z.number(),
+  concept: ConceptSchema,
+  relations: z.array(RelationSchema).optional(),
+  neighbor_concepts: z.array(ConceptSchema).optional()
+});
+
+export type ConceptTopKResult = z.infer<typeof ConceptTopKResultSchema>;
+
+export const ConceptTopKEntrySchema = z.object({
+  entity_name: z.string().optional(),
+  results: z.array(ConceptTopKResultSchema).optional()
+});
+
+export type ConceptTopKEntry = z.infer<typeof ConceptTopKEntrySchema>;
+
 export const ConceptTopKSchema = z.object({
   distance: z.number(),
   concept: ConceptSchema,
@@ -155,6 +171,28 @@ export const EvidenceSchema = z.object({
 });
 
 export type Evidence = z.infer<typeof EvidenceSchema>;
+
+export const BackendContentSchema = z.object({
+  concepts_top_k: z.array(ConceptTopKEntrySchema).optional(),
+  evidence: EvidenceSchema.optional(),
+  trace: TraceSchema.optional()
+});
+
+export type BackendContent = z.infer<typeof BackendContentSchema>;
+
+export const BackendRecordSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  content: BackendContentSchema
+});
+
+export type BackendRecord = z.infer<typeof BackendRecordSchema>;
+
+export const BackendResponseSchema = z.object({
+  records: z.array(BackendRecordSchema)
+});
+
+export type BackendResponse = z.infer<typeof BackendResponseSchema>;
 
 export const ReasoningHistoryContentSchema = z.object({
   evidence: EvidenceSchema.optional(),

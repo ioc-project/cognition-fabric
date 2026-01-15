@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useState, useCallback, useMemo} from 'react';
+import {useEffect, useCallback, useMemo} from 'react';
 import {
   ReactFlow,
   Node,
@@ -16,11 +16,20 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {Card} from '@/components/ui/card';
+import type {ReasoningHistoryContent} from '@/api/types/reasoning-history';
+
+interface SelectedNodeInfo {
+  id: string;
+  name: string;
+  type: string;
+  description: string;
+  domain: string;
+}
 
 interface NetworkGraphProps {
-  data: any;
-  onNodeSelect: (node: any) => void;
-  selectedNode: any;
+  data: ReasoningHistoryContent;
+  onNodeSelect: (node: SelectedNodeInfo) => void;
+  selectedNode: SelectedNodeInfo | null;
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -34,7 +43,14 @@ const TYPE_COLORS: Record<string, string> = {
   other: '#64748b'
 };
 
-function CustomNode({data, selected}: {data: any; selected: boolean}) {
+type CustomNodeData = {
+  label: string;
+  type: string;
+  description: string;
+  domain: string;
+};
+
+function CustomNode({data, selected}: {data: CustomNodeData; selected: boolean}) {
   const bgColor = TYPE_COLORS[data.type] || TYPE_COLORS.other;
 
   return (
@@ -60,19 +76,14 @@ const nodeTypes = {
   custom: CustomNode
 };
 
-type CustomNodeData = {
-  label: string;
-  type: string;
-  description: string;
-  domain: string;
-};
-
 export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<CustomNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   useEffect(() => {
-    if (!data) return;
+    if (!data) {
+      return;
+    }
 
     const nodeMap = new Map<string, any>();
     const linkList: {source: string; target: string; relationship: string}[] = [];
@@ -105,14 +116,14 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
     };
 
     if (data.evidence?.entity?.name) {
-      addNode(data.evidence.entity.name, 'entity', 'The queried entity', 'Query', true);
+      addNode(data.evidence.entity.name, 'entity', data.evidence.entity.description || 'The queried entity', 'Query', true);
     }
 
-    data.evidence?.details?.concepts?.forEach((concept: any) => {
-      addNode(concept.name, concept.type, concept.description, concept.attributes?.domain);
+    data.evidence?.details?.concepts?.forEach((concept) => {
+      addNode(concept.name, concept.type, concept.description || '', concept.attributes?.domain || '');
     });
 
-    data.evidence?.details?.relations?.forEach((rel: any) => {
+    data.evidence?.details?.relations?.forEach((rel) => {
       if (rel.attributes?.source_name && rel.attributes?.target_name) {
         addNode(rel.attributes.source_name, 'concept', '', '');
         addNode(rel.attributes.target_name, 'concept', '', '');
@@ -127,9 +138,9 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
     const centerY = 300;
     const radius = Math.max(200, nodeArray.length * 30);
 
-    const mainNode = nodeArray.find((n) => n.isMain || n.type === 'entity');
+    // const _mainNode = nodeArray.find((n) => n.isMain || n.type === 'entity');
 
-    const flowNodes: Node<CustomNodeData>[] = nodeArray.map((node, index) => {
+    const flowNodes: Node<CustomNodeData>[] = nodeArray.map((node, _index) => {
       let x, y;
 
       if (node.isMain || node.type === 'entity') {
@@ -189,7 +200,7 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
   }, [data, selectedNode?.id, setNodes, setEdges]);
 
   const onNodeClick = useCallback(
-    (_: React.MouseEvent, node: Node) => {
+    (_: React.MouseEvent, node: Node<CustomNodeData>) => {
       onNodeSelect({
         id: node.id,
         name: node.data.label,
@@ -202,7 +213,7 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
   );
 
   const usedTypes = useMemo(() => {
-    const types = new Set(nodes.map((n) => n.data.type as string));
+    const types = new Set(nodes.map((n) => n.data.type));
     return Array.from(types).filter((t) => TYPE_COLORS[t]);
   }, [nodes]);
 
