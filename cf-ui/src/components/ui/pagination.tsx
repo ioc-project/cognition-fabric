@@ -51,10 +51,6 @@ export function Pagination({currentPage, totalPages, onPageChange, className}: P
     return pages;
   };
 
-  if (totalPages <= 1) {
-    return null;
-  }
-
   const pages = getPageNumbers();
 
   return (

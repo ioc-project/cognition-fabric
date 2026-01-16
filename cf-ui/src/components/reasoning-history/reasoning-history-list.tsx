@@ -277,44 +277,46 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
             </div>
           </div>
         )}
-        <div className="flex-1 min-h-0 overflow-auto">
-          <ConditionalSWRRenderer
-            data={filteredItems}
-            error={error}
-            itemName="Reasoning History"
-            customIsLoading={isLoading}
-            customEmptyComponent={
-              <ListShell
-                empty={{
-                  icon: History,
-                  title: 'No reasoning history in this workspace.',
-                  description: 'Run queries on your reasoners to see history here.',
-                  actionLabel: 'Go to Reasoners',
-                  href: routes.workspaces.reasoners.list(workspaceId)
+        <div className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-auto">
+            <ConditionalSWRRenderer
+              data={filteredItems}
+              error={error}
+              itemName="Reasoning History"
+              customIsLoading={isLoading}
+              customEmptyComponent={
+                <ListShell
+                  empty={{
+                    icon: History,
+                    title: 'No reasoning history in this workspace.',
+                    description: 'Run queries on your reasoners to see history here.',
+                    actionLabel: 'Go to Reasoners',
+                    href: routes.workspaces.reasoners.list(workspaceId)
+                  }}
+                />
+              }
+            >
+              <ReasoningHistoryTableList items={filteredItems} reasonerById={reasonerById} masById={masById} onRowClick={handleRowClick} />
+            </ConditionalSWRRenderer>
+          </div>
+          {totalPages > 0 && (
+            <div className="flex items-center justify-between pt-4 mb-8">
+              <div className="text-sm text-muted-foreground">
+                Showing {filteredItems.length > 0 ? currentPage * PAGE_SIZE + 1 : 0} - {Math.min((currentPage + 1) * PAGE_SIZE, totalItems)} of{' '}
+                {totalItems} items
+              </div>
+              <Pagination
+                currentPage={currentPage + 1}
+                totalPages={totalPages}
+                onPageChange={(page) => {
+                  const newPage = page - 1;
+                  setCurrentPage(newPage);
+                  setAppliedFilters((prev) => ({...prev, offset: newPage * PAGE_SIZE}));
                 }}
               />
-            }
-          >
-            <ReasoningHistoryTableList items={filteredItems} reasonerById={reasonerById} masById={masById} onRowClick={handleRowClick} />
-          </ConditionalSWRRenderer>
-        </div>
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-2 mb-8">
-            <div className="text-sm text-muted-foreground">
-              Showing {filteredItems.length > 0 ? currentPage * PAGE_SIZE + 1 : 0} - {Math.min((currentPage + 1) * PAGE_SIZE, totalItems)} of{' '}
-              {totalItems} items
             </div>
-            <Pagination
-              currentPage={currentPage + 1}
-              totalPages={totalPages}
-              onPageChange={(page) => {
-                const newPage = page - 1;
-                setCurrentPage(newPage);
-                setAppliedFilters((prev) => ({...prev, offset: newPage * PAGE_SIZE}));
-              }}
-            />
-          </div>
-        )}
+          )}
+        </div>
       </BasePage>
     </div>
   );
