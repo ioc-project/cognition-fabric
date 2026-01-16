@@ -7,7 +7,7 @@ import type {Reasoner, CreateReasonerRequest} from '@/api/types/reasoner';
 import type {MAS, CreateMASRequest} from '@/api/types/mas';
 import type {KEP, CreateKEPRequest} from '@/api/types/kep';
 import {swrKeys} from '@/lib/swr-config';
-import {parseError} from '@/lib/utils';
+import {parseError, sortByCreatedAtDesc} from '@/lib/utils';
 import {useInvalidateMutation} from './useSWRResource';
 
 function hasStatus(error: unknown): error is {status: number} {
@@ -21,7 +21,7 @@ export function useWorkspaces() {
   });
 
   return {
-    workspaces: data?.workspaces || [],
+    workspaces: sortByCreatedAtDesc(data?.workspaces || []),
     isLoading,
     error: error ? parseError(error) : null,
     mutate
@@ -113,7 +113,7 @@ export function useReasoners(workspaceId: string) {
   };
 
   return {
-    reasoners: Array.isArray(data) ? data : [],
+    reasoners: sortByCreatedAtDesc(Array.isArray(data) ? data : []),
     isLoading,
     isValidating,
     error: error ? parseError(error) : null,
@@ -160,7 +160,7 @@ export function useMAS(workspaceId: string) {
   };
 
   return {
-    masList: Array.isArray(data) ? data : [],
+    masList: sortByCreatedAtDesc(Array.isArray(data) ? data : []),
     isLoading,
     isValidating,
     error: error ? parseError(error) : null,
@@ -200,7 +200,7 @@ export function useKEPs(workspaceId: string) {
   };
 
   return {
-    knowledgeAdapters: Array.isArray(data) ? data : [],
+    knowledgeAdapters: sortByCreatedAtDesc(Array.isArray(data) ? data : []),
     isLoading,
     isValidating,
     error: error ? parseError(error) : null,

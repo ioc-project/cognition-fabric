@@ -83,3 +83,22 @@ export const DATE_TIME_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
   minute: '2-digit',
   hour12: false
 } as const;
+
+/**
+ * Sort an array of items by created_at in descending order (latest first).
+ * Items without created_at are placed at the end.
+ */
+export function sortByCreatedAtDesc<T extends {created_at?: string | null}>(items: T[]): T[] {
+  return [...items].sort((a, b) => {
+    if (!a.created_at && !b.created_at) {
+      return 0;
+    }
+    if (!a.created_at) {
+      return 1;
+    }
+    if (!b.created_at) {
+      return -1;
+    }
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+}
