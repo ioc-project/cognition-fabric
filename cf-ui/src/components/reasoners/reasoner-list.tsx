@@ -1,6 +1,6 @@
 'use client';
 
-import {useState} from 'react';
+import {useState, useMemo} from 'react';
 import {Plus, Brain} from 'lucide-react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
@@ -31,7 +31,7 @@ export function ReasonerList({workspaceId}: ReasonerListProps) {
 
   const {reasoners = [], isLoading: loading, isValidating, error: swrError, deleteReasoner} = useReasoners(workspaceId);
   const {masList = []} = useMAS(workspaceId);
-  const masById = new Map(masList.map((m) => [m.id, m.name] as const));
+  const masById = useMemo(() => new Map(masList.map((m) => [m.id, m.name] as const)), [masList]);
   const handleDelete = async () => {
     await deleteDialog.confirm(async (data) => {
       try {

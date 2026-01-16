@@ -15,5 +15,5 @@ export const Loader: React.FC<LoaderProps> = ({size = 'md', className, ...props}
     lg: 'w-12 h-12'
   }[size];
 
-  return <Loader2 className={cn('animate-spin', sizeClass, className)} {...props} />;
+  return <Loader2 className={cn('animate-spin text-[hsl(var(--sidebar-text-active))]', sizeClass, className)} {...props} />;
 };

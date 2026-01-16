@@ -14,6 +14,7 @@ import {Textarea} from '@/components/ui/textarea';
 import {Select, SelectTrigger, SelectValue, SelectContent, SelectItem} from '@/components/ui/select';
 import {MultiSelect} from '@/components/ui/multi-select';
 import {masApi, softwareApi} from '@/api/endpoints';
+import {swrKeys} from '@/lib/swr-config';
 import {routes} from '@/constants/routes';
 import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
@@ -58,8 +59,15 @@ export function CreateKEPForm({workspaceId, onCancel}: CreateKEPFormProps) {
   const workspaceName = workspace?.name || 'Workspace';
   const {addKEP} = useKEPs(workspaceId);
 
-  const {data: masList = []} = useSWR(['mas-list', workspaceId], () => masApi.list(workspaceId));
-  const {data: softwareTemplates = []} = useSWR('software-templates-all', () => softwareApi.listAll());
+  const {data: masList = [], error: masError} = useSWR(swrKeys.mas(workspaceId), () => masApi.list(workspaceId));
+  const {data: softwareTemplates = [], error: templatesError} = useSWR(swrKeys.softwareTemplatesAll(), () => softwareApi.listAll());
+
+  if (masError) {
+    console.warn('Failed to load MAS list:', masError);
+  }
+  if (templatesError) {
+    console.warn('Failed to load software templates:', templatesError);
+  }
 
   const availableSoftwareTypes = useMemo(() => {
     const types = new Set<string>();

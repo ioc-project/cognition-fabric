@@ -12,6 +12,7 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
 import {masApi} from '@/api/endpoints';
+import {swrKeys} from '@/lib/swr-config';
 import {routes} from '@/constants/routes';
 import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
@@ -50,8 +51,12 @@ export function CreateReasonerForm({workspaceId}: {workspaceId: string}) {
   const {workspace} = useCurrentWorkspace();
   const workspaceName = workspace?.name || 'Workspace';
 
-  const {data: masList = []} = useSWR(['mas-list', workspaceId], () => masApi.list(workspaceId));
+  const {data: masList = [], error: masError} = useSWR(swrKeys.mas(workspaceId), () => masApi.list(workspaceId));
   const {addReasoner} = useReasoners(workspaceId);
+
+  if (masError) {
+    console.warn('Failed to load MAS list:', masError);
+  }
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),

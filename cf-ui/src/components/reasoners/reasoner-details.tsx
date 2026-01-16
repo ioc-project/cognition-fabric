@@ -3,6 +3,7 @@
 import {useEffect} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import useSWR from 'swr';
+import {swrKeys} from '@/lib/swr-config';
 import {reasonerApi, masApi, workspaceApi} from '@/api/endpoints';
 import type {Reasoner} from '@/api/types/reasoner';
 import type {MAS} from '@/api/types/mas';
@@ -28,11 +29,22 @@ export default function ReasonerDetailsPage() {
     data: reasoner,
     error,
     isLoading
-  } = useSWR<Reasoner>(workspaceId && reasonerId ? ['reasoner-details', workspaceId, reasonerId] : null, () =>
+  } = useSWR<Reasoner>(workspaceId && reasonerId ? swrKeys.reasonerDetails(workspaceId, reasonerId) : null, () =>
     reasonerApi.get(workspaceId as string, reasonerId as string)
   );
-  const {data: masList = [] as MAS[]} = useSWR<MAS[]>(workspaceId ? ['mas-list', workspaceId] : null, () => masApi.list(workspaceId as string));
-  const {data: workspace} = useSWR<Workspace | null>(workspaceId ? ['workspace', workspaceId] : null, () => workspaceApi.get(workspaceId as string));
+  const {data: masList = [] as MAS[], error: masError} = useSWR<MAS[]>(workspaceId ? swrKeys.mas(workspaceId) : null, () =>
+    masApi.list(workspaceId as string)
+  );
+  const {data: workspace, error: workspaceError} = useSWR<Workspace | null>(workspaceId ? swrKeys.workspace(workspaceId) : null, () =>
+    workspaceApi.get(workspaceId as string)
+  );
+
+  if (masError) {
+    console.warn('Failed to load MAS list:', masError);
+  }
+  if (workspaceError) {
+    console.warn('Failed to load workspace:', workspaceError);
+  }
 
   useEffect(() => {
     if (!workspaceId || !reasonerId) {

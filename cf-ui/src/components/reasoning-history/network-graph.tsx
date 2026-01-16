@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useCallback, useMemo} from 'react';
+import {useEffect, useCallback, useMemo, useState} from 'react';
 import {
   ReactFlow,
   Node,
@@ -16,7 +16,9 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import {Card} from '@/components/ui/card';
+import {LoaderRelative} from '@/components/ui/loading';
 import type {ReasoningHistoryContent} from '@/api/types/reasoning-history';
+import {GRAPH_LAYOUT, NODE_TYPE_COLORS, calculateGraphRadius} from '@/constants/reasoning-history';
 
 interface SelectedNodeInfo {
   id: string;
@@ -32,16 +34,7 @@ interface NetworkGraphProps {
   selectedNode: SelectedNodeInfo | null;
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  concept: '#3b82f6',
-  constraint: '#f59e0b',
-  entity: '#10b981',
-  Process: '#8b5cf6',
-  Feature: '#ec4899',
-  Technology: '#06b6d4',
-  Service: '#14b8a6',
-  other: '#64748b'
-};
+// Node type colors imported from @/constants/reasoning-history
 
 type CustomNodeData = {
   label: string;
@@ -51,7 +44,7 @@ type CustomNodeData = {
 };
 
 function CustomNode({data, selected}: {data: CustomNodeData; selected: boolean}) {
-  const bgColor = TYPE_COLORS[data.type] || TYPE_COLORS.other;
+  const bgColor = NODE_TYPE_COLORS[data.type] || NODE_TYPE_COLORS.other;
 
   return (
     <div
@@ -79,11 +72,15 @@ const nodeTypes = {
 export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<CustomNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+  const [isCalculating, setIsCalculating] = useState(true);
 
   useEffect(() => {
     if (!data) {
+      setIsCalculating(false);
       return;
     }
+
+    setIsCalculating(true);
 
     const nodeMap = new Map<string, any>();
     const linkList: {source: string; target: string; relationship: string}[] = [];
@@ -134,9 +131,9 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
     const validLinks = linkList.filter((link) => nodeMap.has(link.source) && nodeMap.has(link.target));
 
     const nodeArray = Array.from(nodeMap.values());
-    const centerX = 400;
-    const centerY = 300;
-    const radius = Math.max(200, nodeArray.length * 30);
+    const centerX = GRAPH_LAYOUT.CENTER_X;
+    const centerY = GRAPH_LAYOUT.CENTER_Y;
+    const radius = calculateGraphRadius(nodeArray.length);
 
     const flowNodes: Node<CustomNodeData>[] = nodeArray.map((node, _index) => {
       let x, y;
@@ -195,6 +192,7 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
 
     setNodes(flowNodes);
     setEdges(flowEdges);
+    setIsCalculating(false);
   }, [data, selectedNode?.id, setNodes, setEdges]);
 
   const onNodeClick = useCallback(
@@ -212,8 +210,12 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
 
   const usedTypes = useMemo(() => {
     const types = new Set(nodes.map((n) => n.data.type));
-    return Array.from(types).filter((t) => TYPE_COLORS[t]);
+    return Array.from(types).filter((t) => NODE_TYPE_COLORS[t]);
   }, [nodes]);
+
+  if (isCalculating) {
+    return <LoaderRelative className="h-full min-h-[600px]" />;
+  }
 
   if (nodes.length === 0) {
     return <div className="flex items-center justify-center h-full text-muted-foreground">No knowledge graph data available</div>;
@@ -227,7 +229,7 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
           <div className="space-y-1.5">
             {usedTypes.map((type) => (
               <div key={type} className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full" style={{backgroundColor: TYPE_COLORS[type]}} />
+                <div className="w-3 h-3 rounded-full" style={{backgroundColor: NODE_TYPE_COLORS[type]}} />
                 <span className="text-xs text-foreground capitalize">{type}</span>
               </div>
             ))}
@@ -266,7 +268,7 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
         <Card className="absolute bottom-16 right-4 z-10 p-4 max-w-xs bg-slate-900/95 border-slate-700 backdrop-blur-sm">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{backgroundColor: TYPE_COLORS[selectedNode.type] || '#64748b'}} />
+              <div className="w-3 h-3 rounded-full" style={{backgroundColor: NODE_TYPE_COLORS[selectedNode.type] || NODE_TYPE_COLORS.other}} />
               <span className="font-medium text-sm text-foreground">{selectedNode.name}</span>
             </div>
             <div className="text-sm text-foreground">

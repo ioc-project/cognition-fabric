@@ -6,6 +6,7 @@ import {BasePage} from '@/components/ui/base-page';
 import {breadcrumbs, routes} from '@/constants/routes';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {useSWRResource} from '@/hooks/useSWRResource';
+import {swrKeys} from '@/lib/swr-config';
 import {ListShell} from '@/components/ui/list-shell';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {reasoningHistoryApi} from '@/api/endpoints/reasoning-history';
@@ -66,20 +67,29 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
     error,
     isLoading
   } = useSWRResource<{records: QueryHistoryListItem[]; total: number}>(
-    workspaceId ? ['reasoning-history-list', workspaceId, JSON.stringify(appliedFilters)] : null,
+    workspaceId ? swrKeys.reasoningHistory(workspaceId, JSON.stringify(appliedFilters)) : null,
     () => reasoningHistoryApi.list(workspaceId, appliedFilters)
   );
 
-  const {data: reasonersData} = useSWRResource<Reasoner[]>(workspaceId ? ['reasoners-list', workspaceId] : null, () => reasonerApi.list(workspaceId));
+  const {data: reasonersData, error: reasonersError} = useSWRResource<Reasoner[]>(workspaceId ? swrKeys.reasoners(workspaceId) : null, () =>
+    reasonerApi.list(workspaceId)
+  );
 
-  const {data: masData} = useSWRResource<MAS[]>(workspaceId ? ['mas-list', workspaceId] : null, () => masApi.list(workspaceId));
+  const {data: masData, error: masError} = useSWRResource<MAS[]>(workspaceId ? swrKeys.mas(workspaceId) : null, () => masApi.list(workspaceId));
+
+  if (reasonersError) {
+    console.warn('Failed to load reasoners for display names:', reasonersError);
+  }
+  if (masError) {
+    console.warn('Failed to load MAS list for display names:', masError);
+  }
 
   const totalItems = responseData?.total ?? 0;
   const totalPages = Math.ceil(totalItems / PAGE_SIZE);
-  const reasoners = reasonersData ?? [];
-  const masList = masData ?? [];
 
-  // Client-side filtering for search text (instant feedback as you type)
+  const reasoners = useMemo(() => reasonersData ?? [], [reasonersData]);
+  const masList = useMemo(() => masData ?? [], [masData]);
+
   const filteredItems = useMemo(() => {
     const items = responseData?.records ?? [];
     const searchText = pendingFilters.createdBy?.toLowerCase().trim();
@@ -89,8 +99,8 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
     return items.filter((item) => item.query_input?.toLowerCase().includes(searchText) || item.created_by?.toLowerCase().includes(searchText));
   }, [responseData?.records, pendingFilters.createdBy]);
 
-  const reasonerById = new Map(reasoners.map((r) => [r.id, r]));
-  const masById = new Map(masList.map((m) => [m.id, m]));
+  const reasonerById = useMemo(() => new Map(reasoners.map((r) => [r.id, r])), [reasoners]);
+  const masById = useMemo(() => new Map(masList.map((m) => [m.id, m])), [masList]);
 
   const handleRowClick = (item: QueryHistoryListItem) => {
     router.push(routes.workspaces.reasoningHistory.details(workspaceId, item.id));
@@ -271,9 +281,8 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
             <ReasoningHistoryTableList items={filteredItems} reasonerById={reasonerById} masById={masById} onRowClick={handleRowClick} />
           </ConditionalSWRRenderer>
         </div>
-        {/* Pagination */}
         {totalPages > 0 && (
-          <div className="flex items-center justify-between border-t border-border pt-4 mt-4">
+          <div className="flex items-center justify-between mt-2 mb-8">
             <div className="text-sm text-muted-foreground">
               Showing {filteredItems.length > 0 ? currentPage * PAGE_SIZE + 1 : 0} - {Math.min((currentPage + 1) * PAGE_SIZE, totalItems)} of{' '}
               {totalItems} items

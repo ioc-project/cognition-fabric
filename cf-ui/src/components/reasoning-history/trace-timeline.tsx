@@ -5,6 +5,7 @@ import {cn} from '@/lib/utils';
 import {useState, useMemo} from 'react';
 import {Badge} from '@/components/ui/badge';
 import type {Trace, Evidence, SelectedEdge} from '@/api/types/reasoning-history';
+import {TRACE_TIMELINE} from '@/constants/reasoning-history';
 
 interface TraceTimelineProps {
   trace: Trace | null | undefined;
@@ -23,7 +24,7 @@ interface GroupedIteration {
 }
 
 export function TraceTimeline({trace, evidence}: TraceTimelineProps) {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['top_similar', 'iteration-1', 'item-1-0']));
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(TRACE_TIMELINE.DEFAULT_EXPANDED_SECTIONS));
 
   const groupedIterations = useMemo(() => {
     if (!trace?.iterations) {

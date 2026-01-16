@@ -3,6 +3,7 @@
 import {useEffect} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import useSWR from 'swr';
+import {swrKeys} from '@/lib/swr-config';
 import {masApi, workspaceApi} from '@/api/endpoints';
 import type {MAS} from '@/api/types/mas';
 import type {Workspace} from '@/api/types/workspace';
@@ -26,8 +27,14 @@ export default function MASDetailsPage() {
     data: mas,
     error,
     isLoading
-  } = useSWR<MAS>(workspaceId && masId ? ['mas-details', workspaceId, masId] : null, () => masApi.get(workspaceId as string, masId as string));
-  const {data: workspace} = useSWR<Workspace | null>(workspaceId ? ['workspace', workspaceId] : null, () => workspaceApi.get(workspaceId as string));
+  } = useSWR<MAS>(workspaceId && masId ? swrKeys.masDetails(workspaceId, masId) : null, () => masApi.get(workspaceId as string, masId as string));
+  const {data: workspace, error: workspaceError} = useSWR<Workspace | null>(workspaceId ? swrKeys.workspace(workspaceId) : null, () =>
+    workspaceApi.get(workspaceId as string)
+  );
+
+  if (workspaceError) {
+    console.warn('Failed to load workspace:', workspaceError);
+  }
 
   useEffect(() => {
     if (!workspaceId || !masId) {

@@ -7,6 +7,7 @@ import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {breadcrumbs} from '@/constants/routes';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {useSWRResource} from '@/hooks/useSWRResource';
+import {swrKeys} from '@/lib/swr-config';
 import {ReasoningHistoryViewer, ViewMode} from './reasoning-history-viewer';
 import {reasoningHistoryApi} from '@/api/endpoints/reasoning-history';
 import type {ReasoningHistoryResponse} from '@/api/types/reasoning-history';
@@ -21,7 +22,7 @@ export default function ReasoningHistoryDetailsPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('details');
 
   const {data, error, isLoading} = useSWRResource<ReasoningHistoryResponse>(
-    workspaceId && historyId ? ['reasoning-history-details', workspaceId, historyId] : null,
+    workspaceId && historyId ? swrKeys.reasoningHistoryDetails(workspaceId, historyId) : null,
     () => reasoningHistoryApi.get(workspaceId, historyId)
   );
 

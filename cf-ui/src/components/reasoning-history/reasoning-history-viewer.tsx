@@ -6,6 +6,7 @@ import {TraceTimeline} from './trace-timeline';
 import {DetailsPanel} from './details-panel';
 import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import type {ReasoningHistoryResponse, ReasoningHistoryContent} from '@/api/types/reasoning-history';
+import {VIEWER_LAYOUT} from '@/constants/reasoning-history';
 
 // Dynamically import NetworkGraph to avoid SSR issues with @xyflow/react
 const NetworkGraph = dynamic(() => import('./network-graph').then((mod) => mod.NetworkGraph), {
@@ -62,7 +63,13 @@ export function ReasoningHistoryViewer({data, viewMode}: Props) {
   if (!hasMultipleEntities) {
     // Single entity - render directly
     return (
-      <div className="flex flex-col h-[calc(100vh-350px)] min-h-[500px] border border-border rounded-lg bg-background overflow-hidden">
+      <div
+        className="flex flex-col border border-border rounded-lg bg-background overflow-hidden"
+        style={{
+          height: `calc(100vh - ${VIEWER_LAYOUT.HEADER_OFFSET_PX}px)`,
+          minHeight: `${VIEWER_LAYOUT.MIN_HEIGHT_PX}px`
+        }}
+      >
         {renderContent(records[0])}
       </div>
     );
@@ -70,7 +77,13 @@ export function ReasoningHistoryViewer({data, viewMode}: Props) {
 
   // Multiple entities - show entity tabs
   return (
-    <div className="flex flex-col h-[calc(100vh-350px)] min-h-[500px] border border-border rounded-lg bg-background overflow-hidden">
+    <div
+      className="flex flex-col border border-border rounded-lg bg-background overflow-hidden"
+      style={{
+        height: `calc(100vh - ${VIEWER_LAYOUT.HEADER_OFFSET_PX}px)`,
+        minHeight: `${VIEWER_LAYOUT.MIN_HEIGHT_PX}px`
+      }}
+    >
       <Tabs value={selectedEntityIndex.toString()} onValueChange={(val) => setSelectedEntityIndex(parseInt(val))} className="flex flex-col h-full">
         <div className="border-b border-border px-4 pt-3 bg-muted/30">
           <TabsList className="w-full justify-start h-auto p-0 bg-transparent">

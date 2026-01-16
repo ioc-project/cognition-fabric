@@ -7,6 +7,7 @@ import {BasePage} from '@/components/ui/base-page';
 import {useRouter, useParams} from 'next/navigation';
 import {useEffect} from 'react';
 import useSWR from 'swr';
+import {swrKeys} from '@/lib/swr-config';
 import {kepApi, masApi, workspaceApi} from '@/api/endpoints';
 import type {KEP} from '@/api/types/kep';
 import type {MAS} from '@/api/types/mas';
@@ -25,9 +26,20 @@ export default function KEPDetailsPage() {
     data: kep,
     error,
     isLoading
-  } = useSWR<KEP>(workspaceId && kepId ? ['kep-details', workspaceId, kepId] : null, () => kepApi.get(workspaceId as string, kepId as string));
-  const {data: masList = [] as MAS[]} = useSWR<MAS[]>(workspaceId ? ['mas-list', workspaceId] : null, () => masApi.list(workspaceId as string));
-  const {data: workspace} = useSWR<Workspace | null>(workspaceId ? ['workspace', workspaceId] : null, () => workspaceApi.get(workspaceId as string));
+  } = useSWR<KEP>(workspaceId && kepId ? swrKeys.kepDetails(workspaceId, kepId) : null, () => kepApi.get(workspaceId as string, kepId as string));
+  const {data: masList = [] as MAS[], error: masError} = useSWR<MAS[]>(workspaceId ? swrKeys.mas(workspaceId) : null, () =>
+    masApi.list(workspaceId as string)
+  );
+  const {data: workspace, error: workspaceError} = useSWR<Workspace | null>(workspaceId ? swrKeys.workspace(workspaceId) : null, () =>
+    workspaceApi.get(workspaceId as string)
+  );
+
+  if (masError) {
+    console.warn('Failed to load MAS list:', masError);
+  }
+  if (workspaceError) {
+    console.warn('Failed to load workspace:', workspaceError);
+  }
 
   useEffect(() => {
     if (!workspaceId || !kepId) {
