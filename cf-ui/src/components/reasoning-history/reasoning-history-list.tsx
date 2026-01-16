@@ -102,6 +102,19 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
   const reasonerById = useMemo(() => new Map(reasoners.map((r) => [r.id, r])), [reasoners]);
   const masById = useMemo(() => new Map(masList.map((m) => [m.id, m])), [masList]);
 
+  const hasFiltersApplied = useMemo(() => {
+    return !!(
+      pendingFilters.reasonerId ||
+      pendingFilters.createdBy ||
+      pendingFilters.start ||
+      pendingFilters.end ||
+      pendingFilters.requestId ||
+      pendingFilters.responseId
+    );
+  }, [pendingFilters]);
+
+  const showFilters = totalItems > 0 || hasFiltersApplied;
+
   const handleRowClick = (item: QueryHistoryListItem) => {
     router.push(routes.workspaces.reasoningHistory.details(workspaceId, item.id));
   };
@@ -114,154 +127,156 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
         useBreadcrumbs
         breadcrumbs={breadcrumbs.workspaceReasoningHistory(workspaceId, workspaceName)}
       >
-        <div className="pb-3 bg-[hsl(var(--main-background))]">
-          <div className="w-full pt-3 space-y-2">
-            <div className="px-0">
-              <Input
-                placeholder="Search by query input or creator"
-                value={pendingFilters.createdBy ?? ''}
-                onChange={(e) => setPendingFilters((p) => ({...p, createdBy: e.target.value}))}
-                className="!h-12 text-sm"
-              />
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-9 px-4 text-xs w-44">
-                    <span className="inline-flex items-center gap-2">
-                      <CalendarIcon className="h-4 w-4" /> Creation
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent side="bottom" align="start" sideOffset={6} className="w-[360px] max-w-[calc(100vw-260px)] p-0 overflow-hidden">
-                  <div className="px-2 py-2 space-y-2">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1">
-                        <Label className="text-xs">From</Label>
+        {showFilters && (
+          <div className="pb-3 bg-[hsl(var(--main-background))]">
+            <div className="w-full pt-3 space-y-2">
+              <div className="px-0">
+                <Input
+                  placeholder="Search by query input or creator"
+                  value={pendingFilters.createdBy ?? ''}
+                  onChange={(e) => setPendingFilters((p) => ({...p, createdBy: e.target.value}))}
+                  className="!h-12 text-sm"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="h-9 px-4 text-xs w-44">
+                      <span className="inline-flex items-center gap-2">
+                        <CalendarIcon className="h-4 w-4" /> Creation
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent side="bottom" align="start" sideOffset={6} className="w-[360px] max-w-[calc(100vw-260px)] p-0 overflow-hidden">
+                    <div className="px-2 py-2 space-y-2">
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <Label className="text-xs">From</Label>
+                          <Input
+                            readOnly
+                            value={pendingFilters.start ? new Date(pendingFilters.start).toLocaleDateString('en-US') : ''}
+                            placeholder="MM/DD/YYYY"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <Label className="text-xs">To</Label>
+                          <Input
+                            readOnly
+                            value={pendingFilters.end ? new Date(pendingFilters.end).toLocaleDateString('en-US') : ''}
+                            placeholder="MM/DD/YYYY"
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                      </div>
+                      <DateRangePicker
+                        value={{
+                          from: pendingFilters.start ? new Date(pendingFilters.start) : undefined,
+                          to: pendingFilters.end ? new Date(pendingFilters.end) : undefined
+                        }}
+                        onChange={(range) => {
+                          setPendingFilters((p) => ({
+                            ...p,
+                            start: range?.from ? new Date(range.from).toISOString() : undefined,
+                            end: range?.to ? new Date(range.to).toISOString() : undefined
+                          }));
+                        }}
+                      />
+                    </div>
+                    <DropdownMenuSeparator />
+                    <div className="flex justify-end gap-2 px-2 pb-2">
+                      <Button variant="outline" size="sm" onClick={() => setPendingFilters((p) => ({...p, start: undefined, end: undefined}))}>
+                        Clear
+                      </Button>
+                      <Button variant="sidebar" size="sm" onClick={() => setAppliedFilters(resolvedFilters)}>
+                        Apply
+                      </Button>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                <Select
+                  value={pendingFilters.reasonerId ?? '__all__'}
+                  onValueChange={(val) => {
+                    const newReasonerId = val === '__all__' ? undefined : val;
+                    setPendingFilters((p) => ({...p, reasonerId: newReasonerId}));
+                    setAppliedFilters((prev) => ({...prev, reasoner_id: newReasonerId, offset: 0}));
+                  }}
+                >
+                  <SelectTrigger className="h-8 text-xs soft-card w-44">
+                    <SelectValue placeholder="All reasoners" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">All reasoners</SelectItem>
+                    {reasoners.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="h-9 px-4 text-xs w-44">
+                      <SlidersHorizontal className="h-4 w-4" /> Advanced
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-80">
+                    <div className="px-2 py-2 grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs">Request ID</Label>
                         <Input
-                          readOnly
-                          value={pendingFilters.start ? new Date(pendingFilters.start).toLocaleDateString('en-US') : ''}
-                          placeholder="MM/DD/YYYY"
+                          value={pendingFilters.requestId ?? ''}
+                          onChange={(e) => setPendingFilters((p) => ({...p, requestId: e.target.value}))}
                           className="h-8 text-xs"
                         />
                       </div>
-                      <div className="flex-1">
-                        <Label className="text-xs">To</Label>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Response ID</Label>
                         <Input
-                          readOnly
-                          value={pendingFilters.end ? new Date(pendingFilters.end).toLocaleDateString('en-US') : ''}
-                          placeholder="MM/DD/YYYY"
+                          value={pendingFilters.responseId ?? ''}
+                          onChange={(e) => setPendingFilters((p) => ({...p, responseId: e.target.value}))}
                           className="h-8 text-xs"
                         />
                       </div>
                     </div>
-                    <DateRangePicker
-                      value={{
-                        from: pendingFilters.start ? new Date(pendingFilters.start) : undefined,
-                        to: pendingFilters.end ? new Date(pendingFilters.end) : undefined
-                      }}
-                      onChange={(range) => {
-                        setPendingFilters((p) => ({
-                          ...p,
-                          start: range?.from ? new Date(range.from).toISOString() : undefined,
-                          end: range?.to ? new Date(range.to).toISOString() : undefined
-                        }));
-                      }}
-                    />
-                  </div>
-                  <DropdownMenuSeparator />
-                  <div className="flex justify-end gap-2 px-2 pb-2">
-                    <Button variant="outline" size="sm" onClick={() => setPendingFilters((p) => ({...p, start: undefined, end: undefined}))}>
-                      Clear
-                    </Button>
-                    <Button variant="sidebar" size="sm" onClick={() => setAppliedFilters(resolvedFilters)}>
-                      Apply
-                    </Button>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
-
-              <Select
-                value={pendingFilters.reasonerId ?? '__all__'}
-                onValueChange={(val) => {
-                  const newReasonerId = val === '__all__' ? undefined : val;
-                  setPendingFilters((p) => ({...p, reasonerId: newReasonerId}));
-                  setAppliedFilters((prev) => ({...prev, reasoner_id: newReasonerId, offset: 0}));
-                }}
-              >
-                <SelectTrigger className="h-8 text-xs soft-card w-44">
-                  <SelectValue placeholder="All reasoners" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All reasoners</SelectItem>
-                  {reasoners.map((r) => (
-                    <SelectItem key={r.id} value={r.id}>
-                      {r.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="h-9 px-4 text-xs w-44">
-                    <SlidersHorizontal className="h-4 w-4" /> Advanced
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-80">
-                  <div className="px-2 py-2 grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Request ID</Label>
-                      <Input
-                        value={pendingFilters.requestId ?? ''}
-                        onChange={(e) => setPendingFilters((p) => ({...p, requestId: e.target.value}))}
-                        className="h-8 text-xs"
-                      />
+                    <DropdownMenuSeparator />
+                    <div className="flex justify-end gap-2 px-2 pb-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setPendingFilters((p) => ({...p, requestId: undefined, responseId: undefined}))}
+                      >
+                        Clear
+                      </Button>
+                      <Button variant="sidebar" size="sm" onClick={() => setAppliedFilters(resolvedFilters)}>
+                        Apply
+                      </Button>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Response ID</Label>
-                      <Input
-                        value={pendingFilters.responseId ?? ''}
-                        onChange={(e) => setPendingFilters((p) => ({...p, responseId: e.target.value}))}
-                        className="h-8 text-xs"
-                      />
-                    </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <div className="flex justify-end gap-2 px-2 pb-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setPendingFilters((p) => ({...p, requestId: undefined, responseId: undefined}))}
-                    >
-                      Clear
-                    </Button>
-                    <Button variant="sidebar" size="sm" onClick={() => setAppliedFilters(resolvedFilters)}>
-                      Apply
-                    </Button>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
-              {/* Apply */}
-              <Button variant="sidebar" size="sm" className="h-9 px-4 text-xs w-44" onClick={() => setAppliedFilters(resolvedFilters)}>
-                <Filter className="h-4 w-4 mr-1" /> Apply
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-9 px-4 text-xs w-44"
-                onClick={() => {
-                  setPendingFilters({limit: PAGE_SIZE});
-                  setAppliedFilters({limit: PAGE_SIZE, offset: 0});
-                  setCurrentPage(0);
-                }}
-              >
-                Reset
-              </Button>
+                {/* Apply */}
+                <Button variant="sidebar" size="sm" className="h-9 px-4 text-xs w-44" onClick={() => setAppliedFilters(resolvedFilters)}>
+                  <Filter className="h-4 w-4 mr-1" /> Apply
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-9 px-4 text-xs w-44"
+                  onClick={() => {
+                    setPendingFilters({limit: PAGE_SIZE});
+                    setAppliedFilters({limit: PAGE_SIZE, offset: 0});
+                    setCurrentPage(0);
+                  }}
+                >
+                  Reset
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
         <div className="flex-1 min-h-0 overflow-auto">
           <ConditionalSWRRenderer
             data={filteredItems}
@@ -273,7 +288,9 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
                 empty={{
                   icon: History,
                   title: 'No reasoning history in this workspace.',
-                  description: 'Run queries on your reasoners to see history here.'
+                  description: 'Run queries on your reasoners to see history here.',
+                  actionLabel: 'Go to Reasoners',
+                  href: routes.workspaces.reasoners.list(workspaceId)
                 }}
               />
             }
@@ -281,7 +298,7 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
             <ReasoningHistoryTableList items={filteredItems} reasonerById={reasonerById} masById={masById} onRowClick={handleRowClick} />
           </ConditionalSWRRenderer>
         </div>
-        {totalPages > 0 && (
+        {totalPages > 1 && (
           <div className="flex items-center justify-between mt-2 mb-8">
             <div className="text-sm text-muted-foreground">
               Showing {filteredItems.length > 0 ? currentPage * PAGE_SIZE + 1 : 0} - {Math.min((currentPage + 1) * PAGE_SIZE, totalItems)} of{' '}

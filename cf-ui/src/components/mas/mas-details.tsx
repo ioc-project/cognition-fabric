@@ -53,7 +53,7 @@ export default function MASDetailsPage() {
   return (
     <BasePage
       title={mas?.name || 'MAS Details'}
-      description={masId ? `View details for multi-agent system ${masId}` : undefined}
+      description={mas?.name ? `View details for multi-agent system ${mas.name}` : undefined}
       useBreadcrumbs
       breadcrumbs={crumbs || (workspaceId ? breadcrumbs.workspaceMAS(workspaceId, workspace?.name || '') : undefined)}
     >

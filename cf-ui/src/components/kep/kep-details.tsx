@@ -54,7 +54,7 @@ export default function KEPDetailsPage() {
   return (
     <BasePage
       title={kep?.name || 'Knowledge Adapter'}
-      description={kepId ? `View details for knowledge adapter ${kepId}` : undefined}
+      description={kep?.name ? `View details for knowledge adapter ${kep.name}` : undefined}
       useBreadcrumbs
       breadcrumbs={breadcrumbItems}
     >

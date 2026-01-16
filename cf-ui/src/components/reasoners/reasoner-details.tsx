@@ -64,7 +64,7 @@ export default function ReasonerDetailsPage() {
   return (
     <BasePage
       title={reasoner?.name || 'Reasoner'}
-      description={reasonerId ? `View details for reasoner ${reasonerId}` : undefined}
+      description={reasoner?.name ? `View details for reasoner ${reasoner.name}` : undefined}
       useBreadcrumbs
       breadcrumbs={crumbs}
     >
