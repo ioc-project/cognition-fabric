@@ -2,11 +2,11 @@
 
 import {useMemo, useState} from 'react';
 import {useParams} from 'next/navigation';
-import useSWR from 'swr';
 import {BasePage} from '@/components/ui/base-page';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {breadcrumbs} from '@/constants/routes';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
+import {useSWRResource} from '@/hooks/useSWRResource';
 import {ReasoningHistoryViewer, ViewMode} from './reasoning-history-viewer';
 import {reasoningHistoryApi} from '@/api/endpoints/reasoning-history';
 import type {ReasoningHistoryResponse} from '@/api/types/reasoning-history';
@@ -20,7 +20,7 @@ export default function ReasoningHistoryDetailsPage() {
 
   const [viewMode, setViewMode] = useState<ViewMode>('details');
 
-  const {data, error, isLoading} = useSWR<ReasoningHistoryResponse>(
+  const {data, error, isLoading} = useSWRResource<ReasoningHistoryResponse>(
     workspaceId && historyId ? ['reasoning-history-details', workspaceId, historyId] : null,
     () => reasoningHistoryApi.get(workspaceId, historyId)
   );

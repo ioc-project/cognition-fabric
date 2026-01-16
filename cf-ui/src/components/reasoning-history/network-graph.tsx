@@ -120,7 +120,7 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
     }
 
     data.evidence?.details?.concepts?.forEach((concept) => {
-      addNode(concept.name, concept.type, concept.description || '', concept.attributes?.domain || '');
+      addNode(concept.name, concept.type || 'concept', concept.description || '', concept.attributes?.domain || '');
     });
 
     data.evidence?.details?.relations?.forEach((rel) => {
@@ -137,8 +137,6 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
     const centerX = 400;
     const centerY = 300;
     const radius = Math.max(200, nodeArray.length * 30);
-
-    // const _mainNode = nodeArray.find((n) => n.isMain || n.type === 'entity');
 
     const flowNodes: Node<CustomNodeData>[] = nodeArray.map((node, _index) => {
       let x, y;

@@ -7,7 +7,8 @@ import {
   ReasoningHistoryResponse,
   ReasoningHistoryRecord,
   Concept,
-  Relation
+  Relation,
+  ReasoningHistoryEventsFilter
 } from '../types/reasoning-history';
 import {isObject, hasArrayProperty, hasObjectProperty} from '@/utils/type-guards';
 
@@ -24,6 +25,7 @@ function transformConceptsTopKToEvidence(data: unknown): ReasoningHistoryRespons
 
   const parsed = BackendResponseSchema.safeParse(actualData);
   if (!parsed.success) {
+    console.error('Failed to parse reasoning history response:', parsed.error);
     return actualData;
   }
 
@@ -92,13 +94,26 @@ function transformConceptsTopKToEvidence(data: unknown): ReasoningHistoryRespons
 }
 
 export const reasoningHistoryApi = {
-  list: async (workspaceId: string): Promise<QueryHistoryListItem[]> => {
+  list: async (workspaceId: string, filters: ReasoningHistoryEventsFilter = {}): Promise<{records: QueryHistoryListItem[]; total: number}> => {
+    const defaulted: ReasoningHistoryEventsFilter = {
+      limit: filters.limit ?? 50,
+      offset: filters.offset ?? 0,
+      reasoner_id: filters.reasoner_id,
+      request_id: filters.request_id ?? undefined,
+      response_id: filters.response_id ?? undefined,
+      created_by: filters.created_by,
+      start_date: filters.start_date,
+      end_date: filters.end_date
+    };
+
+    const body = Object.fromEntries(Object.entries(defaulted).filter(([, v]) => v !== undefined));
+
     const response = await fetchAPI(`/api/workspaces/${workspaceId}/reasoning_history/events`, {
       method: 'POST',
-      body: JSON.stringify({})
+      body: JSON.stringify(body)
     });
     const parsed = QueryHistoryListResponseSchema.parse(response);
-    return parsed.records;
+    return {records: parsed.records, total: parsed.total};
   },
 
   get: async (workspaceId: string, historyId: string): Promise<ReasoningHistoryResponse> => {

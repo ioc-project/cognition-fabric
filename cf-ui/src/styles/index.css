@@ -57,6 +57,11 @@
   --list-card-padding: 24px;
   --list-grid-gap: 24px;
   --list-card-min: 420px;
+
+  --rdp-accent-color: hsl(var(--sidebar-active-border));
+  --rdp-accent-color-dark: hsl(var(--sidebar-active-border));
+  --rdp-range-color: hsl(var(--sidebar-hover));
+  --rdp-accent-text-color: hsl(var(--sidebar-text-active));
 }
 
 .dark {
@@ -110,6 +115,11 @@
   --list-card-padding: 24px;
   --list-grid-gap: 24px;
   --list-card-min: 420px;
+
+  --rdp-accent-color: hsl(var(--sidebar-active));
+  --rdp-accent-color-dark: hsl(var(--sidebar-active));
+  --rdp-range-color: hsl(var(--sidebar-hover));
+  --rdp-accent-text-color: hsl(var(--sidebar-text-active));
 }
 
 * {
@@ -662,4 +672,34 @@ textarea[data-invalid='true'],
 select[data-invalid='true'] {
   border-color: hsl(var(--destructive)) !important;
   box-shadow: inset 0 0 0 1px hsl(var(--destructive));
+}
+
+/* React Day Picker v9 overrides to match sidebar/Apply palette */
+.rdp-root {
+  --rdp-accent-color: hsl(var(--sidebar-active-border));
+  --rdp-accent-background-color: hsl(var(--sidebar-hover));
+  --rdp-range_start-color: hsl(var(--sidebar-text-active));
+  --rdp-range_start-date-background-color: hsl(var(--sidebar-active));
+  --rdp-range_end-color: hsl(var(--sidebar-text-active));
+  --rdp-range_end-date-background-color: hsl(var(--sidebar-active));
+  --rdp-range_middle-background-color: hsl(var(--sidebar-hover));
+  --rdp-range_middle-color: hsl(var(--sidebar-text-active));
+  --rdp-today-color: hsl(var(--sidebar-text-active));
+  --rdp-selected-border: 2px solid hsl(var(--sidebar-active-border));
+}
+
+.rdp-root .rdp-button_previous,
+.rdp-root .rdp-button_next {
+  color: hsl(var(--sidebar-text-active));
+}
+
+.rdp-root .rdp-chevron {
+  fill: hsl(var(--sidebar-text-active));
+}
+
+.rdp-range_start .rdp-day_button,
+.rdp-range_end .rdp-day_button {
+  background-color: hsl(var(--sidebar-active)) !important;
+  color: hsl(var(--sidebar-text-active)) !important;
+  border: 2px solid hsl(var(--sidebar-active-border)) !important;
 }

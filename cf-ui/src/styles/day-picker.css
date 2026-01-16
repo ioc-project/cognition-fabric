@@ -1,0 +1,40 @@
+@import 'react-day-picker/dist/style.css';
+
+/* overrides DayPicker v9 defaults */
+.mds-day-picker .rdp-root {
+  --rdp-accent-color: hsl(var(--sidebar-active-border));
+  --rdp-accent-background-color: hsl(var(--sidebar-hover));
+  --rdp-range_start-color: hsl(var(--sidebar-text-active));
+  --rdp-range_start-date-background-color: hsl(var(--sidebar-active));
+  --rdp-range_end-color: hsl(var(--sidebar-text-active));
+  --rdp-range_end-date-background-color: hsl(var(--sidebar-active));
+  --rdp-range_middle-background-color: hsl(var(--sidebar-hover));
+  --rdp-range_middle-color: hsl(var(--sidebar-text-active));
+  --rdp-today-color: hsl(var(--sidebar-text-active));
+  --rdp-selected-border: 2px solid hsl(var(--sidebar-active-border));
+}
+
+.mds-day-picker .rdp-button_previous,
+.mds-day-picker .rdp-button_next {
+  color: hsl(var(--sidebar-text-active));
+}
+
+.mds-day-picker .rdp-chevron {
+  fill: hsl(var(--sidebar-text-active));
+}
+
+.mds-day-picker .rdp-range_start .rdp-day_button,
+.mds-day-picker .rdp-range_end .rdp-day_button {
+  background-color: hsl(var(--sidebar-active)) !important;
+  color: hsl(var(--sidebar-text-active)) !important;
+  border: 2px solid hsl(var(--sidebar-active-border)) !important;
+}
+
+.mds-day-picker .rdp-selected {
+  font-weight: normal;
+  font-size: inherit;
+}
+
+.mds-day-picker .rdp-month_caption {
+  font-weight: 500;
+}

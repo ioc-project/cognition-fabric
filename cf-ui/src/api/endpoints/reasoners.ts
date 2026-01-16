@@ -33,12 +33,14 @@ export const reasonerApi = {
   },
 
   query: async (workspaceId: string, reasonerId: string, data: ReasonerQueryRequest): Promise<ReasonerQueryResponse> => {
+    const controller = new AbortController();
     return fetchAPI(`/api/workspaces/${workspaceId}/reasoners/${reasonerId}/query`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
+      signal: controller.signal
     });
   }
 };
