@@ -65,15 +65,15 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
     data: responseData,
     error,
     isLoading
-  } = useSWRResource<{records: QueryHistoryListItem[]; total: number}>(workspaceId ? ['reasoning-history-list', workspaceId, JSON.stringify(appliedFilters)] : null, () =>
-    reasoningHistoryApi.list(workspaceId, appliedFilters)
+  } = useSWRResource<{records: QueryHistoryListItem[]; total: number}>(
+    workspaceId ? ['reasoning-history-list', workspaceId, JSON.stringify(appliedFilters)] : null,
+    () => reasoningHistoryApi.list(workspaceId, appliedFilters)
   );
 
   const {data: reasonersData} = useSWRResource<Reasoner[]>(workspaceId ? ['reasoners-list', workspaceId] : null, () => reasonerApi.list(workspaceId));
 
   const {data: masData} = useSWRResource<MAS[]>(workspaceId ? ['mas-list', workspaceId] : null, () => masApi.list(workspaceId));
 
-  const items = responseData?.records ?? [];
   const totalItems = responseData?.total ?? 0;
   const totalPages = Math.ceil(totalItems / PAGE_SIZE);
   const reasoners = reasonersData ?? [];
@@ -81,10 +81,13 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
 
   // Client-side filtering for search text (instant feedback as you type)
   const filteredItems = useMemo(() => {
+    const items = responseData?.records ?? [];
     const searchText = pendingFilters.createdBy?.toLowerCase().trim();
-    if (!searchText) return items;
+    if (!searchText) {
+      return items;
+    }
     return items.filter((item) => item.query_input?.toLowerCase().includes(searchText) || item.created_by?.toLowerCase().includes(searchText));
-  }, [items, pendingFilters.createdBy]);
+  }, [responseData?.records, pendingFilters.createdBy]);
 
   const reasonerById = new Map(reasoners.map((r) => [r.id, r]));
   const masById = new Map(masList.map((m) => [m.id, m]));
@@ -272,7 +275,8 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
         {totalPages > 0 && (
           <div className="flex items-center justify-between border-t border-border pt-4 mt-4">
             <div className="text-sm text-muted-foreground">
-              Showing {filteredItems.length > 0 ? currentPage * PAGE_SIZE + 1 : 0} - {Math.min((currentPage + 1) * PAGE_SIZE, totalItems)} of {totalItems} items
+              Showing {filteredItems.length > 0 ? currentPage * PAGE_SIZE + 1 : 0} - {Math.min((currentPage + 1) * PAGE_SIZE, totalItems)} of{' '}
+              {totalItems} items
             </div>
             <Pagination
               currentPage={currentPage + 1}

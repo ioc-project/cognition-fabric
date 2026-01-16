@@ -14,7 +14,7 @@ export interface PaginationProps {
 export function Pagination({currentPage, totalPages, onPageChange, className}: PaginationProps) {
   const getPageNumbers = () => {
     const pages: (number | 'ellipsis')[] = [];
-    
+
     if (totalPages <= 7) {
       // Show all pages if 7 or fewer
       for (let i = 1; i <= totalPages; i++) {
@@ -23,35 +23,37 @@ export function Pagination({currentPage, totalPages, onPageChange, className}: P
     } else {
       // Always show first page
       pages.push(1);
-      
+
       if (currentPage > 3) {
         pages.push('ellipsis');
       }
-      
+
       // Show pages around current page
       const start = Math.max(2, currentPage - 1);
       const end = Math.min(totalPages - 1, currentPage + 1);
-      
+
       for (let i = start; i <= end; i++) {
         if (!pages.includes(i)) {
           pages.push(i);
         }
       }
-      
+
       if (currentPage < totalPages - 2) {
         pages.push('ellipsis');
       }
-      
+
       // Always show last page
       if (!pages.includes(totalPages)) {
         pages.push(totalPages);
       }
     }
-    
+
     return pages;
   };
 
-  if (totalPages <= 1) return null;
+  if (totalPages <= 1) {
+    return null;
+  }
 
   const pages = getPageNumbers();
 
@@ -65,7 +67,7 @@ export function Pagination({currentPage, totalPages, onPageChange, className}: P
       >
         <ChevronLeft className="h-4 w-4" />
       </button>
-      
+
       {pages.map((page, index) =>
         page === 'ellipsis' ? (
           <span key={`ellipsis-${index}`} className="flex h-8 w-8 items-center justify-center text-[hsl(var(--sidebar-text-active))]">
@@ -77,9 +79,7 @@ export function Pagination({currentPage, totalPages, onPageChange, className}: P
             onClick={() => onPageChange(page)}
             className={cn(
               'flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors',
-              currentPage === page
-                ? 'bg-[hsl(var(--sidebar-text-active))] text-white'
-                : 'text-[hsl(var(--sidebar-text-active))] hover:bg-accent'
+              currentPage === page ? 'bg-[hsl(var(--sidebar-text-active))] text-white' : 'text-[hsl(var(--sidebar-text-active))] hover:bg-accent'
             )}
             aria-label={`Page ${page}`}
             aria-current={currentPage === page ? 'page' : undefined}
@@ -88,7 +88,7 @@ export function Pagination({currentPage, totalPages, onPageChange, className}: P
           </button>
         )
       )}
-      
+
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
