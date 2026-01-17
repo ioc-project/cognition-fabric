@@ -1,8 +1,9 @@
 'use client';
 
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import useSWR from 'swr';
+import {Trash2} from 'lucide-react';
 import {swrKeys} from '@/lib/swr-config';
 import {reasonerApi, masApi, workspaceApi} from '@/api/endpoints';
 import type {Reasoner} from '@/api/types/reasoner';
@@ -14,8 +15,13 @@ import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes} from '@/constants/routes';
-import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
+import {DATE_TIME_FORMAT_OPTIONS, parseError} from '@/lib/utils';
 import {ReasonerQuery} from '@/components/reasoners/reasoner-query';
+import {ObjectOptionsDropdown} from '@/components/ui/object-options-dropdown';
+import {DropdownMenuItem} from '@/components/ui/dropdown-menu';
+import {ConfirmDialog} from '@/components/ui/confirm-dialog';
+import {useConfirmDialog} from '@/hooks/useConfirmDialog';
+import {toast} from 'sonner';
 
 export default function ReasonerDetailsPage() {
   const router = useRouter();
@@ -24,6 +30,9 @@ export default function ReasonerDetailsPage() {
   const rawReasonerId = (params as Record<string, string | string[] | undefined>)?.reasonerId;
   const workspaceId = Array.isArray(rawWorkspaceId) ? rawWorkspaceId[0] : rawWorkspaceId;
   const reasonerId = Array.isArray(rawReasonerId) ? rawReasonerId[0] : rawReasonerId;
+
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const deleteDialog = useConfirmDialog<{id: string; name: string}>();
 
   const {
     data: reasoner,
@@ -61,63 +70,102 @@ export default function ReasonerDetailsPage() {
         ]
       : undefined;
 
+  const handleDelete = async () => {
+    await deleteDialog.confirm(async (data) => {
+      try {
+        await reasonerApi.delete(workspaceId!, data.id);
+        toast.success(`Reasoner "${data.name}" deleted successfully`);
+        router.push(routes.workspaces.reasoners.list(workspaceId!));
+      } catch (err) {
+        const errorMessage = parseError(err);
+        setDeleteError(errorMessage);
+        throw err;
+      }
+    });
+  };
+
   return (
-    <BasePage
-      title={reasoner?.name || 'Reasoner'}
-      description={reasoner?.name ? `View details for reasoner ${reasoner.name}` : undefined}
-      useBreadcrumbs
-      breadcrumbs={crumbs}
-    >
-      <ConditionalSWRRenderer
-        data={reasoner}
-        error={error}
-        customIsLoading={isLoading}
-        itemName="Reasoner details"
-        errorListStateProps={{title: 'Failed to load Reasoner details'}}
-        emptyListStateProps={{title: 'No details found'}}
+    <>
+      <BasePage
+        title={reasoner?.name || 'Reasoner'}
+        description="View details about your reasoner"
+        useBreadcrumbs
+        breadcrumbs={crumbs}
+        callToAction={
+          reasoner && (
+            <ObjectOptionsDropdown objectName={reasoner.name}>
+              <DropdownMenuItem
+                className="text-destructive focus:text-destructive"
+                onClick={() => deleteDialog.open({id: reasoner.id, name: reasoner.name})}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </ObjectOptionsDropdown>
+          )
+        }
       >
-        {workspaceId && reasonerId && <ReasonerQuery workspaceId={workspaceId} reasonerId={reasonerId} />}
-        <div className="flex justify-center py-4">
-          <Card variant="list" className="w-full max-w-4xl">
-            <CardContent className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input value={reasoner?.name || ''} disabled readOnly />
+        <ConditionalSWRRenderer
+          data={reasoner}
+          error={error}
+          customIsLoading={isLoading}
+          itemName="Reasoner details"
+          errorListStateProps={{title: 'Failed to load Reasoner details'}}
+          emptyListStateProps={{title: 'No details found'}}
+        >
+          {workspaceId && reasonerId && <ReasonerQuery workspaceId={workspaceId} reasonerId={reasonerId} />}
+          <div className="flex justify-center py-4">
+            <Card variant="list" className="w-full max-w-4xl">
+              <CardContent className="p-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <Label>Name</Label>
+                    <Input value={reasoner?.name || ''} disabled readOnly />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>MAS</Label>
+                    <Input value={masName || ''} disabled readOnly />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>ID</Label>
+                    <Input value={reasoner?.id || ''} disabled readOnly className="font-mono text-xs" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Workspace ID</Label>
+                    <Input value={reasoner?.workspace_id || ''} disabled readOnly className="font-mono text-xs" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Created At</Label>
+                    <Input
+                      value={reasoner?.created_at ? new Date(reasoner.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'}
+                      disabled
+                      readOnly
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Updated At</Label>
+                    <Input
+                      value={reasoner?.updated_at ? new Date(reasoner.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'}
+                      disabled
+                      readOnly
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <Label>MAS</Label>
-                  <Input value={masName || ''} disabled readOnly />
-                </div>
-                <div className="space-y-2">
-                  <Label>ID</Label>
-                  <Input value={reasoner?.id || ''} disabled readOnly className="font-mono text-xs" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Workspace ID</Label>
-                  <Input value={reasoner?.workspace_id || ''} disabled readOnly className="font-mono text-xs" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Created At</Label>
-                  <Input
-                    value={reasoner?.created_at ? new Date(reasoner.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'}
-                    disabled
-                    readOnly
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Updated At</Label>
-                  <Input
-                    value={reasoner?.updated_at ? new Date(reasoner.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'}
-                    disabled
-                    readOnly
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </ConditionalSWRRenderer>
-    </BasePage>
+              </CardContent>
+            </Card>
+          </div>
+        </ConditionalSWRRenderer>
+      </BasePage>
+      <ConfirmDialog
+        open={deleteDialog.isOpen}
+        onOpenChange={deleteDialog.close}
+        onConfirm={handleDelete}
+        title="Delete Reasoner"
+        description={deleteError ?? `Are you sure you want to delete "${deleteDialog.data?.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        variant="destructive"
+        loading={deleteDialog.isLoading}
+      />
+    </>
   );
 }

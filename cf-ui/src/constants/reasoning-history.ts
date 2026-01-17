@@ -32,11 +32,6 @@ export const TRACE_TIMELINE = {
 
 export const NODE_TYPE_COLORS: Record<string, string> = {
   concept: '#3b82f6',
-  constraint: '#f59e0b',
-  entity: '#10b981',
-  Process: '#8b5cf6',
-  Feature: '#ec4899',
-  Technology: '#06b6d4',
-  Service: '#14b8a6',
+  entity: '#3b82f6',
   other: '#64748b'
 } as const;

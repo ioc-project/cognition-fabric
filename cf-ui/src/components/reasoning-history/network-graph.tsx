@@ -29,7 +29,7 @@ interface SelectedNodeInfo {
 }
 
 interface NetworkGraphProps {
-  data: ReasoningHistoryContent;
+  data: ReasoningHistoryContent | ReasoningHistoryContent[];
   onNodeSelect: (node: SelectedNodeInfo) => void;
   selectedNode: SelectedNodeInfo | null;
 }
@@ -41,25 +41,30 @@ type CustomNodeData = {
   type: string;
   description: string;
   domain: string;
+  entityIndex?: number;
+  entityName?: string;
 };
 
 function CustomNode({data, selected}: {data: CustomNodeData; selected: boolean}) {
-  const bgColor = NODE_TYPE_COLORS[data.type] || NODE_TYPE_COLORS.other;
+  // Use concept color for both concepts and entities
+  const bgColor = NODE_TYPE_COLORS[data.type] || NODE_TYPE_COLORS.concept;
 
   return (
     <div
-      className={`px-4 py-3 rounded-lg border-2 shadow-lg transition-all ${selected ? 'border-white shadow-xl scale-105' : 'border-white/20'}`}
+      className={`flex items-center justify-center rounded-full border-2 shadow-lg transition-all ${selected ? 'border-white shadow-xl scale-105' : 'border-white/20'}`}
       style={{
         backgroundColor: bgColor,
-        minWidth: '120px',
-        maxWidth: '180px'
+        width: '120px',
+        height: '120px'
       }}
     >
       <Handle type="target" position={Position.Top} className="!bg-white/50 !w-2 !h-2" />
-      <div className="text-white text-sm font-medium text-center truncate" title={data.label}>
-        {data.label}
+      <div className="flex flex-col items-center justify-center p-2">
+        <div className="text-white text-xs font-medium text-center line-clamp-2" title={data.label}>
+          {data.label}
+        </div>
+        {data.type && <div className="text-white/70 text-[10px] text-center mt-0.5 capitalize">{data.type}</div>}
       </div>
-      {data.type && <div className="text-white text-xs text-center mt-1 capitalize">{data.type}</div>}
       <Handle type="source" position={Position.Bottom} className="!bg-white/50 !w-2 !h-2" />
     </div>
   );
@@ -73,9 +78,14 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<CustomNodeData>>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [isCalculating, setIsCalculating] = useState(true);
+  const [entityNames, setEntityNames] = useState<string[]>([]);
+
+  // Normalize data to always be an array
+  const records = Array.isArray(data) ? data : [data];
+  const hasMultipleEntities = records.length > 1;
 
   useEffect(() => {
-    if (!data) {
+    if (!data || (Array.isArray(data) && data.length === 0)) {
       setIsCalculating(false);
       return;
     }
@@ -85,8 +95,17 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
     const nodeMap = new Map<string, any>();
     const linkList: {source: string; target: string; relationship: string}[] = [];
     const linkSet = new Set<string>();
+    const entityNamesList: string[] = [];
 
-    const addNode = (name: string, type: string, description: string, domain: string, isMain: boolean = false) => {
+    const addNode = (
+      name: string,
+      type: string,
+      description: string,
+      domain: string,
+      isMain: boolean = false,
+      entityIndex?: number,
+      entityName?: string
+    ) => {
       const id = name.toLowerCase().replace(/\s+/g, '_');
       if (!nodeMap.has(id)) {
         nodeMap.set(id, {
@@ -95,8 +114,19 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
           type: type || 'concept',
           description: description || '',
           domain: domain || 'other',
-          isMain
+          isMain,
+          entityIndex,
+          entityName
         });
+      } else if (isMain && entityIndex !== undefined) {
+        // Update existing node to mark it as main entity if it wasn't already
+        const existing = nodeMap.get(id);
+        if (!existing.isMain) {
+          existing.isMain = true;
+          existing.entityIndex = entityIndex;
+          existing.entityName = entityName;
+          existing.type = 'entity';
+        }
       }
       return id;
     };
@@ -112,21 +142,45 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
       }
     };
 
-    if (data.evidence?.entity?.name) {
-      addNode(data.evidence.entity.name, 'entity', data.evidence.entity.description || 'The queried entity', 'Query', true);
-    }
+    // Process each record (entity)
+    records.forEach((record, entityIndex) => {
+      if (!record) return;
 
-    data.evidence?.details?.concepts?.forEach((concept) => {
-      addNode(concept.name, concept.type || 'concept', concept.description || '', concept.attributes?.domain || '');
-    });
+      const entityName = record.evidence?.entity?.name || record.trace?.extracted_entity || `Entity ${entityIndex + 1}`;
+      entityNamesList.push(entityName);
 
-    data.evidence?.details?.relations?.forEach((rel) => {
-      if (rel.attributes?.source_name && rel.attributes?.target_name) {
-        addNode(rel.attributes.source_name, 'concept', '', '');
-        addNode(rel.attributes.target_name, 'concept', '', '');
-        addLink(rel.attributes.source_name, rel.attributes.target_name, rel.relationship);
+      if (record.evidence?.entity?.name) {
+        addNode(
+          record.evidence.entity.name,
+          'entity',
+          record.evidence.entity.description || 'The queried entity',
+          'Query',
+          true,
+          entityIndex,
+          entityName
+        );
+      }
+
+      record.evidence?.details?.concepts?.forEach((concept) => {
+        addNode(concept.name, concept.type || 'concept', concept.description || '', concept.attributes?.domain || '');
+      });
+
+      record.evidence?.details?.relations?.forEach((rel) => {
+        if (rel.attributes?.source_name && rel.attributes?.target_name) {
+          addNode(rel.attributes.source_name, 'concept', '', '');
+          addNode(rel.attributes.target_name, 'concept', '', '');
+          addLink(rel.attributes.source_name, rel.attributes.target_name, rel.relationship);
+        }
+      });
+
+      // Connect entity to its anchor concept if entity is not already connected
+      const anchorConcept = record.trace?.winning?.anchor_concept;
+      if (record.evidence?.entity?.name && anchorConcept && record.evidence.entity.name !== anchorConcept) {
+        addLink(record.evidence.entity.name, anchorConcept, 'ANCHORED_BY');
       }
     });
+
+    setEntityNames(entityNamesList);
 
     const validLinks = linkList.filter((link) => nodeMap.has(link.source) && nodeMap.has(link.target));
 
@@ -135,11 +189,17 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
     const centerY = GRAPH_LAYOUT.CENTER_Y;
     const radius = calculateGraphRadius(nodeArray.length);
 
+    // For multiple entities, spread main nodes in a row at the center
+    const mainNodes = nodeArray.filter((n) => n.isMain || n.type === 'entity');
+    const mainNodeSpacing = 250;
+    const mainNodesStartX = centerX - ((mainNodes.length - 1) * mainNodeSpacing) / 2;
+
     const flowNodes: Node<CustomNodeData>[] = nodeArray.map((node, _index) => {
       let x, y;
 
       if (node.isMain || node.type === 'entity') {
-        x = centerX;
+        const mainIndex = mainNodes.findIndex((n) => n.id === node.id);
+        x = mainNodesStartX + mainIndex * mainNodeSpacing;
         y = centerY;
       } else {
         const otherNodes = nodeArray.filter((n) => !n.isMain && n.type !== 'entity');
@@ -157,7 +217,9 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
           label: node.name,
           type: node.type,
           description: node.description,
-          domain: node.domain
+          domain: node.domain,
+          entityIndex: node.entityIndex,
+          entityName: node.entityName
         } as CustomNodeData,
         selected: selectedNode?.id === node.id
       } as Node<CustomNodeData>;
@@ -239,6 +301,7 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
 
       <div className="absolute top-4 right-4 z-10">
         <div className="text-xs text-white bg-slate-900/80 px-3 py-1.5 rounded border border-slate-700">
+          {hasMultipleEntities ? `${entityNames.length} entities · ` : ''}
           {nodes.length} nodes · {edges.length} connections
         </div>
       </div>

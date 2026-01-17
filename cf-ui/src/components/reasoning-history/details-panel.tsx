@@ -1,6 +1,6 @@
 'use client';
 
-import {Info, Network, Database, TrendingUp} from 'lucide-react';
+import {Info, Network, TrendingUp} from 'lucide-react';
 import type {ReasoningHistoryContent, Concept, Relation} from '@/api/types/reasoning-history';
 
 interface DetailsPanelProps {
@@ -15,7 +15,6 @@ export function DetailsPanel({data}: DetailsPanelProps) {
   const evidence = data.evidence;
   const concepts: Concept[] = evidence?.details?.concepts || [];
   const relations: Relation[] = evidence?.details?.relations || [];
-  const domains = new Set(concepts.map((item) => item.attributes?.domain).filter(Boolean));
 
   return (
     <div className="h-full flex flex-col">
@@ -26,7 +25,7 @@ export function DetailsPanel({data}: DetailsPanelProps) {
             <h2 className="text-xl font-semibold">Overview</h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
               <div className="flex items-center gap-2 mb-1">
                 <Network className="w-4 h-4 text-blue-600 dark:text-blue-400" />
@@ -41,14 +40,6 @@ export function DetailsPanel({data}: DetailsPanelProps) {
                 <span className="text-xs text-purple-900 dark:text-purple-100">Relations</span>
               </div>
               <div className="text-2xl font-medium text-purple-900 dark:text-purple-100">{relations.length}</div>
-            </div>
-
-            <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-1">
-                <Database className="w-4 h-4 text-green-600 dark:text-green-400" />
-                <span className="text-xs text-green-900 dark:text-green-100">Domains</span>
-              </div>
-              <div className="text-2xl font-medium text-green-900 dark:text-green-100">{domains.size}</div>
             </div>
           </div>
         </div>
@@ -155,19 +146,6 @@ export function DetailsPanel({data}: DetailsPanelProps) {
                     {rel.attributes?.source_name} → <span className="text-primary font-semibold">{rel.relationship}</span> →{' '}
                     {rel.attributes?.target_name}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {domains.size > 0 && (
-            <div>
-              <h3 className="text-lg font-medium mb-4">Domains</h3>
-              <div className="flex flex-wrap gap-2">
-                {Array.from(domains).map((domain, index) => (
-                  <span key={index} className="px-3 py-1 bg-muted text-muted-foreground rounded-full text-sm">
-                    {domain}
-                  </span>
                 ))}
               </div>
             </div>

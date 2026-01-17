@@ -22,6 +22,10 @@ export function ReasonerQuery({workspaceId, reasonerId}: ReasonerQueryProps) {
   const [isResponseExpanded, setIsResponseExpanded] = useState(false);
 
   const onSubmit = async () => {
+    if (!intent.trim() || isSubmitting) {
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
     setResponse(null);
@@ -31,7 +35,7 @@ export function ReasonerQuery({workspaceId, reasonerId}: ReasonerQueryProps) {
       const res = await reasonerApi.query(workspaceId, reasonerId, payload);
       setResponse(res);
     } catch (e) {
-      const message = e instanceof Error ? e.message : 'Failed to run query';
+      const message = e instanceof Error ? e.message : 'Failed to gather evidence';
       setError(message);
     } finally {
       setIsSubmitting(false);
@@ -43,7 +47,7 @@ export function ReasonerQuery({workspaceId, reasonerId}: ReasonerQueryProps) {
       <Card variant="list" className="w-full max-w-4xl">
         <CardContent className="p-3 space-y-2">
           <div className="space-y-2">
-            <Label>Run a Query</Label>
+            <Label>Gather evidence</Label>
             <Textarea
               placeholder="Type your intent"
               value={intent}
@@ -76,8 +80,8 @@ export function ReasonerQuery({workspaceId, reasonerId}: ReasonerQueryProps) {
               >
                 Clear
               </Button>
-              <Button variant="sidebar" onClick={onSubmit} disabled={!intent.trim() || isSubmitting}>
-                {isSubmitting ? 'Running…' : 'Run Query'}
+              <Button variant="sidebar" onClick={onSubmit} disabled={isSubmitting}>
+                {isSubmitting ? 'Gathering…' : 'Gather evidence'}
               </Button>
             </div>
           </div>

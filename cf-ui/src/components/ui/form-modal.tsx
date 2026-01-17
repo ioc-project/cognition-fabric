@@ -56,6 +56,7 @@ export function FormModal<TFieldValues extends FieldValues>({
     try {
       await onSubmit(values);
       form.reset();
+      onOpenChange(false);
     } catch (error) {
       const errorMessage = parseError(error);
       form.setError('root', {

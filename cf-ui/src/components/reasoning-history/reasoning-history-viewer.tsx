@@ -46,19 +46,34 @@ export function ReasoningHistoryViewer({data, viewMode}: Props) {
     return content?.evidence?.entity?.name || content?.trace?.extracted_entity || 'Unknown Entity';
   };
 
-  const renderContent = (record: ReasoningHistoryContent | undefined) => {
-    if (!record) {
+  const renderContent = (record: ReasoningHistoryContent | undefined, allRecords?: ReasoningHistoryContent[]) => {
+    if (!record && !allRecords) {
       return <div className="flex items-center justify-center h-full text-muted-foreground">No data available</div>;
     }
 
     return (
       <>
-        {viewMode === 'graph' && <NetworkGraph data={record} onNodeSelect={setSelectedNode} selectedNode={selectedNode} />}
+        {viewMode === 'graph' && <NetworkGraph data={allRecords || record!} onNodeSelect={setSelectedNode} selectedNode={selectedNode} />}
         {viewMode === 'trace' && <TraceTimeline trace={record?.trace} evidence={record?.evidence} />}
-        {viewMode === 'details' && <DetailsPanel data={record} />}
+        {viewMode === 'details' && <DetailsPanel data={record!} />}
       </>
     );
   };
+
+  // For graph view with multiple entities, show unified graph
+  if (viewMode === 'graph' && hasMultipleEntities) {
+    return (
+      <div
+        className="flex flex-col border border-border rounded-lg bg-background overflow-hidden"
+        style={{
+          height: `calc(100vh - ${VIEWER_LAYOUT.HEADER_OFFSET_PX}px)`,
+          minHeight: `${VIEWER_LAYOUT.MIN_HEIGHT_PX}px`
+        }}
+      >
+        <NetworkGraph data={records} onNodeSelect={setSelectedNode} selectedNode={selectedNode} />
+      </div>
+    );
+  }
 
   if (!hasMultipleEntities) {
     // Single entity - render directly
