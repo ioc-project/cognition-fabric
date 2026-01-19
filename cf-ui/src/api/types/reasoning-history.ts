@@ -60,7 +60,7 @@ export interface Trace {
   iterations: TraceIteration[];
   lanes_count?: number;
   sufficient?: boolean;
-  winning?: Winning;
+  winning?: Winning | null;
   llm_calls?: number;
 }
 
@@ -224,7 +224,7 @@ const TraceSchema = z.object({
   iterations: z.array(TraceIterationSchema),
   lanes_count: z.number().optional(),
   sufficient: z.boolean().optional(),
-  winning: WinningSchema.optional(),
+  winning: WinningSchema.nullable().optional(),
   llm_calls: z.number().optional()
 });
 
