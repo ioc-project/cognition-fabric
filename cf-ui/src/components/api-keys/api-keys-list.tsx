@@ -11,36 +11,42 @@ export function ApiKeysList() {
   const {isLoading} = useApiKeys();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  if (isLoading) {
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="p-6">
+          <LoaderRelative />
+        </div>
+      );
+    }
+
     return (
-      <div className="p-6">
-        <LoaderRelative />
-      </div>
+      <ListShell
+        empty={{
+          icon: KeyRound,
+          title: 'No API keys',
+          description: 'Create an API key to authenticate requests across Knowledge Adapters, and Reasoners.',
+          actionLabel: 'Create Your First API Key',
+          onAction: () => setIsCreateDialogOpen(true)
+        }}
+      />
     );
-  }
+  };
 
   return (
     <>
-      <div className="fixed inset-0 left-64 top-16 flex items-center justify-center px-8">
-        <ListShell
-          empty={{
-            icon: KeyRound,
-            title: 'No API keys',
-            description: 'Create an API key to authenticate requests across Knowledge Adapters, and Reasoners.',
-            actionLabel: 'Create Your First API Key',
-            onAction: () => setIsCreateDialogOpen(true)
+      <div className="fixed inset-0 left-64 top-16 flex items-center justify-center px-8">{renderContent()}</div>
+
+      {isCreateDialogOpen && (
+        <CreateApiKeyDialog
+          open={isCreateDialogOpen}
+          onOpenChange={setIsCreateDialogOpen}
+          onSuccess={() => {
+            // No list to refresh yet; close dialog after success
+            setIsCreateDialogOpen(false);
           }}
         />
-      </div>
-
-      <CreateApiKeyDialog
-        open={isCreateDialogOpen}
-        onOpenChange={setIsCreateDialogOpen}
-        onSuccess={() => {
-          // No list to refresh yet; close dialog after success
-          setIsCreateDialogOpen(false);
-        }}
-      />
+      )}
     </>
   );
 }

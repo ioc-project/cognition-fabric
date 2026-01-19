@@ -148,7 +148,6 @@ export function Sidebar() {
     return (
       <Link
         href={href}
-        prefetch={false}
         className={`group flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors focus-visible:outline-none ${
           active
             ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))]'
