@@ -29,7 +29,7 @@ export function KEPList({workspaceId}: KEPListProps) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {knowledgeAdapters = [], isLoading: loading, isValidating, error: swrError, deleteKnowledgeAdapters} = useKEPs(workspaceId);
+  const {knowledgeAdapters = [], isLoading: loading, error: swrError, deleteKnowledgeAdapters} = useKEPs(workspaceId);
 
   const knowledgeAdaptersList: KEP[] = knowledgeAdapters;
 

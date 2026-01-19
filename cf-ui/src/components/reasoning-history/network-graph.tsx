@@ -81,7 +81,7 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
   const [entityNames, setEntityNames] = useState<string[]>([]);
 
   // Normalize data to always be an array
-  const records = Array.isArray(data) ? data : [data];
+  const records = useMemo(() => (Array.isArray(data) ? data : [data]), [data]);
   const hasMultipleEntities = records.length > 1;
 
   useEffect(() => {
@@ -144,7 +144,9 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
 
     // Process each record (entity)
     records.forEach((record, entityIndex) => {
-      if (!record) return;
+      if (!record) {
+        return;
+      }
 
       const entityName = record.evidence?.entity?.name || record.trace?.extracted_entity || `Entity ${entityIndex + 1}`;
       entityNamesList.push(entityName);
@@ -255,7 +257,7 @@ export function NetworkGraph({data, onNodeSelect, selectedNode}: NetworkGraphPro
     setNodes(flowNodes);
     setEdges(flowEdges);
     setIsCalculating(false);
-  }, [data, selectedNode?.id, setNodes, setEdges]);
+  }, [data, records, selectedNode?.id, setNodes, setEdges]);
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node<CustomNodeData>) => {

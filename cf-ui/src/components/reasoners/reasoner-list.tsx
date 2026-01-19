@@ -29,7 +29,7 @@ export function ReasonerList({workspaceId}: ReasonerListProps) {
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {reasoners = [], isLoading: loading, isValidating, error: swrError, deleteReasoner} = useReasoners(workspaceId);
+  const {reasoners = [], isLoading: loading, error: swrError, deleteReasoner} = useReasoners(workspaceId);
   const {masList = []} = useMAS(workspaceId);
   const masById = useMemo(() => new Map(masList.map((m) => [m.id, m.name] as const)), [masList]);
   const handleDelete = async () => {
