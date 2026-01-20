@@ -27,7 +27,10 @@ export const routes = {
       create: (workspaceId: string) => `/workspaces/${workspaceId}/reasoners/create`,
       details: (workspaceId: string, reasonerId: string) => `/workspaces/${workspaceId}/reasoners/${reasonerId}`
     },
-    reasoningHistory: (workspaceId: string) => `/workspaces/${workspaceId}/reasoning-history`,
+    reasoningHistory: {
+      list: (workspaceId: string) => `/workspaces/${workspaceId}/reasoning-history`,
+      details: (workspaceId: string, historyId: string) => `/workspaces/${workspaceId}/reasoning-history/${historyId}`
+    },
     summary: (workspaceId: string) => `/workspaces/${workspaceId}/summary`
   },
 
@@ -162,6 +165,13 @@ export const breadcrumbs = {
     {link: routes.workspaces.list, text: 'Workspaces'},
     {link: routes.workspaces.details(workspaceId), text: workspaceName},
     {link: '', text: 'Reasoning History', active: true}
+  ],
+
+  reasoningHistoryDetails: (workspaceId: string, workspaceName: string, _historyId: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+    {link: routes.workspaces.reasoningHistory.list(workspaceId), text: 'Reasoning History'},
+    {link: '', text: 'Query Details', active: true}
   ],
 
   workspaceSummary: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [

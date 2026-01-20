@@ -29,7 +29,7 @@ export function MASList({workspaceId}: MASListProps) {
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {masList = [], isLoading: loading, isValidating, error: swrError, deleteMAS} = useMAS(workspaceId);
+  const {masList = [], isLoading: loading, error: swrError, deleteMAS} = useMAS(workspaceId);
 
   const handleDeleteMAS = async () => {
     await deleteDialog.confirm(async (data) => {
@@ -46,39 +46,40 @@ export function MASList({workspaceId}: MASListProps) {
 
   return (
     <>
-      <ConditionalSWRRenderer
-        data={masList}
-        error={swrError}
-        itemName="Multi-Agentic Systems"
-        customIsLoading={loading || isValidating}
-        customEmptyComponent={
-          <div className="flex items-center justify-center min-h-[calc(100vh-116px)] px-8">
-            <ListShell
-              empty={{
-                icon: Boxes,
-                title: 'No Multi-Agentic Systems exist in this workspace.',
-                description: 'Create one to get started.',
-                actionLabel: 'Create Multi-Agent System',
-                href: routes.workspaces.mas.create(workspaceId)
-              }}
-            />
-          </div>
-        }
-      >
-        <div className="space-y-8">
-          <BasePage
-            title="Multi-Agentic Systems"
-            callToAction={
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
-                  {viewMode === 'table' ? 'Card View' : 'Table View'}
-                </Button>
-                <Button asChild variant="sidebar" className="gap-2" size="default">
-                  <Link href={routes.workspaces.mas.create(workspaceId)}>
-                    <Plus className="w-4 h-4" />
-                    Create MAS
-                  </Link>
-                </Button>
+      <div className="space-y-8">
+        <BasePage
+          title="Multi-Agentic Systems"
+          description="View and manage all multi‑agentic systems"
+          callToAction={
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
+                {viewMode === 'table' ? 'Card View' : 'Table View'}
+              </Button>
+              <Button asChild variant="sidebar" className="gap-2" size="default">
+                <Link href={routes.workspaces.mas.create(workspaceId)}>
+                  <Plus className="w-4 h-4" />
+                  Create MAS
+                </Link>
+              </Button>
+            </div>
+          }
+        >
+          <ConditionalSWRRenderer
+            data={masList}
+            error={swrError}
+            itemName="Multi-Agentic Systems"
+            customIsLoading={loading}
+            customEmptyComponent={
+              <div className="flex items-center justify-center min-h-[50vh]">
+                <ListShell
+                  empty={{
+                    icon: Boxes,
+                    title: 'No Multi-Agentic Systems exist in this workspace.',
+                    description: 'Create one to get started.',
+                    actionLabel: 'Create Multi-Agent System',
+                    href: routes.workspaces.mas.create(workspaceId)
+                  }}
+                />
               </div>
             }
           >
@@ -105,9 +106,9 @@ export function MASList({workspaceId}: MASListProps) {
                 onOpenDelete={(payload) => deleteDialog.open(payload)}
               />
             )}
-          </BasePage>
-        </div>
-      </ConditionalSWRRenderer>
+          </ConditionalSWRRenderer>
+        </BasePage>
+      </div>
 
       <ConfirmDialog
         open={deleteDialog.isOpen}

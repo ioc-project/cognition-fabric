@@ -25,7 +25,11 @@ interface CreateWorkspaceDialogProps {
 }
 
 export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWorkspaceDialogProps) {
-  const {data: usersData} = useSWR('all-users', () => userApi.list());
+  const {data: usersData, error: usersError} = useSWR('all-users', () => userApi.list());
+
+  if (usersError) {
+    console.warn('Failed to load users list:', usersError);
+  }
 
   const handleSubmit = async (values: FormValues) => {
     let config: Record<string, any> | undefined = undefined;

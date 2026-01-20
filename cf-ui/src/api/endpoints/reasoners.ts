@@ -1,5 +1,13 @@
 import {fetchAPI} from '../client';
-import {CreateReasonerRequest, CreateReasonerResponse, Reasoner, ListReasonersResponseSchema, ReasonerSchema} from '../types/reasoner';
+import {
+  CreateReasonerRequest,
+  CreateReasonerResponse,
+  Reasoner,
+  ListReasonersResponseSchema,
+  ReasonerSchema,
+  ReasonerQueryRequest,
+  ReasonerQueryResponse
+} from '../types/reasoner';
 
 export const reasonerApi = {
   create: async (workspaceId: string, data: CreateReasonerRequest): Promise<CreateReasonerResponse> => {
@@ -22,5 +30,17 @@ export const reasonerApi = {
 
   delete: async (workspaceId: string, id: string): Promise<void> => {
     await fetchAPI(`/api/workspaces/${workspaceId}/reasoners/${id}`, {method: 'DELETE'});
+  },
+
+  query: async (workspaceId: string, reasonerId: string, data: ReasonerQueryRequest): Promise<ReasonerQueryResponse> => {
+    const controller = new AbortController();
+    return fetchAPI(`/api/workspaces/${workspaceId}/reasoners/${reasonerId}/query`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data),
+      signal: controller.signal
+    });
   }
 };

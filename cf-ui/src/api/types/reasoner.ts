@@ -35,3 +35,12 @@ export const ListReasonersResponseSchema = z.object({
 });
 
 export type ListReasonersResponse = z.infer<typeof ListReasonersResponseSchema>;
+
+export const ReasonerQueryRequestSchema = z.object({
+  intent: z.string().min(1, 'Intent is required'),
+  records: z.array(JsonRecordSchema).default([])
+});
+
+export type ReasonerQueryRequest = z.infer<typeof ReasonerQueryRequestSchema>;
+
+export type ReasonerQueryResponse = z.infer<typeof JsonRecordSchema>;

@@ -4,13 +4,25 @@
 export const swrKeys = {
   workspaces: () => ['workspaces'] as const,
   workspace: (id: string) => ['workspace', id] as const,
+
   users: (workspaceId: string) => ['users', workspaceId] as const,
   apiKeys: (workspaceId: string) => ['api-keys', workspaceId] as const,
+
   software: (workspaceId: string) => ['software', workspaceId] as const,
   softwareTemplates: (templateType: 'KnowledgeAdapterTemplates' | 'ReasonerTemplates') => ['software-templates', templateType] as const,
+  softwareTemplatesAll: () => ['software-templates-all'] as const,
+
+  mas: (workspaceId: string) => ['mas-list', workspaceId] as const,
+  masDetails: (workspaceId: string, masId: string) => ['mas-details', workspaceId, masId] as const,
+
   reasoners: (workspaceId: string) => ['reasoners', workspaceId] as const,
+  reasonerDetails: (workspaceId: string, reasonerId: string) => ['reasoner-details', workspaceId, reasonerId] as const,
+
   keps: (workspaceId: string) => ['kep-list', workspaceId] as const,
-  mas: (workspaceId: string) => ['mas-list', workspaceId] as const
+  kepDetails: (workspaceId: string, kepId: string) => ['kep-details', workspaceId, kepId] as const,
+
+  reasoningHistory: (workspaceId: string, filters?: string) => ['reasoning-history-list', workspaceId, filters] as const,
+  reasoningHistoryDetails: (workspaceId: string, historyId: string) => ['reasoning-history-details', workspaceId, historyId] as const
 };
 
 import {fetchAPI} from '@/api/client';

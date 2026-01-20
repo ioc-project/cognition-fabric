@@ -1,6 +1,7 @@
 import type {Metadata} from 'next';
 import {Inter} from 'next/font/google';
 import '../src/styles/index.css';
+import '../src/styles/day-picker.css';
 import {Providers} from '@/providers/providers';
 import {Toaster} from '@/components/ui/sonner';
 

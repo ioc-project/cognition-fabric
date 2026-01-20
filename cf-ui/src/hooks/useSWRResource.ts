@@ -4,7 +4,11 @@ import useSWR, {type Key, useSWRConfig} from 'swr';
 import {parseError} from '@/lib/utils';
 
 export function useSWRResource<TData>(key: Key | null, fetcher: () => Promise<TData>) {
-  const {data, error, isLoading, mutate} = useSWR<TData>(key, fetcher);
+  const {data, error, isLoading, mutate} = useSWR<TData>(key, fetcher, {
+    revalidateOnMount: true,
+    keepPreviousData: true,
+    dedupingInterval: 0 // Always fetch fresh data on mount
+  });
   return {
     data: (data ?? null) as TData | null,
     isLoading,

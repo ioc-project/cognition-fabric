@@ -29,7 +29,7 @@ export function KEPList({workspaceId}: KEPListProps) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {knowledgeAdapters = [], isLoading: loading, isValidating, error: swrError, deleteKnowledgeAdapters} = useKEPs(workspaceId);
+  const {knowledgeAdapters = [], isLoading: loading, error: swrError, deleteKnowledgeAdapters} = useKEPs(workspaceId);
 
   const knowledgeAdaptersList: KEP[] = knowledgeAdapters;
 
@@ -50,39 +50,40 @@ export function KEPList({workspaceId}: KEPListProps) {
 
   return (
     <>
-      <ConditionalSWRRenderer
-        data={knowledgeAdaptersList}
-        error={swrError}
-        itemName="Knowledge Adapters"
-        customIsLoading={loading || isValidating}
-        customEmptyComponent={
-          <div className="flex items-center justify-center min-h-[calc(100vh-116px)] px-8">
-            <ListShell
-              empty={{
-                icon: Database,
-                title: 'No Knowledge Adapters exist in this workspace.',
-                description: 'Create a Knowledge Adapter to connect systems and ingest data.',
-                actionLabel: 'Create Knowledge Adapter',
-                href: createKepPath
-              }}
-            />
-          </div>
-        }
-      >
-        <div className="space-y-8 px-8 pt-4 relative z-0">
-          <BasePage
-            title="Knowledge Adapters"
-            callToAction={
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
-                  {viewMode === 'table' ? 'Card View' : 'Table View'}
-                </Button>
-                <Button asChild variant="sidebar" className="gap-2" size="default">
-                  <Link href={createKepPath}>
-                    <Plus className="w-4 h-4" />
-                    Create Knowledge Adapter
-                  </Link>
-                </Button>
+      <div className="space-y-8 px-8 pt-4 relative z-0">
+        <BasePage
+          title="Knowledge Adapters"
+          description="View and manage all knowledge adapters"
+          callToAction={
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
+                {viewMode === 'table' ? 'Card View' : 'Table View'}
+              </Button>
+              <Button asChild variant="sidebar" className="gap-2" size="default">
+                <Link href={createKepPath}>
+                  <Plus className="w-4 h-4" />
+                  Create Knowledge Adapter
+                </Link>
+              </Button>
+            </div>
+          }
+        >
+          <ConditionalSWRRenderer
+            data={knowledgeAdaptersList}
+            error={swrError}
+            itemName="Knowledge Adapters"
+            customIsLoading={loading}
+            customEmptyComponent={
+              <div className="flex items-center justify-center min-h-[50vh]">
+                <ListShell
+                  empty={{
+                    icon: Database,
+                    title: 'No Knowledge Adapters exist in this workspace.',
+                    description: 'Create a Knowledge Adapter to connect systems and ingest data.',
+                    actionLabel: 'Create Knowledge Adapter',
+                    href: createKepPath
+                  }}
+                />
               </div>
             }
           >
@@ -109,9 +110,9 @@ export function KEPList({workspaceId}: KEPListProps) {
                 onOpenDelete={(payload) => deleteDialog.open(payload)}
               />
             )}
-          </BasePage>
-        </div>
-      </ConditionalSWRRenderer>
+          </ConditionalSWRRenderer>
+        </BasePage>
+      </div>
 
       <ConfirmDialog
         open={deleteDialog.isOpen}
