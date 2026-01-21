@@ -11,7 +11,7 @@ import {BasePage} from '@/components/ui/base-page';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {routes, breadcrumbs} from '@/constants/routes';
 import {LoaderRelative} from '@/components/ui/loading';
-import {useMAS, useKEPs, useReasoners} from '@/hooks/useApi';
+import {useMAS, useKEPs, useCognitiveAgents} from '@/hooks/useApi';
 import {ObjectOptionsDropdown} from '@/components/ui/object-options-dropdown';
 import {DropdownMenuItem} from '@/components/ui/dropdown-menu';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
@@ -26,7 +26,7 @@ export function WorkspaceDetails() {
 
   const {masList, isValidating: masValidating} = useMAS(workspaceId || '');
   const {knowledgeAdapters, isValidating: kepValidating} = useKEPs(workspaceId || '');
-  const {reasoners, isValidating: reasonersValidating} = useReasoners(workspaceId || '');
+  const {cognitiveAgents, isValidating: cognitiveAgentsValidating} = useCognitiveAgents(workspaceId || '');
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const deleteDialog = useConfirmDialog<{id: string; name: string}>();
@@ -84,8 +84,8 @@ export function WorkspaceDetails() {
       .slice(0, 4);
   }, [knowledgeAdapters]);
 
-  const latestReasoners = useMemo(() => {
-    return [...reasoners]
+  const latestCognitiveAgents = useMemo(() => {
+    return [...cognitiveAgents]
       .sort((a, b) => {
         if (!a.created_at && !b.created_at) {
           return 0;
@@ -99,7 +99,7 @@ export function WorkspaceDetails() {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       })
       .slice(0, 4);
-  }, [reasoners]);
+  }, [cognitiveAgents]);
 
   return (
     <>
@@ -154,8 +154,8 @@ export function WorkspaceDetails() {
             </div>
             <div className="p-4 border rounded-lg bg-card soft-card">
               <div className="flex flex-col gap-6">
-                <h4 className="card-title">Reasoners</h4>
-                <p className="card-stats">{reasoners.length}</p>
+                <h4 className="card-title">Cognitive Agents</h4>
+                <p className="card-stats">{cognitiveAgents.length}</p>
               </div>
             </div>
           </div>
@@ -169,7 +169,7 @@ export function WorkspaceDetails() {
               <EmptyState
                 icon={Boxes}
                 title="No Multi‑Agentic Systems found."
-                description="Create a MAS to link adapters, add reasoners, and run queries."
+                description="Create a MAS to link adapters, add cognitive agents, and run queries."
                 actionLabel="Create Multi‑Agent Systems"
                 href={routes.workspaces.mas.create(workspaceId!)}
                 variant="inset"
@@ -250,27 +250,27 @@ export function WorkspaceDetails() {
                 )
               )}
 
-              {reasonersValidating && reasoners.length === 0 ? (
+              {cognitiveAgentsValidating && cognitiveAgents.length === 0 ? (
                 <div className="p-6 border rounded-lg bg-card soft-card">
                   <LoaderRelative />
                 </div>
               ) : (
-                reasoners.length > 0 && (
+                cognitiveAgents.length > 0 && (
                   <div className="p-6 border rounded-lg bg-card soft-card">
                     <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-base font-medium">Latest Reasoners</h2>
+                      <h2 className="text-base font-medium">Latest Cognitive Agents</h2>
                       <div className="flex gap-2">
                         <Button asChild size="sm" variant="sidebar">
-                          <Link href={routes.workspaces.reasoners.list(workspaceId!)}>View All</Link>
+                          <Link href={routes.workspaces.cognitiveAgents.list(workspaceId!)}>View All</Link>
                         </Button>
                         <Button asChild size="sm" variant="sidebar">
-                          <Link href={routes.workspaces.reasoners.create(workspaceId!)}>Create</Link>
+                          <Link href={routes.workspaces.cognitiveAgents.create(workspaceId!)}>Create</Link>
                         </Button>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
-                      {latestReasoners.map((r) => (
+                      {latestCognitiveAgents.map((r) => (
                         <div key={r.id} className="p-4 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors h-full">
                           <div className="flex flex-col h-full">
                             <div className="flex-1">

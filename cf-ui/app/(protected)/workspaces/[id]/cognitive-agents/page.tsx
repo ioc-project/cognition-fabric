@@ -1,15 +1,15 @@
 'use client';
 
 import {useParams} from 'next/navigation';
-import {ReasonerList} from '@/components/reasoners/reasoner-list';
+import {CognitiveAgentList} from '@/components/cognitive-agents/cognitive-agent-list';
 
-export default function ReasonersListPage() {
+export default function CognitiveAgentsListPage() {
   const params = useParams();
   const workspaceId = params.id as string;
 
   return (
     <div className="space-y-8 px-8 pt-4">
-      <ReasonerList workspaceId={workspaceId} />
+      <CognitiveAgentList workspaceId={workspaceId} />
     </div>
   );
 }

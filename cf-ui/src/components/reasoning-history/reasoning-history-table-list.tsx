@@ -6,26 +6,32 @@ import {ResourceTable} from '@/components/ui/resource-table';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {MoreVertical, Eye} from 'lucide-react';
 import type {QueryHistoryListItem} from '@/api/types/reasoning-history';
-import type {Reasoner} from '@/api/types/reasoner';
+import type {CognitiveAgent} from '@/api/types/cognitive-agent';
 import type {MAS} from '@/api/types/mas';
 
 export interface ReasoningHistoryTableListProps {
   items: QueryHistoryListItem[];
-  reasonerById: Map<string, Reasoner>;
+  cognitiveAgentById: Map<string, CognitiveAgent>;
   masById: Map<string, MAS>;
   onRowClick: (item: QueryHistoryListItem) => void;
 }
 
-export function ReasoningHistoryTableList({items, reasonerById, masById, onRowClick}: ReasoningHistoryTableListProps) {
+export function ReasoningHistoryTableList({items, cognitiveAgentById, masById, onRowClick}: ReasoningHistoryTableListProps) {
   return (
     <ResourceTable
       items={items}
-      headers={[{content: 'Query'}, {content: 'MAS'}, {content: 'Reasoner'}, {content: 'Created At'}, {content: 'Actions', className: 'text-right'}]}
+      headers={[
+        {content: 'Query'},
+        {content: 'MAS'},
+        {content: 'Cognitive Agent'},
+        {content: 'Created At'},
+        {content: 'Actions', className: 'text-right'}
+      ]}
       rowKey={(item) => item.id}
       onRowClick={(item) => onRowClick(item)}
       renderRow={(item) => {
-        const reasoner = reasonerById.get(item.reasoner_id);
-        const mas = reasoner ? masById.get(reasoner.mas_id) : null;
+        const cognitiveAgent = cognitiveAgentById.get(item.reasoner_id);
+        const mas = cognitiveAgent ? masById.get(cognitiveAgent.mas_id) : null;
 
         return [
           {
@@ -37,7 +43,7 @@ export function ReasoningHistoryTableList({items, reasonerById, masById, onRowCl
             className: 'font-medium'
           },
           {content: mas?.name || '-'},
-          {content: reasoner?.name || item.reasoner_id.slice(0, 8)},
+          {content: cognitiveAgent?.name || item.reasoner_id.slice(0, 8)},
           {content: new Date(item.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)},
           {
             content: (

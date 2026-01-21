@@ -24,7 +24,7 @@ import {Pagination} from '@/components/ui/pagination';
 import type {ReasoningHistoryEventsFilter} from '@/api/types/reasoning-history';
 import {useState, useMemo} from 'react';
 import type {QueryHistoryListItem} from '@/api/types/reasoning-history';
-import type {Reasoner} from '@/api/types/reasoner';
+import type {CognitiveAgent} from '@/api/types/cognitive-agent';
 import type {MAS} from '@/api/types/mas';
 
 interface ReasoningHistoryListProps {
@@ -39,7 +39,7 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
   const PAGE_SIZE = 10;
   const [currentPage, setCurrentPage] = useState(0);
   const [pendingFilters, setPendingFilters] = useState<{
-    reasonerId?: string;
+    cognitiveAgentId?: string;
     createdBy?: string;
     start?: string;
     end?: string;
@@ -51,7 +51,7 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
 
   const resolvedFilters: ReasoningHistoryEventsFilter = useMemo(() => {
     return {
-      reasoner_id: pendingFilters.reasonerId || undefined,
+      reasoner_id: pendingFilters.cognitiveAgentId || undefined,
       created_by: pendingFilters.createdBy || undefined,
       request_id: pendingFilters.requestId?.trim() ? pendingFilters.requestId : undefined,
       response_id: pendingFilters.responseId?.trim() ? pendingFilters.responseId : undefined,
@@ -71,14 +71,15 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
     () => reasoningHistoryApi.list(workspaceId, appliedFilters)
   );
 
-  const {data: reasonersData, error: reasonersError} = useSWRResource<Reasoner[]>(workspaceId ? swrKeys.reasoners(workspaceId) : null, () =>
-    reasonerApi.list(workspaceId)
+  const {data: cognitiveAgentsData, error: cognitiveAgentsError} = useSWRResource<CognitiveAgent[]>(
+    workspaceId ? swrKeys.cognitiveAgents(workspaceId) : null,
+    () => reasonerApi.list(workspaceId)
   );
 
   const {data: masData, error: masError} = useSWRResource<MAS[]>(workspaceId ? swrKeys.mas(workspaceId) : null, () => masApi.list(workspaceId));
 
-  if (reasonersError) {
-    console.warn('Failed to load reasoners for display names:', reasonersError);
+  if (cognitiveAgentsError) {
+    console.warn('Failed to load cognitive agents for display names:', cognitiveAgentsError);
   }
   if (masError) {
     console.warn('Failed to load MAS list for display names:', masError);
@@ -87,7 +88,7 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
   const totalItems = responseData?.total ?? 0;
   const totalPages = Math.ceil(totalItems / PAGE_SIZE);
 
-  const reasoners = useMemo(() => reasonersData ?? [], [reasonersData]);
+  const cognitiveAgents = useMemo(() => cognitiveAgentsData ?? [], [cognitiveAgentsData]);
   const masList = useMemo(() => masData ?? [], [masData]);
 
   const filteredItems = useMemo(() => {
@@ -99,12 +100,12 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
     return items.filter((item) => item.query_input?.toLowerCase().includes(searchText) || item.created_by?.toLowerCase().includes(searchText));
   }, [responseData?.records, pendingFilters.createdBy]);
 
-  const reasonerById = useMemo(() => new Map(reasoners.map((r) => [r.id, r])), [reasoners]);
+  const cognitiveAgentById = useMemo(() => new Map(cognitiveAgents.map((r) => [r.id, r])), [cognitiveAgents]);
   const masById = useMemo(() => new Map(masList.map((m) => [m.id, m])), [masList]);
 
   const hasFiltersApplied = useMemo(() => {
     return !!(
-      pendingFilters.reasonerId ||
+      pendingFilters.cognitiveAgentId ||
       pendingFilters.createdBy ||
       pendingFilters.start ||
       pendingFilters.end ||
@@ -196,19 +197,19 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
                 </DropdownMenu>
 
                 <Select
-                  value={pendingFilters.reasonerId ?? '__all__'}
+                  value={pendingFilters.cognitiveAgentId ?? '__all__'}
                   onValueChange={(val) => {
-                    const newReasonerId = val === '__all__' ? undefined : val;
-                    setPendingFilters((p) => ({...p, reasonerId: newReasonerId}));
-                    setAppliedFilters((prev) => ({...prev, reasoner_id: newReasonerId, offset: 0}));
+                    const newCognitiveAgentId = val === '__all__' ? undefined : val;
+                    setPendingFilters((p) => ({...p, cognitiveAgentId: newCognitiveAgentId}));
+                    setAppliedFilters((prev) => ({...prev, reasoner_id: newCognitiveAgentId, offset: 0}));
                   }}
                 >
                   <SelectTrigger className="h-8 text-xs soft-card w-44">
-                    <SelectValue placeholder="All reasoners" />
+                    <SelectValue placeholder="All cognitive agents" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__all__">All reasoners</SelectItem>
-                    {reasoners.map((r) => (
+                    <SelectItem value="__all__">All cognitive agents</SelectItem>
+                    {cognitiveAgents.map((r) => (
                       <SelectItem key={r.id} value={r.id}>
                         {r.name}
                       </SelectItem>
@@ -289,14 +290,19 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
                   empty={{
                     icon: History,
                     title: 'No reasoning history in this workspace.',
-                    description: 'Run queries on your reasoners to see history here.',
-                    actionLabel: 'Go to Reasoners',
-                    href: routes.workspaces.reasoners.list(workspaceId)
+                    description: 'Run queries on your cognitive agents to see history here.',
+                    actionLabel: 'Go to Cognitive Agents',
+                    href: routes.workspaces.cognitiveAgents.list(workspaceId)
                   }}
                 />
               }
             >
-              <ReasoningHistoryTableList items={filteredItems} reasonerById={reasonerById} masById={masById} onRowClick={handleRowClick} />
+              <ReasoningHistoryTableList
+                items={filteredItems}
+                cognitiveAgentById={cognitiveAgentById}
+                masById={masById}
+                onRowClick={handleRowClick}
+              />
             </ConditionalSWRRenderer>
           </div>
           {totalPages > 0 && (

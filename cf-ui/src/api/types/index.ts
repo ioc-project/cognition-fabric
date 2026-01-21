@@ -4,3 +4,4 @@ export * from './api-key';
 export * from './mas';
 export * from './users';
 export * from './reasoning-history';
+export * from './cognitive-agent';

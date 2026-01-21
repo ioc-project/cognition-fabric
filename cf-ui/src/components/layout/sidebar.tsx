@@ -49,7 +49,7 @@ export function Sidebar() {
         `${workspaceBasePath}`,
         `${workspaceBasePath}/mas`,
         `${workspaceBasePath}/knowledge`,
-        `${workspaceBasePath}/reasoners`,
+        `${workspaceBasePath}/cognitive-agents`,
         `${workspaceBasePath}/reasoning-history`,
         `${workspaceBasePath}/summary`
       );
@@ -120,11 +120,11 @@ export function Sidebar() {
         isActive: () => isWorkspaceSection('knowledge')
       },
       {
-        id: 'reasoners',
-        href: `${workspaceBasePath}/reasoners`,
+        id: 'cognitive-agents',
+        href: `${workspaceBasePath}/cognitive-agents`,
         icon: Brain,
-        label: 'Reasoners',
-        isActive: () => isWorkspaceSection('reasoners')
+        label: 'Cognitive Agents',
+        isActive: () => isWorkspaceSection('cognitive-agents')
       },
       {
         id: 'history',

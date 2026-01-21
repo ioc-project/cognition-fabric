@@ -7,21 +7,21 @@ import {routes} from '@/constants/routes';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import Link from 'next/link';
 import {MoreVertical, Trash2} from 'lucide-react';
-import type {Reasoner} from '@/api/types/reasoner';
+import type {CognitiveAgent} from '@/api/types/cognitive-agent';
 
-export interface ReasonerTableListProps {
-  reasoners: Reasoner[];
+export interface CognitiveAgentTableListProps {
+  cognitiveAgents: CognitiveAgent[];
   workspaceId: string;
   selectedId: string | null;
-  onRowClick: (r: Reasoner) => void;
+  onRowClick: (r: CognitiveAgent) => void;
   onOpenDelete: (payload: {id: string; name: string}) => void;
   masById: Map<string, string>;
 }
 
-export function ReasonerTableList({reasoners, workspaceId, selectedId, onRowClick, onOpenDelete, masById}: ReasonerTableListProps) {
+export function CognitiveAgentTableList({cognitiveAgents, workspaceId, selectedId, onRowClick, onOpenDelete, masById}: CognitiveAgentTableListProps) {
   return (
     <ResourceTable
-      items={reasoners}
+      items={cognitiveAgents}
       headers={[{content: 'Name'}, {content: 'MAS'}, {content: 'Created'}, {content: 'Updated'}, {content: 'Actions', className: 'text-right'}]}
       rowKey={(r) => r.id}
       isSelected={(r) => selectedId === r.id}
@@ -41,7 +41,7 @@ export function ReasonerTableList({reasoners, workspaceId, selectedId, onRowClic
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href={routes.workspaces.reasoners.details(workspaceId, r.id)}>View Details</Link>
+                  <Link href={routes.workspaces.cognitiveAgents.details(workspaceId, r.id)}>View Details</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-red-600 dark:text-red-400"
