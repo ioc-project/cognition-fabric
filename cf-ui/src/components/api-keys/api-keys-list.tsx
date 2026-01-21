@@ -25,7 +25,7 @@ export function ApiKeysList() {
         empty={{
           icon: KeyRound,
           title: 'No API keys',
-          description: 'Create an API key to authenticate requests across Knowledge Adapters, and Reasoners.',
+          description: 'Create an API key to authenticate requests across Knowledge Adapters, and Cognitive Agents.',
           actionLabel: 'Create Your First API Key',
           onAction: () => setIsCreateDialogOpen(true)
         }}

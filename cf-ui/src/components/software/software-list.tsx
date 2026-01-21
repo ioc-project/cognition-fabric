@@ -43,7 +43,7 @@ export function SoftwareList() {
     () => [
       {key: 'ALL', title: 'All Templates', link: routes.software.list},
       {key: 'KnowledgeAdapterTemplates', title: 'Knowledge Adapters', link: routes.software.listByType('KnowledgeAdapterTemplates')},
-      {key: 'ReasonerTemplates', title: 'Reasoners', link: routes.software.listByType('ReasonerTemplates')}
+      {key: 'ReasonerTemplates', title: 'Cognitive Agents', link: routes.software.listByType('ReasonerTemplates')}
     ],
     []
   );
@@ -81,7 +81,7 @@ export function SoftwareList() {
                   templateType === 'KnowledgeAdapterTemplates'
                     ? 'There are no knowledge adapter templates available.'
                     : templateType === 'ReasonerTemplates'
-                      ? 'There are no Reasoner templates available.'
+                      ? 'There are no Cognitive Agent templates available.'
                       : 'There are no software templates available.'
               }}
             />
@@ -95,7 +95,11 @@ export function SoftwareList() {
                   <div className="pb-4 mb-5 border-b border-border/50 flex justify-between items-start">
                     <div>
                       <div className="text-sm font-medium text-foreground">
-                        {tpl.type === 'KnowledgeAdapterTemplates' ? 'Knowledge Adapter' : tpl.type === 'ReasonerTemplates' ? 'Reasoner' : tpl.type}
+                        {tpl.type === 'KnowledgeAdapterTemplates'
+                          ? 'Knowledge Adapter'
+                          : tpl.type === 'ReasonerTemplates'
+                            ? 'Cognitive Agent'
+                            : tpl.type}
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">Template</div>
                     </div>

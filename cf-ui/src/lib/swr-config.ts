@@ -15,8 +15,8 @@ export const swrKeys = {
   mas: (workspaceId: string) => ['mas-list', workspaceId] as const,
   masDetails: (workspaceId: string, masId: string) => ['mas-details', workspaceId, masId] as const,
 
-  reasoners: (workspaceId: string) => ['reasoners', workspaceId] as const,
-  reasonerDetails: (workspaceId: string, reasonerId: string) => ['reasoner-details', workspaceId, reasonerId] as const,
+  cognitiveAgents: (workspaceId: string) => ['cognitive-agents', workspaceId] as const,
+  cognitiveAgentDetails: (workspaceId: string, cognitiveAgentId: string) => ['cognitive-agent-details', workspaceId, cognitiveAgentId] as const,
 
   keps: (workspaceId: string) => ['kep-list', workspaceId] as const,
   kepDetails: (workspaceId: string, kepId: string) => ['kep-details', workspaceId, kepId] as const,

@@ -1,9 +1,9 @@
 'use client';
 
 import useSWR from 'swr';
-import {workspaceApi, apiKeyApi, softwareApi, reasonerApi, masApi, kepApi} from '@/api/endpoints';
+import {workspaceApi, apiKeyApi, softwareApi, cognitiveAgentApi, masApi, kepApi} from '@/api/endpoints';
 import type {Workspace, ListWorkspacesResponse} from '@/api/types/workspace';
-import type {Reasoner, CreateReasonerRequest} from '@/api/types/reasoner';
+import type {CognitiveAgent, CreateCognitiveAgentRequest} from '@/api/types/cognitive-agent';
 import type {MAS, CreateMASRequest} from '@/api/types/mas';
 import type {KEP, CreateKEPRequest} from '@/api/types/kep';
 import {swrKeys} from '@/lib/swr-config';
@@ -81,37 +81,37 @@ export function useSoftwareTemplates(templateType: 'KnowledgeAdapterTemplates' |
   };
 }
 
-export function useReasoners(workspaceId: string) {
-  const {data, error, isLoading, isValidating, mutate} = useSWR<Reasoner[]>(
-    workspaceId ? swrKeys.reasoners(workspaceId) : null,
-    () => reasonerApi.list(workspaceId),
+export function useCognitiveAgents(workspaceId: string) {
+  const {data, error, isLoading, isValidating, mutate} = useSWR<CognitiveAgent[]>(
+    workspaceId ? swrKeys.cognitiveAgents(workspaceId) : null,
+    () => cognitiveAgentApi.list(workspaceId),
     {revalidateOnMount: true, keepPreviousData: true}
   );
 
-  const {run: runAddReasoner} = useInvalidateMutation(
-    {keys: swrKeys.reasoners(workspaceId), prefixes: [['reasoners', workspaceId]]},
-    (payload: CreateReasonerRequest) => reasonerApi.create(workspaceId, payload)
+  const {run: runAddCognitiveAgent} = useInvalidateMutation(
+    {keys: swrKeys.cognitiveAgents(workspaceId), prefixes: [['cognitive-agents', workspaceId]]},
+    (payload: CreateCognitiveAgentRequest) => cognitiveAgentApi.create(workspaceId, payload)
   );
 
-  const addReasoner = async (payload: CreateReasonerRequest) => {
-    const response = await runAddReasoner(payload);
+  const addCognitiveAgent = async (payload: CreateCognitiveAgentRequest) => {
+    const response = await runAddCognitiveAgent(payload);
     await mutate(undefined, {revalidate: true});
     return response;
   };
 
-  const {run: runDeleteReasoner} = useInvalidateMutation(
-    {keys: swrKeys.reasoners(workspaceId), prefixes: [['reasoners', workspaceId]]},
-    (reasonerId: string) => reasonerApi.delete(workspaceId, reasonerId)
+  const {run: runDeleteCognitiveAgent} = useInvalidateMutation(
+    {keys: swrKeys.cognitiveAgents(workspaceId), prefixes: [['cognitive-agents', workspaceId]]},
+    (cognitiveAgentId: string) => cognitiveAgentApi.delete(workspaceId, cognitiveAgentId)
   );
 
-  const deleteReasoner = async (reasonerId: string) => {
+  const deleteCognitiveAgent = async (cognitiveAgentId: string) => {
     const prev = Array.isArray(data) ? data : [];
     await mutate(
-      prev.filter((r) => r.id !== reasonerId),
+      prev.filter((r) => r.id !== cognitiveAgentId),
       {revalidate: false}
     );
     try {
-      await runDeleteReasoner(reasonerId);
+      await runDeleteCognitiveAgent(cognitiveAgentId);
     } catch (e) {
       await mutate(prev, {revalidate: false});
       throw e;
@@ -119,13 +119,13 @@ export function useReasoners(workspaceId: string) {
   };
 
   return {
-    reasoners: sortByCreatedAtDesc(Array.isArray(data) ? data : []),
+    cognitiveAgents: sortByCreatedAtDesc(Array.isArray(data) ? data : []),
     isLoading,
     isValidating,
     error: error ? parseError(error) : null,
     mutate,
-    addReasoner,
-    deleteReasoner
+    addCognitiveAgent,
+    deleteCognitiveAgent
   } as const;
 }
 

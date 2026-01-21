@@ -51,7 +51,7 @@ export function SoftwareTemplateDetails({id, type}: {id: string; type?: 'Knowled
     type === 'KnowledgeAdapterTemplates'
       ? 'Knowledge Template Details'
       : type === 'ReasonerTemplates'
-        ? 'Reasoner Template Details'
+        ? 'Cognitive Agent Template Details'
         : 'Template Details';
 
   const breadcrumbId: string = template?.id || id;

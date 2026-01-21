@@ -13,15 +13,15 @@ import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {routes} from '@/constants/routes';
-import {useReasoners, useMAS} from '@/hooks/useApi';
-import {ReasonerTableList} from '@/components/reasoners/reasoner-table-list';
-import {ReasonerCardList} from '@/components/reasoners/reasoner-card-list';
+import {useCognitiveAgents, useMAS} from '@/hooks/useApi';
+import {CognitiveAgentTableList} from '@/components/cognitive-agents/cognitive-agent-table-list';
+import {CognitiveAgentCardList} from '@/components/cognitive-agents/cognitive-agent-card-list';
 
-interface ReasonerListProps {
+interface CognitiveAgentListProps {
   workspaceId: string;
 }
 
-export function ReasonerList({workspaceId}: ReasonerListProps) {
+export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
   const router = useRouter();
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -29,14 +29,14 @@ export function ReasonerList({workspaceId}: ReasonerListProps) {
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {reasoners = [], isLoading: loading, error: swrError, deleteReasoner} = useReasoners(workspaceId);
+  const {cognitiveAgents = [], isLoading: loading, error: swrError, deleteCognitiveAgent} = useCognitiveAgents(workspaceId);
   const {masList = []} = useMAS(workspaceId);
   const masById = useMemo(() => new Map(masList.map((m) => [m.id, m.name] as const)), [masList]);
   const handleDelete = async () => {
     await deleteDialog.confirm(async (data) => {
       try {
-        await deleteReasoner(data.id);
-        toast.success(`Reasoner "${data.name}" deleted successfully`);
+        await deleteCognitiveAgent(data.id);
+        toast.success(`Cognitive Agent "${data.name}" deleted successfully`);
       } catch (err) {
         const errorMessage = parseError(err);
         setDeleteError(errorMessage);
@@ -49,62 +49,62 @@ export function ReasonerList({workspaceId}: ReasonerListProps) {
     <>
       <div className="space-y-8 px-8 pt-4 relative z-0">
         <BasePage
-          title="Reasoners"
-          description="View and manage all reasoners"
+          title="Cognitive Agents"
+          description="View and manage all cognitive agents"
           callToAction={
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
                 {viewMode === 'table' ? 'Card View' : 'Table View'}
               </Button>
               <Button asChild variant="sidebar" className="gap-2" size="default">
-                <Link href={routes.workspaces.reasoners.create(workspaceId)}>
+                <Link href={routes.workspaces.cognitiveAgents.create(workspaceId)}>
                   <Plus className="w-4 h-4" />
-                  Create Reasoner
+                  Create Cognitive Agent
                 </Link>
               </Button>
             </div>
           }
         >
           <ConditionalSWRRenderer
-            data={reasoners}
+            data={cognitiveAgents}
             error={swrError}
-            itemName="Reasoners"
+            itemName="Cognitive Agents"
             customIsLoading={loading}
             customEmptyComponent={
               <div className="flex items-center justify-center min-h-[50vh]">
                 <ListShell
                   empty={{
                     icon: Brain,
-                    title: 'No Reasoners exist in this workspace.',
-                    description: 'Create a Reasoner to orchestrate agents and run reasoning.',
-                    actionLabel: 'Create Reasoner',
-                    href: routes.workspaces.reasoners.create(workspaceId)
+                    title: 'No Cognitive Agents exist in this workspace.',
+                    description: 'Create a Cognitive Agent to orchestrate agents and run reasoning.',
+                    actionLabel: 'Create Cognitive Agent',
+                    href: routes.workspaces.cognitiveAgents.create(workspaceId)
                   }}
                 />
               </div>
             }
           >
             {viewMode === 'table' ? (
-              <ReasonerTableList
-                reasoners={reasoners}
+              <CognitiveAgentTableList
+                cognitiveAgents={cognitiveAgents}
                 workspaceId={workspaceId}
                 selectedId={selectedId}
                 masById={masById}
                 onRowClick={(r) => {
                   setSelectedId(r.id);
-                  router.push(routes.workspaces.reasoners.details(workspaceId, r.id));
+                  router.push(routes.workspaces.cognitiveAgents.details(workspaceId, r.id));
                 }}
                 onOpenDelete={(payload) => deleteDialog.open(payload)}
               />
             ) : (
-              <ReasonerCardList
-                reasoners={reasoners}
+              <CognitiveAgentCardList
+                cognitiveAgents={cognitiveAgents}
                 workspaceId={workspaceId}
                 selectedId={selectedId}
                 masById={masById}
                 onCardClick={(r) => {
                   setSelectedId(r.id);
-                  router.push(routes.workspaces.reasoners.details(workspaceId, r.id));
+                  router.push(routes.workspaces.cognitiveAgents.details(workspaceId, r.id));
                 }}
                 onOpenDelete={(payload) => deleteDialog.open(payload)}
               />
@@ -122,7 +122,7 @@ export function ReasonerList({workspaceId}: ReasonerListProps) {
           }
         }}
         onConfirm={handleDelete}
-        title={`Delete ${deleteDialog.data?.name || 'Reasoner'}`}
+        title={`Delete ${deleteDialog.data?.name || 'Cognitive Agent'}`}
         description={deleteError ?? `Delete "${deleteDialog.data?.name}"? This action is permanent and cannot be undone.`}
         confirmText="Delete"
         loading={deleteDialog.isLoading}

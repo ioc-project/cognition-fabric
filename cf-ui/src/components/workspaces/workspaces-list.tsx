@@ -74,7 +74,7 @@ export function WorkspacesList() {
             empty={{
               icon: FolderOpen,
               title: 'No workspaces',
-              description: 'Create a workspace to organize your TKF resources - Multi-Agentic Systems, Knowledge Adapters, and Reasoners.',
+              description: 'Create a workspace to organize your TKF resources - Multi-Agentic Systems, Knowledge Adapters, and Cognitive Agents.',
               actionLabel: 'Create Your First Workspace',
               onAction: () => setIsCreateDialogOpen(true)
             }}

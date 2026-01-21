@@ -7,21 +7,21 @@ import {routes} from '@/constants/routes';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import Link from 'next/link';
 import {MoreVertical, Trash2} from 'lucide-react';
-import type {Reasoner} from '@/api/types/reasoner';
+import type {CognitiveAgent} from '@/api/types/cognitive-agent';
 
-export interface ReasonerCardListProps {
-  reasoners: Reasoner[];
+export interface CognitiveAgentCardListProps {
+  cognitiveAgents: CognitiveAgent[];
   workspaceId: string;
   selectedId: string | null;
-  onCardClick: (r: Reasoner) => void;
+  onCardClick: (r: CognitiveAgent) => void;
   onOpenDelete: (payload: {id: string; name: string}) => void;
   masById: Map<string, string>;
 }
 
-export function ReasonerCardList({reasoners, workspaceId, selectedId, onCardClick, onOpenDelete, masById}: ReasonerCardListProps) {
+export function CognitiveAgentCardList({cognitiveAgents, workspaceId, selectedId, onCardClick, onOpenDelete, masById}: CognitiveAgentCardListProps) {
   return (
     <div className="list-grid">
-      {reasoners.map((r) => (
+      {cognitiveAgents.map((r) => (
         <Card
           key={r.id}
           variant="list"
@@ -41,7 +41,7 @@ export function ReasonerCardList({reasoners, workspaceId, selectedId, onCardClic
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href={routes.workspaces.reasoners.details(workspaceId, r.id)}>View Details</Link>
+                  <Link href={routes.workspaces.cognitiveAgents.details(workspaceId, r.id)}>View Details</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-red-600 dark:text-red-400"
@@ -79,7 +79,7 @@ export function ReasonerCardList({reasoners, workspaceId, selectedId, onCardClic
 
           <div className="mt-auto">
             <Button asChild variant="sidebar" className="w-full">
-              <Link href={routes.workspaces.reasoners.details(workspaceId, r.id)}>View Details</Link>
+              <Link href={routes.workspaces.cognitiveAgents.details(workspaceId, r.id)}>View Details</Link>
             </Button>
           </div>
         </Card>
