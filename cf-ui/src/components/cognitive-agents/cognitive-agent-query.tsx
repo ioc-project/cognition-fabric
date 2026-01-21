@@ -1,7 +1,7 @@
 'use client';
 
 import {useState} from 'react';
-import {reasonerApi} from '@/api/endpoints';
+import {cognitiveAgentApi} from '@/api/endpoints';
 import type {CognitiveAgentQueryRequest} from '@/api/types/cognitive-agent';
 import {Card, CardContent} from '@/components/ui/card';
 import {Label} from '@/components/ui/label';
@@ -32,7 +32,7 @@ export function CognitiveAgentQuery({workspaceId, cognitiveAgentId}: CognitiveAg
 
     try {
       const payload: CognitiveAgentQueryRequest = {intent, records: []};
-      const res = await reasonerApi.query(workspaceId, cognitiveAgentId, payload);
+      const res = await cognitiveAgentApi.query(workspaceId, cognitiveAgentId, payload);
       setResponse(res);
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Failed to gather evidence';

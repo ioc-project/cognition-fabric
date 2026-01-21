@@ -10,7 +10,7 @@ import {swrKeys} from '@/lib/swr-config';
 import {ListShell} from '@/components/ui/list-shell';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {reasoningHistoryApi} from '@/api/endpoints/reasoning-history';
-import {reasonerApi} from '@/api/endpoints/reasoners';
+import {cognitiveAgentApi} from '@/api/endpoints/cognitive-agent';
 import {masApi} from '@/api/endpoints/mas';
 import {ReasoningHistoryTableList} from './reasoning-history-table-list';
 import {Input} from '@/components/ui/input';
@@ -73,7 +73,7 @@ export function ReasoningHistoryList({workspaceId}: ReasoningHistoryListProps) {
 
   const {data: cognitiveAgentsData, error: cognitiveAgentsError} = useSWRResource<CognitiveAgent[]>(
     workspaceId ? swrKeys.cognitiveAgents(workspaceId) : null,
-    () => reasonerApi.list(workspaceId)
+    () => cognitiveAgentApi.list(workspaceId)
   );
 
   const {data: masData, error: masError} = useSWRResource<MAS[]>(workspaceId ? swrKeys.mas(workspaceId) : null, () => masApi.list(workspaceId));

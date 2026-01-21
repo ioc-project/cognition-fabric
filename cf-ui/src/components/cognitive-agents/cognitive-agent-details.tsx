@@ -5,7 +5,7 @@ import {useParams, useRouter} from 'next/navigation';
 import useSWR from 'swr';
 import {Trash2} from 'lucide-react';
 import {swrKeys} from '@/lib/swr-config';
-import {reasonerApi, masApi, workspaceApi} from '@/api/endpoints';
+import {cognitiveAgentApi, masApi, workspaceApi} from '@/api/endpoints';
 import type {CognitiveAgent} from '@/api/types/cognitive-agent';
 import type {MAS} from '@/api/types/mas';
 import type {Workspace} from '@/api/types/workspace';
@@ -39,7 +39,7 @@ export default function CognitiveAgentDetailsPage() {
     error,
     isLoading
   } = useSWR<CognitiveAgent>(workspaceId && cognitiveAgentId ? swrKeys.cognitiveAgentDetails(workspaceId, cognitiveAgentId) : null, () =>
-    reasonerApi.get(workspaceId as string, cognitiveAgentId as string)
+    cognitiveAgentApi.get(workspaceId as string, cognitiveAgentId as string)
   );
   const {data: masList = [] as MAS[], error: masError} = useSWR<MAS[]>(workspaceId ? swrKeys.mas(workspaceId) : null, () =>
     masApi.list(workspaceId as string)
@@ -73,7 +73,7 @@ export default function CognitiveAgentDetailsPage() {
   const handleDelete = async () => {
     await deleteDialog.confirm(async (data) => {
       try {
-        await reasonerApi.delete(workspaceId!, data.id);
+        await cognitiveAgentApi.delete(workspaceId!, data.id);
         toast.success(`Cognitive Agent "${data.name}" deleted successfully`);
         router.push(routes.workspaces.cognitiveAgents.list(workspaceId!));
       } catch (err) {

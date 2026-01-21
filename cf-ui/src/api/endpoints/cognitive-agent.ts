@@ -9,7 +9,7 @@ import {
   CognitiveAgentQueryResponse
 } from '../types/cognitive-agent';
 
-export const reasonerApi = {
+export const cognitiveAgentApi = {
   create: async (workspaceId: string, data: CreateCognitiveAgentRequest): Promise<CreateCognitiveAgentResponse> => {
     return fetchAPI(`/api/workspaces/${workspaceId}/reasoners`, {
       method: 'POST',

@@ -1,7 +1,7 @@
 'use client';
 
 import useSWR from 'swr';
-import {workspaceApi, apiKeyApi, softwareApi, reasonerApi, masApi, kepApi} from '@/api/endpoints';
+import {workspaceApi, apiKeyApi, softwareApi, cognitiveAgentApi, masApi, kepApi} from '@/api/endpoints';
 import type {Workspace, ListWorkspacesResponse} from '@/api/types/workspace';
 import type {CognitiveAgent, CreateCognitiveAgentRequest} from '@/api/types/cognitive-agent';
 import type {MAS, CreateMASRequest} from '@/api/types/mas';
@@ -84,13 +84,13 @@ export function useSoftwareTemplates(templateType: 'KnowledgeAdapterTemplates' |
 export function useCognitiveAgents(workspaceId: string) {
   const {data, error, isLoading, isValidating, mutate} = useSWR<CognitiveAgent[]>(
     workspaceId ? swrKeys.cognitiveAgents(workspaceId) : null,
-    () => reasonerApi.list(workspaceId),
+    () => cognitiveAgentApi.list(workspaceId),
     {revalidateOnMount: true, keepPreviousData: true}
   );
 
   const {run: runAddCognitiveAgent} = useInvalidateMutation(
     {keys: swrKeys.cognitiveAgents(workspaceId), prefixes: [['cognitive-agents', workspaceId]]},
-    (payload: CreateCognitiveAgentRequest) => reasonerApi.create(workspaceId, payload)
+    (payload: CreateCognitiveAgentRequest) => cognitiveAgentApi.create(workspaceId, payload)
   );
 
   const addCognitiveAgent = async (payload: CreateCognitiveAgentRequest) => {
@@ -101,7 +101,7 @@ export function useCognitiveAgents(workspaceId: string) {
 
   const {run: runDeleteCognitiveAgent} = useInvalidateMutation(
     {keys: swrKeys.cognitiveAgents(workspaceId), prefixes: [['cognitive-agents', workspaceId]]},
-    (cognitiveAgentId: string) => reasonerApi.delete(workspaceId, cognitiveAgentId)
+    (cognitiveAgentId: string) => cognitiveAgentApi.delete(workspaceId, cognitiveAgentId)
   );
 
   const deleteCognitiveAgent = async (cognitiveAgentId: string) => {
