@@ -2,7 +2,17 @@
 set -e
 
 echo "Starting Next.js server with runtime configuration..."
-echo "CSP_UI_API_BASE_URL: ${CSP_UI_API_BASE_URL}"
+echo "CFN_UI_API_BASE_URL: ${CFN_UI_API_BASE_URL}"
+
+if [ -z "$NEXTAUTH_SECRET" ]; then
+  export NEXTAUTH_SECRET="secret"
+fi
+echo "NEXTAUTH_SECRET: set"
+
+if [ -z "$NEXTAUTH_URL" ]; then
+  export NEXTAUTH_URL="http://localhost:3000"
+fi
+echo "NEXTAUTH_URL: ${NEXTAUTH_URL}"
 
 # Execute the command passed to the container
 exec "$@"

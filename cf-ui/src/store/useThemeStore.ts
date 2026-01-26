@@ -19,7 +19,7 @@ export const useThemeStore = create<ThemeStore>(
       cleanThemeStore: () => set(() => ({theme: 'light'}))
     }),
     {
-      name: 'ci-tkf-csp-ui-svc-theme-store',
+      name: 'ioc-cfn-mgmt-ui-svc-theme-store',
       storage: createJSONStorage(() => (typeof window !== 'undefined' ? window.localStorage : (undefined as unknown as Storage)))
     }
   )

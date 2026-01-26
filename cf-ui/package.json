@@ -1,5 +1,5 @@
 {
-  "name": "ci-tkf-csp-ui-svc",
+  "name": "ioc-cfn-mgmt-ui-svc",
   "version": "0.0.1",
   "private": true,
   "scripts": {
