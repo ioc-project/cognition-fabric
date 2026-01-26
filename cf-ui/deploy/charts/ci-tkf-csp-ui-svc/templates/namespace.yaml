@@ -5,6 +5,6 @@ metadata:
 {{- if  .Values.namespace }}
   name: {{ .Values.namespace }}
 {{- else }}
-  name: ci-tkf-csp-ui-svc
+  name: ioc-cfn-mgmt-ui-svc
 {{- end }}
 {{- end }}

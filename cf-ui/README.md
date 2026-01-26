@@ -1,6 +1,6 @@
-# ci-tkf-csp-ui-svc
+# ioc-cfn-mgmt-ui-svc
 
-Trusted Knowledge Fabric Management - Cognitive State Protocol UI Service
+Cognitive Fabric Node Management UI Service
 
 ## Tech Stack
 
@@ -20,6 +20,18 @@ Trusted Knowledge Fabric Management - Cognitive State Protocol UI Service
 
 ## Development
 
+Copy the example environment file:
+
+```bash
+cp .env.example .env.local
+```
+
+Optionally, generate your own `NEXTAUTH_SECRET`:
+
+```bash
+openssl rand -base64 32
+```
+
 Install dependencies:
 
 ```bash
@@ -34,6 +46,14 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
+### Docker
+
+Alternatively, run with Docker:
+
+```bash
+docker-compose up --build
+```
+
 ## Authentication
 
 Use these below to login:
@@ -46,12 +66,6 @@ Use these below to login:
 ```bash
 npm run build
 npm start
-```
-
-## Docker
-
-```bash
-docker-compose up --build
 ```
 
  
