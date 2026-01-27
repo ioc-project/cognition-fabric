@@ -74,7 +74,7 @@ export function WorkspacesList() {
             empty={{
               icon: FolderOpen,
               title: 'No workspaces',
-              description: 'Create a workspace to organize your CFN resources - Multi-Agentic Systems, Knowledge Adapters, and Cognitive Agents.',
+              description: 'Create a workspace to organize your CFN resources - Multi-Agentic Systems and Cognitive Agents.',
               actionLabel: 'Create Your First Workspace',
               onAction: () => setIsCreateDialogOpen(true)
             }}

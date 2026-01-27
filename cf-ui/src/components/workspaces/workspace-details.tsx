@@ -11,7 +11,7 @@ import {BasePage} from '@/components/ui/base-page';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {routes, breadcrumbs} from '@/constants/routes';
 import {LoaderRelative} from '@/components/ui/loading';
-import {useMAS, useKEPs, useCognitiveAgents} from '@/hooks/useApi';
+import {useMAS, useCognitiveAgents} from '@/hooks/useApi';
 import {ObjectOptionsDropdown} from '@/components/ui/object-options-dropdown';
 import {DropdownMenuItem} from '@/components/ui/dropdown-menu';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
@@ -25,7 +25,6 @@ export function WorkspaceDetails() {
   const {workspaceId, workspace, isLoading: workspaceLoading} = useCurrentWorkspace();
 
   const {masList, isValidating: masValidating} = useMAS(workspaceId || '');
-  const {knowledgeAdapters, isValidating: kepValidating} = useKEPs(workspaceId || '');
   const {cognitiveAgents, isValidating: cognitiveAgentsValidating} = useCognitiveAgents(workspaceId || '');
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -66,23 +65,6 @@ export function WorkspaceDetails() {
       })
       .slice(0, 4);
   }, [masList]);
-
-  const latestKeps = useMemo(() => {
-    return [...knowledgeAdapters]
-      .sort((a, b) => {
-        if (!a.created_at && !b.created_at) {
-          return 0;
-        }
-        if (!a.created_at) {
-          return 1;
-        }
-        if (!b.created_at) {
-          return -1;
-        }
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      })
-      .slice(0, 4);
-  }, [knowledgeAdapters]);
 
   const latestCognitiveAgents = useMemo(() => {
     return [...cognitiveAgents]
@@ -139,17 +121,11 @@ export function WorkspaceDetails() {
             </div>
           }
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
             <div className="p-4 border rounded-lg bg-card soft-card">
               <div className="flex flex-col gap-6">
                 <h4 className="card-title">Multi‑Agentic Systems (MAS)</h4>
                 <p className="card-stats">{masList.length}</p>
-              </div>
-            </div>
-            <div className="p-4 border rounded-lg bg-card soft-card">
-              <div className="flex flex-col gap-6">
-                <h4 className="card-title">Knowledge Adapters</h4>
-                <p className="card-stats">{knowledgeAdapters.length}</p>
               </div>
             </div>
             <div className="p-4 border rounded-lg bg-card soft-card">
@@ -211,44 +187,6 @@ export function WorkspaceDetails() {
                   ))}
                 </div>
               </div>
-
-              {kepValidating && knowledgeAdapters.length === 0 ? (
-                <div className="p-6 border rounded-lg bg-card soft-card">
-                  <LoaderRelative />
-                </div>
-              ) : (
-                knowledgeAdapters.length > 0 && (
-                  <div className="p-6 border rounded-lg bg-card soft-card">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-base font-medium">Latest Knowledge Adapters</h2>
-                      <div className="flex gap-2">
-                        <Button asChild size="sm" variant="sidebar">
-                          <Link href={routes.workspaces.knowledge.list(workspaceId!)}>View All</Link>
-                        </Button>
-                        <Button asChild size="sm" variant="sidebar">
-                          <Link href={routes.workspaces.knowledge.create(workspaceId!)}>Create</Link>
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
-                      {latestKeps.map((kep) => (
-                        <div key={kep.id} className="p-4 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors h-full">
-                          <div className="flex flex-col h-full">
-                            <div className="flex-1">
-                              <h3 className="text-sm font-medium text-foreground mb-2">{kep.name}</h3>
-                            </div>
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span>{kep.created_at ? new Date(kep.created_at).toLocaleDateString() : 'Unknown date'}</span>
-                              <span>{kep.mas_ids.length} MAS</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              )}
 
               {cognitiveAgentsValidating && cognitiveAgents.length === 0 ? (
                 <div className="p-6 border rounded-lg bg-card soft-card">

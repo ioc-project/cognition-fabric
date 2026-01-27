@@ -1,11 +1,10 @@
 'use client';
 
 import useSWR from 'swr';
-import {workspaceApi, apiKeyApi, softwareApi, cognitiveAgentApi, masApi, kepApi} from '@/api/endpoints';
+import {workspaceApi, apiKeyApi, softwareApi, cognitiveAgentApi, masApi} from '@/api/endpoints';
 import type {Workspace, ListWorkspacesResponse} from '@/api/types/workspace';
 import type {CognitiveAgent, CreateCognitiveAgentRequest} from '@/api/types/cognitive-agent';
 import type {MAS, CreateMASRequest} from '@/api/types/mas';
-import type {KEP, CreateKEPRequest} from '@/api/types/kep';
 import {swrKeys} from '@/lib/swr-config';
 import {parseError, sortByCreatedAtDesc} from '@/lib/utils';
 import {useInvalidateMutation} from './useSWRResource';
@@ -70,7 +69,7 @@ export function useApiKeys() {
   };
 }
 
-export function useSoftwareTemplates(templateType: 'KnowledgeAdapterTemplates' | 'ReasonerTemplates') {
+export function useSoftwareTemplates(templateType: 'ReasonerTemplates') {
   const {data, error, isLoading, mutate} = useSWR(swrKeys.softwareTemplates(templateType), () => softwareApi.listByType(templateType));
 
   return {
@@ -173,52 +172,5 @@ export function useMAS(workspaceId: string) {
     mutate,
     addMAS,
     deleteMAS
-  } as const;
-}
-
-export function useKEPs(workspaceId: string) {
-  const {data, error, isLoading, isValidating, mutate} = useSWR<KEP[]>(
-    workspaceId ? swrKeys.keps(workspaceId) : null,
-    () => kepApi.list(workspaceId),
-    {revalidateOnMount: true, keepPreviousData: true}
-  );
-
-  const {run: runAddKEP} = useInvalidateMutation(
-    {keys: swrKeys.keps(workspaceId), prefixes: [['kep-list', workspaceId]]},
-    (payload: CreateKEPRequest) => kepApi.create(workspaceId, payload)
-  );
-
-  const addKEP = async (payload: CreateKEPRequest) => {
-    const response = await runAddKEP(payload);
-    await mutate(undefined, {revalidate: true});
-    return response;
-  };
-
-  const {run: runDeleteKEP} = useInvalidateMutation({keys: swrKeys.keps(workspaceId), prefixes: [['kep-list', workspaceId]]}, (kepId: string) =>
-    kepApi.delete(workspaceId, kepId)
-  );
-
-  const deleteKnowledgeAdapters = async (kepId: string) => {
-    const prev = Array.isArray(data) ? data : [];
-    await mutate(
-      prev.filter((k) => k.id !== kepId),
-      {revalidate: false}
-    );
-    try {
-      await runDeleteKEP(kepId);
-    } catch (e) {
-      await mutate(prev, {revalidate: false});
-      throw e;
-    }
-  };
-
-  return {
-    knowledgeAdapters: sortByCreatedAtDesc(Array.isArray(data) ? data : []),
-    isLoading,
-    isValidating,
-    error: error ? parseError(error) : null,
-    mutate,
-    addKEP,
-    deleteKnowledgeAdapters
   } as const;
 }

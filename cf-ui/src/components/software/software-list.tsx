@@ -17,11 +17,11 @@ import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 export function SoftwareList() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [templateType, setTemplateType] = useState<'ALL' | 'KnowledgeAdapterTemplates' | 'ReasonerTemplates'>('ALL');
+  const [templateType, setTemplateType] = useState<'ALL' | 'ReasonerTemplates'>('ALL');
 
   useEffect(() => {
     const type = searchParams.get('type');
-    if (type === 'KnowledgeAdapterTemplates' || type === 'ReasonerTemplates') {
+    if (type === 'ReasonerTemplates') {
       setTemplateType(type);
     } else {
       setTemplateType('ALL');
@@ -42,7 +42,6 @@ export function SoftwareList() {
   const tabs = useMemo(
     () => [
       {key: 'ALL', title: 'All Templates', link: routes.software.list},
-      {key: 'KnowledgeAdapterTemplates', title: 'Knowledge Adapters', link: routes.software.listByType('KnowledgeAdapterTemplates')},
       {key: 'ReasonerTemplates', title: 'Cognitive Agents', link: routes.software.listByType('ReasonerTemplates')}
     ],
     []
@@ -60,7 +59,7 @@ export function SoftwareList() {
         tabs={tabs}
         activeTabKey={templateType}
         onTabChange={(key) => {
-          const k = key as 'ALL' | 'KnowledgeAdapterTemplates' | 'ReasonerTemplates';
+          const k = key as 'ALL' | 'ReasonerTemplates';
           setTemplateType(k);
           if (k === 'ALL') {
             router.push(routes.software.list);
@@ -78,11 +77,9 @@ export function SoftwareList() {
                 icon: Package,
                 title: 'No software templates',
                 description:
-                  templateType === 'KnowledgeAdapterTemplates'
-                    ? 'There are no knowledge adapter templates available.'
-                    : templateType === 'ReasonerTemplates'
-                      ? 'There are no Cognitive Agent templates available.'
-                      : 'There are no software templates available.'
+                  templateType === 'ReasonerTemplates'
+                    ? 'There are no Cognitive Agent templates available.'
+                    : 'There are no software templates available.'
               }}
             />
           </div>
@@ -94,13 +91,7 @@ export function SoftwareList() {
                 <Card key={tpl.id} variant="list" className="transition-shadow duration-200 flex flex-col">
                   <div className="pb-4 mb-5 border-b border-border/50 flex justify-between items-start">
                     <div>
-                      <div className="text-sm font-medium text-foreground">
-                        {tpl.type === 'KnowledgeAdapterTemplates'
-                          ? 'Knowledge Adapter'
-                          : tpl.type === 'ReasonerTemplates'
-                            ? 'Cognitive Agent'
-                            : tpl.type}
-                      </div>
+                      <div className="text-sm font-medium text-foreground">{tpl.type === 'ReasonerTemplates' ? 'Cognitive Agent' : tpl.type}</div>
                       <div className="text-xs text-muted-foreground mt-1">Template</div>
                     </div>
                     <div className="flex gap-2">
