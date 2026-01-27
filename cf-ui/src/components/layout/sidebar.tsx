@@ -1,20 +1,7 @@
 'use client';
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {
-  Boxes,
-  Database,
-  FolderOpen,
-  BarChart3,
-  ChevronDown,
-  ChevronRight,
-  Package,
-  Brain,
-  History,
-  Key,
-  Settings,
-  type LucideIcon
-} from 'lucide-react';
+import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Brain, History, Key, Settings, type LucideIcon} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments, useRouter} from 'next/navigation';
 import {useWorkspaceNavigation} from '@/hooks/useWorkspaceNavigation';
@@ -43,12 +30,11 @@ export function Sidebar() {
 
   useEffect(() => {
     const hrefs: string[] = [];
-    hrefs.push(routes.workspaces.list, routes.software.list);
+    hrefs.push(routes.workspaces.list);
     if (workspaceBasePath) {
       hrefs.push(
         `${workspaceBasePath}`,
         `${workspaceBasePath}/mas`,
-        `${workspaceBasePath}/knowledge`,
         `${workspaceBasePath}/cognitive-agents`,
         `${workspaceBasePath}/reasoning-history`,
         `${workspaceBasePath}/summary`
@@ -71,14 +57,15 @@ export function Sidebar() {
         icon: FolderOpen,
         label: 'Workspaces',
         isActive: () => segments[0] === 'workspaces' || segments.length === 0
-      },
-      {
-        id: 'software',
-        href: routes.software.list,
-        icon: Package,
-        label: 'Software Templates',
-        isActive: () => segments[0] === 'software'
       }
+      // Software Templates hidden - may be reused later
+      // {
+      //   id: 'software',
+      //   href: routes.software.list,
+      //   icon: Package,
+      //   label: 'Software Templates',
+      //   isActive: () => segments[0] === 'software'
+      // }
     ],
     [segments]
   );
@@ -111,13 +98,6 @@ export function Sidebar() {
         icon: Boxes,
         label: 'Multi-Agentic Systems',
         isActive: () => isWorkspaceSection('mas')
-      },
-      {
-        id: 'knowledge',
-        href: `${workspaceBasePath}/knowledge`,
-        icon: Database,
-        label: 'Knowledge Adapters',
-        isActive: () => isWorkspaceSection('knowledge')
       },
       {
         id: 'cognitive-agents',

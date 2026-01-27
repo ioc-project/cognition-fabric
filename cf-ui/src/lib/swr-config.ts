@@ -9,7 +9,7 @@ export const swrKeys = {
   apiKeys: (workspaceId: string) => ['api-keys', workspaceId] as const,
 
   software: (workspaceId: string) => ['software', workspaceId] as const,
-  softwareTemplates: (templateType: 'KnowledgeAdapterTemplates' | 'ReasonerTemplates') => ['software-templates', templateType] as const,
+  softwareTemplates: (templateType: 'ReasonerTemplates') => ['software-templates', templateType] as const,
   softwareTemplatesAll: () => ['software-templates-all'] as const,
 
   mas: (workspaceId: string) => ['mas-list', workspaceId] as const,
@@ -17,9 +17,6 @@ export const swrKeys = {
 
   cognitiveAgents: (workspaceId: string) => ['cognitive-agents', workspaceId] as const,
   cognitiveAgentDetails: (workspaceId: string, cognitiveAgentId: string) => ['cognitive-agent-details', workspaceId, cognitiveAgentId] as const,
-
-  keps: (workspaceId: string) => ['kep-list', workspaceId] as const,
-  kepDetails: (workspaceId: string, kepId: string) => ['kep-details', workspaceId, kepId] as const,
 
   reasoningHistory: (workspaceId: string, filters?: string) => ['reasoning-history-list', workspaceId, filters] as const,
   reasoningHistoryDetails: (workspaceId: string, historyId: string) => ['reasoning-history-details', workspaceId, historyId] as const

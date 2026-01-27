@@ -17,11 +17,6 @@ export const routes = {
       create: (workspaceId: string) => `/workspaces/${workspaceId}/mas/create`,
       details: (workspaceId: string, masId: string) => `/workspaces/${workspaceId}/mas/${masId}`
     },
-    knowledge: {
-      list: (workspaceId: string) => `/workspaces/${workspaceId}/knowledge`,
-      create: (workspaceId: string) => `/workspaces/${workspaceId}/knowledge/create`,
-      details: (workspaceId: string, adapterId: string) => `/workspaces/${workspaceId}/knowledge/${adapterId}`
-    },
     cognitiveAgents: {
       list: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-agents`,
       create: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-agents/create`,
@@ -36,7 +31,7 @@ export const routes = {
 
   software: {
     list: '/software',
-    listByType: (type: 'KnowledgeAdapterTemplates' | 'ReasonerTemplates') => `/software?type=${encodeURIComponent(type)}`,
+    listByType: (type: 'ReasonerTemplates') => `/software?type=${encodeURIComponent(type)}`,
     details: (id: string, type: string) => `/software/${id}?type=${encodeURIComponent(type)}`
   },
 
@@ -132,22 +127,6 @@ export const breadcrumbs = {
   createMAS: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
     {link: routes.workspaces.mas.list(workspaceId), text: 'Multi-Agentic Systems'},
     {link: '', text: 'Create', active: true}
-  ],
-
-  workspaceKnowledge: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.list, text: 'Workspaces'},
-    {link: routes.workspaces.details(workspaceId), text: workspaceName},
-    {link: '', text: 'Knowledge Adapters', active: true}
-  ],
-
-  createKnowledge: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.knowledge.list(workspaceId), text: 'Knowledge Adapters'},
-    {link: '', text: 'Create', active: true}
-  ],
-
-  knowledgeDetails: (workspaceId: string, workspaceName: string, kepName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.knowledge.list(workspaceId), text: 'Knowledge Adapters'},
-    {link: '', text: kepName, active: true}
   ],
 
   workspaceCognitiveAgents: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [

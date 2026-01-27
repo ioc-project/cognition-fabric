@@ -3,6 +3,5 @@ export * from './users';
 export * from './api-keys';
 export * from './software';
 export * from './mas';
-export * from './kep';
 export * from './cognitive-agent';
 export * from './reasoning-history';
