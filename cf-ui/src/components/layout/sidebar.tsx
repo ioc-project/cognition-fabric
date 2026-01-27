@@ -1,7 +1,7 @@
 'use client';
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Package, Brain, History, Key, Settings, type LucideIcon} from 'lucide-react';
+import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Brain, History, Key, Settings, type LucideIcon} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments, useRouter} from 'next/navigation';
 import {useWorkspaceNavigation} from '@/hooks/useWorkspaceNavigation';
