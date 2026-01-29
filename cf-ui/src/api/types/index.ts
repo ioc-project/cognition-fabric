@@ -1,6 +1,7 @@
 export * from './workspace';
 export * from './software';
 export * from './api-key';
+export * from './auth';
 export * from './mas';
 export * from './users';
 export * from './reasoning-history';

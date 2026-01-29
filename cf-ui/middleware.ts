@@ -3,7 +3,7 @@ import {NextResponse} from 'next/server';
 
 export default withAuth(
   function middleware(req) {
-    if (req.nextauth.token && req.nextUrl.pathname === '/login') {
+    if (req.nextauth.token && (req.nextUrl.pathname === '/login' || req.nextUrl.pathname === '/signup')) {
       return NextResponse.redirect(new URL('/', req.url));
     }
     return NextResponse.next();
@@ -11,7 +11,7 @@ export default withAuth(
   {
     callbacks: {
       authorized: ({token, req}) => {
-        if (req.nextUrl.pathname === '/login') {
+        if (req.nextUrl.pathname === '/login' || req.nextUrl.pathname === '/signup') {
           return true;
         }
         return !!token;

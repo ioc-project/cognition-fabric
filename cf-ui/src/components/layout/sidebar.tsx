@@ -1,13 +1,12 @@
 'use client';
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Brain, History, Key, Mail, Users, type LucideIcon} from 'lucide-react';
+import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Brain, History, Key, Users, type LucideIcon} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments, useRouter} from 'next/navigation';
 import {Badge} from '@/components/ui/badge';
 import {useWorkspaceNavigation} from '@/hooks/useWorkspaceNavigation';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
-import {useMyPendingInvitations} from '@/hooks/useApi';
 import {routes} from '@/constants/routes';
 
 export function Sidebar() {
@@ -15,7 +14,6 @@ export function Sidebar() {
   const pathname = usePathname();
   const segments = useSelectedLayoutSegments();
   const isWorkspaceRoute = segments[0] === 'workspaces';
-  const {pendingCount} = useMyPendingInvitations();
 
   const {currentId: workspaceIdRaw, base: workspaceBasePathRaw} = useWorkspaceNavigation();
   const {workspace: workspaceRaw} = useCurrentWorkspace();
@@ -61,14 +59,6 @@ export function Sidebar() {
         isActive: () => segments[0] === 'workspaces' || segments.length === 0
       },
       {
-        id: 'invitations',
-        href: routes.invitations,
-        icon: Mail,
-        label: 'Invitations',
-        badge: pendingCount,
-        isActive: () => pathname === routes.invitations
-      },
-      {
         id: 'api-keys',
         href: routes.apiKeys,
         icon: Key,
@@ -84,7 +74,7 @@ export function Sidebar() {
       //   isActive: () => segments[0] === 'software'
       // }
     ],
-    [segments, pathname, pendingCount]
+    [segments, pathname]
   );
 
   const isWorkspaceSection = useCallback(
