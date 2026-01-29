@@ -6,7 +6,9 @@ export const swrKeys = {
   workspace: (id: string) => ['workspace', id] as const,
 
   users: (workspaceId: string) => ['users', workspaceId] as const,
-  apiKeys: (workspaceId: string) => ['api-keys', workspaceId] as const,
+  apiKeys: () => ['api-keys'] as const,
+  iamRoles: () => ['iam-roles'] as const,
+  iamUsers: () => ['iam-users'] as const,
 
   software: (workspaceId: string) => ['software', workspaceId] as const,
   softwareTemplates: (templateType: 'ReasonerTemplates') => ['software-templates', templateType] as const,

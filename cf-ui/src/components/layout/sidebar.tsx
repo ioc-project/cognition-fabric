@@ -1,12 +1,12 @@
 'use client';
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Brain, History, Key, Settings, type LucideIcon} from 'lucide-react';
+import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Brain, History, Key, type LucideIcon} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments, useRouter} from 'next/navigation';
 import {useWorkspaceNavigation} from '@/hooks/useWorkspaceNavigation';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
-import {routes, isRouteActive} from '@/constants/routes';
+import {routes} from '@/constants/routes';
 
 export function Sidebar() {
   const router = useRouter();
@@ -22,7 +22,6 @@ export function Sidebar() {
   const workspaceName: string = String(workspace?.name ?? (workspaceId ? `Workspace ${workspaceId.slice(0, 8)}` : 'Workspace'));
 
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(true);
 
   useEffect(() => {
     setIsWorkspaceOpen(isWorkspaceRoute);
@@ -57,6 +56,13 @@ export function Sidebar() {
         icon: FolderOpen,
         label: 'Workspaces',
         isActive: () => segments[0] === 'workspaces' || segments.length === 0
+      },
+      {
+        id: 'api-keys',
+        href: routes.apiKeys,
+        icon: Key,
+        label: 'API Keys',
+        isActive: () => pathname === routes.apiKeys
       }
       // Software Templates hidden - may be reused later
       // {
@@ -67,7 +73,7 @@ export function Sidebar() {
       //   isActive: () => segments[0] === 'software'
       // }
     ],
-    [segments]
+    [segments, pathname]
   );
 
   const isWorkspaceSection = useCallback(
@@ -153,32 +159,6 @@ export function Sidebar() {
               <NavItem href={item.href} icon={item.icon} label={item.label} active={item.isActive()} />
             </li>
           ))}
-
-          <li className="mt-1">
-            <button
-              type="button"
-              onClick={() => setSettingsOpen((o) => !o)}
-              className="group w-full flex items-center justify-between px-2 py-1.5 rounded-md transition-colors focus-visible:outline-none text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))]"
-            >
-              <span className="sidebar-text flex items-center gap-2">
-                <Settings className="w-5 h-5 transition-colors text-[hsl(var(--sidebar-icon))] group-hover:text-[hsl(var(--sidebar-icon-active))]" />
-                Settings
-              </span>
-              {settingsOpen ? (
-                <ChevronDown className="w-4 h-4 text-[hsl(var(--sidebar-icon))]" />
-              ) : (
-                <ChevronRight className="w-4 h-4 text-[hsl(var(--sidebar-icon))]" />
-              )}
-            </button>
-
-            {settingsOpen && (
-              <ul className="mt-1 ml-8 space-y-1">
-                <li>
-                  <NavItem href={routes.settings.apiKeys} icon={Key} label={'API Keys'} active={isRouteActive(pathname, routes.settings.apiKeys)} />
-                </li>
-              </ul>
-            )}
-          </li>
 
           {workspaceId && (
             <li aria-hidden className="my-2">

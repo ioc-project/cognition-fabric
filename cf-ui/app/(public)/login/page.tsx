@@ -23,16 +23,17 @@ function LoginForm() {
       const result = await signIn('credentials', {
         username,
         password,
-        callbackUrl: '/workspaces?ensureDefault=1',
-        redirect: true
+        redirect: false
       });
 
       if (result?.error) {
         setError('Invalid username or password');
         setLoading(false);
+      } else if (result?.ok) {
+        window.location.href = '/workspaces?ensureDefault=1';
       }
     } catch (err) {
-      setError('An error occurred during login. Please try again.');
+      setError('An unexpected error occurred during login. Please try again.');
       setLoading(false);
       console.error('Login error:', err);
     }
