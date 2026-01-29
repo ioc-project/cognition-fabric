@@ -1,4 +1,5 @@
 import {getApiConfig} from './config';
+import {getSession} from 'next-auth/react';
 
 class ApiError extends Error {
   constructor(
@@ -13,6 +14,7 @@ class ApiError extends Error {
 
 export async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const config = getApiConfig();
+  const session = await getSession();
   const controller = new AbortController();
   const timeout = typeof options?.signal === 'undefined' ? config.timeout : undefined;
 
@@ -26,6 +28,9 @@ export async function fetchAPI<T>(endpoint: string, options?: RequestInit): Prom
     signal: options?.signal ?? controller.signal,
     headers: {
       ...config.headers,
+      ...(session?.accessToken && {
+        Authorization: `Bearer ${session.accessToken}`
+      }),
       ...options?.headers
     }
   };
