@@ -31,7 +31,7 @@ export const CreateCognitiveAgentResponseSchema = z.object({
 export type CreateCognitiveAgentResponse = z.infer<typeof CreateCognitiveAgentResponseSchema>;
 
 export const ListCognitiveAgentsResponseSchema = z.object({
-  reasoners: z.array(CognitiveAgentSchema)
+  cognitive_agents: z.array(CognitiveAgentSchema)
 });
 
 export type ListCognitiveAgentsResponse = z.infer<typeof ListCognitiveAgentsResponseSchema>;
