@@ -2,23 +2,27 @@ import {z} from 'zod';
 
 export const ApiKeySchema = z.object({
   id: z.string().uuid(),
+  name: z.string(),
   key_preview: z.string(),
-  created_at: z.string().datetime()
+  user_id: z.string(),
+  created_at: z.string()
 });
 
 export type ApiKey = z.infer<typeof ApiKeySchema>;
 
 export const CreateApiKeyRequestSchema = z.object({
-  name: z.string().min(1, 'API key name is required'),
-  roles: z.array(z.string()).min(1, 'At least one role is required')
+  name: z.string().min(1, 'API key name is required').max(100, 'API key name must be at most 100 characters')
 });
 
 export type CreateApiKeyRequest = z.infer<typeof CreateApiKeyRequestSchema>;
 
 export const CreateApiKeyResponseSchema = z.object({
   id: z.string().uuid(),
-  'api-key': z.string(),
-  expires: z.string()
+  key: z.string(),
+  key_preview: z.string(),
+  name: z.string(),
+  user_id: z.string(),
+  created_at: z.string()
 });
 
 export type CreateApiKeyResponse = z.infer<typeof CreateApiKeyResponseSchema>;
@@ -32,15 +36,18 @@ export type ListApiKeysResponse = z.infer<typeof ListApiKeysResponseSchema>;
 
 export const IamUserSchema = z.object({
   id: z.string(),
-  name: z.string(),
-  email: z.string().email(),
-  created_at: z.string().optional()
+  username: z.string(),
+  domain: z.string(),
+  role: z.string(),
+  created_at: z.string(),
+  updated_at: z.string()
 });
 
 export type IamUser = z.infer<typeof IamUserSchema>;
 
 export const IamUsersResponseSchema = z.object({
-  users: z.array(IamUserSchema)
+  users: z.array(IamUserSchema),
+  total: z.number().int().nonnegative()
 });
 
 export type IamUsersResponse = z.infer<typeof IamUsersResponseSchema>;

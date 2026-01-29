@@ -39,9 +39,7 @@ export const routes = {
     list: '/queries'
   },
 
-  settings: {
-    apiKeys: '/settings/api-keys'
-  }
+  apiKeys: '/api-keys'
 } as const;
 
 export const apiRoutes = {
@@ -157,5 +155,10 @@ export const breadcrumbs = {
     {link: routes.workspaces.list, text: 'Workspaces'},
     {link: routes.workspaces.details(workspaceId), text: workspaceName},
     {link: '', text: 'Summary', active: true}
+  ],
+
+  apiKeysList: (): BreadcrumbItem[] => [
+    {link: routes.home, text: 'Home'},
+    {link: '', text: 'API Keys', active: true}
   ]
 } as const;
