@@ -40,7 +40,7 @@ export function ShowApiKeyDialog({open, onOpenChange, apiKey}: ShowApiKeyDialogP
         <Alert variant="default" className="bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900">
           <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-500" />
           <AlertDescription className="text-yellow-800 dark:text-yellow-200">
-            Make sure to copy your API key now. For security reasons, you won't be able to see it again.
+            Make sure to copy your API key now. For security reasons, you won&apos;t be able to see it again.
           </AlertDescription>
         </Alert>
 

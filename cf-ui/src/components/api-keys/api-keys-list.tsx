@@ -36,7 +36,7 @@ export function ApiKeysList() {
       apiKey: result.apiKey,
       keyId: result.id
     });
-    mutate();
+    void mutate();
   };
 
   const handleDeleteApiKey = async () => {
