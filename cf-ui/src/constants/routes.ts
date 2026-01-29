@@ -26,7 +26,8 @@ export const routes = {
       list: (workspaceId: string) => `/workspaces/${workspaceId}/reasoning-history`,
       details: (workspaceId: string, historyId: string) => `/workspaces/${workspaceId}/reasoning-history/${historyId}`
     },
-    summary: (workspaceId: string) => `/workspaces/${workspaceId}/summary`
+    summary: (workspaceId: string) => `/workspaces/${workspaceId}/summary`,
+    members: (workspaceId: string) => `/workspaces/${workspaceId}/members`
   },
 
   software: {
@@ -39,7 +40,9 @@ export const routes = {
     list: '/queries'
   },
 
-  apiKeys: '/api-keys'
+  apiKeys: '/api-keys',
+
+  invitations: '/invitations'
 } as const;
 
 export const apiRoutes = {

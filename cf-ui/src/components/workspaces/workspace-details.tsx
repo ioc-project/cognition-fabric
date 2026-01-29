@@ -121,7 +121,7 @@ export function WorkspaceDetails() {
             </div>
           }
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
             <div className="p-4 border rounded-lg bg-card soft-card">
               <div className="flex flex-col gap-6">
                 <h4 className="card-title">Multi‑Agentic Systems (MAS)</h4>
@@ -132,6 +132,27 @@ export function WorkspaceDetails() {
               <div className="flex flex-col gap-6">
                 <h4 className="card-title">Cognitive Agents</h4>
                 <p className="card-stats">{cognitiveAgents.length}</p>
+              </div>
+            </div>
+            <div
+              className="p-4 border rounded-lg bg-card soft-card hover:bg-accent/50 transition-colors cursor-pointer"
+              onClick={() => workspaceId && window.location.assign(routes.workspaces.members(workspaceId))}
+            >
+              <div className="flex flex-col gap-6">
+                <h4 className="card-title">Members</h4>
+                <div className="flex items-center justify-between">
+                  <p className="card-stats">Team</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      workspaceId && window.location.assign(routes.workspaces.members(workspaceId));
+                    }}
+                  >
+                    Manage
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

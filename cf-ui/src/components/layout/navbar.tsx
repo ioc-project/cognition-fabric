@@ -1,16 +1,27 @@
 'use client';
 
-import {MoreVertical, User, Settings, LogOut, HelpCircle, Sun, Moon} from 'lucide-react';
-import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
+import {User, LogOut, Sun, Moon, Mail} from 'lucide-react';
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator} from '@/components/ui/dropdown-menu';
+import {Badge} from '@/components/ui/badge';
+import {Button} from '@/components/ui/button';
 import {useThemeStore} from '@/store';
-import {signOut} from 'next-auth/react';
+import {signOut, useSession} from 'next-auth/react';
 import Image from 'next/image';
 import {useCallback} from 'react';
+import {useRouter} from 'next/navigation';
+import {routes} from '@/constants/routes';
+import {useMyPendingInvitations} from '@/hooks/useApi';
 import WorkspaceSwitcher from '@/components/workspaces/workspace-switcher';
 
 export function NavBar() {
+  const router = useRouter();
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
+  const {pendingCount} = useMyPendingInvitations();
+  const {data: session} = useSession();
+
+  const username = session?.user?.username || session?.user?.name || 'User';
+  const role = session?.user?.role || 'user';
 
   const toggleTheme = useCallback(() => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -18,6 +29,10 @@ export function NavBar() {
 
   const handleLogout = async () => {
     await signOut({callbackUrl: '/login'});
+  };
+
+  const handleInvitationsClick = () => {
+    router.push(routes.invitations);
   };
 
   return (
@@ -38,6 +53,15 @@ export function NavBar() {
       <div className="flex items-center gap-2">
         <WorkspaceSwitcher />
 
+        <button onClick={handleInvitationsClick} className="p-2 hover:bg-accent rounded-lg transition-colors relative" title="Workspace Invitations">
+          <Mail className="w-5 h-5 text-muted-foreground" />
+          {pendingCount > 0 && (
+            <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center px-1 text-xs">
+              {pendingCount}
+            </Badge>
+          )}
+        </button>
+
         <button
           onClick={toggleTheme}
           className="p-2 hover:bg-accent rounded-lg transition-colors"
@@ -49,24 +73,22 @@ export function NavBar() {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button className="p-2 hover:bg-accent rounded-lg transition-colors">
-              <MoreVertical className="w-5 h-5 text-muted-foreground" />
+              <User className="w-5 h-5 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem>
-              <User className="w-4 h-4 mr-2" />
-              <span></span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="w-4 h-4 mr-2" />
-              <span></span>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <HelpCircle className="w-4 h-4 mr-2" />
-              <span>Help</span>
-            </DropdownMenuItem>
-            <DropdownMenuItem className="text-red-600" onClick={handleLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
+            <div className="flex items-center gap-3 px-2 py-2">
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-slate-700 text-white text-sm font-medium shrink-0">
+                {username?.[0]?.toUpperCase()}
+              </div>
+              <div className="flex flex-col">
+                <p className="text-sm font-semibold">{username}</p>
+                <p className="text-xs text-muted-foreground/40 capitalize">{role}</p>
+              </div>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-red-600 pl-[18px]" onClick={handleLogout}>
+              <LogOut className="w-4 w-4 mr-2" />
               <span>Logout</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

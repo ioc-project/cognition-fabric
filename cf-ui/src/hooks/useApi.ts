@@ -1,10 +1,12 @@
 'use client';
 
 import useSWR from 'swr';
-import {workspaceApi, apiKeyApi, softwareApi, cognitiveAgentApi, masApi} from '@/api/endpoints';
+import {workspaceApi, apiKeyApi, softwareApi, cognitiveAgentApi, masApi, invitationApi, memberApi} from '@/api/endpoints';
 import type {Workspace, ListWorkspacesResponse} from '@/api/types/workspace';
 import type {CognitiveAgent, CreateCognitiveAgentRequest} from '@/api/types/cognitive-agent';
 import type {MAS, CreateMASRequest} from '@/api/types/mas';
+import type {CreateInvitationRequest, Invitation, ListInvitationsResponse} from '@/api/types/invitation';
+import type {ListWorkspaceMembersResponse, UpdateMemberRoleRequest, WorkspaceMember} from '@/api/types/member';
 import {swrKeys} from '@/lib/swr-config';
 import {parseError, sortByCreatedAtDesc} from '@/lib/utils';
 import {useInvalidateMutation} from './useSWRResource';
@@ -208,4 +210,148 @@ export function useMAS(workspaceId: string) {
     addMAS,
     deleteMAS
   } as const;
+}
+
+// Workspace Invitations
+export function useWorkspaceInvitations(workspaceId: string) {
+  const {data, error, isLoading, mutate} = useSWR<ListInvitationsResponse>(
+    workspaceId ? swrKeys.workspaceInvitations(workspaceId) : null,
+    () => invitationApi.listWorkspaceInvitations(workspaceId),
+    {revalidateOnMount: true, keepPreviousData: true}
+  );
+
+  const {run: runCreateInvitation} = useInvalidateMutation(swrKeys.workspaceInvitations(workspaceId), (payload: CreateInvitationRequest) =>
+    invitationApi.create(workspaceId, payload)
+  );
+
+  const createInvitation = async (payload: CreateInvitationRequest) => {
+    const response = await runCreateInvitation(payload);
+    await mutate();
+    return response;
+  };
+
+  const {run: runCancelInvitation} = useInvalidateMutation(swrKeys.workspaceInvitations(workspaceId), (invitationId: string) =>
+    invitationApi.cancel(workspaceId, invitationId)
+  );
+
+  const cancelInvitation = async (invitationId: string) => {
+    await mutate(
+      async (current) => {
+        await runCancelInvitation(invitationId);
+        return {
+          invitations: (current?.invitations || []).filter((inv) => inv.id !== invitationId),
+          total: Math.max((current?.total || 1) - 1, 0)
+        };
+      },
+      {
+        optimisticData: (current) => ({
+          invitations: (current?.invitations || []).filter((inv) => inv.id !== invitationId),
+          total: Math.max((current?.total || 1) - 1, 0)
+        }),
+        rollbackOnError: true,
+        revalidate: false
+      }
+    );
+  };
+
+  return {
+    invitations: data?.invitations || [],
+    total: data?.total || 0,
+    isLoading,
+    error: error ? parseError(error) : null,
+    mutate,
+    createInvitation,
+    cancelInvitation
+  };
+}
+
+// My Pending Invitations (for the current user)
+export function useMyPendingInvitations() {
+  const {data, error, isLoading, mutate} = useSWR<ListInvitationsResponse>(
+    swrKeys.myPendingInvitations(),
+    () => invitationApi.getMyPendingInvitations(),
+    {revalidateOnMount: true, keepPreviousData: true, refreshInterval: 30000} // Poll every 30 seconds
+  );
+
+  const {run: runAcceptInvitation} = useInvalidateMutation(swrKeys.myPendingInvitations(), (invitationId: string) =>
+    invitationApi.accept(invitationId)
+  );
+
+  const acceptInvitation = async (invitationId: string) => {
+    await runAcceptInvitation(invitationId);
+    await mutate();
+  };
+
+  const {run: runDeclineInvitation} = useInvalidateMutation(swrKeys.myPendingInvitations(), (invitationId: string) =>
+    invitationApi.decline(invitationId)
+  );
+
+  const declineInvitation = async (invitationId: string) => {
+    await runDeclineInvitation(invitationId);
+    await mutate();
+  };
+
+  return {
+    invitations: data?.invitations || [],
+    pendingCount: data?.invitations.filter((inv) => inv.status === 'pending').length || 0,
+    total: data?.total || 0,
+    isLoading,
+    error: error ? parseError(error) : null,
+    mutate,
+    acceptInvitation,
+    declineInvitation
+  };
+}
+
+// Workspace Members
+export function useWorkspaceMembers(workspaceId: string) {
+  const {data, error, isLoading, mutate} = useSWR<ListWorkspaceMembersResponse>(
+    workspaceId ? swrKeys.workspaceMembers(workspaceId) : null,
+    () => memberApi.list(workspaceId),
+    {revalidateOnMount: true, keepPreviousData: true}
+  );
+
+  const {run: runUpdateMemberRole} = useInvalidateMutation(
+    swrKeys.workspaceMembers(workspaceId),
+    ({memberId, role}: {memberId: string; role: UpdateMemberRoleRequest}) => memberApi.updateRole(workspaceId, memberId, role)
+  );
+
+  const updateMemberRole = async (memberId: string, role: UpdateMemberRoleRequest) => {
+    await runUpdateMemberRole({memberId, role});
+    await mutate();
+  };
+
+  const {run: runRemoveMember} = useInvalidateMutation(swrKeys.workspaceMembers(workspaceId), (memberId: string) =>
+    memberApi.remove(workspaceId, memberId)
+  );
+
+  const removeMember = async (memberId: string) => {
+    await mutate(
+      async (current) => {
+        await runRemoveMember(memberId);
+        return {
+          members: (current?.members || []).filter((member) => member.id !== memberId),
+          total: Math.max((current?.total || 1) - 1, 0)
+        };
+      },
+      {
+        optimisticData: (current) => ({
+          members: (current?.members || []).filter((member) => member.id !== memberId),
+          total: Math.max((current?.total || 1) - 1, 0)
+        }),
+        rollbackOnError: true,
+        revalidate: false
+      }
+    );
+  };
+
+  return {
+    members: data?.members || [],
+    total: data?.total || 0,
+    isLoading,
+    error: error ? parseError(error) : null,
+    mutate,
+    updateMemberRole,
+    removeMember
+  };
 }
