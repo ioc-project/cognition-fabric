@@ -34,9 +34,9 @@ export function Sidebar() {
     if (workspaceBasePath) {
       hrefs.push(
         `${workspaceBasePath}`,
+        `${workspaceBasePath}/cognitive-fabric-node`,
         `${workspaceBasePath}/mas`,
         `${workspaceBasePath}/cognitive-agents`,
-        `${workspaceBasePath}/reasoning-history`,
         `${workspaceBasePath}/summary`
       );
     }
@@ -101,10 +101,10 @@ export function Sidebar() {
       },
       {
         id: 'cfn',
-        href: `${workspaceBasePath}/cfn`,
+        href: `${workspaceBasePath}/cognitive-fabric-node`,
         icon: Network,
         label: 'Cognitive Fabric Nodes',
-        isActive: () => isWorkspaceSection('cfn')
+        isActive: () => isWorkspaceSection('cognitive-fabric-node')
       },
       {
         id: 'mas',

@@ -23,9 +23,9 @@ export const routes = {
       details: (workspaceId: string, cognitiveAgentId: string) => `/workspaces/${workspaceId}/cognitive-agents/${cognitiveAgentId}`
     },
     cfn: {
-      list: (workspaceId: string) => `/workspaces/${workspaceId}/cfn`,
-      create: (workspaceId: string) => `/workspaces/${workspaceId}/cfn/create`,
-      details: (workspaceId: string, cfnId: string) => `/workspaces/${workspaceId}/cfn/${cfnId}`
+      list: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-fabric-node`,
+      create: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-fabric-node/create`,
+      details: (workspaceId: string, cfnId: string) => `/workspaces/${workspaceId}/cognitive-fabric-node/${cfnId}`
     },
     summary: (workspaceId: string) => `/workspaces/${workspaceId}/summary`,
     members: (workspaceId: string) => `/workspaces/${workspaceId}/members`
@@ -78,10 +78,10 @@ export const apiRoutes = {
   },
 
   cfn: {
-    list: (workspaceId: string) => `/api/workspaces/${workspaceId}/cfn`,
-    details: (workspaceId: string, id: string) => `/api/workspaces/${workspaceId}/cfn/${id}`,
-    create: (workspaceId: string) => `/api/workspaces/${workspaceId}/cfn`,
-    delete: (workspaceId: string, id: string) => `/api/workspaces/${workspaceId}/cfn/${id}`
+    list: (workspaceId: string) => `/api/workspaces/${workspaceId}/cognitive-fabric-node`,
+    details: (workspaceId: string, id: string) => `/api/workspaces/${workspaceId}/cognitive-fabric-node/${id}`,
+    create: (workspaceId: string) => `/api/workspaces/${workspaceId}/cognitive-fabric-node`,
+    delete: (workspaceId: string, id: string) => `/api/workspaces/${workspaceId}/cognitive-fabric-node/${id}`
   }
 } as const;
 
