@@ -8,7 +8,7 @@ import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
 import {swrKeys} from '@/lib/swr-config';
 import {cfnApi, workspaceApi, userApi} from '@/api/endpoints';
-import type {Cfn} from '@/api/types/cfn';
+import type {Cfn, UpdateCfnRequest} from '@/api/types/cfn';
 import type {Workspace} from '@/api/types/workspace';
 import type {ListUsersResponse} from '@/api/types/users';
 import {BasePage} from '@/components/ui/base-page';
@@ -16,7 +16,6 @@ import {Card, CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {Textarea} from '@/components/ui/textarea';
-import {Button} from '@/components/ui/button';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes, breadcrumbs} from '@/constants/routes';
@@ -35,7 +34,9 @@ const UpdateCfnFormSchema = z.object({
     .optional()
     .refine(
       (val) => {
-        if (!val || val.trim() === '') return true;
+        if (!val || val.trim() === '') {
+          return true;
+        }
         try {
           JSON.parse(val);
           return true;
@@ -72,7 +73,9 @@ export default function CfnDetailsPage() {
   const {data: usersData} = useSWR<ListUsersResponse>('users', () => userApi.list());
 
   const getUserName = (userId: string | undefined) => {
-    if (!userId || !usersData?.users) return userId || 'Unknown';
+    if (!userId || !usersData?.users) {
+      return userId || 'Unknown';
+    }
     const user = usersData.users.find((u) => u.id === userId);
     return user ? user.username : userId;
   };
@@ -137,9 +140,9 @@ export default function CfnDetailsPage() {
     });
   };
 
-  const handleSave = async (values: any) => {
+  const handleSave = async (values: z.infer<typeof UpdateCfnFormSchema>) => {
     try {
-      const payload: any = {
+      const payload: UpdateCfnRequest = {
         cfn_name: values.cfn_name
       };
 
@@ -148,14 +151,14 @@ export default function CfnDetailsPage() {
       }
 
       if (values.mgmt_port) {
-        payload.mgmt_port = parseInt(values.mgmt_port, 10);
+        payload.mgmt_port = parseInt(String(values.mgmt_port), 10);
       }
 
       if (values.cfn_config && values.cfn_config.trim()) {
-        payload.cfn_config = JSON.parse(values.cfn_config);
+        payload.cfn_config = JSON.parse(values.cfn_config) as Record<string, unknown>;
       }
 
-      await cfnApi.update(workspaceId as string, cfnId!, payload);
+      await cfnApi.update(workspaceId as string, cfnId as string, payload);
       toast.success('Cognitive Fabric Node updated successfully');
       await mutate();
       setIsEditMode(false);

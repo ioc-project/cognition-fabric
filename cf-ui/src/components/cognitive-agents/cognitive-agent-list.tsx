@@ -29,7 +29,7 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {cognitiveAgents = [], isLoading: loading, error: swrError, deleteCognitiveAgent, mutate} = useCognitiveAgents(workspaceId);
+  const {cognitiveAgents = [], isLoading: loading, error: swrError, deleteCognitiveAgent, mutate: _mutate} = useCognitiveAgents(workspaceId);
   const {masList = []} = useMAS(workspaceId);
   const masById = useMemo(() => new Map(masList.map((m) => [m.id, m.name] as const)), [masList]);
   const handleDelete = async () => {

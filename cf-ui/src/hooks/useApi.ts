@@ -5,7 +5,7 @@ import {workspaceApi, apiKeyApi, softwareApi, cognitiveAgentApi, masApi, invitat
 import type {Workspace, ListWorkspacesResponse} from '@/api/types/workspace';
 import type {CognitiveAgent, CreateCognitiveAgentRequest} from '@/api/types/cognitive-agent';
 import type {MAS, CreateMASRequest} from '@/api/types/mas';
-import type {Cfn, CreateCfnRequest, ListCfnResponse} from '@/api/types/cfn';
+import type {CreateCfnRequest, ListCfnResponse} from '@/api/types/cfn';
 import type {CreateInvitationRequest, ListInvitationsResponse} from '@/api/types/invitation';
 import type {ListWorkspaceMembersResponse, UpdateMemberRoleRequest} from '@/api/types/member';
 import {swrKeys} from '@/lib/swr-config';

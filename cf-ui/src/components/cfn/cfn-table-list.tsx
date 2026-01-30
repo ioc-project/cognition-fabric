@@ -3,7 +3,6 @@
 import {Button} from '@/components/ui/button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {ResourceTable} from '@/components/ui/resource-table';
-import {TruncatedText} from '@/components/ui/truncated-text';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {MoreVertical, Trash2, Edit} from 'lucide-react';
 import type {Cfn} from '@/api/types/cfn';

@@ -16,7 +16,6 @@ import {useCfn} from '@/hooks/useApi';
 import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
 import {routes} from '@/constants/routes';
-import type {Cfn} from '@/api/types';
 
 interface CfnListProps {
   workspaceId: string;
@@ -24,7 +23,7 @@ interface CfnListProps {
 
 export function CfnList({workspaceId}: CfnListProps) {
   const router = useRouter();
-  const {cfns = [], isLoading: loading, error: swrError, deleteCfn, mutate} = useCfn(workspaceId);
+  const {cfns = [], isLoading: loading, error: swrError, deleteCfn, mutate: _mutate} = useCfn(workspaceId);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const deleteDialog = useConfirmDialog<{cfn_id: string; cfn_name: string}>();
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');

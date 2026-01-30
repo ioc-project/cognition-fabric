@@ -31,7 +31,9 @@ const formSchema = z.object({
     .optional()
     .or(
       z.string().transform((val) => {
-        if (!val || val.trim() === '') return undefined;
+        if (!val || val.trim() === '') {
+          return undefined;
+        }
         const num = parseInt(val, 10);
         if (isNaN(num) || num < 1 || num > 65535) {
           throw new Error('Port must be between 1 and 65535');
@@ -44,7 +46,9 @@ const formSchema = z.object({
     .optional()
     .refine(
       (val) => {
-        if (!val || val.trim() === '') return true;
+        if (!val || val.trim() === '') {
+          return true;
+        }
         try {
           JSON.parse(val);
           return true;

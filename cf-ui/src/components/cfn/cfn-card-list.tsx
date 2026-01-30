@@ -4,7 +4,7 @@ import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
-import {MoreVertical, Trash2, Edit, ExternalLink} from 'lucide-react';
+import {MoreVertical, Trash2, Edit} from 'lucide-react';
 import type {Cfn} from '@/api/types/cfn';
 
 export interface CfnCardListProps {
