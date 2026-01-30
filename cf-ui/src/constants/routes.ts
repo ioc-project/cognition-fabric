@@ -22,10 +22,6 @@ export const routes = {
       create: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-agents/create`,
       details: (workspaceId: string, cognitiveAgentId: string) => `/workspaces/${workspaceId}/cognitive-agents/${cognitiveAgentId}`
     },
-    reasoningHistory: {
-      list: (workspaceId: string) => `/workspaces/${workspaceId}/reasoning-history`,
-      details: (workspaceId: string, historyId: string) => `/workspaces/${workspaceId}/reasoning-history/${historyId}`
-    },
     cfn: {
       list: (workspaceId: string) => `/workspaces/${workspaceId}/cfn`,
       create: (workspaceId: string) => `/workspaces/${workspaceId}/cfn/create`,
@@ -151,19 +147,6 @@ export const breadcrumbs = {
   createCognitiveAgent: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
     {link: routes.workspaces.cognitiveAgents.list(workspaceId), text: 'Cognitive Agents'},
     {link: '', text: 'Create', active: true}
-  ],
-
-  workspaceReasoningHistory: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.list, text: 'Workspaces'},
-    {link: routes.workspaces.details(workspaceId), text: workspaceName},
-    {link: '', text: 'Reasoning History', active: true}
-  ],
-
-  reasoningHistoryDetails: (workspaceId: string, workspaceName: string, _historyId: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.list, text: 'Workspaces'},
-    {link: routes.workspaces.details(workspaceId), text: workspaceName},
-    {link: routes.workspaces.reasoningHistory.list(workspaceId), text: 'Reasoning History'},
-    {link: '', text: 'Query Details', active: true}
   ],
 
   workspaceSummary: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [

@@ -1,7 +1,7 @@
 'use client';
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Brain, History, Key, Users, Network, type LucideIcon} from 'lucide-react';
+import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Brain, Key, Users, Network, type LucideIcon} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments, useRouter} from 'next/navigation';
 import {Badge} from '@/components/ui/badge';
@@ -119,13 +119,6 @@ export function Sidebar() {
         icon: Brain,
         label: 'Cognitive Agents',
         isActive: () => isWorkspaceSection('cognitive-agents')
-      },
-      {
-        id: 'history',
-        href: `${workspaceBasePath}/reasoning-history`,
-        icon: History,
-        label: 'Reasoning History',
-        isActive: () => isWorkspaceSection('reasoning-history')
       },
       {
         id: 'summary',
