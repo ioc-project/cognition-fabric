@@ -1,9 +1,10 @@
 'use client';
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Brain, History, Key, type LucideIcon} from 'lucide-react';
+import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Brain, History, Key, Users, type LucideIcon} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments, useRouter} from 'next/navigation';
+import {Badge} from '@/components/ui/badge';
 import {useWorkspaceNavigation} from '@/hooks/useWorkspaceNavigation';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {routes} from '@/constants/routes';
@@ -15,7 +16,7 @@ export function Sidebar() {
   const isWorkspaceRoute = segments[0] === 'workspaces';
 
   const {currentId: workspaceIdRaw, base: workspaceBasePathRaw} = useWorkspaceNavigation();
-  const {workspace: workspaceRaw} = useCurrentWorkspace();
+  const {workspace: workspaceRaw, isAdmin} = useCurrentWorkspace();
   const workspaceId = isWorkspaceRoute ? workspaceIdRaw : undefined;
   const workspaceBasePath = isWorkspaceRoute ? workspaceBasePathRaw : '';
   const workspace = isWorkspaceRoute ? workspaceRaw : undefined;
@@ -125,27 +126,60 @@ export function Sidebar() {
         icon: BarChart3,
         label: 'Summary',
         isActive: () => isWorkspaceSection('summary')
-      }
+      },
+      ...(isAdmin
+        ? [
+            {
+              id: 'members',
+              href: `${workspaceBasePath}/members`,
+              icon: Users,
+              label: 'Members',
+              isActive: () => isWorkspaceSection('members')
+            }
+          ]
+        : [])
     ],
-    [workspaceBasePath, isWorkspaceSection]
+    [workspaceBasePath, isWorkspaceSection, isAdmin]
   );
 
-  const NavItem = React.memo(function NavItem({href, icon: Icon, label, active}: {href: string; icon: LucideIcon; label: string; active: boolean}) {
+  const NavItem = React.memo(function NavItem({
+    href,
+    icon: Icon,
+    label,
+    active,
+    badge
+  }: {
+    href: string;
+    icon: LucideIcon;
+    label: string;
+    active: boolean;
+    badge?: number;
+  }) {
     return (
       <Link
         href={href}
-        className={`group flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors focus-visible:outline-none ${
+        className={`group flex items-center justify-between gap-2 px-2 py-1.5 rounded-md transition-colors focus-visible:outline-none ${
           active
             ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))]'
             : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))]'
         }`}
       >
-        <Icon
-          className={`w-5 h-5 transition-colors ${
-            active ? 'text-[hsl(var(--sidebar-icon-active))]' : 'text-[hsl(var(--sidebar-icon))] group-hover:text-[hsl(var(--sidebar-icon-active))]'
-          }`}
-        />
-        <span className="sidebar-text">{label}</span>
+        <div className="flex items-center gap-2">
+          <Icon
+            className={`w-5 h-5 transition-colors ${
+              active ? 'text-[hsl(var(--sidebar-icon-active))]' : 'text-[hsl(var(--sidebar-icon))] group-hover:text-[hsl(var(--sidebar-icon-active))]'
+            }`}
+          />
+          <span className="sidebar-text">{label}</span>
+        </div>
+        {badge !== undefined && badge > 0 && (
+          <Badge
+            variant="destructive"
+            className="h-5 min-w-5 flex items-center justify-center px-1 tbadge={'badge' in item ? item.badge : undefined} ext-xs"
+          >
+            {badge}
+          </Badge>
+        )}
       </Link>
     );
   });

@@ -131,7 +131,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                     name="name"
                     render={({field}) => (
                       <FormItem>
-                        <FormLabel>Name *</FormLabel>
+                        <FormLabel required>Name</FormLabel>
                         <FormControl>
                           <Input placeholder="Enter Multi-Agent System name" {...field} />
                         </FormControl>

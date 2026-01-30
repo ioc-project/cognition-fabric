@@ -102,9 +102,21 @@ export function WorkspacesList() {
                       <FolderOpen className="w-5 h-5 text-card-foreground" />
                     </div>
                     <h4 className="card-title truncate pr-12">{workspace.name}</h4>
-                    <p className="card-info mt-1 whitespace-nowrap overflow-hidden text-ellipsis pr-12">
-                      {workspace.users?.length || 0} {(workspace.users?.length || 0) === 1 ? 'User' : 'Users'}
-                    </p>
+                    <div className="space-y-1 mt-2">
+                      {workspace.created_by_username && <p className="text-xs text-muted-foreground">Created by {workspace.created_by_username}</p>}
+                      {workspace.created_at && (
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(workspace.created_at).toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </p>
+                      )}
+                      <p className="text-xs text-muted-foreground">
+                        {workspace.members?.length || 0} {(workspace.members?.length || 0) === 1 ? 'member' : 'members'}
+                      </p>
+                    </div>
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger

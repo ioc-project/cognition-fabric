@@ -21,7 +21,11 @@ export const swrKeys = {
   cognitiveAgentDetails: (workspaceId: string, cognitiveAgentId: string) => ['cognitive-agent-details', workspaceId, cognitiveAgentId] as const,
 
   reasoningHistory: (workspaceId: string, filters?: string) => ['reasoning-history-list', workspaceId, filters] as const,
-  reasoningHistoryDetails: (workspaceId: string, historyId: string) => ['reasoning-history-details', workspaceId, historyId] as const
+  reasoningHistoryDetails: (workspaceId: string, historyId: string) => ['reasoning-history-details', workspaceId, historyId] as const,
+
+  workspaceInvitations: (workspaceId: string) => ['workspace-invitations', workspaceId] as const,
+  workspaceMembers: (workspaceId: string) => ['workspace-members', workspaceId] as const,
+  myPendingInvitations: () => ['my-pending-invitations'] as const
 };
 
 import {fetchAPI} from '@/api/client';

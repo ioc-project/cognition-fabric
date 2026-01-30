@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Loader} from '@/components/ui/loader';
@@ -105,6 +106,15 @@ function LoginForm() {
       >
         {loading ? 'Signing in...' : 'Sign In'}
       </Button>
+
+      <div className="text-center">
+        <p className="text-[13px] text-gray-600">
+          Don&apos;t have an account?{' '}
+          <Link href="/signup" className="font-semibold text-blue-600 hover:text-blue-700 transition">
+            Sign Up
+          </Link>
+        </p>
+      </div>
     </form>
   );
 }

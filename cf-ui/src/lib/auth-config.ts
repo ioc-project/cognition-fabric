@@ -29,6 +29,7 @@ export const authOptions: NextAuthOptions = {
             name: data.user?.name || data.user?.username || credentials.username,
             email: data.user?.email || '',
             username: data.user?.username || credentials.username,
+            role: data.user?.role,
             accessToken: data.access_token,
             refreshToken: data.refresh_token
           };
@@ -49,7 +50,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({token, user}) {
       // Initial sign in
       if (user) {
-        const userWithTokens = user as {accessToken?: string; refreshToken?: string; username?: string};
+        const userWithTokens = user as {accessToken?: string; refreshToken?: string; username?: string; role?: string};
         if (!userWithTokens.accessToken || !userWithTokens.refreshToken) {
           console.error('User object missing required token properties');
           return {...token, error: 'MissingTokens'};
@@ -57,6 +58,7 @@ export const authOptions: NextAuthOptions = {
         token.accessToken = userWithTokens.accessToken;
         token.refreshToken = userWithTokens.refreshToken;
         token.username = userWithTokens.username || user.name || '';
+        token.role = userWithTokens.role;
         token.id = user.id;
         token.accessTokenExpires = Date.now() + TOKEN_LIFETIME_MS;
         return token;
@@ -100,9 +102,12 @@ export const authOptions: NextAuthOptions = {
         if (typeof token.refreshToken === 'string') {
           sessionWithTokens.refreshToken = token.refreshToken;
         }
-        const userWithMeta = session.user as {username?: string; id?: string};
+        const userWithMeta = session.user as {username?: string; role?: string; id?: string};
         if (typeof token.username === 'string') {
           userWithMeta.username = token.username;
+        }
+        if (typeof token.role === 'string') {
+          userWithMeta.role = token.role;
         }
         if (typeof token.id === 'string') {
           userWithMeta.id = token.id;
