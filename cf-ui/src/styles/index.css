@@ -126,6 +126,23 @@
   border-color: hsl(var(--border));
 }
 
+/* Fix browser autofill styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: hsl(var(--foreground)) !important;
+  -webkit-box-shadow: 0 0 0 30px hsl(var(--soft-card-bg)) inset !important;
+  box-shadow: 0 0 0 30px hsl(var(--soft-card-bg)) inset !important;
+}
+
+input[data-com-onepassword-filled],
+input[data-com-onepassword-filled]:hover,
+input[data-com-onepassword-filled]:focus {
+  background-color: hsl(var(--soft-card-bg)) !important;
+  box-shadow: 0 0 0 30px hsl(var(--soft-card-bg)) inset !important;
+}
+
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
@@ -418,8 +435,7 @@ input[type='search']::selection,
 input[type='number']::selection,
 input[type='tel']::selection,
 input[type='url']::selection {
-  background-color: hsl(var(--primary));
-  color: hsl(var(--input-text-dark));
+  background-color: hsl(var(--sidebar-active));
 }
 
 .dark input[type='text'],
@@ -463,8 +479,7 @@ input[type='url']::selection {
 .dark input[type='number']::selection,
 .dark input[type='tel']::selection,
 .dark input[type='url']::selection {
-  background-color: hsl(var(--primary));
-  color: hsl(var(--primary-foreground));
+  background-color: hsl(var(--sidebar-active));
 }
 
 .subnav {

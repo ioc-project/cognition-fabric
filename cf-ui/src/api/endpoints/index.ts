@@ -7,3 +7,4 @@ export * from './cognitive-agent';
 export * from './reasoning-history';
 export * from './invitations';
 export * from './members';
+export * from './cfn';

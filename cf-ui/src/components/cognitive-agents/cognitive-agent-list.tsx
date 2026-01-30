@@ -29,7 +29,7 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {cognitiveAgents = [], isLoading: loading, error: swrError, deleteCognitiveAgent} = useCognitiveAgents(workspaceId);
+  const {cognitiveAgents = [], isLoading: loading, error: swrError, deleteCognitiveAgent, mutate} = useCognitiveAgents(workspaceId);
   const {masList = []} = useMAS(workspaceId);
   const masById = useMemo(() => new Map(masList.map((m) => [m.id, m.name] as const)), [masList]);
   const handleDelete = async () => {
@@ -47,15 +47,17 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
 
   return (
     <>
-      <div className="space-y-8 px-8 pt-4 relative z-0">
+      <div className="space-y-8">
         <BasePage
           title="Cognitive Agents"
           description="View and manage all cognitive agents"
           callToAction={
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
-                {viewMode === 'table' ? 'Card View' : 'Table View'}
-              </Button>
+              {cognitiveAgents.length > 0 && (
+                <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
+                  {viewMode === 'table' ? 'Card View' : 'Table View'}
+                </Button>
+              )}
               <Button asChild variant="sidebar" className="gap-2" size="default">
                 <Link href={routes.workspaces.cognitiveAgents.create(workspaceId)}>
                   <Plus className="w-4 h-4" />

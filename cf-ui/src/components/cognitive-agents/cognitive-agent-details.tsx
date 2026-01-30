@@ -3,7 +3,6 @@
 import {useEffect, useState} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import useSWR from 'swr';
-import {Trash2} from 'lucide-react';
 import {swrKeys} from '@/lib/swr-config';
 import {cognitiveAgentApi, masApi, workspaceApi} from '@/api/endpoints';
 import type {CognitiveAgent} from '@/api/types/cognitive-agent';
@@ -17,9 +16,8 @@ import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes} from '@/constants/routes';
 import {DATE_TIME_FORMAT_OPTIONS, parseError} from '@/lib/utils';
 import {CognitiveAgentQuery} from '@/components/cognitive-agents/cognitive-agent-query';
-import {ObjectOptionsDropdown} from '@/components/ui/object-options-dropdown';
-import {DropdownMenuItem} from '@/components/ui/dropdown-menu';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
+import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {toast} from 'sonner';
 
@@ -91,19 +89,7 @@ export default function CognitiveAgentDetailsPage() {
         description="View details about your cognitive agent"
         useBreadcrumbs
         breadcrumbs={crumbs}
-        callToAction={
-          cognitiveAgent && (
-            <ObjectOptionsDropdown objectName={cognitiveAgent.name}>
-              <DropdownMenuItem
-                className="text-destructive focus:text-destructive"
-                onClick={() => deleteDialog.open({id: cognitiveAgent.id, name: cognitiveAgent.name})}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </ObjectOptionsDropdown>
-          )
-        }
+        callToAction={cognitiveAgent && <DetailsPageActions onDelete={() => deleteDialog.open({id: cognitiveAgent.id, name: cognitiveAgent.name})} />}
       >
         <ConditionalSWRRenderer
           data={cognitiveAgent}

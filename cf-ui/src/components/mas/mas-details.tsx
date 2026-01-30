@@ -3,7 +3,6 @@
 import {useEffect, useState} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import useSWR from 'swr';
-import {Trash2} from 'lucide-react';
 import {swrKeys} from '@/lib/swr-config';
 import {masApi, workspaceApi} from '@/api/endpoints';
 import type {MAS} from '@/api/types/mas';
@@ -15,9 +14,8 @@ import {Label} from '@/components/ui/label';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes, breadcrumbs} from '@/constants/routes';
 import {DATE_TIME_FORMAT_OPTIONS, parseError} from '@/lib/utils';
-import {ObjectOptionsDropdown} from '@/components/ui/object-options-dropdown';
-import {DropdownMenuItem} from '@/components/ui/dropdown-menu';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
+import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {toast} from 'sonner';
 
@@ -80,16 +78,7 @@ export default function MASDetailsPage() {
         description="View details about your multi-agentic system"
         useBreadcrumbs
         breadcrumbs={crumbs || (workspaceId ? breadcrumbs.workspaceMAS(workspaceId, workspace?.name || '') : undefined)}
-        callToAction={
-          mas && (
-            <ObjectOptionsDropdown objectName={mas.name}>
-              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => deleteDialog.open({id: mas.id, name: mas.name})}>
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </ObjectOptionsDropdown>
-          )
-        }
+        callToAction={mas && <DetailsPageActions onDelete={() => deleteDialog.open({id: mas.id, name: mas.name})} />}
       >
         <ConditionalSWRRenderer
           data={mas}

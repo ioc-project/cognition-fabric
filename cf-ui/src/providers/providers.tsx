@@ -12,7 +12,7 @@ export function Providers({children}: {children: React.ReactNode}) {
     <SWRConfig
       value={{
         revalidateOnFocus: false,
-        revalidateOnReconnect: true,
+        revalidateOnReconnect: false,
         dedupingInterval: 60000,
         errorRetryCount: 3,
         fetcher: swrFetcher
@@ -24,7 +24,7 @@ export function Providers({children}: {children: React.ReactNode}) {
 
   return (
     <ThemeProvider>
-      <SessionProvider>
+      <SessionProvider refetchInterval={0} refetchOnWindowFocus={false}>
         <ErrorBoundary fallbackRender={(props) => <ErrorPage {...props} />}>{content}</ErrorBoundary>
       </SessionProvider>
     </ThemeProvider>

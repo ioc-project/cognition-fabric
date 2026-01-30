@@ -91,11 +91,14 @@ const ConditionalSWRRenderer: React.FC<ConditionalSWRRendererProps> = ({
     </DefaultUnreadyWrapper>
   );
 
-  const LoaderUI = customLoaderComponent || (
-    <DefaultUnreadyWrapper>
-      <Loader className="w-32 h-32 py-12" />
-    </DefaultUnreadyWrapper>
-  );
+  const LoaderUI =
+    customLoaderComponent !== undefined ? (
+      customLoaderComponent
+    ) : (
+      <DefaultUnreadyWrapper>
+        <Loader className="w-32 h-32 py-12" />
+      </DefaultUnreadyWrapper>
+    );
 
   const getUnreadyUI = () => {
     if (unready.nothingToFetch) {

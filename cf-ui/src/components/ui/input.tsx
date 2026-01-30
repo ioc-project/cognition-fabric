@@ -13,6 +13,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(({className, type, 
         className
       )}
       ref={ref}
+      data-1p-ignore
+      data-lpignore="true"
+      data-form-type="other"
       {...props}
     />
   );

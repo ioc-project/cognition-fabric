@@ -23,6 +23,9 @@ export const swrKeys = {
   reasoningHistory: (workspaceId: string, filters?: string) => ['reasoning-history-list', workspaceId, filters] as const,
   reasoningHistoryDetails: (workspaceId: string, historyId: string) => ['reasoning-history-details', workspaceId, historyId] as const,
 
+  cfn: (workspaceId: string) => ['cfn-list', workspaceId] as const,
+  cfnDetails: (workspaceId: string, cfnId: string) => ['cfn-details', workspaceId, cfnId] as const,
+
   workspaceInvitations: (workspaceId: string) => ['workspace-invitations', workspaceId] as const,
   workspaceMembers: (workspaceId: string) => ['workspace-members', workspaceId] as const,
   myPendingInvitations: () => ['my-pending-invitations'] as const

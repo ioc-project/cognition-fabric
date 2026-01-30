@@ -24,8 +24,8 @@ export function WorkspaceDetails() {
   const router = useRouter();
   const {workspaceId, workspace, isLoading: workspaceLoading, isAdmin} = useCurrentWorkspace();
 
-  const {masList, isValidating: masValidating} = useMAS(workspaceId || '');
-  const {cognitiveAgents, isValidating: cognitiveAgentsValidating} = useCognitiveAgents(workspaceId || '');
+  const {masList, isLoading: masLoading} = useMAS(workspaceId || '');
+  const {cognitiveAgents, isLoading: cognitiveAgentsLoading} = useCognitiveAgents(workspaceId || '');
   const {members} = useWorkspaceMembers(workspaceId || '');
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -156,7 +156,7 @@ export function WorkspaceDetails() {
             </div>
           </div>
 
-          {masValidating && masList.length === 0 ? (
+          {masLoading && masList.length === 0 ? (
             <div className="p-6 border rounded-lg bg-card soft-card">
               <LoaderRelative />
             </div>
@@ -208,7 +208,7 @@ export function WorkspaceDetails() {
                 </div>
               </div>
 
-              {cognitiveAgentsValidating && cognitiveAgents.length === 0 ? (
+              {cognitiveAgentsLoading && cognitiveAgents.length === 0 ? (
                 <div className="p-6 border rounded-lg bg-card soft-card">
                   <LoaderRelative />
                 </div>

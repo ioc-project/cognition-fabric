@@ -26,6 +26,11 @@ export const routes = {
       list: (workspaceId: string) => `/workspaces/${workspaceId}/reasoning-history`,
       details: (workspaceId: string, historyId: string) => `/workspaces/${workspaceId}/reasoning-history/${historyId}`
     },
+    cfn: {
+      list: (workspaceId: string) => `/workspaces/${workspaceId}/cfn`,
+      create: (workspaceId: string) => `/workspaces/${workspaceId}/cfn/create`,
+      details: (workspaceId: string, cfnId: string) => `/workspaces/${workspaceId}/cfn/${cfnId}`
+    },
     summary: (workspaceId: string) => `/workspaces/${workspaceId}/summary`,
     members: (workspaceId: string) => `/workspaces/${workspaceId}/members`
   },
@@ -74,6 +79,13 @@ export const apiRoutes = {
   software: {
     list: '/api/softwares',
     listByType: (type: string) => `/api/softwares?type=${encodeURIComponent(type)}`
+  },
+
+  cfn: {
+    list: (workspaceId: string) => `/api/workspaces/${workspaceId}/cfn`,
+    details: (workspaceId: string, id: string) => `/api/workspaces/${workspaceId}/cfn/${id}`,
+    create: (workspaceId: string) => `/api/workspaces/${workspaceId}/cfn`,
+    delete: (workspaceId: string, id: string) => `/api/workspaces/${workspaceId}/cfn/${id}`
   }
 } as const;
 
@@ -163,5 +175,22 @@ export const breadcrumbs = {
   apiKeysList: (): BreadcrumbItem[] => [
     {link: routes.home, text: 'Home'},
     {link: '', text: 'API Keys', active: true}
+  ],
+
+  workspaceCfn: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+    {link: '', text: 'Cognitive Fabric Nodes', active: true}
+  ],
+
+  workspaceCFN: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.list, text: 'Workspaces'},
+    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+    {link: '', text: 'Cognitive Fabric Nodes', active: true}
+  ],
+
+  createCfn: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.cfn.list(workspaceId), text: 'Cognitive Fabric Nodes'},
+    {link: '', text: 'Create', active: true}
   ]
 } as const;

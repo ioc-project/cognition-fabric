@@ -1,10 +1,11 @@
 'use client';
 
 import useSWR from 'swr';
-import {workspaceApi, apiKeyApi, softwareApi, cognitiveAgentApi, masApi, invitationApi, memberApi} from '@/api/endpoints';
+import {workspaceApi, apiKeyApi, softwareApi, cognitiveAgentApi, masApi, invitationApi, memberApi, cfnApi} from '@/api/endpoints';
 import type {Workspace, ListWorkspacesResponse} from '@/api/types/workspace';
 import type {CognitiveAgent, CreateCognitiveAgentRequest} from '@/api/types/cognitive-agent';
 import type {MAS, CreateMASRequest} from '@/api/types/mas';
+import type {Cfn, CreateCfnRequest, ListCfnResponse} from '@/api/types/cfn';
 import type {CreateInvitationRequest, ListInvitationsResponse} from '@/api/types/invitation';
 import type {ListWorkspaceMembersResponse, UpdateMemberRoleRequest} from '@/api/types/member';
 import {swrKeys} from '@/lib/swr-config';
@@ -30,18 +31,24 @@ export function useWorkspaces() {
 }
 
 export function useWorkspace(workspaceId: string) {
-  const {data, error, isLoading, mutate} = useSWR<Workspace | null>(workspaceId ? swrKeys.workspace(workspaceId) : null, async () => {
-    try {
-      return await workspaceApi.get(workspaceId);
-    } catch (e) {
-      const list = await workspaceApi.list();
-      const found = list.workspaces.find((w) => w.id === workspaceId);
-      if (!found) {
-        throw e;
+  const {data, error, isLoading, mutate} = useSWR<Workspace | null>(
+    workspaceId ? swrKeys.workspace(workspaceId) : null,
+    async () => {
+      try {
+        return await workspaceApi.get(workspaceId);
+      } catch (e) {
+        const list = await workspaceApi.list();
+        const found = list.workspaces.find((w) => w.id === workspaceId);
+        if (!found) {
+          throw e;
+        }
+        return found;
       }
-      return found;
+    },
+    {
+      keepPreviousData: true
     }
-  });
+  );
 
   return {
     workspace: data || null,
@@ -162,6 +169,50 @@ export function useCognitiveAgents(workspaceId: string) {
     mutate,
     addCognitiveAgent,
     deleteCognitiveAgent
+  } as const;
+}
+
+export function useCfn(workspaceId: string) {
+  const {data, error, isLoading, isValidating, mutate} = useSWR<ListCfnResponse>(
+    workspaceId ? ['cfn-list', workspaceId] : null,
+    () => cfnApi.list(workspaceId),
+    {revalidateOnMount: true, keepPreviousData: true}
+  );
+
+  const {run: runAddCfn} = useInvalidateMutation(
+    {keys: ['cfn-list', workspaceId], prefixes: [['cfn-list', workspaceId]]},
+    (payload: CreateCfnRequest) => cfnApi.create(payload, workspaceId)
+  );
+
+  const addCfn = async (payload: CreateCfnRequest) => {
+    const response = await runAddCfn(payload);
+    await mutate(undefined, {revalidate: true});
+    return response;
+  };
+
+  const {run: runDeleteCfn} = useInvalidateMutation({keys: ['cfn-list', workspaceId], prefixes: [['cfn-list', workspaceId]]}, (cfnId: string) =>
+    cfnApi.delete(workspaceId, cfnId)
+  );
+
+  const deleteCfn = async (cfnId: string) => {
+    const prev = data?.nodes || [];
+    await mutate({nodes: prev.filter((c) => c.cfn_id !== cfnId), total: Math.max((data?.total || 1) - 1, 0)}, {revalidate: false});
+    try {
+      await runDeleteCfn(cfnId);
+    } catch (e) {
+      await mutate(data, {revalidate: false});
+      throw e;
+    }
+  };
+
+  return {
+    cfns: sortByCreatedAtDesc(data?.nodes || []),
+    isLoading,
+    isValidating,
+    error: error ? parseError(error) : null,
+    mutate,
+    addCfn,
+    deleteCfn
   } as const;
 }
 

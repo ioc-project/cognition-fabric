@@ -29,7 +29,7 @@ export function MASList({workspaceId}: MASListProps) {
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {masList = [], isLoading: loading, error: swrError, deleteMAS} = useMAS(workspaceId);
+  const {masList = [], isLoading: loading, error: swrError, deleteMAS, mutate} = useMAS(workspaceId);
 
   const handleDeleteMAS = async () => {
     await deleteDialog.confirm(async (data) => {
@@ -52,9 +52,11 @@ export function MASList({workspaceId}: MASListProps) {
           description="View and manage all multi‑agentic systems"
           callToAction={
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
-                {viewMode === 'table' ? 'Card View' : 'Table View'}
-              </Button>
+              {masList.length > 0 && (
+                <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
+                  {viewMode === 'table' ? 'Card View' : 'Table View'}
+                </Button>
+              )}
               <Button asChild variant="sidebar" className="gap-2" size="default">
                 <Link href={routes.workspaces.mas.create(workspaceId)}>
                   <Plus className="w-4 h-4" />

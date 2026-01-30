@@ -1,7 +1,7 @@
 'use client';
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Brain, History, Key, Users, type LucideIcon} from 'lucide-react';
+import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Brain, History, Key, Users, Network, type LucideIcon} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments, useRouter} from 'next/navigation';
 import {Badge} from '@/components/ui/badge';
@@ -100,6 +100,13 @@ export function Sidebar() {
         isActive: () => isWorkspaceSection()
       },
       {
+        id: 'cfn',
+        href: `${workspaceBasePath}/cfn`,
+        icon: Network,
+        label: 'Cognitive Fabric Nodes',
+        isActive: () => isWorkspaceSection('cfn')
+      },
+      {
         id: 'mas',
         href: `${workspaceBasePath}/mas`,
         icon: Boxes,
@@ -173,10 +180,7 @@ export function Sidebar() {
           <span className="sidebar-text">{label}</span>
         </div>
         {badge !== undefined && badge > 0 && (
-          <Badge
-            variant="destructive"
-            className="h-5 min-w-5 flex items-center justify-center px-1 tbadge={'badge' in item ? item.badge : undefined} ext-xs"
-          >
+          <Badge variant="destructive" className="h-5 min-w-5 flex items-center justify-center px-1 text-xs">
             {badge}
           </Badge>
         )}
