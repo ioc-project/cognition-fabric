@@ -3,7 +3,6 @@
 import {User, LogOut, Sun, Moon, Mail} from 'lucide-react';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator} from '@/components/ui/dropdown-menu';
 import {Badge} from '@/components/ui/badge';
-import {Button} from '@/components/ui/button';
 import {useThemeStore} from '@/store';
 import {signOut, useSession} from 'next-auth/react';
 import Image from 'next/image';
@@ -11,6 +10,7 @@ import {useCallback} from 'react';
 import {useRouter} from 'next/navigation';
 import {routes} from '@/constants/routes';
 import {useMyPendingInvitations} from '@/hooks/useApi';
+import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import WorkspaceSwitcher from '@/components/workspaces/workspace-switcher';
 
 export function NavBar() {
@@ -19,9 +19,9 @@ export function NavBar() {
   const setTheme = useThemeStore((state) => state.setTheme);
   const {pendingCount} = useMyPendingInvitations();
   const {data: session} = useSession();
+  const {userRole} = useCurrentWorkspace();
 
   const username = session?.user?.username || session?.user?.name || 'User';
-  const role = session?.user?.role || 'user';
 
   const toggleTheme = useCallback(() => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -56,7 +56,10 @@ export function NavBar() {
         <button onClick={handleInvitationsClick} className="p-2 hover:bg-accent rounded-lg transition-colors relative" title="Workspace Invitations">
           <Mail className="w-5 h-5 text-muted-foreground" />
           {pendingCount > 0 && (
-            <Badge variant="destructive" className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center px-1 text-xs">
+            <Badge
+              variant="destructive"
+              className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center px-1 text-xs bg-red-600 text-white border-0"
+            >
               {pendingCount}
             </Badge>
           )}
@@ -83,7 +86,7 @@ export function NavBar() {
               </div>
               <div className="flex flex-col">
                 <p className="text-sm font-semibold">{username}</p>
-                <p className="text-xs text-muted-foreground/40 capitalize">{role}</p>
+                {userRole && <p className="text-xs text-muted-foreground/40 capitalize">{userRole}</p>}
               </div>
             </div>
             <DropdownMenuSeparator />

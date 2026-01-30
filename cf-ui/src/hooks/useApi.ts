@@ -5,8 +5,8 @@ import {workspaceApi, apiKeyApi, softwareApi, cognitiveAgentApi, masApi, invitat
 import type {Workspace, ListWorkspacesResponse} from '@/api/types/workspace';
 import type {CognitiveAgent, CreateCognitiveAgentRequest} from '@/api/types/cognitive-agent';
 import type {MAS, CreateMASRequest} from '@/api/types/mas';
-import type {CreateInvitationRequest, Invitation, ListInvitationsResponse} from '@/api/types/invitation';
-import type {ListWorkspaceMembersResponse, UpdateMemberRoleRequest, WorkspaceMember} from '@/api/types/member';
+import type {CreateInvitationRequest, ListInvitationsResponse} from '@/api/types/invitation';
+import type {ListWorkspaceMembersResponse, UpdateMemberRoleRequest} from '@/api/types/member';
 import {swrKeys} from '@/lib/swr-config';
 import {parseError, sortByCreatedAtDesc} from '@/lib/utils';
 import {useInvalidateMutation} from './useSWRResource';
@@ -265,12 +265,11 @@ export function useWorkspaceInvitations(workspaceId: string) {
   };
 }
 
-// My Pending Invitations (for the current user)
 export function useMyPendingInvitations() {
   const {data, error, isLoading, mutate} = useSWR<ListInvitationsResponse>(
     swrKeys.myPendingInvitations(),
     () => invitationApi.getMyPendingInvitations(),
-    {revalidateOnMount: true, keepPreviousData: true, refreshInterval: 30000} // Poll every 30 seconds
+    {revalidateOnMount: true, keepPreviousData: true}
   );
 
   const {run: runAcceptInvitation} = useInvalidateMutation(swrKeys.myPendingInvitations(), (invitationId: string) =>

@@ -7,7 +7,7 @@ export const WorkspaceMemberSchema = z.object({
   id: z.string().uuid(),
   user_id: z.string().uuid(),
   username: z.string(),
-  email: z.string().email(),
+  email: z.string().email().optional(),
   role: MemberRoleSchema,
   joined_at: z.string()
 });

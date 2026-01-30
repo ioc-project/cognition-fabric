@@ -47,7 +47,6 @@ export function MASTableList({masList, workspaceId: _workspaceId, selectedId, on
                 <DropdownMenuItem
                   className="text-red-600 dark:text-red-400"
                   onClick={(e) => {
-                    e.preventDefault();
                     e.stopPropagation();
                     onOpenDelete({id: mas.id, name: mas.name});
                   }}

@@ -1,6 +1,6 @@
 import {fetchAPI} from '../client';
-import type {CreateInvitationRequest, CreateInvitationResponse, ListInvitationsResponse, Invitation} from '../types/invitation';
-import {CreateInvitationResponseSchema, ListInvitationsResponseSchema, InvitationSchema} from '../types/invitation';
+import type {CreateInvitationRequest, CreateInvitationResponse, ListInvitationsResponse} from '../types/invitation';
+import {CreateInvitationResponseSchema, ListInvitationsResponseSchema} from '../types/invitation';
 
 export const invitationApi = {
   create: async (workspaceId: string, data: CreateInvitationRequest): Promise<CreateInvitationResponse> => {

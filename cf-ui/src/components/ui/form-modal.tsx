@@ -18,6 +18,7 @@ interface FormModalProps<TFieldValues extends FieldValues> {
   defaultValues: TFieldValues;
   onSubmit: (values: TFieldValues) => Promise<void>;
   submitLabel: string;
+  loadingLabel?: string;
   submitButtonVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'sidebar';
   children: (form: UseFormReturn<TFieldValues>) => ReactNode;
   contentClassName?: string;
@@ -36,6 +37,7 @@ export function FormModal<TFieldValues extends FieldValues>({
   defaultValues,
   onSubmit,
   submitLabel,
+  loadingLabel,
   submitButtonVariant = 'sidebar',
   children,
   contentClassName = 'sm:max-w-[480px] p-6 gap-4',
@@ -97,7 +99,7 @@ export function FormModal<TFieldValues extends FieldValues>({
               Cancel
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting || isLoading} variant={submitButtonVariant}>
-              {form.formState.isSubmitting ? 'Submitting...' : submitLabel}
+              {form.formState.isSubmitting ? loadingLabel || 'Submitting...' : submitLabel}
             </Button>
           </div>
         </form>

@@ -25,7 +25,7 @@ export const authApi = {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
+      const error = (await response.json().catch(() => ({}))) as {detail?: string};
       if (response.status === 409) {
         throw new Error('Username already exists');
       }

@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {Boxes, Trash2} from 'lucide-react';
+import {Boxes, Trash2, Users, UserPlus} from 'lucide-react';
 import {useMemo, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
@@ -11,7 +11,7 @@ import {BasePage} from '@/components/ui/base-page';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {routes, breadcrumbs} from '@/constants/routes';
 import {LoaderRelative} from '@/components/ui/loading';
-import {useMAS, useCognitiveAgents} from '@/hooks/useApi';
+import {useMAS, useCognitiveAgents, useWorkspaceMembers} from '@/hooks/useApi';
 import {ObjectOptionsDropdown} from '@/components/ui/object-options-dropdown';
 import {DropdownMenuItem} from '@/components/ui/dropdown-menu';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
@@ -22,10 +22,11 @@ import {toast} from 'sonner';
 
 export function WorkspaceDetails() {
   const router = useRouter();
-  const {workspaceId, workspace, isLoading: workspaceLoading} = useCurrentWorkspace();
+  const {workspaceId, workspace, isLoading: workspaceLoading, isAdmin} = useCurrentWorkspace();
 
   const {masList, isValidating: masValidating} = useMAS(workspaceId || '');
   const {cognitiveAgents, isValidating: cognitiveAgentsValidating} = useCognitiveAgents(workspaceId || '');
+  const {members} = useWorkspaceMembers(workspaceId || '');
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const deleteDialog = useConfirmDialog<{id: string; name: string}>();
@@ -121,7 +122,26 @@ export function WorkspaceDetails() {
             </div>
           }
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6 max-w-5xl">
+            {isAdmin && (
+              <div className="p-4 border rounded-lg bg-card soft-card">
+                <div className="flex items-center justify-between mb-4">
+                  <h4 className="card-title">Members</h4>
+                  <Users className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <p className="text-4xl font-bold mb-1">{members.length}</p>
+                <p className="text-sm text-muted-foreground mb-6">{members.length === 1 ? 'Team member' : 'Team members'}</p>
+                <Button
+                  variant="sidebar"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => workspaceId && router.push(routes.workspaces.members(workspaceId))}
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Invite Members
+                </Button>
+              </div>
+            )}
             <div className="p-4 border rounded-lg bg-card soft-card">
               <div className="flex flex-col gap-6">
                 <h4 className="card-title">Multi‑Agentic Systems (MAS)</h4>
@@ -132,27 +152,6 @@ export function WorkspaceDetails() {
               <div className="flex flex-col gap-6">
                 <h4 className="card-title">Cognitive Agents</h4>
                 <p className="card-stats">{cognitiveAgents.length}</p>
-              </div>
-            </div>
-            <div
-              className="p-4 border rounded-lg bg-card soft-card hover:bg-accent/50 transition-colors cursor-pointer"
-              onClick={() => workspaceId && window.location.assign(routes.workspaces.members(workspaceId))}
-            >
-              <div className="flex flex-col gap-6">
-                <h4 className="card-title">Members</h4>
-                <div className="flex items-center justify-between">
-                  <p className="card-stats">Team</p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      workspaceId && window.location.assign(routes.workspaces.members(workspaceId));
-                    }}
-                  >
-                    Manage
-                  </Button>
-                </div>
               </div>
             </div>
           </div>

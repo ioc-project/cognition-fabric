@@ -7,14 +7,26 @@ const WorkspaceUserSchema = z.object({
   email: z.string().email()
 });
 
+const WorkspaceMemberSchema = z.object({
+  id: z.string().uuid(),
+  workspace_id: z.string().uuid(),
+  user_id: z.string().uuid(),
+  username: z.string(),
+  role: z.enum(['admin', 'viewer', 'guest']),
+  joined_at: z.string(),
+  is_creator: z.boolean()
+});
+
 export const WorkspaceSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),
   created_by: z.string().nullable().optional(),
+  created_by_username: z.string().optional(),
   updated_by: z.string().nullable().optional(),
   users: z.array(z.union([WorkspaceUserSchema, z.string().uuid()])).default([]),
+  members: z.array(WorkspaceMemberSchema).optional(),
   config: JsonRecordSchema.default({})
 });
 

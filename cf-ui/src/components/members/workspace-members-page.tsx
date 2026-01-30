@@ -1,7 +1,7 @@
 'use client';
 
 import {useState, useMemo} from 'react';
-import {Users, Mail, Plus} from 'lucide-react';
+import {Plus} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {BasePage} from '@/components/ui/base-page';
 import {LoaderRelative} from '@/components/ui/loading';
@@ -15,7 +15,7 @@ type ViewMode = 'members' | 'invitations';
 
 export function WorkspaceMembersPage() {
   const {workspaceId, workspace, isLoading: workspaceLoading} = useCurrentWorkspace();
-  const {members, isLoading: membersLoading} = useWorkspaceMembers(workspaceId || '');
+  const {isLoading: membersLoading} = useWorkspaceMembers(workspaceId || '');
   const {invitations, isLoading: invitationsLoading} = useWorkspaceInvitations(workspaceId || '');
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('members');
@@ -25,14 +25,14 @@ export function WorkspaceMembersPage() {
 
   const tabs = useMemo(
     () => [
-      {key: 'members', title: `Members${!membersLoading ? ` (${members.length})` : ''}`, link: '#'},
+      {key: 'members', title: 'Members', link: '#'},
       {
         key: 'invitations',
         title: `Pending Invitations${!invitationsLoading && pendingInvitations.length > 0 ? ` (${pendingInvitations.length})` : ''}`,
         link: '#'
       }
     ],
-    [members.length, membersLoading, pendingInvitations.length, invitationsLoading]
+    [pendingInvitations.length, invitationsLoading]
   );
 
   if (workspaceLoading) {
@@ -51,7 +51,7 @@ export function WorkspaceMembersPage() {
     <>
       <div className="space-y-8 px-8 pt-4 relative z-0">
         <BasePage
-          title="Members & Invitations"
+          title="Members"
           description="View and manage workspace members and invitations"
           tabs={tabs}
           activeTabKey={viewMode}

@@ -16,7 +16,7 @@ export function Sidebar() {
   const isWorkspaceRoute = segments[0] === 'workspaces';
 
   const {currentId: workspaceIdRaw, base: workspaceBasePathRaw} = useWorkspaceNavigation();
-  const {workspace: workspaceRaw} = useCurrentWorkspace();
+  const {workspace: workspaceRaw, isAdmin} = useCurrentWorkspace();
   const workspaceId = isWorkspaceRoute ? workspaceIdRaw : undefined;
   const workspaceBasePath = isWorkspaceRoute ? workspaceBasePathRaw : '';
   const workspace = isWorkspaceRoute ? workspaceRaw : undefined;
@@ -127,15 +127,19 @@ export function Sidebar() {
         label: 'Summary',
         isActive: () => isWorkspaceSection('summary')
       },
-      {
-        id: 'members',
-        href: `${workspaceBasePath}/members`,
-        icon: Users,
-        label: 'Members',
-        isActive: () => isWorkspaceSection('members')
-      }
+      ...(isAdmin
+        ? [
+            {
+              id: 'members',
+              href: `${workspaceBasePath}/members`,
+              icon: Users,
+              label: 'Members',
+              isActive: () => isWorkspaceSection('members')
+            }
+          ]
+        : [])
     ],
-    [workspaceBasePath, isWorkspaceSection]
+    [workspaceBasePath, isWorkspaceSection, isAdmin]
   );
 
   const NavItem = React.memo(function NavItem({

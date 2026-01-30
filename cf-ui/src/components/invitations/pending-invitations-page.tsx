@@ -1,20 +1,49 @@
 'use client';
 
 import {useState} from 'react';
-import {Mail, Check, X, Clock, Briefcase, AlertCircle} from 'lucide-react';
+import {Mail, Check, X, Clock, Briefcase, AlertCircle, Users, CheckCircle, XCircle} from 'lucide-react';
 import {Card} from '@/components/ui/card';
-import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {BasePage} from '@/components/ui/base-page';
 import {LoaderRelative} from '@/components/ui/loading';
 import {Alert, AlertDescription} from '@/components/ui/alert';
-import {EmptyState} from '@/components/ui/empty-state';
+import {ListShell} from '@/components/ui/list-shell';
 import {useMyPendingInvitations} from '@/hooks/useApi';
 import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
 import {useRouter} from 'next/navigation';
 import {routes} from '@/constants/routes';
 import type {Invitation} from '@/api/types';
+import {mutate as swrMutate} from 'swr';
+import {swrKeys} from '@/lib/swr-config';
+
+const ROLE_PERMISSIONS = {
+  admin: {
+    title: 'Admin (Full Access)',
+    permissions: [
+      'Full access to all workspace projects and resources',
+      'Create, edit, and delete workspaces and users',
+      'Manage workspace members and invitations',
+      'Complete control over API keys and IAM roles'
+    ],
+    denials: []
+  },
+  viewer: {
+    title: 'Viewer (Read-Only Access)',
+    permissions: ['View workspace projects and details', 'Access user information and profiles', 'View API keys and system resources'],
+    denials: ['Cannot create, edit, delete, or manage anything']
+  },
+  guest: {
+    title: 'Guest (No Access)',
+    permissions: [],
+    denials: [
+      'No access to workspace projects',
+      'No permissions to view any resources',
+      'Cannot perform any operations',
+      'Completely restricted from system activities'
+    ]
+  }
+};
 
 export function PendingInvitationsPage() {
   const router = useRouter();
@@ -29,6 +58,7 @@ export function PendingInvitationsPage() {
       await acceptInvitation(invitation.id);
       toast.success(`Joined ${invitation.workspace_name}!`);
       await mutate();
+      await swrMutate(swrKeys.workspaces());
       // Redirect to the workspace
       router.push(routes.workspaces.details(invitation.workspace_id));
     } catch (err) {
@@ -84,56 +114,112 @@ export function PendingInvitationsPage() {
       )}
 
       {pendingInvitations.length === 0 ? (
-        <div className="flex items-center justify-center min-h-[50vh]">
-          <EmptyState
-            icon={Mail}
-            title="No pending invitations"
-            description="You don't have any pending workspace invitations at the moment."
-            actionLabel="Go to Workspaces"
-            href={routes.workspaces.list}
-          />
-        </div>
+        <ListShell
+          empty={{
+            icon: Mail,
+            title: 'No pending invitations',
+            description: "You don't have any pending workspace invitations at the moment.",
+            actionLabel: 'Go to Workspaces',
+            href: routes.workspaces.list
+          }}
+        />
       ) : (
         <div className="list-grid">
           {pendingInvitations.map((invitation: Invitation) => {
             const daysLeft = getExpiresInDays(invitation.expires_at);
             const isExpiring = daysLeft <= 2;
+            const roleInfo = ROLE_PERMISSIONS[invitation.role] || ROLE_PERMISSIONS.guest;
 
             return (
-              <Card key={invitation.id} variant="list" className="transition-shadow duration-200">
-                <div className="mb-6">
-                  <div className="rounded-lg bg-[hsl(var(--accent))] w-12 h-12 flex items-center justify-center mb-4">
-                    <Briefcase className="w-5 h-5 text-card-foreground" />
+              <Card key={invitation.id} variant="list" className="transition-shadow duration-200 !p-0 overflow-hidden">
+                <div className="bg-[hsl(var(--sidebar-active))] border-b-2 border-[hsl(var(--sidebar-active-border))] p-5 -m-px">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-white/50 w-11 h-11 flex items-center justify-center shrink-0">
+                        <Briefcase className="w-5 h-5 text-[hsl(var(--sidebar-active-border))]" />
+                      </div>
+                      <div className="min-w-0">
+                        <h4 className="font-semibold text-base truncate mb-0.5">{invitation.workspace_name}</h4>
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Users className="w-3.5 h-3.5" />
+                          <span>Workspace</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <h4 className="card-title truncate mb-2">{invitation.workspace_name}</h4>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Badge variant="outline">{invitation.role}</Badge>
-                    {isExpiring && <Badge variant="destructive">Expires Soon</Badge>}
-                  </div>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Invited by <span className="font-medium">{invitation.inviter_username}</span>
-                  </p>
                 </div>
 
-                <div className="flex items-center text-xs text-muted-foreground mb-4">
-                  <Clock className="h-4 w-4 mr-2" />
-                  {daysLeft > 0 ? `Expires in ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}` : 'Expired'}
-                </div>
+                <div className="p-6 space-y-6">
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-3">You&apos;ve been invited by</p>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-[hsl(var(--sidebar-active-border))] flex items-center justify-center text-white font-semibold text-xs">
+                        {invitation.inviter_username?.[0]?.toUpperCase() || 'U'}
+                      </div>
+                      <p className="font-medium text-sm">{invitation.inviter_username}</p>
+                    </div>
+                  </div>
 
-                <div className="flex gap-2">
-                  <Button onClick={() => handleAccept(invitation)} disabled={processingId === invitation.id || daysLeft <= 0} className="flex-1">
-                    <Check className="h-4 w-4 mr-2" />
-                    Accept
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleDecline(invitation)}
-                    disabled={processingId === invitation.id || daysLeft <= 0}
-                    className="flex-1"
-                  >
-                    <X className="h-4 w-4 mr-2" />
-                    Decline
-                  </Button>
+                  <div>
+                    <h4 className="font-semibold text-xs text-muted-foreground uppercase tracking-wide mb-2.5">{roleInfo.title}</h4>
+                    <div className="space-y-2 pt-2">
+                      {roleInfo.permissions.map((permission, index) => (
+                        <div key={index} className="flex items-center gap-2 text-sm">
+                          <CheckCircle className="size-4 text-green-600" />
+                          <span className="text-muted-foreground">{permission}</span>
+                        </div>
+                      ))}
+                      {roleInfo.denials.map((denial, index) => (
+                        <div key={index} className="flex items-center gap-2 text-sm">
+                          <XCircle className="size-4 text-red-500" />
+                          <span className="text-muted-foreground">{denial}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {daysLeft <= 0 && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">This invitation has expired</AlertDescription>
+                    </Alert>
+                  )}
+
+                  {daysLeft > 0 && (
+                    <div className={`flex items-center gap-1.5 text-xs ${isExpiring ? 'text-red-600' : 'text-muted-foreground'}`}>
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>
+                        Expires in {daysLeft} {daysLeft === 1 ? 'day' : 'days'}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 pt-2">
+                    <Button
+                      onClick={() => handleAccept(invitation)}
+                      disabled={processingId === invitation.id || daysLeft <= 0}
+                      variant="sidebar"
+                      className="flex-1"
+                    >
+                      {processingId === invitation.id ? (
+                        'Processing...'
+                      ) : (
+                        <>
+                          <Check className="h-4 w-4 mr-2" />
+                          Accept
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => handleDecline(invitation)}
+                      disabled={processingId === invitation.id || daysLeft <= 0}
+                      className="shrink-0"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Decline
+                    </Button>
+                  </div>
                 </div>
               </Card>
             );

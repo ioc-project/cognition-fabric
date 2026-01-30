@@ -2,11 +2,13 @@
 
 import {FormModal} from '@/components/ui/form-modal';
 import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
-import {Input} from '@/components/ui/input';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {useWorkspaceInvitations} from '@/hooks/useApi';
+import {useWorkspaceInvitations, useWorkspaceMembers} from '@/hooks/useApi';
 import {CreateInvitationRequestSchema, InvitationRole} from '@/api/types';
 import {toast} from 'sonner';
+import useSWR from 'swr';
+import {userApi} from '@/api/endpoints';
+import {useSession} from 'next-auth/react';
 
 const formSchema = CreateInvitationRequestSchema;
 
@@ -23,7 +25,21 @@ interface CreateInvitationDialogProps {
 }
 
 export function CreateInvitationDialog({workspaceId, workspaceName, open, onOpenChange}: CreateInvitationDialogProps) {
+  const {data: session} = useSession();
   const {createInvitation} = useWorkspaceInvitations(workspaceId);
+  const {members} = useWorkspaceMembers(workspaceId);
+  const {data: usersData, error: usersError} = useSWR('all-users', () => userApi.list());
+
+  if (usersError) {
+    console.warn('Failed to load users list:', usersError);
+  }
+
+  const currentUserId = session?.user?.id;
+  const memberUsernames = new Set(members.map((m) => m.username));
+  const availableUsers =
+    usersData?.users?.filter(
+      (u: {id: string; username: string}) => u.id !== currentUserId && u.username !== 'admin' && !memberUsernames.has(u.username)
+    ) || [];
 
   const handleSubmit = async (values: FormValues) => {
     await createInvitation(values);
@@ -51,11 +67,24 @@ export function CreateInvitationDialog({workspaceId, workspaceName, open, onOpen
             render={({field}) => (
               <FormItem>
                 <div className="space-y-2">
-                  <FormLabel>Username</FormLabel>
-                  <FormControl>
-                    <Input placeholder="username" {...field} />
-                  </FormControl>
-                  <p className="text-xs text-muted-foreground">Enter the username of the person you want to invite</p>
+                  <FormLabel required>Username</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue
+                          placeholder={usersData ? (availableUsers.length ? 'Select a user' : 'No users available') : 'Loading users...'}
+                        />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {availableUsers.map((u: any) => (
+                        <SelectItem key={u.id} value={u.username}>
+                          {u.username}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Select the user you want to invite</p>
                 </div>
                 <FormMessage />
               </FormItem>
@@ -77,12 +106,9 @@ export function CreateInvitationDialog({workspaceId, workspaceName, open, onOpen
                     <SelectContent>
                       <SelectItem value="admin">Admin</SelectItem>
                       <SelectItem value="viewer">Viewer</SelectItem>
-                      <SelectItem value="guest">Guest</SelectItem>
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Admin can manage workspace and invite users, Viewer can view resources, Guest has limited access
-                  </p>
+                  <p className="text-xs text-muted-foreground">Admin can manage workspace and invite users, Viewer can view resources</p>
                 </div>
                 <FormMessage />
               </FormItem>
