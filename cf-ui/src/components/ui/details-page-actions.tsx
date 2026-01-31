@@ -8,9 +8,18 @@ interface DetailsPageActionsProps {
   onSave?: () => void;
   onCancelEdit?: () => void;
   isSaving?: boolean;
+  deleteLabel?: string;
 }
 
-export function DetailsPageActions({onDelete, onEdit, isEditMode = false, onSave, onCancelEdit, isSaving = false}: DetailsPageActionsProps) {
+export function DetailsPageActions({
+  onDelete,
+  onEdit,
+  isEditMode = false,
+  onSave,
+  onCancelEdit,
+  isSaving = false,
+  deleteLabel
+}: DetailsPageActionsProps) {
   if (isEditMode && onSave && onCancelEdit) {
     return (
       <div className="flex gap-2">
@@ -32,7 +41,7 @@ export function DetailsPageActions({onDelete, onEdit, isEditMode = false, onSave
         </Button>
       )}
       <Button variant="outline" size="sm" onClick={onDelete}>
-        <Trash2 className="h-4 w-4" />
+        {deleteLabel ? deleteLabel : <Trash2 className="h-4 w-4" />}
       </Button>
     </div>
   );

@@ -4,7 +4,7 @@ import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
-import {MoreVertical, Trash2, Edit} from 'lucide-react';
+import {MoreVertical, Unplug, Edit} from 'lucide-react';
 import type {Cfn} from '@/api/types/cfn';
 
 export interface CfnCardListProps {
@@ -68,8 +68,8 @@ export function CfnCardList({cfns, workspaceId: _workspaceId, selectedId, onCard
                     onOpenDelete({cfn_id: cfn.cfn_id, cfn_name: cfn.cfn_name});
                   }}
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
+                  <Unplug className="w-4 h-4 mr-2" />
+                  Deregister
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

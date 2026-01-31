@@ -129,7 +129,7 @@ export default function CfnDetailsPage() {
     await deleteDialog.confirm(async (data) => {
       try {
         await cfnApi.delete(workspaceId as string, data.cfn_id);
-        toast.success(`Cognitive Fabric Node "${data.cfn_name}" deleted successfully`);
+        toast.success(`Cognitive Fabric Node "${data.cfn_name}" deregistered successfully`);
         await globalMutate(swrKeys.cfn(workspaceId!));
         router.push(routes.workspaces.cfn.list(workspaceId!));
       } catch (err) {
@@ -199,6 +199,7 @@ export default function CfnDetailsPage() {
               onSave={form.handleSubmit(handleSave)}
               onCancelEdit={handleCancelEdit}
               isSaving={form.formState.isSubmitting}
+              deleteLabel="Deregister"
             />
           )
         }
@@ -346,8 +347,8 @@ export default function CfnDetailsPage() {
                         <Input value={cfn?.status || ''} disabled readOnly />
                       </div>
                       <div className="space-y-2">
-                        <Label>Blocked</Label>
-                        <Input value={cfn?.blocked ? 'Yes' : 'No'} disabled readOnly />
+                        <Label>Enabled</Label>
+                        <Input value={cfn?.enabled ? 'Yes' : 'No'} disabled readOnly />
                       </div>
                       <div className="space-y-2">
                         <Label>Workspace ID</Label>
@@ -397,9 +398,12 @@ export default function CfnDetailsPage() {
         open={deleteDialog.isOpen}
         onOpenChange={deleteDialog.close}
         onConfirm={handleDelete}
-        title="Delete Cognitive Fabric Node"
-        description={deleteError ?? `Are you sure you want to delete "${deleteDialog.data?.cfn_name}"? This action cannot be undone.`}
-        confirmText="Delete"
+        title={`Deregister ${deleteDialog.data?.cfn_name || 'Cognitive Fabric Node'}`}
+        description={
+          deleteError ??
+          `Are you sure you want to deregister "${deleteDialog.data?.cfn_name}"? The node will be blocked and cannot reconnect until you re-register it.`
+        }
+        confirmText="Deregister"
         variant="destructive"
         loading={deleteDialog.isLoading}
       />

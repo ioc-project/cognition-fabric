@@ -10,7 +10,7 @@ export const CfnSchema = z.object({
   cloud_config: z.record(z.unknown()).optional(),
   status: z.enum(['online', 'offline', 'blocked']),
   last_seen: z.string().optional(),
-  blocked: z.boolean(),
+  enabled: z.boolean(),
   created_at: z.string(),
   updated_at: z.string().optional(),
   created_by: z.string().optional(),

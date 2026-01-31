@@ -40,8 +40,8 @@ export function Modal({
             {description ? <DialogDescription className="pt-2">{description}</DialogDescription> : null}
           </DialogHeader>
         )}
-        {children}
-        {footer ? <DialogFooter className="w-full">{footer}</DialogFooter> : null}
+        {children && <div className="py-4">{children}</div>}
+        {footer ? <DialogFooter className="w-full mt-0">{footer}</DialogFooter> : null}
       </DialogContent>
     </Dialog>
   );

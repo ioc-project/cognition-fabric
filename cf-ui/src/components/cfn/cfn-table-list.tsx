@@ -4,7 +4,7 @@ import {Button} from '@/components/ui/button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {ResourceTable} from '@/components/ui/resource-table';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
-import {MoreVertical, Trash2, Edit} from 'lucide-react';
+import {MoreVertical, Unplug, Edit} from 'lucide-react';
 import type {Cfn} from '@/api/types/cfn';
 
 export interface CfnTableListProps {
@@ -23,7 +23,7 @@ export function CfnTableList({cfns, workspaceId: _workspaceId, selectedId, onRow
       headers={[
         {content: 'Name'},
         {content: 'Status'},
-        {content: 'Blocked'},
+        {content: 'Enabled'},
         {content: 'Last Seen'},
         {content: 'Created'},
         {content: 'Actions', className: 'text-right'}
@@ -49,12 +49,14 @@ export function CfnTableList({cfns, workspaceId: _workspaceId, selectedId, onRow
           )
         },
         {
-          content: cfn.blocked ? (
-            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+          content: cfn.enabled ? (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
               Yes
             </span>
           ) : (
-            'No'
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+              No
+            </span>
           )
         },
         {
@@ -87,8 +89,8 @@ export function CfnTableList({cfns, workspaceId: _workspaceId, selectedId, onRow
                     onOpenDelete({cfn_id: cfn.cfn_id, cfn_name: cfn.cfn_name});
                   }}
                 >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
+                  <Unplug className="w-4 h-4 mr-2" />
+                  Deregister
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

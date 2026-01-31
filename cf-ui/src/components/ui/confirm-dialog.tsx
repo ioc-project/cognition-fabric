@@ -36,13 +36,11 @@ export function ConfirmDialog({
       if (closeOnConfirmSuccess) {
         onOpenChange(false);
       }
-    } catch {
-      // keep dialog open on error
-    }
+    } catch {}
   };
 
   const footer = (
-    <div className="flex w-full items-center justify-between">
+    <div className="flex w-full items-center justify-end gap-3">
       <Button
         variant="outline"
         onClick={() => {
