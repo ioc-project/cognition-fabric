@@ -69,7 +69,7 @@ export function CfnCardList({cfns, workspaceId: _workspaceId, selectedId, onCard
                   }}
                 >
                   <Unplug className="w-4 h-4 mr-2" />
-                  Deregister
+                  Disable
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

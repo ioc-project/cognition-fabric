@@ -90,7 +90,7 @@ export function CfnTableList({cfns, workspaceId: _workspaceId, selectedId, onRow
                   }}
                 >
                   <Unplug className="w-4 h-4 mr-2" />
-                  Deregister
+                  Disable
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

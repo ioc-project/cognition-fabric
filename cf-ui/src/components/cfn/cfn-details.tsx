@@ -129,7 +129,7 @@ export default function CfnDetailsPage() {
     await deleteDialog.confirm(async (data) => {
       try {
         await cfnApi.delete(workspaceId as string, data.cfn_id);
-        toast.success(`Cognitive Fabric Node "${data.cfn_name}" deregistered successfully`);
+        toast.success(`Cognitive Fabric Node "${data.cfn_name}" disabled successfully`);
         await globalMutate(swrKeys.cfn(workspaceId!));
         router.push(routes.workspaces.cfn.list(workspaceId!));
       } catch (err) {
@@ -199,7 +199,7 @@ export default function CfnDetailsPage() {
               onSave={form.handleSubmit(handleSave)}
               onCancelEdit={handleCancelEdit}
               isSaving={form.formState.isSubmitting}
-              deleteLabel="Deregister"
+              deleteLabel="Disable"
             />
           )
         }
@@ -319,7 +319,7 @@ export default function CfnDetailsPage() {
                           />
                         ) : (
                           <div className="space-y-2">
-                            <Label>Configuration (JSON)</Label>
+                            <Label>Configuration</Label>
                             <Textarea
                               value={cfn?.cfn_config ? JSON.stringify(cfn.cfn_config, null, 2) : ''}
                               disabled
@@ -332,7 +332,7 @@ export default function CfnDetailsPage() {
 
                       <div className="md:col-span-2">
                         <div className="space-y-2">
-                          <Label>Cloud Configuration (JSON)</Label>
+                          <Label>Cloud Configuration</Label>
                           <Textarea
                             value={cfn?.cloud_config ? JSON.stringify(cfn.cloud_config, null, 2) : ''}
                             disabled
@@ -398,12 +398,12 @@ export default function CfnDetailsPage() {
         open={deleteDialog.isOpen}
         onOpenChange={deleteDialog.close}
         onConfirm={handleDelete}
-        title={`Deregister ${deleteDialog.data?.cfn_name || 'Cognitive Fabric Node'}`}
+        title={`Disable ${deleteDialog.data?.cfn_name || 'Cognitive Fabric Node'}`}
         description={
           deleteError ??
-          `Are you sure you want to deregister "${deleteDialog.data?.cfn_name}"? The node will be blocked and cannot reconnect until you re-register it.`
+          `Are you sure you want to disable "${deleteDialog.data?.cfn_name}"? The node will be removed and cannot reconnect until you re-register it.`
         }
-        confirmText="Deregister"
+        confirmText="Disable"
         variant="destructive"
         loading={deleteDialog.isLoading}
       />

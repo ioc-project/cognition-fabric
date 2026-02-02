@@ -12,7 +12,7 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
 import {routes} from '@/constants/routes';
-import {parseError} from '@/lib/utils';
+import {parseError, formatJson} from '@/lib/utils';
 import {toast} from 'sonner';
 import {BasePage} from '@/components/ui/base-page';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
@@ -212,8 +212,9 @@ export function CreateCfnForm({workspaceId, onCancel}: CreateCfnFormProps) {
                         <FormControl>
                           <Textarea
                             placeholder='Leave empty or enter JSON: {"key": "value"}'
-                            className="font-mono text-sm min-h-[100px] resize-y"
+                            className="font-mono text-sm min-h-[150px] resize-y"
                             {...field}
+                            onBlur={() => field.onChange(formatJson(field.value || ''))}
                           />
                         </FormControl>
                         <FormMessage />

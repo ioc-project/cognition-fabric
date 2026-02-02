@@ -33,7 +33,7 @@ export function CfnList({workspaceId}: CfnListProps) {
     await deleteDialog.confirm(async (data) => {
       try {
         await deleteCfn(data.cfn_id);
-        toast.success(`Cognitive Fabric Node "${data.cfn_name}" deregistered successfully`);
+        toast.success(`Cognitive Fabric Node "${data.cfn_name}" disabled successfully`);
       } catch (err) {
         const errorMessage = parseError(err);
         setDeleteError(errorMessage);
@@ -121,12 +121,12 @@ export function CfnList({workspaceId}: CfnListProps) {
           }
         }}
         onConfirm={handleDelete}
-        title={`Deregister ${deleteDialog.data?.cfn_name || 'Cognitive Fabric Node'}`}
+        title={`Disable ${deleteDialog.data?.cfn_name || 'Cognitive Fabric Node'}`}
         description={
           deleteError ??
-          `Are you sure you want to deregister "${deleteDialog.data?.cfn_name}"? The node will be blocked and cannot reconnect until you re-register it.`
+          `Are you sure you want to disable "${deleteDialog.data?.cfn_name}"? The node will be removed and cannot reconnect until you re-register it.`
         }
-        confirmText="Deregister"
+        confirmText="Disable"
         loading={deleteDialog.isLoading}
         variant="destructive"
       />
