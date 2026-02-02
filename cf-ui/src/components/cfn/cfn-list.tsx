@@ -23,7 +23,7 @@ interface CfnListProps {
 
 export function CfnList({workspaceId}: CfnListProps) {
   const router = useRouter();
-  const {cfns = [], isLoading: loading, error: swrError, deleteCfn, mutate: _mutate} = useCfn(workspaceId);
+  const {cfns = [], isLoading: loading, error: swrError, deleteCfn} = useCfn(workspaceId);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const deleteDialog = useConfirmDialog<{cfn_id: string; cfn_name: string}>();
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');

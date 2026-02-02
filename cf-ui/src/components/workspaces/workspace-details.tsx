@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {Boxes, Trash2, Users, UserPlus, Network} from 'lucide-react';
+import {Boxes, Trash2, Users, UserPlus} from 'lucide-react';
 import {useMemo, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';

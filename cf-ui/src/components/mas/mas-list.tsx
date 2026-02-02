@@ -29,7 +29,7 @@ export function MASList({workspaceId}: MASListProps) {
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {masList = [], isLoading: loading, error: swrError, deleteMAS, mutate: _mutate} = useMAS(workspaceId);
+  const {masList = [], isLoading: loading, error: swrError, deleteMAS} = useMAS(workspaceId);
 
   const handleDeleteMAS = async () => {
     await deleteDialog.confirm(async (data) => {

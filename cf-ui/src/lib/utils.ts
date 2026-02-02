@@ -101,7 +101,9 @@ export function sortByCreatedAtDesc<T extends {created_at?: string | null}>(item
 }
 
 export function formatJson(value: string): string {
-  if (!value || value.trim() === '') return value;
+  if (!value || value.trim() === '') {
+    return value;
+  }
   try {
     const parsed = JSON.parse(value);
     return JSON.stringify(parsed, null, 2);

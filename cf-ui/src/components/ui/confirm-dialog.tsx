@@ -36,7 +36,9 @@ export function ConfirmDialog({
       if (closeOnConfirmSuccess) {
         onOpenChange(false);
       }
-    } catch {}
+    } catch {
+      return;
+    }
   };
 
   const footer = (
