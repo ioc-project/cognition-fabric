@@ -161,8 +161,8 @@ export default function CfnDetailsPage() {
       await cfnApi.update(workspaceId as string, cfnId as string, payload);
       toast.success('Cognitive Fabric Node updated successfully');
       await mutate();
+      await globalMutate(swrKeys.cfn(workspaceId!));
       setIsEditMode(false);
-      // Remove edit param from URL
       router.replace(routes.workspaces.cfn.details(workspaceId!, cfnId!));
     } catch (err) {
       const errorMessage = parseError(err);
@@ -179,7 +179,6 @@ export default function CfnDetailsPage() {
       mgmt_port: cfn?.mgmt_port !== undefined ? String(cfn.mgmt_port) : '',
       cfn_config: cfn?.cfn_config ? JSON.stringify(cfn.cfn_config, null, 2) : ''
     });
-    // Remove edit param from URL
     router.replace(routes.workspaces.cfn.details(workspaceId!, cfnId!));
   };
 
