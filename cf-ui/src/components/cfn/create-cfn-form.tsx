@@ -82,7 +82,7 @@ export function CreateCfnForm({workspaceId, onCancel}: CreateCfnFormProps) {
       cfn_name: '',
       mgmt_host_ip: '',
       mgmt_port: '' as any,
-      cfn_config: '{}'
+      cfn_config: ''
     }
   });
 
@@ -211,7 +211,7 @@ export function CreateCfnForm({workspaceId, onCancel}: CreateCfnFormProps) {
                         <FormLabel>Configuration (JSON)</FormLabel>
                         <FormControl>
                           <Textarea
-                            placeholder='Leave empty or enter JSON: {"key": "value"}'
+                            placeholder='{"max_connections": 100, "memory_limit": "4GB"}'
                             className="font-mono text-sm min-h-[150px] resize-y"
                             {...field}
                             onBlur={() => field.onChange(formatJson(field.value || ''))}
