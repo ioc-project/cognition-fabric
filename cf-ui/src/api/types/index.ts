@@ -4,7 +4,7 @@ export * from './api-key';
 export * from './auth';
 export * from './mas';
 export * from './users';
-export * from './reasoning-history';
 export * from './cognitive-agent';
 export * from './invitation';
 export * from './member';
+export * from './cfn';

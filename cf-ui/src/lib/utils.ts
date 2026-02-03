@@ -99,3 +99,15 @@ export function sortByCreatedAtDesc<T extends {created_at?: string | null}>(item
     return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
   });
 }
+
+export function formatJson(value: string): string {
+  if (!value || value.trim() === '') {
+    return value;
+  }
+  try {
+    const parsed = JSON.parse(value);
+    return JSON.stringify(parsed, null, 2);
+  } catch {
+    return value;
+  }
+}

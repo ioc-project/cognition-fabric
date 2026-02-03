@@ -3,6 +3,7 @@
 import {Button} from '@/components/ui/button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {ResourceTable} from '@/components/ui/resource-table';
+import {TruncatedText} from '@/components/ui/truncated-text';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {MoreVertical, Trash2} from 'lucide-react';
 import type {MAS} from '@/api/types/mas';
@@ -31,7 +32,10 @@ export function MASTableList({masList, workspaceId: _workspaceId, selectedId, on
       onRowClick={(mas) => onRowClick(mas)}
       renderRow={(mas) => [
         {content: mas.name, className: 'font-medium'},
-        {content: mas.description || '-', className: 'max-w-[40ch] truncate text-muted-foreground'},
+        {
+          content: mas.description ? <TruncatedText text={mas.description} maxLength={50} className="text-muted-foreground" /> : '-',
+          className: 'text-muted-foreground'
+        },
         {content: mas.created_at ? new Date(mas.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'},
         {content: mas.updated_at ? new Date(mas.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'},
         {

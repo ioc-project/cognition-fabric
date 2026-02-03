@@ -1,6 +1,6 @@
 'use client';
 
-import {ReactNode} from 'react';
+import {ReactNode, useEffect} from 'react';
 import {useForm, UseFormReturn, FieldValues} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
@@ -52,6 +52,13 @@ export function FormModal<TFieldValues extends FieldValues>({
     defaultValues: defaultValues as any
   });
 
+  // Reset form with new defaultValues when modal opens or defaultValues change
+  useEffect(() => {
+    if (open) {
+      form.reset(defaultValues);
+    }
+  }, [open, defaultValues, form]);
+
   const generatedFormId = formId || `form-modal-${title.toLowerCase().replace(/\s+/g, '-')}`;
 
   const handleSubmit = async (values: TFieldValues) => {
@@ -84,6 +91,7 @@ export function FormModal<TFieldValues extends FieldValues>({
       title={title}
       description={description}
       onInteractOutside={handleInteractOutside}
+      onOpenAutoFocus={(e) => e.preventDefault()}
       contentClassName={contentClassName}
     >
       <Form {...form}>

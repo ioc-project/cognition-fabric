@@ -1,7 +1,7 @@
 'use client';
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Brain, History, Key, Users, type LucideIcon} from 'lucide-react';
+import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Brain, Key, Users, Network, type LucideIcon} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments, useRouter} from 'next/navigation';
 import {Badge} from '@/components/ui/badge';
@@ -34,9 +34,9 @@ export function Sidebar() {
     if (workspaceBasePath) {
       hrefs.push(
         `${workspaceBasePath}`,
+        `${workspaceBasePath}/cognitive-fabric-node`,
         `${workspaceBasePath}/mas`,
         `${workspaceBasePath}/cognitive-agents`,
-        `${workspaceBasePath}/reasoning-history`,
         `${workspaceBasePath}/summary`
       );
     }
@@ -100,6 +100,13 @@ export function Sidebar() {
         isActive: () => isWorkspaceSection()
       },
       {
+        id: 'cfn',
+        href: `${workspaceBasePath}/cognitive-fabric-node`,
+        icon: Network,
+        label: 'Cognitive Fabric Nodes',
+        isActive: () => isWorkspaceSection('cognitive-fabric-node')
+      },
+      {
         id: 'mas',
         href: `${workspaceBasePath}/mas`,
         icon: Boxes,
@@ -112,13 +119,6 @@ export function Sidebar() {
         icon: Brain,
         label: 'Cognitive Agents',
         isActive: () => isWorkspaceSection('cognitive-agents')
-      },
-      {
-        id: 'history',
-        href: `${workspaceBasePath}/reasoning-history`,
-        icon: History,
-        label: 'Reasoning History',
-        isActive: () => isWorkspaceSection('reasoning-history')
       },
       {
         id: 'summary',
@@ -173,10 +173,7 @@ export function Sidebar() {
           <span className="sidebar-text">{label}</span>
         </div>
         {badge !== undefined && badge > 0 && (
-          <Badge
-            variant="destructive"
-            className="h-5 min-w-5 flex items-center justify-center px-1 tbadge={'badge' in item ? item.badge : undefined} ext-xs"
-          >
+          <Badge variant="destructive" className="h-5 min-w-5 flex items-center justify-center px-1 text-xs">
             {badge}
           </Badge>
         )}

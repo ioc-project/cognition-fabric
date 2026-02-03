@@ -20,8 +20,8 @@ export const swrKeys = {
   cognitiveAgents: (workspaceId: string) => ['cognitive-agents', workspaceId] as const,
   cognitiveAgentDetails: (workspaceId: string, cognitiveAgentId: string) => ['cognitive-agent-details', workspaceId, cognitiveAgentId] as const,
 
-  reasoningHistory: (workspaceId: string, filters?: string) => ['reasoning-history-list', workspaceId, filters] as const,
-  reasoningHistoryDetails: (workspaceId: string, historyId: string) => ['reasoning-history-details', workspaceId, historyId] as const,
+  cfn: (workspaceId: string) => ['cfn-list', workspaceId] as const,
+  cfnDetails: (workspaceId: string, cfnId: string) => ['cfn-details', workspaceId, cfnId] as const,
 
   workspaceInvitations: (workspaceId: string) => ['workspace-invitations', workspaceId] as const,
   workspaceMembers: (workspaceId: string) => ['workspace-members', workspaceId] as const,
