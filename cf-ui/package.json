@@ -10,7 +10,8 @@
     "lint:check": "eslint . && prettier \"**/*.+(ts*|js*)\" --check",
     "lint": "eslint --fix . && prettier \"**/*.+(ts*|js*)\" --write",
     "format": "prettier \"**/*.+(ts*|js*)\" --write",
-    "clean": "rm -rf .next node_modules/.cache"
+    "clean": "rm -rf .next node_modules/.cache",
+    "generate:api": "openapi-typescript https://raw.githubusercontent.com/cisco-eti/ioc-cfn-mgmt-backend-svc/feat/crud_operations/docs/openapi.json -o src/api/generated/schema.d.ts"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",
@@ -27,10 +28,11 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.511.0",
-    "react-day-picker": "^9.0.8",
     "next": "^15.5.7",
     "next-auth": "^4.24.13",
+    "openapi-fetch": "^0.15.0",
     "react": "^19.1.1",
+    "react-day-picker": "^9.0.8",
     "react-dom": "^19.1.1",
     "react-force-graph-2d": "^1.29.0",
     "sonner": "^1.5.0",
@@ -66,6 +68,7 @@
     "globals": "^15.9.0",
     "lodash": "^4.17.21",
     "loglevel": "^1.9.2",
+    "openapi-typescript": "^7.10.1",
     "postcss": "^8.4.45",
     "prettier": "^3.6.2",
     "query-string": "^9.1.0",
