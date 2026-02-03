@@ -1,4 +1,12 @@
+import type {components} from '../generated/schema';
 import {z} from 'zod';
+
+export type SignupRequest = components['schemas']['SignupRequest'];
+export type SignupResponse = components['schemas']['TokenResponse'];
+export type LoginRequest = components['schemas']['LoginRequest'];
+export type TokenResponse = components['schemas']['TokenResponse'];
+export type RefreshTokenRequest = components['schemas']['RefreshTokenRequest'];
+export type TokenRefreshResponse = components['schemas']['TokenRefreshResponse'];
 
 export const SignupRequestSchema = z.object({
   username: z
@@ -9,20 +17,3 @@ export const SignupRequestSchema = z.object({
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters')
 });
-
-export type SignupRequest = z.infer<typeof SignupRequestSchema>;
-
-export const SignupResponseSchema = z.object({
-  access_token: z.string(),
-  refresh_token: z.string(),
-  token_type: z.literal('bearer'),
-  user: z.object({
-    id: z.string().uuid(),
-    username: z.string(),
-    email: z.string().email(),
-    domain: z.string(),
-    role: z.string()
-  })
-});
-
-export type SignupResponse = z.infer<typeof SignupResponseSchema>;

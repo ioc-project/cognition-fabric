@@ -1,6 +1,6 @@
 const API_BASE_URL = process.env.CFN_UI_API_BASE_URL || 'http://localhost:8000';
 
-import {SignupRequest, SignupResponse, SignupResponseSchema} from '../types/auth';
+import type {SignupRequest, SignupResponse} from '../types/auth';
 
 export const authApi = {
   login: async (username: string, password: string) => {
@@ -35,8 +35,7 @@ export const authApi = {
       throw new Error('Signup failed');
     }
 
-    const result = await response.json();
-    return SignupResponseSchema.parse(result);
+    return response.json();
   },
 
   refresh: async (refreshToken: string) => {

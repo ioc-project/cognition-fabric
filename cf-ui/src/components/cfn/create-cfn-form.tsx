@@ -22,25 +22,6 @@ import {breadcrumbs} from '@/constants/routes';
 const formSchema = z.object({
   cfn_id: z.string().min(1, 'CFN ID is required'),
   cfn_name: z.string().min(1, 'CFN Name is required').min(3, 'CFN Name must be at least 3 characters'),
-  mgmt_host_ip: z.string().optional(),
-  mgmt_port: z
-    .number()
-    .int()
-    .min(1)
-    .max(65535)
-    .optional()
-    .or(
-      z.string().transform((val) => {
-        if (!val || val.trim() === '') {
-          return undefined;
-        }
-        const num = parseInt(val, 10);
-        if (isNaN(num) || num < 1 || num > 65535) {
-          throw new Error('Port must be between 1 and 65535');
-        }
-        return num;
-      })
-    ),
   cfn_config: z
     .string()
     .optional()
@@ -80,8 +61,6 @@ export function CreateCfnForm({workspaceId, onCancel}: CreateCfnFormProps) {
     defaultValues: {
       cfn_id: '',
       cfn_name: '',
-      mgmt_host_ip: '',
-      mgmt_port: '' as any,
       cfn_config: ''
     }
   });
@@ -103,8 +82,6 @@ export function CreateCfnForm({workspaceId, onCancel}: CreateCfnFormProps) {
       const response = await addCfn({
         cfn_id: values.cfn_id,
         cfn_name: values.cfn_name,
-        mgmt_host_ip: values.mgmt_host_ip,
-        mgmt_port: values.mgmt_port,
         cfn_config
       });
 
@@ -169,34 +146,6 @@ export function CreateCfnForm({workspaceId, onCancel}: CreateCfnFormProps) {
                         <FormLabel required>CFN Name</FormLabel>
                         <FormControl>
                           <Input placeholder="Production CFN - US East" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="mgmt_host_ip"
-                    render={({field}) => (
-                      <FormItem>
-                        <FormLabel>Management Host IP</FormLabel>
-                        <FormControl>
-                          <Input placeholder="192.168.1.100" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="mgmt_port"
-                    render={({field}) => (
-                      <FormItem>
-                        <FormLabel>Management Port</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="8080" min="1" max="65535" {...field} onChange={(e) => field.onChange(e.target.value)} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

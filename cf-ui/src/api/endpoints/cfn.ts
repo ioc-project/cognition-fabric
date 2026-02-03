@@ -1,18 +1,17 @@
 import {fetchAPI} from '../client';
-import {Cfn, CreateCfnRequest, ListCfnResponse, ListCfnResponseSchema, UpdateCfnRequest} from '../types/cfn';
+import type {Cfn, CreateCfnRequest, CreateCfnResponse, ListCfnResponse, UpdateCfnRequest} from '../types/cfn';
 import {apiRoutes} from '@/constants/routes';
 
 export const cfnApi = {
   list: async (workspaceId: string): Promise<ListCfnResponse> => {
-    const data = await fetchAPI(apiRoutes.cfn.list(workspaceId));
-    return ListCfnResponseSchema.parse(data);
+    return fetchAPI(apiRoutes.cfn.list(workspaceId));
   },
 
   get: async (workspaceId: string, cfnId: string): Promise<Cfn> => {
     return fetchAPI(apiRoutes.cfn.details(workspaceId, cfnId));
   },
 
-  create: async (payload: CreateCfnRequest, workspaceId: string): Promise<Cfn> => {
+  create: async (payload: CreateCfnRequest, workspaceId: string): Promise<CreateCfnResponse> => {
     return fetchAPI(`${apiRoutes.cfn.list(workspaceId)}/register`, {
       method: 'POST',
       body: JSON.stringify(payload)

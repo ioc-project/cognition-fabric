@@ -1,20 +1,18 @@
 import {fetchAPI} from '../client';
-import {CreateApiKeyRequest, CreateApiKeyResponse, IamUser, IamUsersResponseSchema, ListApiKeysResponse, ListApiKeysResponseSchema} from '../types';
+import {CreateApiKeyRequest, CreateApiKeyResponse, IamUsersResponse, ListApiKeysResponse} from '../types';
 import {apiRoutes} from '@/constants/routes';
 
 export const apiKeyApi = {
   list: async (): Promise<ListApiKeysResponse> => {
-    const data = await fetchAPI(apiRoutes.apiKeys.list);
-    return ListApiKeysResponseSchema.parse(data);
+    return fetchAPI(apiRoutes.apiKeys.list);
   },
 
   roles: async (): Promise<{roles: string[]}> => {
     return fetchAPI(apiRoutes.apiKeys.roles);
   },
 
-  users: async (): Promise<{users: IamUser[]}> => {
-    const data = await fetchAPI(apiRoutes.apiKeys.users);
-    return IamUsersResponseSchema.parse(data);
+  users: async (): Promise<IamUsersResponse> => {
+    return fetchAPI(apiRoutes.apiKeys.users);
   },
 
   create: async (payload: CreateApiKeyRequest): Promise<CreateApiKeyResponse> => {

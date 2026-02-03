@@ -298,7 +298,6 @@ export function WorkspaceDetails() {
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                               <span>{cfn.created_at ? new Date(cfn.created_at).toLocaleDateString() : 'Unknown date'}</span>
-                              {cfn.mgmt_host_ip && <span>{cfn.mgmt_host_ip}</span>}
                             </div>
                           </div>
                         </div>

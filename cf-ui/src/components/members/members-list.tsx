@@ -58,11 +58,10 @@ export function MembersList({workspaceId, onInvite}: MembersListProps) {
     <>
       <ResourceTable
         items={members}
-        headers={[{content: 'Username'}, {content: 'Email'}, {content: 'Role'}, {content: 'Joined'}, {content: 'Actions', className: 'text-right'}]}
+        headers={[{content: 'Username'}, {content: 'Role'}, {content: 'Joined'}, {content: 'Actions', className: 'text-right'}]}
         rowKey={(member) => member.id}
         renderRow={(member) => [
-          {content: member.username, className: 'font-medium'},
-          {content: member.email || '-', className: 'text-muted-foreground'},
+          {content: member.username || 'Unknown', className: 'font-medium'},
           {
             content: (
               <Badge variant={member.role === 'admin' ? 'default' : 'secondary'} className="capitalize">
@@ -88,7 +87,7 @@ export function MembersList({workspaceId, onInvite}: MembersListProps) {
                       className="text-red-600 dark:text-red-400"
                       onClick={(e) => {
                         e.stopPropagation();
-                        removeDialog.open({id: member.id, username: member.username});
+                        removeDialog.open({id: member.id, username: member.username || 'Unknown'});
                       }}
                     >
                       <Trash2 className="h-4 w-4 mr-2" />

@@ -1,6 +1,5 @@
 import {fetchAPI} from '../client';
-import {CreateMASRequest, CreateMASResponse, MAS, UpdateMASRequest} from '../types/mas';
-import {MASSchema, ListMASResponseSchema} from '../types/mas';
+import type {CreateMASRequest, CreateMASResponse, MAS, UpdateMASRequest, ListMASResponse} from '../types/mas';
 
 export const masApi = {
   create: async (workspaceId: string, data: CreateMASRequest): Promise<CreateMASResponse> => {
@@ -11,22 +10,19 @@ export const masApi = {
   },
 
   list: async (workspaceId: string): Promise<MAS[]> => {
-    const response = await fetchAPI(`/api/workspaces/${workspaceId}/multi-agentic-systems`);
-    const parsed = ListMASResponseSchema.parse(response);
-    return parsed.systems;
+    const response = await fetchAPI<ListMASResponse>(`/api/workspaces/${workspaceId}/multi-agentic-systems`);
+    return response.systems;
   },
 
   get: async (workspaceId: string, id: string): Promise<MAS> => {
-    const data = await fetchAPI<MAS>(`/api/workspaces/${workspaceId}/multi-agentic-systems/${id}`);
-    return MASSchema.parse(data);
+    return fetchAPI<MAS>(`/api/workspaces/${workspaceId}/multi-agentic-systems/${id}`);
   },
 
   update: async (workspaceId: string, id: string, data: UpdateMASRequest): Promise<MAS> => {
-    const res = await fetchAPI<MAS>(`/api/workspaces/${workspaceId}/multi-agentic-systems/${id}`, {
+    return fetchAPI<MAS>(`/api/workspaces/${workspaceId}/multi-agentic-systems/${id}`, {
       method: 'PUT',
       body: JSON.stringify(data)
     });
-    return MASSchema.parse(res);
   },
 
   delete: async (workspaceId: string, id: string): Promise<void> => {
