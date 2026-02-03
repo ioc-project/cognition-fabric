@@ -4,13 +4,17 @@ import {FormModal} from '@/components/ui/form-modal';
 import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {useWorkspaceInvitations, useWorkspaceMembers} from '@/hooks/useApi';
-import {CreateInvitationRequestSchema, InvitationRole} from '@/api/types';
+import {InvitationRole} from '@/api/types';
 import {toast} from 'sonner';
 import useSWR from 'swr';
 import {userApi} from '@/api/endpoints';
 import {useSession} from 'next-auth/react';
+import {z} from 'zod';
 
-const formSchema = CreateInvitationRequestSchema;
+const formSchema = z.object({
+  invitee_username: z.string().min(1, 'Username is required'),
+  role: z.enum(['admin', 'viewer', 'guest'])
+});
 
 type FormValues = {
   invitee_username: string;

@@ -1,19 +1,16 @@
 import {fetchAPI} from '../client';
 import type {CreateInvitationRequest, CreateInvitationResponse, ListInvitationsResponse} from '../types/invitation';
-import {CreateInvitationResponseSchema, ListInvitationsResponseSchema} from '../types/invitation';
 
 export const invitationApi = {
   create: async (workspaceId: string, data: CreateInvitationRequest): Promise<CreateInvitationResponse> => {
-    const res = await fetchAPI(`/api/workspaces/${workspaceId}/invitations`, {
+    return fetchAPI(`/api/workspaces/${workspaceId}/invitations`, {
       method: 'POST',
       body: JSON.stringify(data)
     });
-    return CreateInvitationResponseSchema.parse(res);
   },
 
   listWorkspaceInvitations: async (workspaceId: string): Promise<ListInvitationsResponse> => {
-    const data = await fetchAPI(`/api/workspaces/${workspaceId}/invitations`);
-    return ListInvitationsResponseSchema.parse(data);
+    return fetchAPI(`/api/workspaces/${workspaceId}/invitations`);
   },
 
   cancel: async (workspaceId: string, invitationId: string): Promise<void> => {
@@ -23,8 +20,7 @@ export const invitationApi = {
   },
 
   getMyPendingInvitations: async (): Promise<ListInvitationsResponse> => {
-    const data = await fetchAPI('/api/invitations/pending');
-    return ListInvitationsResponseSchema.parse(data);
+    return fetchAPI('/api/invitations/pending');
   },
 
   accept: async (invitationId: string): Promise<void> => {

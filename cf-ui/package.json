@@ -11,7 +11,7 @@
     "lint": "eslint --fix . && prettier \"**/*.+(ts*|js*)\" --write",
     "format": "prettier \"**/*.+(ts*|js*)\" --write",
     "clean": "rm -rf .next node_modules/.cache",
-    "generate:api": "openapi-typescript https://raw.githubusercontent.com/cisco-eti/ioc-cfn-mgmt-backend-svc/feat/crud_operations/docs/openapi.json -o src/api/generated/schema.d.ts"
+    "generate:api": "openapi-typescript ${CFN_UI_API_BASE_URL:-http://localhost:8000}/api/openapi.json -o src/api/generated/schema.d.ts"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",
