@@ -75,20 +75,6 @@ export function CfnCardList({cfns, workspaceId: _workspaceId, selectedId, onCard
             </DropdownMenu>
           </div>
 
-          {cfn.mgmt_host_ip && (
-            <div className="mb-6">
-              <div className="text-xs font-medium text-muted-foreground mb-2">Management IP</div>
-              <div className="text-xs text-foreground font-mono break-all leading-relaxed">{cfn.mgmt_host_ip}</div>
-            </div>
-          )}
-
-          {cfn.mgmt_port && (
-            <div className="mb-6">
-              <div className="text-xs font-medium text-muted-foreground mb-2">Management Port</div>
-              <div className="text-xs text-foreground font-mono">{cfn.mgmt_port}</div>
-            </div>
-          )}
-
           <div className="mb-6">
             <div className="text-xs font-medium text-muted-foreground mb-2">CFN ID</div>
             <div className="text-xs text-foreground font-mono break-all leading-relaxed">{cfn.cfn_id}</div>

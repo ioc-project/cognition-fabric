@@ -1,38 +1,64 @@
-import {fetchAPI} from '../client';
+import {apiClient} from '../client';
 import {CreateWorkspaceRequest, CreateWorkspaceResponse, ListWorkspacesResponse, Workspace, UpdateWorkspaceRequest} from '../types';
-import {WorkspaceSchema, ListWorkspacesResponseSchema, CreateWorkspaceResponseSchema} from '../types/workspace';
-import {apiRoutes} from '@/constants/routes';
 
 export const workspaceApi = {
   create: async (data: CreateWorkspaceRequest): Promise<CreateWorkspaceResponse> => {
-    const res = await fetchAPI(apiRoutes.workspaces.list, {
-      method: 'POST',
-      body: JSON.stringify(data)
+    const {data: response, error} = await apiClient.POST('/api/workspaces/', {
+      body: data
     });
-    return CreateWorkspaceResponseSchema.parse(res);
+
+    if (error) {
+      throw error;
+    }
+    return response;
   },
 
   list: async (): Promise<ListWorkspacesResponse> => {
-    const data = await fetchAPI(apiRoutes.workspaces.list);
-    return ListWorkspacesResponseSchema.parse(data);
+    const {data, error} = await apiClient.GET('/api/workspaces/');
+
+    if (error) {
+      throw error;
+    }
+    return data;
   },
 
   get: async (id: string): Promise<Workspace> => {
-    const data = await fetchAPI(apiRoutes.workspaces.details(id));
-    return WorkspaceSchema.parse(data);
+    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}', {
+      params: {
+        path: {workspace_id: id}
+      }
+    });
+
+    if (error) {
+      throw error;
+    }
+    return data;
   },
 
   update: async (id: string, data: UpdateWorkspaceRequest): Promise<Workspace> => {
-    const res = await fetchAPI(apiRoutes.workspaces.details(id), {
-      method: 'PUT',
-      body: JSON.stringify(data)
+    const {data: response, error} = await apiClient.PUT('/api/workspaces/{workspace_id}', {
+      params: {
+        path: {workspace_id: id}
+      },
+      body: data
     });
-    return WorkspaceSchema.parse(res);
+
+    if (error) {
+      throw error;
+    }
+    return response;
   },
 
   delete: async (id: string): Promise<{message: string}> => {
-    return fetchAPI(apiRoutes.workspaces.details(id), {
-      method: 'DELETE'
+    const {error} = await apiClient.DELETE('/api/workspaces/{workspace_id}', {
+      params: {
+        path: {workspace_id: id}
+      }
     });
+
+    if (error) {
+      throw error;
+    }
+    return {message: 'Workspace deleted successfully'};
   }
 };

@@ -33,7 +33,11 @@ function SignupForm() {
         password
       });
 
-      await authApi.signup(validatedData);
+      await authApi.signup({
+        ...validatedData,
+        domain: 'ioc.local',
+        role: 'admin'
+      });
 
       const result = await signIn('credentials', {
         username: validatedData.username,

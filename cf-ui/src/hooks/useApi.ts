@@ -263,7 +263,6 @@ export function useMAS(workspaceId: string) {
   } as const;
 }
 
-// Workspace Invitations
 export function useWorkspaceInvitations(workspaceId: string) {
   const {data, error, isLoading, mutate} = useSWR<ListInvitationsResponse>(
     workspaceId ? swrKeys.workspaceInvitations(workspaceId) : null,

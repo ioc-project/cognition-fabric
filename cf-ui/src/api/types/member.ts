@@ -1,28 +1,8 @@
-import {z} from 'zod';
+import type {components} from '../generated/schema';
 
-export const MemberRoleSchema = z.enum(['admin', 'viewer', 'guest']);
-export type MemberRole = z.infer<typeof MemberRoleSchema>;
+export type WorkspaceMember = components['schemas']['WorkspaceMemberDetail'];
+export type MemberRole = components['schemas']['WorkspaceRole'];
 
-export const WorkspaceMemberSchema = z.object({
-  id: z.string().uuid(),
-  user_id: z.string().uuid(),
-  username: z.string(),
-  email: z.string().email().optional(),
-  role: MemberRoleSchema,
-  joined_at: z.string()
-});
+export type ListWorkspaceMembersResponse = components['schemas']['WorkspaceMemberList'];
 
-export type WorkspaceMember = z.infer<typeof WorkspaceMemberSchema>;
-
-export const ListWorkspaceMembersResponseSchema = z.object({
-  members: z.array(WorkspaceMemberSchema),
-  total: z.number().int().nonnegative()
-});
-
-export type ListWorkspaceMembersResponse = z.infer<typeof ListWorkspaceMembersResponseSchema>;
-
-export const UpdateMemberRoleRequestSchema = z.object({
-  role: MemberRoleSchema
-});
-
-export type UpdateMemberRoleRequest = z.infer<typeof UpdateMemberRoleRequestSchema>;
+export type UpdateMemberRoleRequest = components['schemas']['WorkspaceMemberRoleUpdate'];

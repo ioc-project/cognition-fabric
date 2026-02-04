@@ -1,32 +1,54 @@
-import {fetchAPI} from '../client';
-import {CreateApiKeyRequest, CreateApiKeyResponse, IamUser, IamUsersResponseSchema, ListApiKeysResponse, ListApiKeysResponseSchema} from '../types';
-import {apiRoutes} from '@/constants/routes';
+import {apiClient} from '../client';
+import {CreateApiKeyRequest, CreateApiKeyResponse, IamUsersResponse, ListApiKeysResponse} from '../types';
 
 export const apiKeyApi = {
   list: async (): Promise<ListApiKeysResponse> => {
-    const data = await fetchAPI(apiRoutes.apiKeys.list);
-    return ListApiKeysResponseSchema.parse(data);
+    const {data, error} = await apiClient.GET('/api/iam/api-keys');
+
+    if (error) {
+      throw error;
+    }
+    return data;
   },
 
   roles: async (): Promise<{roles: string[]}> => {
-    return fetchAPI(apiRoutes.apiKeys.roles);
+    const {data, error} = await apiClient.GET('/api/iam/roles');
+
+    if (error) {
+      throw error;
+    }
+    return {roles: data};
   },
 
-  users: async (): Promise<{users: IamUser[]}> => {
-    const data = await fetchAPI(apiRoutes.apiKeys.users);
-    return IamUsersResponseSchema.parse(data);
+  users: async (): Promise<IamUsersResponse> => {
+    const {data, error} = await apiClient.GET('/api/iam/users');
+
+    if (error) {
+      throw error;
+    }
+    return data;
   },
 
   create: async (payload: CreateApiKeyRequest): Promise<CreateApiKeyResponse> => {
-    return fetchAPI(apiRoutes.apiKeys.create, {
-      method: 'POST',
-      body: JSON.stringify(payload)
+    const {data, error} = await apiClient.POST('/api/iam/api-keys', {
+      body: payload
     });
+
+    if (error) {
+      throw error;
+    }
+    return data;
   },
 
   delete: async (id: string): Promise<void> => {
-    await fetchAPI(apiRoutes.apiKeys.delete(id), {
-      method: 'DELETE'
+    const {error} = await apiClient.DELETE('/api/iam/api-keys/{key_id}', {
+      params: {
+        path: {key_id: id}
+      }
     });
+
+    if (error) {
+      throw error;
+    }
   }
 };

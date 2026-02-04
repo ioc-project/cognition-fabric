@@ -100,8 +100,6 @@ export default function CfnDetailsPage() {
     if (cfn) {
       form.reset({
         cfn_name: cfn.cfn_name,
-        mgmt_host_ip: cfn.mgmt_host_ip || '',
-        mgmt_port: cfn.mgmt_port !== undefined ? String(cfn.mgmt_port) : '',
         cfn_config: cfn.cfn_config ? JSON.stringify(cfn.cfn_config, null, 2) : ''
       });
     }
@@ -146,14 +144,6 @@ export default function CfnDetailsPage() {
         cfn_name: values.cfn_name
       };
 
-      if (values.mgmt_host_ip) {
-        payload.mgmt_host_ip = values.mgmt_host_ip;
-      }
-
-      if (values.mgmt_port) {
-        payload.mgmt_port = parseInt(String(values.mgmt_port), 10);
-      }
-
       if (values.cfn_config && values.cfn_config.trim()) {
         payload.cfn_config = JSON.parse(values.cfn_config) as Record<string, unknown>;
       }
@@ -175,8 +165,6 @@ export default function CfnDetailsPage() {
     setIsEditMode(false);
     form.reset({
       cfn_name: cfn?.cfn_name,
-      mgmt_host_ip: cfn?.mgmt_host_ip || '',
-      mgmt_port: cfn?.mgmt_port !== undefined ? String(cfn.mgmt_port) : '',
       cfn_config: cfn?.cfn_config ? JSON.stringify(cfn.cfn_config, null, 2) : ''
     });
     router.replace(routes.workspaces.cfn.details(workspaceId!, cfnId!));
@@ -244,56 +232,6 @@ export default function CfnDetailsPage() {
                         <div className="space-y-2">
                           <Label>CFN Name</Label>
                           <Input value={cfn?.cfn_name || ''} disabled readOnly />
-                        </div>
-                      )}
-
-                      {isEditMode ? (
-                        <FormField
-                          control={form.control}
-                          name="mgmt_host_ip"
-                          render={({field}) => (
-                            <FormItem>
-                              <FormLabel>Management Host IP</FormLabel>
-                              <FormControl>
-                                <Input {...field} autoComplete="off" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ) : (
-                        <div className="space-y-2">
-                          <Label>Management Host IP</Label>
-                          <Input value={cfn?.mgmt_host_ip || ''} disabled readOnly />
-                        </div>
-                      )}
-
-                      {isEditMode ? (
-                        <FormField
-                          control={form.control}
-                          name="mgmt_port"
-                          render={({field}) => (
-                            <FormItem>
-                              <FormLabel>Management Port</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="number"
-                                  min="1"
-                                  max="65535"
-                                  {...field}
-                                  onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value, 10) : undefined)}
-                                  value={field.value || ''}
-                                  autoComplete="off"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ) : (
-                        <div className="space-y-2">
-                          <Label>Management Port</Label>
-                          <Input value={cfn?.mgmt_port || ''} disabled readOnly />
                         </div>
                       )}
 
@@ -379,11 +317,11 @@ export default function CfnDetailsPage() {
                       </div>
                       <div className="space-y-2">
                         <Label>Created By</Label>
-                        <Input value={getUserName(cfn?.created_by)} disabled readOnly />
+                        <Input value={getUserName(cfn?.created_by ?? undefined)} disabled readOnly />
                       </div>
                       <div className="space-y-2">
                         <Label>Updated By</Label>
-                        <Input value={getUserName(cfn?.updated_by)} disabled readOnly />
+                        <Input value={getUserName(cfn?.updated_by ?? undefined)} disabled readOnly />
                       </div>
                     </div>
                   </form>

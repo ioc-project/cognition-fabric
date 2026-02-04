@@ -128,7 +128,7 @@ export function PendingInvitationsPage() {
           {pendingInvitations.map((invitation: Invitation) => {
             const daysLeft = getExpiresInDays(invitation.expires_at);
             const isExpiring = daysLeft <= 2;
-            const roleInfo = ROLE_PERMISSIONS[invitation.role] || ROLE_PERMISSIONS.guest;
+            const roleInfo = ROLE_PERMISSIONS[invitation.role as keyof typeof ROLE_PERMISSIONS] || ROLE_PERMISSIONS.guest;
 
             return (
               <Card key={invitation.id} variant="list" className="transition-shadow duration-200 !p-0 overflow-hidden">

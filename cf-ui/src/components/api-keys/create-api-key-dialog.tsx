@@ -4,9 +4,11 @@ import {FormModal} from '@/components/ui/form-modal';
 import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {useApiKeys} from '@/hooks/useApi';
-import {CreateApiKeyRequestSchema} from '@/api/types';
+import {z} from 'zod';
 
-const formSchema = CreateApiKeyRequestSchema;
+const formSchema = z.object({
+  name: z.string().min(1, 'API key name is required').max(100, 'API key name must be at most 100 characters')
+});
 
 type FormValues = {name: string};
 
