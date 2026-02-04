@@ -1,5 +1,5 @@
 import {apiClient} from '../client';
-import type {CreateMASRequest, CreateMASResponse, MAS, UpdateMASRequest, ListMASResponse} from '../types/mas';
+import type {CreateMASRequest, CreateMASResponse, MAS, UpdateMASRequest} from '../types/mas';
 
 export const masApi = {
   create: async (workspaceId: string, data: CreateMASRequest): Promise<CreateMASResponse> => {

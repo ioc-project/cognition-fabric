@@ -25,11 +25,11 @@ export const authOptions: NextAuthOptions = {
           const data = await authApi.login(credentials.username, credentials.password);
 
           return {
-            id: data.user?.id || credentials.username,
-            name: data.user?.name || data.user?.username || credentials.username,
-            email: data.user?.email || '',
-            username: data.user?.username || credentials.username,
-            role: data.user?.role,
+            id: (data.user?.id as string) || credentials.username,
+            name: (data.user?.name as string) || (data.user?.username as string) || credentials.username,
+            email: (data.user?.email as string) || '',
+            username: (data.user?.username as string) || credentials.username,
+            role: data.user?.role as string,
             accessToken: data.access_token,
             refreshToken: data.refresh_token
           };

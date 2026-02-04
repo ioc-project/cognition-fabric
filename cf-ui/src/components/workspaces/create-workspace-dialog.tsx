@@ -79,6 +79,9 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
     }
 
     toast.success(`Workspace "${values.name}" created successfully`);
+
+    await swrMutate(swrKeys.workspaces());
+
     onSuccess(response.id);
 
     void workspaceApi

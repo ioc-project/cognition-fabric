@@ -17,7 +17,7 @@ class ApiError extends Error {
 const config = getApiConfig();
 export const apiClient = createClient<paths>({
   baseUrl: config.baseUrl,
-  headers: config.headers as Record<string, string>
+  headers: config.headers
 });
 
 apiClient.use({
@@ -32,6 +32,7 @@ apiClient.use({
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort('Request timeout'), timeout);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (request as any).__timeoutId = timeoutId;
 
       return new Request(request, {signal: controller.signal});
@@ -41,7 +42,8 @@ apiClient.use({
   },
 
   async onResponse({response, request}) {
-    const timeoutId = (request as any).__timeoutId;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const timeoutId = (request as any).__timeoutId as NodeJS.Timeout | undefined;
     if (timeoutId) {
       clearTimeout(timeoutId);
     }
@@ -55,7 +57,9 @@ apiClient.use({
           (errorData && typeof errorData === 'object' && 'message' in errorData ? errorData.message : undefined) ||
           (errorData && typeof errorData === 'object' && 'error' in errorData ? errorData.error : undefined) ||
           errorMessage;
-      } catch {}
+      } catch {
+        // Failed to parse error response as JSON
+      }
 
       throw new ApiError(errorMessage, response.status, response.statusText);
     }
