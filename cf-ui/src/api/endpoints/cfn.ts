@@ -9,7 +9,9 @@ export const cfnApi = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data;
   },
 
@@ -20,7 +22,9 @@ export const cfnApi = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data;
   },
 
@@ -32,7 +36,9 @@ export const cfnApi = {
       body: payload
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data;
   },
 
@@ -44,7 +50,9 @@ export const cfnApi = {
       body: payload
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data;
   },
 
@@ -55,6 +63,8 @@ export const cfnApi = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
   }
 };

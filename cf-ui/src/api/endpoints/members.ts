@@ -9,7 +9,9 @@ export const memberApi = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data;
   },
 
@@ -21,7 +23,9 @@ export const memberApi = {
       body: data
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return response;
   },
 
@@ -32,6 +36,8 @@ export const memberApi = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
   }
 };

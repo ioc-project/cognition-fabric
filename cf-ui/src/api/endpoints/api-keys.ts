@@ -5,21 +5,27 @@ export const apiKeyApi = {
   list: async (): Promise<ListApiKeysResponse> => {
     const {data, error} = await apiClient.GET('/api/iam/api-keys');
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data;
   },
 
   roles: async (): Promise<{roles: string[]}> => {
     const {data, error} = await apiClient.GET('/api/iam/roles');
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return {roles: data};
   },
 
   users: async (): Promise<IamUsersResponse> => {
     const {data, error} = await apiClient.GET('/api/iam/users');
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data;
   },
 
@@ -28,7 +34,9 @@ export const apiKeyApi = {
       body: payload
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data;
   },
 
@@ -39,6 +47,8 @@ export const apiKeyApi = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
   }
 };

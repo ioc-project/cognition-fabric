@@ -10,7 +10,9 @@ export const invitationApi = {
       body: data
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return response;
   },
 
@@ -21,7 +23,9 @@ export const invitationApi = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data;
   },
 
@@ -32,13 +36,17 @@ export const invitationApi = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
   },
 
   getMyPendingInvitations: async (): Promise<ListInvitationsResponse> => {
     const {data, error} = await apiClient.GET('/api/invitations/pending');
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data;
   },
 
@@ -49,7 +57,9 @@ export const invitationApi = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
   },
 
   decline: async (invitationId: string): Promise<void> => {
@@ -59,6 +69,8 @@ export const invitationApi = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
   }
 };

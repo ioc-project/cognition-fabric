@@ -7,14 +7,18 @@ export const workspaceApi = {
       body: data
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return response;
   },
 
   list: async (): Promise<ListWorkspacesResponse> => {
     const {data, error} = await apiClient.GET('/api/workspaces/');
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data;
   },
 
@@ -25,7 +29,9 @@ export const workspaceApi = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data;
   },
 
@@ -37,7 +43,9 @@ export const workspaceApi = {
       body: data
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return response;
   },
 
@@ -48,7 +56,9 @@ export const workspaceApi = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return {message: 'Workspace deleted successfully'};
   }
 };

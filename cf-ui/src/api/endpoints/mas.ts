@@ -10,7 +10,9 @@ export const masApi = {
       body: data
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return response;
   },
 
@@ -21,7 +23,9 @@ export const masApi = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data.systems;
   },
 
@@ -32,7 +36,9 @@ export const masApi = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return data;
   },
 
@@ -44,7 +50,9 @@ export const masApi = {
       body: data
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
     return response;
   },
 
@@ -55,6 +63,8 @@ export const masApi = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
   }
 };
