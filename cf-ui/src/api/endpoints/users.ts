@@ -1,8 +1,11 @@
-import {fetchAPI} from '../client';
+import {apiClient} from '../client';
 import type {ListUsersResponse} from '../types';
 
 export const userApi = {
   list: async (): Promise<ListUsersResponse> => {
-    return fetchAPI<ListUsersResponse>('/api/iam/users/');
+    const {data, error} = await apiClient.GET('/api/iam/users');
+
+    if (error) throw error;
+    return data;
   }
 };

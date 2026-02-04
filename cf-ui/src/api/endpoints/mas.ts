@@ -1,33 +1,60 @@
-import {fetchAPI} from '../client';
+import {apiClient} from '../client';
 import type {CreateMASRequest, CreateMASResponse, MAS, UpdateMASRequest, ListMASResponse} from '../types/mas';
 
 export const masApi = {
   create: async (workspaceId: string, data: CreateMASRequest): Promise<CreateMASResponse> => {
-    return fetchAPI(`/api/workspaces/${workspaceId}/multi-agentic-systems`, {
-      method: 'POST',
-      body: JSON.stringify(data)
+    const {data: response, error} = await apiClient.POST('/api/workspaces/{workspace_id}/multi-agentic-systems', {
+      params: {
+        path: {workspace_id: workspaceId}
+      },
+      body: data
     });
+
+    if (error) throw error;
+    return response;
   },
 
   list: async (workspaceId: string): Promise<MAS[]> => {
-    const response = await fetchAPI<ListMASResponse>(`/api/workspaces/${workspaceId}/multi-agentic-systems`);
-    return response.systems;
+    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/multi-agentic-systems', {
+      params: {
+        path: {workspace_id: workspaceId}
+      }
+    });
+
+    if (error) throw error;
+    return data.systems;
   },
 
   get: async (workspaceId: string, id: string): Promise<MAS> => {
-    return fetchAPI<MAS>(`/api/workspaces/${workspaceId}/multi-agentic-systems/${id}`);
+    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}', {
+      params: {
+        path: {workspace_id: workspaceId, mas_id: id}
+      }
+    });
+
+    if (error) throw error;
+    return data;
   },
 
   update: async (workspaceId: string, id: string, data: UpdateMASRequest): Promise<MAS> => {
-    return fetchAPI<MAS>(`/api/workspaces/${workspaceId}/multi-agentic-systems/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
+    const {data: response, error} = await apiClient.PUT('/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}', {
+      params: {
+        path: {workspace_id: workspaceId, mas_id: id}
+      },
+      body: data
     });
+
+    if (error) throw error;
+    return response;
   },
 
   delete: async (workspaceId: string, id: string): Promise<void> => {
-    return fetchAPI(`/api/workspaces/${workspaceId}/multi-agentic-systems/${id}`, {
-      method: 'DELETE'
+    const {error} = await apiClient.DELETE('/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}', {
+      params: {
+        path: {workspace_id: workspaceId, mas_id: id}
+      }
     });
+
+    if (error) throw error;
   }
 };

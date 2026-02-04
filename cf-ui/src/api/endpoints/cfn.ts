@@ -1,33 +1,60 @@
-import {fetchAPI} from '../client';
+import {apiClient} from '../client';
 import type {Cfn, CreateCfnRequest, CreateCfnResponse, ListCfnResponse, UpdateCfnRequest} from '../types/cfn';
-import {apiRoutes} from '@/constants/routes';
 
 export const cfnApi = {
   list: async (workspaceId: string): Promise<ListCfnResponse> => {
-    return fetchAPI(apiRoutes.cfn.list(workspaceId));
+    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/cognitive-fabric-node', {
+      params: {
+        path: {workspace_id: workspaceId}
+      }
+    });
+
+    if (error) throw error;
+    return data;
   },
 
   get: async (workspaceId: string, cfnId: string): Promise<Cfn> => {
-    return fetchAPI(apiRoutes.cfn.details(workspaceId, cfnId));
+    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/cognitive-fabric-node/{cfn_id}', {
+      params: {
+        path: {workspace_id: workspaceId, cfn_id: cfnId}
+      }
+    });
+
+    if (error) throw error;
+    return data;
   },
 
   create: async (payload: CreateCfnRequest, workspaceId: string): Promise<CreateCfnResponse> => {
-    return fetchAPI(`${apiRoutes.cfn.list(workspaceId)}/register`, {
-      method: 'POST',
-      body: JSON.stringify(payload)
+    const {data, error} = await apiClient.POST('/api/workspaces/{workspace_id}/cognitive-fabric-node/register', {
+      params: {
+        path: {workspace_id: workspaceId}
+      },
+      body: payload
     });
+
+    if (error) throw error;
+    return data;
   },
 
   update: async (workspaceId: string, cfnId: string, payload: UpdateCfnRequest): Promise<Cfn> => {
-    return fetchAPI(apiRoutes.cfn.details(workspaceId, cfnId), {
-      method: 'PUT',
-      body: JSON.stringify(payload)
+    const {data, error} = await apiClient.PUT('/api/workspaces/{workspace_id}/cognitive-fabric-node/{cfn_id}', {
+      params: {
+        path: {workspace_id: workspaceId, cfn_id: cfnId}
+      },
+      body: payload
     });
+
+    if (error) throw error;
+    return data;
   },
 
   delete: async (workspaceId: string, cfnId: string): Promise<void> => {
-    await fetchAPI(apiRoutes.cfn.delete(workspaceId, cfnId), {
-      method: 'DELETE'
+    const {error} = await apiClient.DELETE('/api/workspaces/{workspace_id}/cognitive-fabric-node/{cfn_id}', {
+      params: {
+        path: {workspace_id: workspaceId, cfn_id: cfnId}
+      }
     });
+
+    if (error) throw error;
   }
 };

@@ -1,5 +1,7 @@
 import {getApiConfig} from './config';
 import {getSession} from 'next-auth/react';
+import createClient from 'openapi-fetch';
+import type {paths} from './generated/schema';
 
 class ApiError extends Error {
   constructor(
@@ -11,6 +13,56 @@ class ApiError extends Error {
     this.name = 'ApiError';
   }
 }
+
+const config = getApiConfig();
+export const apiClient = createClient<paths>({
+  baseUrl: config.baseUrl,
+  headers: config.headers as Record<string, string>
+});
+
+apiClient.use({
+  async onRequest({request}) {
+    const session = await getSession();
+    if (session?.accessToken) {
+      request.headers.set('Authorization', `Bearer ${session.accessToken}`);
+    }
+
+    const timeout = config.timeout;
+    if (timeout && !request.signal) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort('Request timeout'), timeout);
+
+      (request as any).__timeoutId = timeoutId;
+
+      return new Request(request, {signal: controller.signal});
+    }
+
+    return request;
+  },
+
+  async onResponse({response, request}) {
+    const timeoutId = (request as any).__timeoutId;
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+
+    if (!response.ok) {
+      let errorMessage = response.statusText;
+      try {
+        const errorData = await response.clone().json();
+        errorMessage =
+          (errorData && typeof errorData === 'object' && 'detail' in errorData ? errorData.detail : undefined) ||
+          (errorData && typeof errorData === 'object' && 'message' in errorData ? errorData.message : undefined) ||
+          (errorData && typeof errorData === 'object' && 'error' in errorData ? errorData.error : undefined) ||
+          errorMessage;
+      } catch {}
+
+      throw new ApiError(errorMessage, response.status, response.statusText);
+    }
+
+    return response;
+  }
+});
 
 export async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const config = getApiConfig();
