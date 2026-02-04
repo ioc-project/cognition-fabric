@@ -4,13 +4,15 @@ services:
       context: .
       dockerfile: ./ci/docker/Dockerfile.next
       args:
-        CFN_UI_API_BASE_URL: ${CFN_UI_API_BASE_URL:-http://localhost:8000}
+        CFN_UI_API_BASE_URL: ${CFN_UI_API_BASE_URL:-http://host.docker.internal:8000}
+
+        NEXT_PUBLIC_CFN_UI_API_BASE_URL: ${NEXT_PUBLIC_CFN_UI_API_BASE_URL:-http://localhost:8000}
     image: ioc-cfn-mgmt-ui-svc:latest
     container_name: ioc-cfn-mgmt-ui-svc
     ports:
       - '3000:3000'
     env_file:
-      - .env.local
+      - .env.docker
     environment:
       - NODE_ENV=production
     restart: unless-stopped
