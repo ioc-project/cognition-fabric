@@ -3,6 +3,7 @@ set -e
 
 echo "Starting Next.js server with runtime configuration..."
 echo "CFN_UI_API_BASE_URL: ${CFN_UI_API_BASE_URL}"
+echo "NEXT_PUBLIC_CFN_UI_API_BASE_URL: ${NEXT_PUBLIC_CFN_UI_API_BASE_URL}"
 
 if [ -z "$NEXTAUTH_SECRET" ]; then
   export NEXTAUTH_SECRET="secret"
