@@ -4,8 +4,16 @@ export interface ApiConfig {
   headers: Record<string, string>;
 }
 
+const getDefaultBaseUrl = (): string => {
+  if (typeof window === 'undefined') {
+    return process.env.CFN_UI_API_BASE_URL || '';
+  }
+
+  return process.env.NEXT_PUBLIC_CFN_UI_API_BASE_URL || process.env.CFN_UI_API_BASE_URL || '';
+};
+
 let apiConfig: ApiConfig = {
-  baseUrl: process.env.CFN_UI_API_BASE_URL || '',
+  baseUrl: getDefaultBaseUrl(),
   timeout: parseInt(process.env.CFN_UI_API_TIMEOUT || '15000', 10),
   headers: {
     'Content-Type': 'application/json'
@@ -29,7 +37,7 @@ export function updateApiConfig(updates: Partial<ApiConfig>): void {
 
 export function resetApiConfig(): void {
   apiConfig = {
-    baseUrl: process.env.CFN_UI_API_BASE_URL || '',
+    baseUrl: getDefaultBaseUrl(),
     timeout: parseInt(process.env.CFN_UI_API_TIMEOUT || '15000', 10),
     headers: {
       'Content-Type': 'application/json'
