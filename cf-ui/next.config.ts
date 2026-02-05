@@ -12,7 +12,6 @@ const config: NextConfig = {
   },
 
   env: {
-    CFN_UI_API_BASE_URL: process.env.CFN_UI_API_BASE_URL,
     CFN_UI_API_TIMEOUT: process.env.CFN_UI_API_TIMEOUT
   },
   webpack: (config) => {

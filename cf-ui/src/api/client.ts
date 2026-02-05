@@ -15,6 +15,7 @@ class ApiError extends Error {
 }
 
 let config = getApiConfig();
+console.log('[API Client] Initial config:', {baseUrl: config.baseUrl, isServer: typeof window === 'undefined'});
 export let apiClient = createClient<paths>({
   baseUrl: config.baseUrl,
   headers: config.headers

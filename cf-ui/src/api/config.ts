@@ -6,10 +6,14 @@ export interface ApiConfig {
 
 const getDefaultBaseUrl = (): string => {
   if (typeof window === 'undefined') {
-    return process.env.CFN_UI_API_BASE_URL || '';
+    const url = process.env.CFN_UI_API_BASE_URL || '';
+    console.log('[API Config] Server-side baseUrl:', url);
+    return url;
   }
 
-  return process.env.NEXT_PUBLIC_CFN_UI_API_BASE_URL || '';
+  const url = process.env.NEXT_PUBLIC_CFN_UI_API_BASE_URL || '';
+  console.log('[API Config] Client-side baseUrl:', url);
+  return url;
 };
 
 let apiConfig: ApiConfig = {
