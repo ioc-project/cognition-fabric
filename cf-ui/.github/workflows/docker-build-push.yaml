@@ -98,5 +98,5 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            NEXT_PUBLIC_CFN_UI_API_BASE_URL=http://localhost:8000
             CFN_UI_API_BASE_URL=${{ vars.CFN_UI_API_BASE_URL || 'http://localhost:8000' }}
+            NEXT_PUBLIC_CFN_UI_API_BASE_URL=http://localhost:8000
