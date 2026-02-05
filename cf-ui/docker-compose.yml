@@ -5,8 +5,6 @@ services:
       dockerfile: ./ci/docker/Dockerfile.next
       args:
         CFN_UI_API_BASE_URL: ${CFN_UI_API_BASE_URL:-http://host.docker.internal:8000}
-
-        NEXT_PUBLIC_CFN_UI_API_BASE_URL: ${NEXT_PUBLIC_CFN_UI_API_BASE_URL:-http://localhost:8000}
     image: ioc-cfn-mgmt-ui-svc:latest
     container_name: ioc-cfn-mgmt-ui-svc
     ports:

@@ -9,7 +9,7 @@ const getDefaultBaseUrl = (): string => {
     return process.env.CFN_UI_API_BASE_URL || '';
   }
 
-  return process.env.NEXT_PUBLIC_CFN_UI_API_BASE_URL || process.env.CFN_UI_API_BASE_URL || '';
+  return process.env.NEXT_PUBLIC_CFN_UI_API_BASE_URL || '';
 };
 
 let apiConfig: ApiConfig = {
@@ -33,6 +33,12 @@ export function updateApiConfig(updates: Partial<ApiConfig>): void {
       ...(updates.headers || {})
     }
   };
+
+  if (updates.baseUrl) {
+    void import('./client').then(({recreateApiClient}) => {
+      recreateApiClient(updates.baseUrl!);
+    });
+  }
 }
 
 export function resetApiConfig(): void {

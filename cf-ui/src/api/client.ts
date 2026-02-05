@@ -14,59 +14,74 @@ class ApiError extends Error {
   }
 }
 
-const config = getApiConfig();
-export const apiClient = createClient<paths>({
+let config = getApiConfig();
+export let apiClient = createClient<paths>({
   baseUrl: config.baseUrl,
   headers: config.headers
 });
 
-apiClient.use({
-  async onRequest({request}) {
-    const session = await getSession();
-    if (session?.accessToken) {
-      request.headers.set('Authorization', `Bearer ${session.accessToken}`);
-    }
+export function recreateApiClient(newBaseUrl: string): void {
+  config = {...config, baseUrl: newBaseUrl};
+  apiClient = createClient<paths>({
+    baseUrl: newBaseUrl,
+    headers: config.headers
+  });
+  console.log('[API Client] Recreated with baseUrl:', newBaseUrl);
 
-    const timeout = config.timeout;
-    if (timeout && !request.signal) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort('Request timeout'), timeout);
+  setupMiddleware();
+}
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (request as any).__timeoutId = timeoutId;
-
-      return new Request(request, {signal: controller.signal});
-    }
-
-    return request;
-  },
-
-  async onResponse({response, request}) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const timeoutId = (request as any).__timeoutId as NodeJS.Timeout | undefined;
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
-
-    if (!response.ok) {
-      let errorMessage = response.statusText;
-      try {
-        const errorData = await response.clone().json();
-        errorMessage =
-          (errorData && typeof errorData === 'object' && 'detail' in errorData ? errorData.detail : undefined) ||
-          (errorData && typeof errorData === 'object' && 'message' in errorData ? errorData.message : undefined) ||
-          (errorData && typeof errorData === 'object' && 'error' in errorData ? errorData.error : undefined) ||
-          errorMessage;
-      } catch {
-        // Failed to parse error response as JSON
+function setupMiddleware() {
+  apiClient.use({
+    async onRequest({request}) {
+      const session = await getSession();
+      if (session?.accessToken) {
+        request.headers.set('Authorization', `Bearer ${session.accessToken}`);
       }
 
-      throw new ApiError(errorMessage, response.status, response.statusText);
-    }
+      const timeout = config.timeout;
+      if (timeout && !request.signal) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort('Request timeout'), timeout);
 
-    return response;
-  }
-});
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (request as any).__timeoutId = timeoutId;
+
+        return new Request(request, {signal: controller.signal});
+      }
+
+      return request;
+    },
+
+    async onResponse({response, request}) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const timeoutId = (request as any).__timeoutId as NodeJS.Timeout | undefined;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+
+      if (!response.ok) {
+        let errorMessage = response.statusText;
+        try {
+          const errorData = await response.clone().json();
+          errorMessage =
+            (errorData && typeof errorData === 'object' && 'detail' in errorData ? errorData.detail : undefined) ||
+            (errorData && typeof errorData === 'object' && 'message' in errorData ? errorData.message : undefined) ||
+            (errorData && typeof errorData === 'object' && 'error' in errorData ? errorData.error : undefined) ||
+            errorMessage;
+        } catch {
+          // Failed to parse error response as JSON
+        }
+
+        throw new ApiError(errorMessage, response.status, response.statusText);
+      }
+
+      return response;
+    }
+  });
+}
+
+setupMiddleware();
 
 export async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const config = getApiConfig();
