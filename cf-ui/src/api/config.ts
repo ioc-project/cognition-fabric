@@ -4,19 +4,7 @@ export interface ApiConfig {
   headers: Record<string, string>;
 }
 
-async function fetchRuntimeConfig(): Promise<string> {
-  try {
-    const response = await fetch('/api/config');
-    const config = await response.json();
-    return config.apiBaseUrl || '';
-  } catch (error) {
-    console.error('Failed to fetch runtime config:', error);
-    return '';
-  }
-}
-
 const getDefaultBaseUrl = (): string => {
-  // Server-side: always use CFN_UI_API_BASE_URL
   if (typeof window === 'undefined') {
     return process.env.CFN_UI_API_BASE_URL || '';
   }
@@ -32,20 +20,6 @@ let apiConfig: ApiConfig = {
   }
 };
 
-let runtimeConfigInitialized = false;
-
-export async function initializeApiConfig(): Promise<void> {
-  if (typeof window === 'undefined' || runtimeConfigInitialized) {
-    return;
-  }
-
-  const runtimeBaseUrl = await fetchRuntimeConfig();
-  if (runtimeBaseUrl) {
-    apiConfig.baseUrl = runtimeBaseUrl;
-    runtimeConfigInitialized = true;
-  }
-}
-
 export function getApiConfig(): Readonly<ApiConfig> {
   return apiConfig;
 }
@@ -59,6 +33,12 @@ export function updateApiConfig(updates: Partial<ApiConfig>): void {
       ...(updates.headers || {})
     }
   };
+
+  if (updates.baseUrl) {
+    void import('./client').then(({recreateApiClient}) => {
+      recreateApiClient(updates.baseUrl!);
+    });
+  }
 }
 
 export function resetApiConfig(): void {

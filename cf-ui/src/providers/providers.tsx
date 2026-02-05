@@ -3,16 +3,34 @@
 import {ErrorBoundary} from 'react-error-boundary';
 import {SWRConfig} from 'swr';
 import {SessionProvider} from 'next-auth/react';
-import {useEffect} from 'react';
+import {useEffect, useState} from 'react';
 import {ErrorPage} from '@/components/router/error-page';
 import {ThemeProvider} from './theme-provider';
 import {swrFetcher} from '@/lib/swr-config';
-import {initializeApiConfig} from '@/api/config';
+import {updateApiConfig} from '@/api/config';
 
 export function Providers({children}: {children: React.ReactNode}) {
+  const [configLoaded, setConfigLoaded] = useState(false);
+
   useEffect(() => {
-    initializeApiConfig().catch(console.error);
+    fetch('/api/config')
+      .then((res) => res.json())
+      .then((config) => {
+        console.log('[Providers] Runtime config loaded:', config);
+        if (config.apiBaseUrl) {
+          updateApiConfig({baseUrl: config.apiBaseUrl});
+        }
+        setConfigLoaded(true);
+      })
+      .catch((error) => {
+        console.error('[Providers] Failed to load runtime config:', error);
+        setConfigLoaded(true);
+      });
   }, []);
+
+  if (!configLoaded) {
+    return null;
+  }
 
   const content = (
     <SWRConfig
