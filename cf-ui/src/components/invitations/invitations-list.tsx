@@ -8,7 +8,7 @@ import {ResourceTable} from '@/components/ui/resource-table';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
-import {useWorkspaceInvitations} from '@/hooks/useApi';
+import {useWorkspaceInvitations} from '@/hooks/useInvitations';
 import {parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {toast} from 'sonner';
 import type {Invitation, InvitationStatus} from '@/api/types';

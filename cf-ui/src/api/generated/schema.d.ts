@@ -315,26 +315,52 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/workspaces/{workspace_id}/cognitive-fabric-node/register": {
+    "/api/workspaces/{workspace_id}/cognitive-fabric-node": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * List Cfn Nodes
+         * @description List all CFN nodes in workspace
+         *
+         *     - **workspace_id**: UUID of the workspace
+         *     - **status**: Optional status filter (online, offline, blocked)
+         *
+         *     Returns a list of CFN nodes with summary information and total count.
+         */
+        get: operations["list_cfn_nodes_api_workspaces__workspace_id__cognitive_fabric_node_get"];
         put?: never;
         /**
-         * Register Cfn Node
-         * @description Register a new CFN node or re-enable a disabled one
+         * Create Cfn Node
+         * @description Create a new CFN node or refresh an active one
          *
          *     - **cfn_id**: Persistent CFN identifier (provided by CFN, immutable)
          *     - **cfn_name**: Human-readable CFN name (can be updated later)
          *     - **cfn_config**: Optional current CFN configuration
          *
-         *     Returns the cfn_id, cfn_name, status (offline), and cloud_config for the CFN to apply
+         *     **Behavior by CFN State:**
+         *
+         *     1. **New CFN or Deleted CFN (ID reuse)**: Creates new entry
+         *        - Status: 201 Created
+         *        - Returns: offline status
+         *
+         *     2. **Active CFN (reboot/reconnection)**: Refreshes config
+         *        - Status: 201 Created
+         *        - Returns: offline status
+         *        - Allows CFN to reconnect after reboot
+         *
+         *     3. **Disabled CFN (ID locked)**: Rejects creation
+         *        - Status: 403 Forbidden
+         *        - CFN ID is locked and cannot be reused
+         *        - Admin must manually enable it first via PATCH /enable
+         *
+         *     Returns the cfn_id, cfn_name, status (offline), and cloud_config for the CFN to apply.
+         *     CFN must send heartbeat to change status from offline to online.
          */
-        post: operations["register_cfn_node_api_workspaces__workspace_id__cognitive_fabric_node_register_post"];
+        post: operations["create_cfn_node_api_workspaces__workspace_id__cognitive_fabric_node_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -372,22 +398,90 @@ export interface paths {
         put: operations["update_cfn_node_api_workspaces__workspace_id__cognitive_fabric_node__cfn_id__put"];
         post?: never;
         /**
-         * Deregister Cfn Node
-         * @description De-register CFN node (soft delete/disable)
+         * Delete Cfn Node
+         * @description Delete CFN node (hard delete)
          *
          *     - **workspace_id**: UUID of the workspace
          *     - **cfn_id**: CFN identifier
          *
-         *     De-registering a CFN disables it by setting enabled=False and deleted_at timestamp.
-         *     The CFN will no longer appear in listings and cannot send heartbeats.
+         *     **IMPORTANT:** A CFN must be disabled first before it can be deleted.
          *
-         *     To re-enable, the CFN should call POST /register again (IoT-style registration).
+         *     Deleting a CFN marks it as deleted in the database.
+         *     After deletion, the CFN ID can be reused to create a new CFN node.
+         *
+         *     **Flow:**
+         *     1. User clicks "Disable" in UI → CFN is disabled (PATCH /disable)
+         *     2. "Delete" button appears in UI
+         *     3. User clicks "Delete" → CFN is deleted (DELETE)
+         *     4. CFN ID is now available for reuse
+         *
          *     No response body (204 No Content).
          */
-        delete: operations["deregister_cfn_node_api_workspaces__workspace_id__cognitive_fabric_node__cfn_id__delete"];
+        delete: operations["delete_cfn_node_api_workspaces__workspace_id__cognitive_fabric_node__cfn_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/cognitive-fabric-node/{cfn_id}/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Enable Cfn Node
+         * @description Enable a disabled CFN node
+         *
+         *     - **workspace_id**: UUID of the workspace
+         *     - **cfn_id**: CFN identifier
+         *
+         *     This is an admin operation to re-enable a disabled CFN.
+         *     After enabling, the CFN can call /register to reconnect and resume operations.
+         *
+         *     Returns full CFN details with enabled=True and status=offline (until heartbeat is sent).
+         */
+        patch: operations["enable_cfn_node_api_workspaces__workspace_id__cognitive_fabric_node__cfn_id__enable_patch"];
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/cognitive-fabric-node/{cfn_id}/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Disable Cfn Node
+         * @description Disable CFN node (soft disable, prepares for deletion)
+         *
+         *     - **workspace_id**: UUID of the workspace
+         *     - **cfn_id**: CFN identifier
+         *
+         *     Disabling a CFN stops heartbeats and prepares it for deletion.
+         *     The CFN will no longer appear in listings and cannot send heartbeats.
+         *     The CFN ID is LOCKED and cannot be reused while in disabled state.
+         *
+         *     After disabling, the "Delete" button will appear in the UI.
+         *     The CFN can be re-enabled using the /enable endpoint, or permanently
+         *     deleted using the DELETE endpoint.
+         *
+         *     Returns full CFN details with enabled=False.
+         */
+        patch: operations["disable_cfn_node_api_workspaces__workspace_id__cognitive_fabric_node__cfn_id__disable_patch"];
         trace?: never;
     };
     "/api/workspaces/{workspace_id}/cognitive-fabric-node/{cfn_id}/heartbeat": {
@@ -412,31 +506,6 @@ export interface paths {
          *     Disabled or de-registered nodes will receive 403 Forbidden.
          */
         put: operations["cfn_heartbeat_api_workspaces__workspace_id__cognitive_fabric_node__cfn_id__heartbeat_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/workspaces/{workspace_id}/cognitive-fabric-node": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Cfn Nodes
-         * @description List all CFN nodes in workspace
-         *
-         *     - **workspace_id**: UUID of the workspace
-         *     - **status**: Optional status filter (online, offline, blocked)
-         *
-         *     Returns a list of CFN nodes with summary information and total count.
-         */
-        get: operations["list_cfn_nodes_api_workspaces__workspace_id__cognitive_fabric_node_get"];
-        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -773,7 +842,7 @@ export interface paths {
         post?: never;
         /**
          * Remove Member
-         * @description Remove a member from a workspace (admin only, cannot remove self)
+         * @description Remove a member from a workspace (admin only, cannot remove self or creator)
          *
          *     - **workspace_id**: UUID of the workspace
          *     - **user_id**: UUID of the user to remove
@@ -805,7 +874,7 @@ export interface components {
          *         {
          *           "created_at": "2024-11-14T10:30:00Z",
          *           "id": "550e8400-e29b-41d4-a716-446655440000",
-         *           "key_preview": "tkf_abc123...",
+         *           "key_preview": "ioc_abc123...",
          *           "name": "Production API Key",
          *           "user_id": "550e8400-e29b-41d4-a716-446655440002"
          *         }
@@ -824,7 +893,7 @@ export interface components {
          * @example {
          *       "created_at": "2024-11-14T10:30:00Z",
          *       "id": "550e8400-e29b-41d4-a716-446655440000",
-         *       "key_preview": "tkf_abc123...",
+         *       "key_preview": "ioc_abc123...",
          *       "name": "Production API Key",
          *       "user_id": "550e8400-e29b-41d4-a716-446655440002"
          *     }
@@ -862,8 +931,8 @@ export interface components {
          * @example {
          *       "created_at": "2024-11-14T10:30:00Z",
          *       "id": "550e8400-e29b-41d4-a716-446655440000",
-         *       "key": "tkf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-         *       "key_preview": "tkf_xxx...",
+         *       "key": "ioc_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+         *       "key_preview": "ioc_xxx...",
          *       "name": "Production API Key",
          *       "user_id": "550e8400-e29b-41d4-a716-446655440002"
          *     }
@@ -1605,6 +1674,10 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
         /** WorkspaceCreate */
         WorkspaceCreate: {
@@ -2396,7 +2469,43 @@ export interface operations {
             };
         };
     };
-    register_cfn_node_api_workspaces__workspace_id__cognitive_fabric_node_register_post: {
+    list_cfn_nodes_api_workspaces__workspace_id__cognitive_fabric_node_get: {
+        parameters: {
+            query?: {
+                /** @description Filter by status (online, offline, blocked) */
+                status?: string | null;
+            };
+            header?: {
+                "X-API-Key"?: string | null;
+            };
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CognitiveFabricNodeList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_cfn_node_api_workspaces__workspace_id__cognitive_fabric_node_post: {
         parameters: {
             query?: never;
             header?: {
@@ -2505,7 +2614,7 @@ export interface operations {
             };
         };
     };
-    deregister_cfn_node_api_workspaces__workspace_id__cognitive_fabric_node__cfn_id__delete: {
+    delete_cfn_node_api_workspaces__workspace_id__cognitive_fabric_node__cfn_id__delete: {
         parameters: {
             query?: never;
             header?: {
@@ -2525,6 +2634,74 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enable_cfn_node_api_workspaces__workspace_id__cognitive_fabric_node__cfn_id__enable_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+            };
+            path: {
+                workspace_id: string;
+                cfn_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CognitiveFabricNodeDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disable_cfn_node_api_workspaces__workspace_id__cognitive_fabric_node__cfn_id__disable_patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-API-Key"?: string | null;
+            };
+            path: {
+                workspace_id: string;
+                cfn_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CognitiveFabricNodeDetail"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -2558,42 +2735,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CognitiveFabricNodeHeartbeatResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_cfn_nodes_api_workspaces__workspace_id__cognitive_fabric_node_get: {
-        parameters: {
-            query?: {
-                /** @description Filter by status (online, offline, blocked) */
-                status?: string | null;
-            };
-            header?: {
-                "X-API-Key"?: string | null;
-            };
-            path: {
-                workspace_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CognitiveFabricNodeList"];
                 };
             };
             /** @description Validation Error */

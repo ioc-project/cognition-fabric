@@ -4,7 +4,7 @@ import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
-import {MoreVertical, Unplug, Edit} from 'lucide-react';
+import {MoreVertical, Unplug, Edit, Trash2} from 'lucide-react';
 import type {Cfn} from '@/api/types/cfn';
 
 export interface CfnCardListProps {
@@ -12,11 +12,22 @@ export interface CfnCardListProps {
   workspaceId: string;
   selectedId: string | null;
   onCardClick: (cfn: Cfn) => void;
-  onOpenDelete: (payload: {cfn_id: string; cfn_name: string}) => void;
+  onOpenDelete: (payload: {cfn_id: string; cfn_name: string; enabled: boolean}) => void;
   onOpenEdit: (cfn: Cfn) => void;
+  onEnable: (payload: {cfn_id: string; cfn_name: string}) => void;
+  onDisable: (payload: {cfn_id: string; cfn_name: string}) => void;
 }
 
-export function CfnCardList({cfns, workspaceId: _workspaceId, selectedId, onCardClick, onOpenDelete, onOpenEdit}: CfnCardListProps) {
+export function CfnCardList({
+  cfns,
+  workspaceId: _workspaceId,
+  selectedId,
+  onCardClick,
+  onOpenDelete,
+  onOpenEdit,
+  onEnable,
+  onDisable
+}: CfnCardListProps) {
   return (
     <div className="list-grid">
       {cfns.map((cfn) => (
@@ -60,16 +71,39 @@ export function CfnCardList({cfns, workspaceId: _workspaceId, selectedId, onCard
                   <Edit className="w-4 h-4 mr-2" />
                   Edit
                 </DropdownMenuItem>
+                {cfn.enabled ? (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onDisable({cfn_id: cfn.cfn_id, cfn_name: cfn.cfn_name});
+                    }}
+                  >
+                    <Unplug className="w-4 h-4 mr-2" />
+                    Disable
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onEnable({cfn_id: cfn.cfn_id, cfn_name: cfn.cfn_name});
+                    }}
+                  >
+                    <Unplug className="w-4 h-4 mr-2" />
+                    Enable
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem
                   className="text-red-600 dark:text-red-400"
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    onOpenDelete({cfn_id: cfn.cfn_id, cfn_name: cfn.cfn_name});
+                    onOpenDelete({cfn_id: cfn.cfn_id, cfn_name: cfn.cfn_name, enabled: cfn.enabled});
                   }}
                 >
-                  <Unplug className="w-4 h-4 mr-2" />
-                  Disable
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

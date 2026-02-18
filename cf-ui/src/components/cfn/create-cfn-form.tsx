@@ -16,7 +16,7 @@ import {parseError, formatJson} from '@/lib/utils';
 import {toast} from 'sonner';
 import {BasePage} from '@/components/ui/base-page';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
-import {useCfn} from '@/hooks/useApi';
+import {useCfn} from '@/hooks/useCfn';
 import {breadcrumbs} from '@/constants/routes';
 
 const formSchema = z.object({

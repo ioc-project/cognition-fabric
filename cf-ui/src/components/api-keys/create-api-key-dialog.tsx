@@ -3,7 +3,7 @@
 import {FormModal} from '@/components/ui/form-modal';
 import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
-import {useApiKeys} from '@/hooks/useApi';
+import {useApiKeys} from '@/hooks/useApiKeys';
 import {z} from 'zod';
 
 const formSchema = z.object({

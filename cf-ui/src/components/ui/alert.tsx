@@ -19,7 +19,6 @@ const alertVariants = cva(
   }
 );
 
-/* eslint-disable indent */
 const Alert = React.forwardRef<
   HTMLDivElement,
   React.HTMLAttributes<HTMLDivElement> &
@@ -41,7 +40,6 @@ const Alert = React.forwardRef<
     )}
   </div>
 ));
-/* eslint-enable indent */
 Alert.displayName = 'Alert';
 
 const AlertTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(({className, ...props}, ref) => (

@@ -29,7 +29,7 @@ export const cfnApi = {
   },
 
   create: async (payload: CreateCfnRequest, workspaceId: string): Promise<CreateCfnResponse> => {
-    const {data, error} = await apiClient.POST('/api/workspaces/{workspace_id}/cognitive-fabric-node/register', {
+    const {data, error} = await apiClient.POST('/api/workspaces/{workspace_id}/cognitive-fabric-node', {
       params: {
         path: {workspace_id: workspaceId}
       },
@@ -66,5 +66,31 @@ export const cfnApi = {
     if (error) {
       throw error;
     }
+  },
+
+  enable: async (workspaceId: string, cfnId: string): Promise<Cfn> => {
+    const {data, error} = await apiClient.PATCH('/api/workspaces/{workspace_id}/cognitive-fabric-node/{cfn_id}/enable', {
+      params: {
+        path: {workspace_id: workspaceId, cfn_id: cfnId}
+      }
+    });
+
+    if (error) {
+      throw error;
+    }
+    return data;
+  },
+
+  disable: async (workspaceId: string, cfnId: string): Promise<Cfn> => {
+    const {data, error} = await apiClient.PATCH('/api/workspaces/{workspace_id}/cognitive-fabric-node/{cfn_id}/disable', {
+      params: {
+        path: {workspace_id: workspaceId, cfn_id: cfnId}
+      }
+    });
+
+    if (error) {
+      throw error;
+    }
+    return data;
   }
 };

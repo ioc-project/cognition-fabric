@@ -1,20 +1,20 @@
 'use client';
 
 import {useState} from 'react';
-import {cognitiveAgentApi} from '@/api/endpoints';
-import type {CognitiveAgentQueryRequest} from '@/api/types/cognitive-agent';
+import {cognitiveEngineApi} from '@/api/endpoints';
+import type {CognitiveEngineQueryRequest} from '@/api/types/cognitive-engine';
 import {Card, CardContent} from '@/components/ui/card';
 import {Label} from '@/components/ui/label';
 import {Textarea} from '@/components/ui/textarea';
 import {Button} from '@/components/ui/button';
 import {ChevronDown, ChevronUp} from 'lucide-react';
 
-interface CognitiveAgentQueryProps {
+interface CognitiveEngineQueryProps {
   workspaceId: string;
   cognitiveAgentId: string;
 }
 
-export function CognitiveAgentQuery({workspaceId, cognitiveAgentId}: CognitiveAgentQueryProps) {
+export function CognitiveEngineQuery({workspaceId, cognitiveAgentId}: CognitiveEngineQueryProps) {
   const [intent, setIntent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -31,8 +31,8 @@ export function CognitiveAgentQuery({workspaceId, cognitiveAgentId}: CognitiveAg
     setResponse(null);
 
     try {
-      const payload: CognitiveAgentQueryRequest = {intent, records: []};
-      const res = await cognitiveAgentApi.query(workspaceId, cognitiveAgentId, payload);
+      const payload: CognitiveEngineQueryRequest = {intent, records: []};
+      const res = await cognitiveEngineApi.query(workspaceId, cognitiveAgentId, payload);
       setResponse(res);
     } catch (e) {
       const message = e instanceof Error ? e.message : 'Failed to gather evidence';

@@ -4,8 +4,8 @@ import {useEffect, useState} from 'react';
 import {useParams, useRouter} from 'next/navigation';
 import useSWR from 'swr';
 import {swrKeys} from '@/lib/swr-config';
-import {cognitiveAgentApi, masApi, workspaceApi} from '@/api/endpoints';
-import type {CognitiveAgent} from '@/api/types/cognitive-agent';
+import {cognitiveEngineApi, masApi, workspaceApi} from '@/api/endpoints';
+import type {CognitiveEngine} from '@/api/types/cognitive-engine';
 import type {MAS} from '@/api/types/mas';
 import type {Workspace} from '@/api/types/workspace';
 import {BasePage} from '@/components/ui/base-page';
@@ -15,13 +15,13 @@ import {Label} from '@/components/ui/label';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes} from '@/constants/routes';
 import {DATE_TIME_FORMAT_OPTIONS, parseError} from '@/lib/utils';
-import {CognitiveAgentQuery} from '@/components/cognitive-agents/cognitive-agent-query';
+import {CognitiveEngineQuery} from '@/components/cognitive-engines/cognitive-engine-query';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {toast} from 'sonner';
 
-export default function CognitiveAgentDetailsPage() {
+export default function CognitiveEngineDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const rawWorkspaceId = params?.id as string | string[] | undefined;
@@ -36,8 +36,8 @@ export default function CognitiveAgentDetailsPage() {
     data: cognitiveAgent,
     error,
     isLoading
-  } = useSWR<CognitiveAgent>(workspaceId && cognitiveAgentId ? swrKeys.cognitiveAgentDetails(workspaceId, cognitiveAgentId) : null, () =>
-    cognitiveAgentApi.get(workspaceId as string, cognitiveAgentId as string)
+  } = useSWR<CognitiveEngine>(workspaceId && cognitiveAgentId ? swrKeys.cognitiveEngineDetails(workspaceId, cognitiveAgentId) : null, () =>
+    cognitiveEngineApi.get(workspaceId as string, cognitiveAgentId as string)
   );
   const {data: masList = [] as MAS[], error: masError} = useSWR<MAS[]>(workspaceId ? swrKeys.mas(workspaceId) : null, () =>
     masApi.list(workspaceId as string)
@@ -63,17 +63,17 @@ export default function CognitiveAgentDetailsPage() {
   const crumbs =
     workspace && workspaceId
       ? [
-          {link: routes.workspaces.cognitiveAgents.list(workspaceId), text: 'Cognitive Agents'},
-          {link: '', text: cognitiveAgent?.name || 'Cognitive Agent', active: true}
+          {link: routes.workspaces.cognitiveEngines.list(workspaceId), text: 'Cognitive Engines'},
+          {link: '', text: cognitiveAgent?.name || 'Cognitive Engine', active: true}
         ]
       : undefined;
 
   const handleDelete = async () => {
     await deleteDialog.confirm(async (data) => {
       try {
-        await cognitiveAgentApi.delete(workspaceId!, data.id);
-        toast.success(`Cognitive Agent "${data.name}" deleted successfully`);
-        router.push(routes.workspaces.cognitiveAgents.list(workspaceId!));
+        await cognitiveEngineApi.delete(workspaceId!, data.id);
+        toast.success(`Cognitive Engine "${data.name}" deleted successfully`);
+        router.push(routes.workspaces.cognitiveEngines.list(workspaceId!));
       } catch (err) {
         const errorMessage = parseError(err);
         setDeleteError(errorMessage);
@@ -85,8 +85,8 @@ export default function CognitiveAgentDetailsPage() {
   return (
     <>
       <BasePage
-        title={cognitiveAgent?.name || 'Cognitive Agent'}
-        description="View details about your cognitive agent"
+        title={cognitiveAgent?.name || 'Cognitive Engine'}
+        description="View details about your cognitive engine"
         useBreadcrumbs
         breadcrumbs={crumbs}
         callToAction={cognitiveAgent && <DetailsPageActions onDelete={() => deleteDialog.open({id: cognitiveAgent.id, name: cognitiveAgent.name})} />}
@@ -95,11 +95,11 @@ export default function CognitiveAgentDetailsPage() {
           data={cognitiveAgent}
           error={error}
           customIsLoading={isLoading}
-          itemName="Cognitive Agent details"
-          errorListStateProps={{title: 'Failed to load Cognitive Agent details'}}
+          itemName="Cognitive Engine details"
+          errorListStateProps={{title: 'Failed to load Cognitive Engine details'}}
           emptyListStateProps={{title: 'No details found'}}
         >
-          {workspaceId && cognitiveAgentId && <CognitiveAgentQuery workspaceId={workspaceId} cognitiveAgentId={cognitiveAgentId} />}
+          {workspaceId && cognitiveAgentId && <CognitiveEngineQuery workspaceId={workspaceId} cognitiveAgentId={cognitiveAgentId} />}
           <div className="flex justify-center py-4">
             <Card variant="list" className="w-full max-w-4xl">
               <CardContent className="p-8">
@@ -150,7 +150,7 @@ export default function CognitiveAgentDetailsPage() {
         open={deleteDialog.isOpen}
         onOpenChange={deleteDialog.close}
         onConfirm={handleDelete}
-        title="Delete Cognitive Agent"
+        title="Delete Cognitive Engine"
         description={deleteError ?? `Are you sure you want to delete "${deleteDialog.data?.name}"? This action cannot be undone.`}
         confirmText="Delete"
         variant="destructive"

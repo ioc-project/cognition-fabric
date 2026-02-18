@@ -10,15 +10,11 @@ export const swrKeys = {
   iamRoles: () => ['iam-roles'] as const,
   iamUsers: () => ['iam-users'] as const,
 
-  software: (workspaceId: string) => ['software', workspaceId] as const,
-  softwareTemplates: (templateType: 'ReasonerTemplates') => ['software-templates', templateType] as const,
-  softwareTemplatesAll: () => ['software-templates-all'] as const,
-
   mas: (workspaceId: string) => ['mas-list', workspaceId] as const,
   masDetails: (workspaceId: string, masId: string) => ['mas-details', workspaceId, masId] as const,
 
-  cognitiveAgents: (workspaceId: string) => ['cognitive-agents', workspaceId] as const,
-  cognitiveAgentDetails: (workspaceId: string, cognitiveAgentId: string) => ['cognitive-agent-details', workspaceId, cognitiveAgentId] as const,
+  cognitiveEngines: (workspaceId: string) => ['cognitive-engines', workspaceId] as const,
+  cognitiveEngineDetails: (workspaceId: string, cognitiveEngineId: string) => ['cognitive-engine-details', workspaceId, cognitiveEngineId] as const,
 
   cfn: (workspaceId: string) => ['cfn-list', workspaceId] as const,
   cfnDetails: (workspaceId: string, cfnId: string) => ['cfn-details', workspaceId, cfnId] as const,

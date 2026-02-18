@@ -7,18 +7,25 @@ import {routes} from '@/constants/routes';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import Link from 'next/link';
 import {MoreVertical, Trash2} from 'lucide-react';
-import type {CognitiveAgent} from '@/api/types/cognitive-agent';
+import type {CognitiveEngine} from '@/api/types/cognitive-engine';
 
-export interface CognitiveAgentTableListProps {
-  cognitiveAgents: CognitiveAgent[];
+export interface CognitiveEngineTableListProps {
+  cognitiveAgents: CognitiveEngine[];
   workspaceId: string;
   selectedId: string | null;
-  onRowClick: (r: CognitiveAgent) => void;
+  onRowClick: (r: CognitiveEngine) => void;
   onOpenDelete: (payload: {id: string; name: string}) => void;
   masById: Map<string, string>;
 }
 
-export function CognitiveAgentTableList({cognitiveAgents, workspaceId, selectedId, onRowClick, onOpenDelete, masById}: CognitiveAgentTableListProps) {
+export function CognitiveEngineTableList({
+  cognitiveAgents,
+  workspaceId,
+  selectedId,
+  onRowClick,
+  onOpenDelete,
+  masById
+}: CognitiveEngineTableListProps) {
   return (
     <ResourceTable
       items={cognitiveAgents}
@@ -41,7 +48,7 @@ export function CognitiveAgentTableList({cognitiveAgents, workspaceId, selectedI
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href={routes.workspaces.cognitiveAgents.details(workspaceId, r.id)}>View Details</Link>
+                  <Link href={routes.workspaces.cognitiveEngines.details(workspaceId, r.id)}>View Details</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-red-600 dark:text-red-400"

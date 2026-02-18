@@ -45,7 +45,6 @@ function setupMiddleware() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort('Request timeout'), timeout);
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (request as any).__timeoutId = timeoutId;
 
         return new Request(request, {signal: controller.signal});
@@ -55,7 +54,6 @@ function setupMiddleware() {
     },
 
     async onResponse({response, request}) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const timeoutId = (request as any).__timeoutId as NodeJS.Timeout | undefined;
       if (timeoutId) {
         clearTimeout(timeoutId);

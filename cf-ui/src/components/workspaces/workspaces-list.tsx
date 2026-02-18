@@ -15,7 +15,7 @@ import {CreateWorkspaceDialog} from './create-workspace-dialog';
 import {workspaceApi} from '@/api/endpoints';
 import {useRouter, useSearchParams} from 'next/navigation';
 import {parseError} from '@/lib/utils';
-import {useWorkspaces} from '@/hooks/useApi';
+import {useWorkspaces} from '@/hooks/useWorkspaces';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import type {Workspace} from '@/api/types';
 import {routes} from '@/constants/routes';
@@ -74,7 +74,7 @@ export function WorkspacesList() {
             empty={{
               icon: FolderOpen,
               title: 'No workspaces',
-              description: 'Create a workspace to organize your CFN resources - Multi-Agentic Systems and Cognitive Agents.',
+              description: 'Create a workspace to organize your multi-agent systems and other resources.',
               actionLabel: 'Create Your First Workspace',
               onAction: () => setIsCreateDialogOpen(true)
             }}

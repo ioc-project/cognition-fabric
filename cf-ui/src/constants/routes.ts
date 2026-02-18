@@ -17,10 +17,10 @@ export const routes = {
       create: (workspaceId: string) => `/workspaces/${workspaceId}/mas/create`,
       details: (workspaceId: string, masId: string) => `/workspaces/${workspaceId}/mas/${masId}`
     },
-    cognitiveAgents: {
-      list: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-agents`,
-      create: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-agents/create`,
-      details: (workspaceId: string, cognitiveAgentId: string) => `/workspaces/${workspaceId}/cognitive-agents/${cognitiveAgentId}`
+    cognitiveEngines: {
+      list: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-engines`,
+      create: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-engines/create`,
+      details: (workspaceId: string, cognitiveEngineId: string) => `/workspaces/${workspaceId}/cognitive-engines/${cognitiveEngineId}`
     },
     cfn: {
       list: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-fabric-node`,
@@ -29,12 +29,6 @@ export const routes = {
     },
     summary: (workspaceId: string) => `/workspaces/${workspaceId}/summary`,
     members: (workspaceId: string) => `/workspaces/${workspaceId}/members`
-  },
-
-  software: {
-    list: '/software',
-    listByType: (type: 'ReasonerTemplates') => `/software?type=${encodeURIComponent(type)}`,
-    details: (id: string, type: string) => `/software/${id}?type=${encodeURIComponent(type)}`
   },
 
   queries: {
@@ -72,11 +66,6 @@ export const apiRoutes = {
     users: '/api/iam/users'
   },
 
-  software: {
-    list: '/api/softwares',
-    listByType: (type: string) => `/api/softwares?type=${encodeURIComponent(type)}`
-  },
-
   cfn: {
     list: (workspaceId: string) => `/api/workspaces/${workspaceId}/cognitive-fabric-node`,
     details: (workspaceId: string, id: string) => `/api/workspaces/${workspaceId}/cognitive-fabric-node/${id}`,
@@ -99,27 +88,9 @@ export const breadcrumbs = {
     {link: '', text: 'Workspaces', active: true}
   ],
 
-  softwareList: (tabName?: string): BreadcrumbItem[] => {
-    if (tabName) {
-      return [
-        {link: routes.software.list, text: 'Software Templates'},
-        {link: '', text: tabName, active: true}
-      ];
-    }
-    return [
-      {link: routes.home, text: 'Home'},
-      {link: '', text: 'Software Templates', active: true}
-    ];
-  },
-
   queriesList: (): BreadcrumbItem[] => [
     {link: routes.home, text: 'Home'},
     {link: '', text: 'Saved Queries', active: true}
-  ],
-
-  softwareDetails: (templateId: string): BreadcrumbItem[] => [
-    {link: routes.software.list, text: 'Software Templates'},
-    {link: '', text: templateId, active: true}
   ],
 
   workspaceDetails: (workspaceName: string): BreadcrumbItem[] => [
@@ -138,14 +109,14 @@ export const breadcrumbs = {
     {link: '', text: 'Create', active: true}
   ],
 
-  workspaceCognitiveAgents: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+  workspaceCognitiveEngines: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
     {link: routes.workspaces.list, text: 'Workspaces'},
     {link: routes.workspaces.details(workspaceId), text: workspaceName},
-    {link: '', text: 'Cognitive Agents', active: true}
+    {link: '', text: 'Cognitive Engines', active: true}
   ],
 
-  createCognitiveAgent: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.cognitiveAgents.list(workspaceId), text: 'Cognitive Agents'},
+  createCognitiveEngine: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.cognitiveEngines.list(workspaceId), text: 'Cognitive Engines'},
     {link: '', text: 'Create', active: true}
   ],
 

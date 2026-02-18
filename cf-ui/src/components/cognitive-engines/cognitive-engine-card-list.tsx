@@ -7,18 +7,25 @@ import {routes} from '@/constants/routes';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import Link from 'next/link';
 import {MoreVertical, Trash2} from 'lucide-react';
-import type {CognitiveAgent} from '@/api/types/cognitive-agent';
+import type {CognitiveEngine} from '@/api/types/cognitive-engine';
 
-export interface CognitiveAgentCardListProps {
-  cognitiveAgents: CognitiveAgent[];
+export interface CognitiveEngineCardListProps {
+  cognitiveAgents: CognitiveEngine[];
   workspaceId: string;
   selectedId: string | null;
-  onCardClick: (r: CognitiveAgent) => void;
+  onCardClick: (r: CognitiveEngine) => void;
   onOpenDelete: (payload: {id: string; name: string}) => void;
   masById: Map<string, string>;
 }
 
-export function CognitiveAgentCardList({cognitiveAgents, workspaceId, selectedId, onCardClick, onOpenDelete, masById}: CognitiveAgentCardListProps) {
+export function CognitiveEngineCardList({
+  cognitiveAgents,
+  workspaceId,
+  selectedId,
+  onCardClick,
+  onOpenDelete,
+  masById
+}: CognitiveEngineCardListProps) {
   return (
     <div className="list-grid">
       {cognitiveAgents.map((r) => (
@@ -41,7 +48,7 @@ export function CognitiveAgentCardList({cognitiveAgents, workspaceId, selectedId
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href={routes.workspaces.cognitiveAgents.details(workspaceId, r.id)}>View Details</Link>
+                  <Link href={routes.workspaces.cognitiveEngines.details(workspaceId, r.id)}>View Details</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-red-600 dark:text-red-400"
@@ -79,7 +86,7 @@ export function CognitiveAgentCardList({cognitiveAgents, workspaceId, selectedId
 
           <div className="mt-auto">
             <Button asChild variant="sidebar" className="w-full">
-              <Link href={routes.workspaces.cognitiveAgents.details(workspaceId, r.id)}>View Details</Link>
+              <Link href={routes.workspaces.cognitiveEngines.details(workspaceId, r.id)}>View Details</Link>
             </Button>
           </div>
         </Card>

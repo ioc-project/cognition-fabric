@@ -1,11 +1,11 @@
 'use client';
 
 import {useParams} from 'next/navigation';
-import {CognitiveAgentList} from '@/components/cognitive-agents/cognitive-agent-list';
+import {CognitiveEngineList} from '@/components/cognitive-engines/cognitive-engine-list';
 
 export default function CognitiveAgentsListPage() {
   const params = useParams();
   const workspaceId = params.id as string;
 
-  return <CognitiveAgentList workspaceId={workspaceId} />;
+  return <CognitiveEngineList workspaceId={workspaceId} />;
 }

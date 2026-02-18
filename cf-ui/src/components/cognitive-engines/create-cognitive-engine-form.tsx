@@ -16,16 +16,16 @@ import {swrKeys} from '@/lib/swr-config';
 import {routes} from '@/constants/routes';
 import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
-import type {CreateCognitiveAgentRequest} from '@/api/types/cognitive-agent';
+import type {CreateCognitiveEngineRequest} from '@/api/types/cognitive-engine';
 import useSWR from 'swr';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {useCognitiveAgents} from '@/hooks/useApi';
+import {useCognitiveEngines} from '@/hooks/useCognitiveEngines';
 import {BasePage} from '@/components/ui/base-page';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {breadcrumbs} from '@/constants/routes';
 
 const formSchema = z.object({
-  name: z.string().min(1, 'Cognitive Agent name is required').min(3, 'Name must be at least 3 characters'),
+  name: z.string().min(1, 'Cognitive Engine name is required').min(3, 'Name must be at least 3 characters'),
   mas_id: z.string().uuid('Select a valid MAS'),
   config: z
     .string()
@@ -44,7 +44,7 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-export function CreateCognitiveAgentForm({workspaceId}: {workspaceId: string}) {
+export function CreateCognitiveEngineForm({workspaceId}: {workspaceId: string}) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,7 +52,7 @@ export function CreateCognitiveAgentForm({workspaceId}: {workspaceId: string}) {
   const workspaceName = workspace?.name || 'Workspace';
 
   const {data: masList = [], error: masError} = useSWR(swrKeys.mas(workspaceId), () => masApi.list(workspaceId));
-  const {addCognitiveAgent} = useCognitiveAgents(workspaceId);
+  const {addCognitiveEngine: addCognitiveAgent} = useCognitiveEngines(workspaceId);
 
   if (masError) {
     console.warn('Failed to load MAS list:', masError);
@@ -71,18 +71,18 @@ export function CreateCognitiveAgentForm({workspaceId}: {workspaceId: string}) {
     setIsLoading(true);
     setError(null);
     try {
-      const payload: CreateCognitiveAgentRequest = {
+      const payload: CreateCognitiveEngineRequest = {
         name: values.name,
         mas_id: values.mas_id,
         config: values.config
       };
       await addCognitiveAgent(payload);
-      toast.success(`Cognitive Agent "${values.name}" created successfully`);
-      router.push(routes.workspaces.cognitiveAgents.list(workspaceId));
+      toast.success(`Cognitive Engine "${values.name}" created successfully`);
+      router.push(routes.workspaces.cognitiveEngines.list(workspaceId));
     } catch (err) {
       const errorMessage = parseError(err);
       setError(errorMessage);
-      toast.error(`Failed to create Cognitive Agent: ${errorMessage}`);
+      toast.error(`Failed to create Cognitive Engine: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -91,10 +91,10 @@ export function CreateCognitiveAgentForm({workspaceId}: {workspaceId: string}) {
   return (
     <div className="space-y-8 px-8 pt-4">
       <BasePage
-        title="Create Cognitive Agent"
-        description="Create a cognitive agent for your multi-agent system"
+        title="Create Cognitive Engine"
+        description="Create a cognitive engine for your multi-agent system"
         useBreadcrumbs
-        breadcrumbs={breadcrumbs.createCognitiveAgent(workspaceId, workspaceName)}
+        breadcrumbs={breadcrumbs.createCognitiveEngine(workspaceId, workspaceName)}
       >
         <div className="flex justify-center">
           <Card className="w-full max-w-4xl">
@@ -113,7 +113,7 @@ export function CreateCognitiveAgentForm({workspaceId}: {workspaceId: string}) {
                       <FormItem>
                         <FormLabel>Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter Cognitive Agent name" {...field} />
+                          <Input placeholder="Enter Cognitive Engine name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -164,7 +164,7 @@ export function CreateCognitiveAgentForm({workspaceId}: {workspaceId: string}) {
                       <Link href={routes.workspaces.details(workspaceId)}>Cancel</Link>
                     </Button>
                     <Button type="submit" variant="sidebar" disabled={isLoading || masList.length === 0}>
-                      {isLoading ? 'Creating...' : 'Create Cognitive Agent'}
+                      {isLoading ? 'Creating...' : 'Create Cognitive Engine'}
                     </Button>
                   </div>
                 </form>

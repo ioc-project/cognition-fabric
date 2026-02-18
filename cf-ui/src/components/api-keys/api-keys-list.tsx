@@ -12,7 +12,7 @@ import {Alert, AlertDescription} from '@/components/ui/alert';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {CreateApiKeyDialog} from './create-api-key-dialog';
 import {ShowApiKeyDialog} from './show-api-key-dialog';
-import {useApiKeys} from '@/hooks/useApi';
+import {useApiKeys} from '@/hooks/useApiKeys';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {breadcrumbs} from '@/constants/routes';
@@ -68,7 +68,7 @@ export function ApiKeysList() {
             empty={{
               icon: KeyRound,
               title: 'No API keys',
-              description: 'Create an API key to authenticate requests across Cognitive Agents.',
+              description: 'Create an API key to authenticate requests across Cognitive Engines.',
               actionLabel: 'Create Your First API Key',
               onAction: () => setIsCreateDialogOpen(true)
             }}

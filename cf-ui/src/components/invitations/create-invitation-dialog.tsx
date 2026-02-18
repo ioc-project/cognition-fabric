@@ -3,7 +3,8 @@
 import {FormModal} from '@/components/ui/form-modal';
 import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {useWorkspaceInvitations, useWorkspaceMembers} from '@/hooks/useApi';
+import {useWorkspaceInvitations} from '@/hooks/useInvitations';
+import {useWorkspaceMembers} from '@/hooks/useWorkspaceMembers';
 import {InvitationRole} from '@/api/types';
 import {toast} from 'sonner';
 import useSWR from 'swr';

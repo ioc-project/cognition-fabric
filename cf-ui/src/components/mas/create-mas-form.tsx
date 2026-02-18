@@ -17,7 +17,7 @@ import {toast} from 'sonner';
 import {BasePage} from '@/components/ui/base-page';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {breadcrumbs} from '@/constants/routes';
-import {useMAS} from '@/hooks/useApi';
+import {useMAS} from '@/hooks/useMAS';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Multi-Agent System name is required').min(3, 'Name must be at least 3 characters'),

@@ -64,7 +64,6 @@ export const safeGetDate = (date?: string | number | Date | null | undefined): n
 
   try {
     const result = new Date(date);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     const isValid = result instanceof Date && !isNaN(Number(result));
     if (!isValid) {
       return null;

@@ -13,15 +13,16 @@ import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {routes} from '@/constants/routes';
-import {useCognitiveAgents, useMAS} from '@/hooks/useApi';
-import {CognitiveAgentTableList} from '@/components/cognitive-agents/cognitive-agent-table-list';
-import {CognitiveAgentCardList} from '@/components/cognitive-agents/cognitive-agent-card-list';
+import {useCognitiveEngines} from '@/hooks/useCognitiveEngines';
+import {useMAS} from '@/hooks/useMAS';
+import {CognitiveEngineTableList} from '@/components/cognitive-engines/cognitive-engine-table-list';
+import {CognitiveEngineCardList} from '@/components/cognitive-engines/cognitive-engine-card-list';
 
-interface CognitiveAgentListProps {
+interface CognitiveEngineListProps {
   workspaceId: string;
 }
 
-export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
+export function CognitiveEngineList({workspaceId}: CognitiveEngineListProps) {
   const router = useRouter();
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -29,14 +30,19 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {cognitiveAgents = [], isLoading: loading, error: swrError, deleteCognitiveAgent} = useCognitiveAgents(workspaceId);
+  const {
+    cognitiveEngines: cognitiveAgents = [],
+    isLoading: loading,
+    error: swrError,
+    deleteCognitiveEngine: deleteCognitiveAgent
+  } = useCognitiveEngines(workspaceId);
   const {masList = []} = useMAS(workspaceId);
   const masById = useMemo(() => new Map(masList.map((m) => [m.id, m.name] as const)), [masList]);
   const handleDelete = async () => {
     await deleteDialog.confirm(async (data) => {
       try {
         await deleteCognitiveAgent(data.id);
-        toast.success(`Cognitive Agent "${data.name}" deleted successfully`);
+        toast.success(`Cognitive Engine "${data.name}" deleted successfully`);
       } catch (err) {
         const errorMessage = parseError(err);
         setDeleteError(errorMessage);
@@ -49,8 +55,8 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
     <>
       <div className="space-y-8">
         <BasePage
-          title="Cognitive Agents"
-          description="View and manage all cognitive agents"
+          title="Cognitive Engines"
+          description="View and manage all cognitive engines"
           callToAction={
             <div className="flex gap-2">
               {cognitiveAgents.length > 0 && (
@@ -59,9 +65,9 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
                 </Button>
               )}
               <Button asChild variant="sidebar" className="gap-2" size="default">
-                <Link href={routes.workspaces.cognitiveAgents.create(workspaceId)}>
+                <Link href={routes.workspaces.cognitiveEngines.create(workspaceId)}>
                   <Plus className="w-4 h-4" />
-                  Create Cognitive Agent
+                  Create Cognitive Engine
                 </Link>
               </Button>
             </div>
@@ -70,43 +76,43 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
           <ConditionalSWRRenderer
             data={cognitiveAgents}
             error={swrError}
-            itemName="Cognitive Agents"
+            itemName="Cognitive Engines"
             customIsLoading={loading}
             customEmptyComponent={
               <div className="flex items-center justify-center min-h-[50vh]">
                 <ListShell
                   empty={{
                     icon: Brain,
-                    title: 'No Cognitive Agents exist in this workspace.',
-                    description: 'Create a Cognitive Agent to orchestrate agents and run reasoning.',
-                    actionLabel: 'Create Cognitive Agent',
-                    href: routes.workspaces.cognitiveAgents.create(workspaceId)
+                    title: 'No Cognitive Engines exist in this workspace.',
+                    description: 'Create a Cognitive Engine to orchestrate agents and run reasoning.',
+                    actionLabel: 'Create Cognitive Engine',
+                    href: routes.workspaces.cognitiveEngines.create(workspaceId)
                   }}
                 />
               </div>
             }
           >
             {viewMode === 'table' ? (
-              <CognitiveAgentTableList
+              <CognitiveEngineTableList
                 cognitiveAgents={cognitiveAgents}
                 workspaceId={workspaceId}
                 selectedId={selectedId}
                 masById={masById}
                 onRowClick={(r) => {
                   setSelectedId(r.id);
-                  router.push(routes.workspaces.cognitiveAgents.details(workspaceId, r.id));
+                  router.push(routes.workspaces.cognitiveEngines.details(workspaceId, r.id));
                 }}
                 onOpenDelete={(payload) => deleteDialog.open(payload)}
               />
             ) : (
-              <CognitiveAgentCardList
+              <CognitiveEngineCardList
                 cognitiveAgents={cognitiveAgents}
                 workspaceId={workspaceId}
                 selectedId={selectedId}
                 masById={masById}
                 onCardClick={(r) => {
                   setSelectedId(r.id);
-                  router.push(routes.workspaces.cognitiveAgents.details(workspaceId, r.id));
+                  router.push(routes.workspaces.cognitiveEngines.details(workspaceId, r.id));
                 }}
                 onOpenDelete={(payload) => deleteDialog.open(payload)}
               />
@@ -124,7 +130,7 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
           }
         }}
         onConfirm={handleDelete}
-        title={`Delete ${deleteDialog.data?.name || 'Cognitive Agent'}`}
+        title={`Delete ${deleteDialog.data?.name || 'Cognitive Engine'}`}
         description={deleteError ?? `Delete "${deleteDialog.data?.name}"? This action is permanent and cannot be undone.`}
         confirmText="Delete"
         loading={deleteDialog.isLoading}

@@ -48,11 +48,9 @@ export function FormModal<TFieldValues extends FieldValues>({
 }: FormModalProps<TFieldValues>) {
   const form = useForm<TFieldValues>({
     resolver: zodResolver(schema),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     defaultValues: defaultValues as any
   });
 
-  // Reset form with new defaultValues when modal opens or defaultValues change
   useEffect(() => {
     if (open) {
       form.reset(defaultValues);

@@ -14,6 +14,13 @@ const config: NextConfig = {
   env: {
     CFN_UI_API_TIMEOUT: process.env.CFN_UI_API_TIMEOUT
   },
+
+  turbopack: {
+    resolveAlias: {
+      '@': './src'
+    }
+  },
+
   webpack: (config) => {
     config.resolve = config.resolve || {alias: {}};
     config.resolve.alias = {

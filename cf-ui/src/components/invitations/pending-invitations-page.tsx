@@ -8,7 +8,7 @@ import {BasePage} from '@/components/ui/base-page';
 import {LoaderRelative} from '@/components/ui/loading';
 import {Alert, AlertDescription} from '@/components/ui/alert';
 import {ListShell} from '@/components/ui/list-shell';
-import {useMyPendingInvitations} from '@/hooks/useApi';
+import {useMyPendingInvitations} from '@/hooks/useInvitations';
 import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
 import {useRouter} from 'next/navigation';

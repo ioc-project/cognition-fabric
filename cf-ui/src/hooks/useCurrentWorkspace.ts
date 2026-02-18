@@ -1,7 +1,8 @@
 'use client';
 
 import {useParams, usePathname} from 'next/navigation';
-import {useWorkspace, useWorkspaceMembers} from '@/hooks/useApi';
+import {useWorkspace} from '@/hooks/useWorkspaces';
+import {useWorkspaceMembers} from '@/hooks/useWorkspaceMembers';
 import {useSession} from 'next-auth/react';
 import type {MemberRole} from '@/api/types';
 
@@ -13,8 +14,8 @@ export function useCurrentWorkspace() {
 
   const rawId = params?.id;
   const workspaceId = isWorkspaceRoute ? ((Array.isArray(rawId) ? rawId[0] : rawId) ?? '') : '';
-  const {workspace, isLoading, mutate} = useWorkspace(workspaceId);
-  const {members, isLoading: membersLoading} = useWorkspaceMembers(workspaceId);
+  const {workspace, isLoading: workspaceLoading, mutate} = useWorkspace(workspaceId);
+  const {members, isLoading: membersLoading, mutate: mutateMembers} = useWorkspaceMembers(workspaceId);
 
   const currentUserId = session?.user?.id;
   const currentMember = members.find((m) => m.user_id === currentUserId);
@@ -24,8 +25,11 @@ export function useCurrentWorkspace() {
   return {
     workspaceId: workspaceId || undefined,
     workspace,
-    isLoading: isLoading || membersLoading,
+    isLoading: workspaceLoading,
+    membersLoading,
+    members,
     mutate,
+    mutateMembers,
     userRole,
     isAdmin
   };

@@ -3,7 +3,7 @@
 import {ChevronDown, FolderOpen} from 'lucide-react';
 import {useMemo, useState} from 'react';
 import type {Workspace} from '@/api/types';
-import {useWorkspaces} from '@/hooks/useApi';
+import {useWorkspaces} from '@/hooks/useWorkspaces';
 import {Button} from '@/components/ui/button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {useWorkspaceNavigation} from '@/hooks/useWorkspaceNavigation';

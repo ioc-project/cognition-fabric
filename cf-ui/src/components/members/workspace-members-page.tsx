@@ -9,7 +9,8 @@ import {MembersList} from '@/components/members/members-list';
 import {InvitationsList} from '@/components/invitations/invitations-list';
 import {CreateInvitationDialog} from '@/components/invitations/create-invitation-dialog';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
-import {useWorkspaceMembers, useWorkspaceInvitations} from '@/hooks/useApi';
+import {useWorkspaceMembers} from '@/hooks/useWorkspaceMembers';
+import {useWorkspaceInvitations} from '@/hooks/useInvitations';
 
 type ViewMode = 'members' | 'invitations';
 

@@ -1,13 +1,13 @@
 'use client';
 
 import {useParams} from 'next/navigation';
-import {CreateCognitiveAgentForm} from '@/components/cognitive-agents/create-cognitive-agent-form';
+import {CreateCognitiveEngineForm} from '@/components/cognitive-engines/create-cognitive-engine-form';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 
-export default function CreateCognitiveAgentPage() {
+export default function CreateCognitiveEnginePage() {
   const params = useParams();
   const {workspaceId: currentId} = useCurrentWorkspace();
   const workspaceId = currentId || (params.id as string);
 
-  return <CreateCognitiveAgentForm workspaceId={workspaceId} />;
+  return <CreateCognitiveEngineForm workspaceId={workspaceId} />;
 }

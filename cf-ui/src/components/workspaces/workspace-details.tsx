@@ -11,7 +11,10 @@ import {BasePage} from '@/components/ui/base-page';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {routes, breadcrumbs} from '@/constants/routes';
 import {LoaderRelative} from '@/components/ui/loading';
-import {useMAS, useCognitiveAgents, useWorkspaceMembers, useCfn} from '@/hooks/useApi';
+import {useMAS} from '@/hooks/useMAS';
+import {useCognitiveEngines} from '@/hooks/useCognitiveEngines';
+import {useWorkspaceMembers} from '@/hooks/useWorkspaceMembers';
+import {useCfn} from '@/hooks/useCfn';
 import {ObjectOptionsDropdown} from '@/components/ui/object-options-dropdown';
 import {DropdownMenuItem} from '@/components/ui/dropdown-menu';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
@@ -25,7 +28,7 @@ export function WorkspaceDetails() {
   const {workspaceId, workspace, isLoading: workspaceLoading, isAdmin} = useCurrentWorkspace();
 
   const {masList, isLoading: masLoading} = useMAS(workspaceId || '');
-  const {cognitiveAgents, isLoading: cognitiveAgentsLoading} = useCognitiveAgents(workspaceId || '');
+  const {cognitiveEngines: cognitiveAgents = [], isLoading: cognitiveAgentsLoading} = useCognitiveEngines(workspaceId || '');
   const {cfns = [], isLoading: cfnLoading} = useCfn(workspaceId || '');
   const {members} = useWorkspaceMembers(workspaceId || '');
 
@@ -168,7 +171,7 @@ export function WorkspaceDetails() {
             </div>
             <div className="p-4 border rounded-lg bg-card soft-card">
               <div className="flex flex-col gap-6">
-                <h4 className="card-title">Cognitive Agents</h4>
+                <h4 className="card-title">Cognitive Engines</h4>
                 <p className="card-stats">{cognitiveAgents.length}</p>
               </div>
             </div>
@@ -189,7 +192,7 @@ export function WorkspaceDetails() {
               <EmptyState
                 icon={Boxes}
                 title="No Multi‑Agentic Systems found."
-                description="Create a MAS to link adapters, add cognitive agents, and run queries."
+                description="Create a multi-agent system to get started."
                 actionLabel="Create Multi‑Agent Systems"
                 href={routes.workspaces.mas.create(workspaceId!)}
                 variant="inset"
@@ -240,13 +243,13 @@ export function WorkspaceDetails() {
                 cognitiveAgents.length > 0 && (
                   <div className="p-6 border rounded-lg bg-card soft-card">
                     <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-base font-medium">Latest Cognitive Agents</h2>
+                      <h2 className="text-base font-medium">Latest Cognitive Engines</h2>
                       <div className="flex gap-2">
                         <Button asChild size="sm" variant="sidebar">
-                          <Link href={routes.workspaces.cognitiveAgents.list(workspaceId!)}>View All</Link>
+                          <Link href={routes.workspaces.cognitiveEngines.list(workspaceId!)}>View All</Link>
                         </Button>
                         <Button asChild size="sm" variant="sidebar">
-                          <Link href={routes.workspaces.cognitiveAgents.create(workspaceId!)}>Create</Link>
+                          <Link href={routes.workspaces.cognitiveEngines.create(workspaceId!)}>Create</Link>
                         </Button>
                       </div>
                     </div>

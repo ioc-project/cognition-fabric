@@ -1,0 +1,73 @@
+'use client';
+
+import useSWR from 'swr';
+import {cfnApi} from '@/api/endpoints';
+import type {CreateCfnRequest, ListCfnResponse} from '@/api/types/cfn';
+import {parseError, sortByCreatedAtDesc} from '@/lib/utils';
+import {useInvalidateMutation} from './useSWRResource';
+
+export function useCfn(workspaceId: string) {
+  const {data, error, isLoading, isValidating, mutate} = useSWR<ListCfnResponse>(
+    workspaceId ? ['cfn-list', workspaceId] : null,
+    () => cfnApi.list(workspaceId),
+    {revalidateOnMount: true, keepPreviousData: true}
+  );
+
+  const {run: runAddCfn} = useInvalidateMutation(
+    {keys: ['cfn-list', workspaceId], prefixes: [['cfn-list', workspaceId]]},
+    (payload: CreateCfnRequest) => cfnApi.create(payload, workspaceId)
+  );
+
+  const addCfn = async (payload: CreateCfnRequest) => {
+    const response = await runAddCfn(payload);
+    await mutate(undefined, {revalidate: true});
+    return response;
+  };
+
+  const {run: runDeleteCfn} = useInvalidateMutation({keys: ['cfn-list', workspaceId], prefixes: [['cfn-list', workspaceId]]}, (cfnId: string) =>
+    cfnApi.delete(workspaceId, cfnId)
+  );
+
+  const deleteCfn = async (cfnId: string) => {
+    const prev = data?.nodes || [];
+    await mutate({nodes: prev.filter((c) => c.cfn_id !== cfnId), total: Math.max((data?.total || 1) - 1, 0)}, {revalidate: false});
+    try {
+      await runDeleteCfn(cfnId);
+    } catch (e) {
+      await mutate(data, {revalidate: false});
+      throw e;
+    }
+  };
+
+  const {run: runEnableCfn} = useInvalidateMutation({keys: ['cfn-list', workspaceId], prefixes: [['cfn-list', workspaceId]]}, (cfnId: string) =>
+    cfnApi.enable(workspaceId, cfnId)
+  );
+
+  const enableCfn = async (cfnId: string) => {
+    const result = await runEnableCfn(cfnId);
+    await mutate(undefined, {revalidate: true});
+    return result;
+  };
+
+  const {run: runDisableCfn} = useInvalidateMutation({keys: ['cfn-list', workspaceId], prefixes: [['cfn-list', workspaceId]]}, (cfnId: string) =>
+    cfnApi.disable(workspaceId, cfnId)
+  );
+
+  const disableCfn = async (cfnId: string) => {
+    const result = await runDisableCfn(cfnId);
+    await mutate(undefined, {revalidate: true});
+    return result;
+  };
+
+  return {
+    cfns: sortByCreatedAtDesc(data?.nodes || []),
+    isLoading,
+    isValidating,
+    error: error ? parseError(error) : null,
+    mutate,
+    addCfn,
+    deleteCfn,
+    enableCfn,
+    disableCfn
+  } as const;
+}

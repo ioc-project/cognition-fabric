@@ -9,7 +9,7 @@ import Image from 'next/image';
 import {useCallback} from 'react';
 import {useRouter} from 'next/navigation';
 import {routes} from '@/constants/routes';
-import {useMyPendingInvitations} from '@/hooks/useApi';
+import {useMyPendingInvitations} from '@/hooks/useInvitations';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import WorkspaceSwitcher from '@/components/workspaces/workspace-switcher';
 

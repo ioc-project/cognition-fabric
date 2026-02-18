@@ -12,7 +12,7 @@ import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {CfnTableList} from './cfn-table-list';
 import {CfnCardList} from './cfn-card-list';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
-import {useCfn} from '@/hooks/useApi';
+import {useCfn} from '@/hooks/useCfn';
 import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
 import {routes} from '@/constants/routes';
@@ -23,23 +23,70 @@ interface CfnListProps {
 
 export function CfnList({workspaceId}: CfnListProps) {
   const router = useRouter();
-  const {cfns = [], isLoading: loading, error: swrError, deleteCfn} = useCfn(workspaceId);
+  const {cfns = [], isLoading: loading, error: swrError, deleteCfn, enableCfn, disableCfn} = useCfn(workspaceId);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-  const deleteDialog = useConfirmDialog<{cfn_id: string; cfn_name: string}>();
+  const [disableError, setDisableError] = useState<string | null>(null);
+  const deleteDialog = useConfirmDialog<{cfn_id: string; cfn_name: string; enabled: boolean}>();
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [isDisabling, setIsDisabling] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [hasDisabled, setHasDisabled] = useState(false);
 
-  const handleDelete = async () => {
-    await deleteDialog.confirm(async (data) => {
-      try {
-        await deleteCfn(data.cfn_id);
-        toast.success(`Cognitive Fabric Node "${data.cfn_name}" disabled successfully`);
-      } catch (err) {
-        const errorMessage = parseError(err);
-        setDeleteError(errorMessage);
-        throw err;
-      }
-    });
+  const handleEnable = async (payload: {cfn_id: string; cfn_name: string}) => {
+    try {
+      await enableCfn(payload.cfn_id);
+      toast.success(`Cognitive Fabric Node "${payload.cfn_name}" enabled successfully`);
+    } catch (err) {
+      const errorMessage = parseError(err);
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleDisable = async (payload: {cfn_id: string; cfn_name: string}) => {
+    try {
+      await disableCfn(payload.cfn_id);
+      toast.success(`Cognitive Fabric Node "${payload.cfn_name}" disabled successfully`);
+    } catch (err) {
+      const errorMessage = parseError(err);
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleDisableInModal = async () => {
+    if (!deleteDialog.data) return;
+
+    setIsDisabling(true);
+    setDisableError(null);
+    try {
+      await disableCfn(deleteDialog.data.cfn_id);
+      setHasDisabled(true);
+      toast.success(`Cognitive Fabric Node "${deleteDialog.data.cfn_name}" disabled successfully`);
+    } catch (err) {
+      const errorMessage = parseError(err);
+      setDisableError(errorMessage);
+    } finally {
+      setIsDisabling(false);
+    }
+  };
+
+  const handleDeleteInModal = async () => {
+    if (!deleteDialog.data) return;
+
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await deleteCfn(deleteDialog.data.cfn_id);
+      toast.success(`Cognitive Fabric Node "${deleteDialog.data.cfn_name}" deleted successfully`);
+      deleteDialog.close();
+      setHasDisabled(false);
+      setDisableError(null);
+    } catch (err) {
+      const errorMessage = parseError(err);
+      setDeleteError(errorMessage);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
@@ -92,8 +139,15 @@ export function CfnList({workspaceId}: CfnListProps) {
                   setSelectedId(cfn.cfn_id);
                   router.push(routes.workspaces.cfn.details(workspaceId, cfn.cfn_id));
                 }}
-                onOpenDelete={(payload) => deleteDialog.open(payload)}
+                onOpenDelete={(payload) => {
+                  setHasDisabled(false);
+                  setDisableError(null);
+                  setDeleteError(null);
+                  deleteDialog.open(payload);
+                }}
                 onOpenEdit={(cfn) => router.push(`${routes.workspaces.cfn.details(workspaceId, cfn.cfn_id)}?edit=true`)}
+                onEnable={handleEnable}
+                onDisable={handleDisable}
               />
             ) : (
               <CfnCardList
@@ -104,8 +158,15 @@ export function CfnList({workspaceId}: CfnListProps) {
                   setSelectedId(cfn.cfn_id);
                   router.push(routes.workspaces.cfn.details(workspaceId, cfn.cfn_id));
                 }}
-                onOpenDelete={(payload) => deleteDialog.open(payload)}
+                onOpenDelete={(payload) => {
+                  setHasDisabled(false);
+                  setDisableError(null);
+                  setDeleteError(null);
+                  deleteDialog.open(payload);
+                }}
                 onOpenEdit={(cfn) => router.push(`${routes.workspaces.cfn.details(workspaceId, cfn.cfn_id)}?edit=true`)}
+                onEnable={handleEnable}
+                onDisable={handleDisable}
               />
             )}
           </ConditionalSWRRenderer>
@@ -117,18 +178,30 @@ export function CfnList({workspaceId}: CfnListProps) {
         onOpenChange={(open) => {
           if (!open) {
             setDeleteError(null);
+            setDisableError(null);
+            setHasDisabled(false);
             deleteDialog.close();
           }
         }}
-        onConfirm={handleDelete}
-        title={`Disable ${deleteDialog.data?.cfn_name || 'Cognitive Fabric Node'}`}
-        description={
-          deleteError ??
-          `Are you sure you want to disable "${deleteDialog.data?.cfn_name}"? The node will be removed and cannot reconnect until you re-register it.`
+        onConfirm={deleteDialog.data?.enabled && !hasDisabled ? handleDisableInModal : handleDeleteInModal}
+        title={
+          deleteDialog.data?.enabled && !hasDisabled
+            ? `Disable ${deleteDialog.data?.cfn_name || 'Cognitive Fabric Node'}`
+            : `Delete ${deleteDialog.data?.cfn_name || 'Cognitive Fabric Node'}`
         }
-        confirmText="Disable"
-        loading={deleteDialog.isLoading}
+        description={
+          deleteError ||
+          disableError ||
+          (deleteDialog.data?.enabled && !hasDisabled
+            ? `To proceed with deletion, "${deleteDialog.data?.cfn_name}" must first be disabled. This will disconnect the node and stop all heartbeats. You can re-enable it later to restore connectivity.`
+            : hasDisabled
+              ? `"${deleteDialog.data?.cfn_name}" has been disabled successfully. Click "Delete" below to permanently remove this node from the workspace. Warning: This action is irreversible and the node cannot be recovered after deletion.`
+              : `Are you sure you want to permanently delete "${deleteDialog.data?.cfn_name}"? This action is irreversible and cannot be undone.`)
+        }
+        confirmText={deleteDialog.data?.enabled && !hasDisabled ? 'Disable' : 'Delete'}
+        loading={deleteDialog.data?.enabled && !hasDisabled ? isDisabling : isDeleting}
         variant="destructive"
+        closeOnConfirmSuccess={false}
       />
     </>
   );

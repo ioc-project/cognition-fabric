@@ -35,7 +35,7 @@ function ProtectedLayoutContent({children}: {children: React.ReactNode}) {
             const users = await userApi.list();
             const admin = (users.users || []).find((u) => typeof u.username === 'string' && u.username.trim().toLowerCase() === 'admin');
             adminId = admin?.id;
-          } catch (_e) {
+          } catch {
             void 0;
           }
 
@@ -47,7 +47,7 @@ function ProtectedLayoutContent({children}: {children: React.ReactNode}) {
             await swrMutate(swrKeys.workspaces(), undefined, {revalidate: true});
           }
         }
-      } catch (e) {
+      } catch {
         void 0;
       } finally {
         try {
@@ -56,7 +56,7 @@ function ProtectedLayoutContent({children}: {children: React.ReactNode}) {
 
           const nextUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
           router.replace(nextUrl);
-        } catch (_e) {
+        } catch {
           void 0;
         }
       }

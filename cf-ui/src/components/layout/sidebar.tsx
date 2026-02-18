@@ -36,7 +36,7 @@ export function Sidebar() {
         `${workspaceBasePath}`,
         `${workspaceBasePath}/cognitive-fabric-node`,
         `${workspaceBasePath}/mas`,
-        `${workspaceBasePath}/cognitive-agents`,
+        `${workspaceBasePath}/cognitive-engines`,
         `${workspaceBasePath}/summary`
       );
     }
@@ -114,11 +114,11 @@ export function Sidebar() {
         isActive: () => isWorkspaceSection('mas')
       },
       {
-        id: 'cognitive-agents',
-        href: `${workspaceBasePath}/cognitive-agents`,
+        id: 'cognitive-engines',
+        href: `${workspaceBasePath}/cognitive-engines`,
         icon: Brain,
-        label: 'Cognitive Agents',
-        isActive: () => isWorkspaceSection('cognitive-agents')
+        label: 'Cognitive Engines',
+        isActive: () => isWorkspaceSection('cognitive-engines')
       },
       {
         id: 'summary',

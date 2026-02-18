@@ -15,7 +15,7 @@ import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {routes} from '@/constants/routes';
 import {MASTableList} from '@/components/mas/mas-table-list';
 import {MASCardList} from '@/components/mas/mas-card-list';
-import {useMAS} from '@/hooks/useApi';
+import {useMAS} from '@/hooks/useMAS';
 
 interface MASListProps {
   workspaceId: string;

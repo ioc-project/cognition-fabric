@@ -8,7 +8,7 @@ import {ResourceTable} from '@/components/ui/resource-table';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
-import {useWorkspaceMembers} from '@/hooks/useApi';
+import {useWorkspaceMembers} from '@/hooks/useWorkspaceMembers';
 import {parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {toast} from 'sonner';
 import {useSession} from 'next-auth/react';
@@ -21,18 +21,18 @@ interface MembersListProps {
 export function MembersList({workspaceId, onInvite}: MembersListProps) {
   const {data: session} = useSession();
   const {members, removeMember} = useWorkspaceMembers(workspaceId);
-  const removeDialog = useConfirmDialog<{id: string; username: string}>();
+  const removeDialog = useConfirmDialog<{userId: string; username: string}>();
 
   const currentUserId = session?.user?.id;
 
   const handleRemoveMember = async () => {
     await removeDialog.confirm(async (data) => {
       try {
-        await removeMember(data.id);
-        toast.success(`${data.username} removed from workspace`);
+        await removeMember(data.userId);
+        void toast.success(`${data.username} removed from workspace`);
       } catch (err) {
         const msg = parseError(err);
-        toast.error(msg);
+        void toast.error(msg);
         throw err;
       }
     });
@@ -87,7 +87,7 @@ export function MembersList({workspaceId, onInvite}: MembersListProps) {
                       className="text-red-600 dark:text-red-400"
                       onClick={(e) => {
                         e.stopPropagation();
-                        removeDialog.open({id: member.id, username: member.username || 'Unknown'});
+                        removeDialog.open({userId: member.user_id, username: member.username || 'Unknown'});
                       }}
                     >
                       <Trash2 className="h-4 w-4 mr-2" />

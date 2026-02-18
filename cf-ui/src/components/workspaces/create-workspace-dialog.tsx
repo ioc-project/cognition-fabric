@@ -46,7 +46,7 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
     if (values.config) {
       try {
         config = JSON.parse(values.config);
-      } catch (e) {
+      } catch {
         throw new Error('Config must be valid JSON');
       }
     }
@@ -198,7 +198,6 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
                           const currentUsers = form.getValues('users') || [];
                           const currentRoles = form.getValues('userRoles') || {};
                           const newUsers = currentUsers.filter((id: string) => id !== userId);
-                          // eslint-disable-next-line @typescript-eslint/no-unused-vars
                           const {[userId]: _, ...newRoles} = currentRoles;
                           form.setValue('users', newUsers);
                           form.setValue('userRoles', newRoles);
