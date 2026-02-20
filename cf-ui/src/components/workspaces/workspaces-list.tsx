@@ -1,7 +1,7 @@
 'use client';
 
 import {useState, useEffect} from 'react';
-import {Plus, MoreVertical, Trash2, AlertCircle, FolderOpen} from 'lucide-react';
+import {Plus, MoreVertical, Trash2, AlertCircle, FolderOpen, Pencil} from 'lucide-react';
 import Link from 'next/link';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
@@ -12,6 +12,7 @@ import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 import {Alert, AlertDescription} from '@/components/ui/alert';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {CreateWorkspaceDialog} from './create-workspace-dialog';
+import {EditWorkspaceDialog} from './edit-workspace-dialog';
 import {workspaceApi} from '@/api/endpoints';
 import {useRouter, useSearchParams} from 'next/navigation';
 import {parseError} from '@/lib/utils';
@@ -24,6 +25,7 @@ export function WorkspacesList() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingWorkspace, setEditingWorkspace] = useState<Workspace | null>(null);
   const {workspaces, isLoading: loading, error: swrError, mutate} = useWorkspaces();
   const [error, setError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -134,6 +136,15 @@ export function WorkspacesList() {
                       <DropdownMenuItem
                         onClick={(e) => {
                           e.stopPropagation();
+                          setEditingWorkspace(workspace);
+                        }}
+                      >
+                        <Pencil className="w-4 h-4 mr-2" />
+                        Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
                           deleteDialog.open({id: workspace.id, name: workspace.name});
                         }}
                         className="text-destructive"
@@ -170,6 +181,10 @@ export function WorkspacesList() {
 
       {isCreateDialogOpen && (
         <CreateWorkspaceDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} onSuccess={handleWorkspaceCreated} />
+      )}
+
+      {editingWorkspace && (
+        <EditWorkspaceDialog workspace={editingWorkspace} open={!!editingWorkspace} onOpenChange={(open) => !open && setEditingWorkspace(null)} />
       )}
 
       <ConfirmDialog

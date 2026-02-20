@@ -6,7 +6,7 @@ import {swrKeys} from '@/lib/swr-config';
 import {FormModal} from '@/components/ui/form-modal';
 import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
-import {workspaceApi, userApi, invitationApi} from '@/api/endpoints';
+import {workspaceApi, userApi, invitationApi, cfnApi} from '@/api/endpoints';
 import useSWR from 'swr';
 import {MultiSelect} from '@/components/ui/multi-select';
 import {useSession} from 'next-auth/react';
@@ -17,6 +17,7 @@ import {toast} from 'sonner';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Workspace name is required').min(3, 'Workspace name must be at least 3 characters'),
+  cfn_id: z.string().min(1, 'CFN selection is required'),
   users: z.array(z.string()).optional(),
   userRoles: z.record(z.enum(['admin', 'viewer', 'guest'])).optional(),
   config: z.string().optional()
@@ -33,13 +34,18 @@ interface CreateWorkspaceDialogProps {
 export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWorkspaceDialogProps) {
   const {data: session} = useSession();
   const {data: usersData, error: usersError} = useSWR('all-users', () => userApi.list());
+  const {data: cfnData, error: cfnError} = useSWR(swrKeys.cfn(), () => cfnApi.list());
 
   if (usersError) {
     console.warn('Failed to load users list:', usersError);
   }
+  if (cfnError) {
+    console.warn('Failed to load CFN list:', cfnError);
+  }
 
   const currentUserId = session?.user?.id;
   const availableUsers = usersData?.users?.filter((u: any) => u.id !== currentUserId && u.username !== 'admin') || [];
+  const availableCfns = cfnData?.nodes?.filter((cfn: any) => cfn.enabled) || [];
 
   const handleSubmit = async (values: FormValues) => {
     let config: Record<string, any> | undefined = undefined;
@@ -53,6 +59,7 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
 
     const response = await workspaceApi.create({
       name: values.name,
+      cfn_id: values.cfn_id,
       ...(config ? {config} : {})
     });
 
@@ -97,7 +104,7 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
       title="Create New Workspace"
       description="Create a new workspace to manage and organize your resources"
       schema={formSchema}
-      defaultValues={{name: '', users: [], userRoles: {}, config: ''}}
+      defaultValues={{name: '', cfn_id: '', users: [], userRoles: {}, config: ''}}
       onSubmit={handleSubmit}
       submitLabel="Create Workspace"
       loadingLabel="Creating Workspace..."
@@ -122,6 +129,36 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
           />
           <FormField
             control={form.control}
+            name="cfn_id"
+            render={({field}) => (
+              <FormItem>
+                <div className="space-y-2">
+                  <FormLabel required>Cognitive Fabric Node</FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a CFN" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {availableCfns.length === 0 ? (
+                        <div className="py-2 px-2 text-sm text-muted-foreground">No Cognitive Fabric Nodes available</div>
+                      ) : (
+                        availableCfns.map((cfn: any) => (
+                          <SelectItem key={cfn.cfn_id} value={cfn.cfn_id}>
+                            {cfn.cfn_name} ({cfn.status})
+                          </SelectItem>
+                        ))
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
             name="users"
             render={({field}) => (
               <FormItem>
@@ -129,7 +166,8 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
                   <FormLabel>Add Members</FormLabel>
                   <FormControl>
                     <MultiSelect
-                      placeholder={usersData ? (availableUsers.length ? 'Select members to add' : 'No members available') : 'Loading members...'}
+                      placeholder="Select members to add"
+                      emptyMessage="No members available"
                       options={availableUsers.map((u: any) => ({
                         label: u.username,
                         value: u.id

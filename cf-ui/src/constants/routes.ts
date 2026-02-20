@@ -22,13 +22,14 @@ export const routes = {
       create: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-engines/create`,
       details: (workspaceId: string, cognitiveEngineId: string) => `/workspaces/${workspaceId}/cognitive-engines/${cognitiveEngineId}`
     },
-    cfn: {
-      list: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-fabric-node`,
-      create: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-fabric-node/create`,
-      details: (workspaceId: string, cfnId: string) => `/workspaces/${workspaceId}/cognitive-fabric-node/${cfnId}`
-    },
     summary: (workspaceId: string) => `/workspaces/${workspaceId}/summary`,
     members: (workspaceId: string) => `/workspaces/${workspaceId}/members`
+  },
+
+  cfn: {
+    list: '/cfn',
+    create: '/cfn/create',
+    details: (cfnId: string) => `/cfn/${cfnId}`
   },
 
   queries: {
@@ -67,10 +68,10 @@ export const apiRoutes = {
   },
 
   cfn: {
-    list: (workspaceId: string) => `/api/workspaces/${workspaceId}/cognitive-fabric-node`,
-    details: (workspaceId: string, id: string) => `/api/workspaces/${workspaceId}/cognitive-fabric-node/${id}`,
-    create: (workspaceId: string) => `/api/workspaces/${workspaceId}/cognitive-fabric-node`,
-    delete: (workspaceId: string, id: string) => `/api/workspaces/${workspaceId}/cognitive-fabric-node/${id}`
+    list: '/api/cognitive-fabric-nodes',
+    details: (id: string) => `/api/cognitive-fabric-nodes/${id}`,
+    create: '/api/cognitive-fabric-nodes',
+    delete: (id: string) => `/api/cognitive-fabric-nodes/${id}`
   }
 } as const;
 
@@ -131,20 +132,18 @@ export const breadcrumbs = {
     {link: '', text: 'API Keys', active: true}
   ],
 
-  workspaceCfn: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.list, text: 'Workspaces'},
-    {link: routes.workspaces.details(workspaceId), text: workspaceName},
+  cfnList: (): BreadcrumbItem[] => [
+    {link: routes.home, text: 'Home'},
     {link: '', text: 'Cognitive Fabric Nodes', active: true}
   ],
 
-  workspaceCFN: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.list, text: 'Workspaces'},
-    {link: routes.workspaces.details(workspaceId), text: workspaceName},
-    {link: '', text: 'Cognitive Fabric Nodes', active: true}
+  cfnDetails: (cfnName: string): BreadcrumbItem[] => [
+    {link: routes.cfn.list, text: 'Cognitive Fabric Nodes'},
+    {link: '', text: cfnName, active: true}
   ],
 
-  createCfn: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.cfn.list(workspaceId), text: 'Cognitive Fabric Nodes'},
+  createCfn: (): BreadcrumbItem[] => [
+    {link: routes.cfn.list, text: 'Cognitive Fabric Nodes'},
     {link: '', text: 'Create', active: true}
   ]
 } as const;

@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Loader} from '@/components/ui/loader';
@@ -31,7 +30,7 @@ function LoginForm() {
         setError('Invalid username or password');
         setLoading(false);
       } else if (result?.ok) {
-        window.location.href = '/workspaces?ensureDefault=1';
+        window.location.href = '/workspaces';
       }
     } catch (err) {
       setError('An unexpected error occurred during login. Please try again.');
@@ -107,14 +106,15 @@ function LoginForm() {
         {loading ? 'Signing in...' : 'Sign In'}
       </Button>
 
-      <div className="text-center">
+      {/* Signup link temporarily disabled */}
+      {/* <div className="text-center">
         <p className="text-[13px] text-gray-600">
           Don&apos;t have an account?{' '}
           <Link href="/signup" className="font-semibold text-blue-600 hover:text-blue-700 transition">
             Sign Up
           </Link>
         </p>
-      </div>
+      </div> */}
     </form>
   );
 }

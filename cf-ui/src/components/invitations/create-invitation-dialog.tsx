@@ -76,17 +76,19 @@ export function CreateInvitationDialog({workspaceId, workspaceName, open, onOpen
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue
-                          placeholder={usersData ? (availableUsers.length ? 'Select a user' : 'No users available') : 'Loading users...'}
-                        />
+                        <SelectValue placeholder="Select a user" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {availableUsers.map((u: any) => (
-                        <SelectItem key={u.id} value={u.username}>
-                          {u.username}
-                        </SelectItem>
-                      ))}
+                      {availableUsers.length === 0 ? (
+                        <div className="py-2 px-2 text-sm text-muted-foreground">No users available</div>
+                      ) : (
+                        availableUsers.map((u: any) => (
+                          <SelectItem key={u.id} value={u.username}>
+                            {u.username}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground">Select the user you want to invite</p>

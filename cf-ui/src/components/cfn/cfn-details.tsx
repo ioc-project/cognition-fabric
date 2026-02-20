@@ -7,9 +7,8 @@ import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
 import {swrKeys} from '@/lib/swr-config';
-import {cfnApi, workspaceApi, userApi} from '@/api/endpoints';
+import {cfnApi, userApi} from '@/api/endpoints';
 import type {Cfn, UpdateCfnRequest} from '@/api/types/cfn';
-import type {Workspace} from '@/api/types/workspace';
 import type {ListUsersResponse} from '@/api/types/users';
 import {BasePage} from '@/components/ui/base-page';
 import {Card, CardContent} from '@/components/ui/card';
@@ -52,24 +51,14 @@ export default function CfnDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
-  const rawWorkspaceId = params?.id as string | string[] | undefined;
-  const rawCfnId = (params as Record<string, string | string[] | undefined>)?.cfnId;
-  const workspaceId = Array.isArray(rawWorkspaceId) ? rawWorkspaceId[0] : rawWorkspaceId;
+  const rawCfnId = params?.cfnId as string | string[] | undefined;
   const cfnId = Array.isArray(rawCfnId) ? rawCfnId[0] : rawCfnId;
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const deleteDialog = useConfirmDialog<{cfn_id: string; cfn_name: string}>();
 
-  const {
-    data: cfn,
-    error,
-    isLoading,
-    mutate
-  } = useSWR<Cfn>(workspaceId && cfnId ? swrKeys.cfnDetails(workspaceId, cfnId) : null, () => cfnApi.get(workspaceId as string, cfnId as string));
-  const {data: workspace, error: workspaceError} = useSWR<Workspace | null>(workspaceId ? swrKeys.workspace(workspaceId) : null, () =>
-    workspaceApi.get(workspaceId as string)
-  );
+  const {data: cfn, error, isLoading, mutate} = useSWR<Cfn>(cfnId ? swrKeys.cfnDetails(cfnId) : null, () => cfnApi.get(cfnId as string));
   const {data: usersData} = useSWR<ListUsersResponse>('users', () => userApi.list());
 
   const getUserName = (userId: string | undefined) => {
@@ -100,36 +89,26 @@ export default function CfnDetailsPage() {
     if (cfn) {
       form.reset({
         cfn_name: cfn.cfn_name,
-        cfn_config: cfn.cfn_config ? JSON.stringify(cfn.cfn_config, null, 2) : ''
+        cfn_config: cfn.config ? JSON.stringify(cfn.config, null, 2) : ''
       });
     }
   }, [cfn, form]);
 
-  if (workspaceError) {
-    console.warn('Failed to load workspace:', workspaceError);
-  }
-
   useEffect(() => {
-    if (!workspaceId || !cfnId) {
+    if (!cfnId) {
       router.replace('/not-found');
     }
-  }, [workspaceId, cfnId, router]);
+  }, [cfnId, router]);
 
-  const crumbs =
-    workspace && workspaceId
-      ? [
-          {link: routes.workspaces.cfn.list(workspaceId), text: 'Cognitive Fabric Nodes'},
-          {link: '', text: cfn?.cfn_name || 'CFN', active: true}
-        ]
-      : undefined;
+  const crumbs = breadcrumbs.cfnDetails(cfn?.cfn_name || 'CFN');
 
   const handleDelete = async () => {
     await deleteDialog.confirm(async (data) => {
       try {
-        await cfnApi.delete(workspaceId as string, data.cfn_id);
+        await cfnApi.delete(data.cfn_id);
         toast.success(`Cognitive Fabric Node "${data.cfn_name}" disabled successfully`);
-        await globalMutate(swrKeys.cfn(workspaceId!));
-        router.push(routes.workspaces.cfn.list(workspaceId!));
+        await globalMutate(swrKeys.cfn());
+        router.push(routes.cfn.list);
       } catch (err) {
         const errorMessage = parseError(err);
         setDeleteError(errorMessage);
@@ -148,12 +127,12 @@ export default function CfnDetailsPage() {
         payload.cfn_config = JSON.parse(values.cfn_config) as Record<string, unknown>;
       }
 
-      await cfnApi.update(workspaceId as string, cfnId as string, payload);
+      await cfnApi.update(cfnId as string, payload);
       toast.success('Cognitive Fabric Node updated successfully');
       await mutate();
-      await globalMutate(swrKeys.cfn(workspaceId!));
+      await globalMutate(swrKeys.cfn());
       setIsEditMode(false);
-      router.replace(routes.workspaces.cfn.details(workspaceId!, cfnId!));
+      router.replace(routes.cfn.details(cfnId!));
     } catch (err) {
       const errorMessage = parseError(err);
       toast.error(errorMessage);
@@ -165,9 +144,9 @@ export default function CfnDetailsPage() {
     setIsEditMode(false);
     form.reset({
       cfn_name: cfn?.cfn_name,
-      cfn_config: cfn?.cfn_config ? JSON.stringify(cfn.cfn_config, null, 2) : ''
+      cfn_config: cfn?.config ? JSON.stringify(cfn.config, null, 2) : ''
     });
-    router.replace(routes.workspaces.cfn.details(workspaceId!, cfnId!));
+    router.replace(routes.cfn.details(cfnId!));
   };
 
   return (
@@ -176,7 +155,7 @@ export default function CfnDetailsPage() {
         title={cfn?.cfn_name || 'CFN Details'}
         description="View details about your Cognitive Fabric Node"
         useBreadcrumbs
-        breadcrumbs={crumbs || (workspaceId ? breadcrumbs.workspaceCFN(workspaceId, workspace?.name || '') : undefined)}
+        breadcrumbs={crumbs}
         callToAction={
           cfn && (
             <DetailsPageActions
@@ -258,25 +237,13 @@ export default function CfnDetailsPage() {
                           <div className="space-y-2">
                             <Label>Configuration</Label>
                             <Textarea
-                              value={cfn?.cfn_config ? JSON.stringify(cfn.cfn_config, null, 2) : ''}
+                              value={cfn?.config ? JSON.stringify(cfn.config, null, 2) : ''}
                               disabled
                               readOnly
                               className="font-mono text-sm min-h-[150px] resize-none"
                             />
                           </div>
                         )}
-                      </div>
-
-                      <div className="md:col-span-2">
-                        <div className="space-y-2">
-                          <Label>Cloud Configuration</Label>
-                          <Textarea
-                            value={cfn?.cloud_config ? JSON.stringify(cfn.cloud_config, null, 2) : ''}
-                            disabled
-                            readOnly
-                            className="font-mono text-sm min-h-[150px] resize-none"
-                          />
-                        </div>
                       </div>
 
                       <div className="space-y-2">
@@ -288,8 +255,8 @@ export default function CfnDetailsPage() {
                         <Input value={cfn?.enabled ? 'Yes' : 'No'} disabled readOnly />
                       </div>
                       <div className="space-y-2">
-                        <Label>Workspace ID</Label>
-                        <Input value={cfn?.workspace_id || ''} disabled readOnly className="font-mono text-xs" />
+                        <Label>Workspace IDs</Label>
+                        <Input value={cfn?.workspace_ids?.join(', ') || 'None'} disabled readOnly className="font-mono text-xs" />
                       </div>
                       <div className="space-y-2">
                         <Label>Last Seen</Label>

@@ -129,14 +129,18 @@ export function CreateCognitiveEngineForm({workspaceId}: {workspaceId: string}) 
                         <FormControl>
                           <Select value={field.value} onValueChange={field.onChange}>
                             <SelectTrigger>
-                              <SelectValue placeholder={masList.length ? 'Select a MAS' : 'No MAS available in this workspace'} />
+                              <SelectValue placeholder="Select a MAS" />
                             </SelectTrigger>
                             <SelectContent align="start" className="text-popover-foreground">
-                              {masList.map((m: any) => (
-                                <SelectItem key={m.id} value={m.id}>
-                                  {m.name}
-                                </SelectItem>
-                              ))}
+                              {masList.length === 0 ? (
+                                <div className="py-2 px-2 text-sm text-muted-foreground">No Multi-Agentic Systems available</div>
+                              ) : (
+                                masList.map((m: any) => (
+                                  <SelectItem key={m.id} value={m.id}>
+                                    {m.name}
+                                  </SelectItem>
+                                ))
+                              )}
                             </SelectContent>
                           </Select>
                         </FormControl>

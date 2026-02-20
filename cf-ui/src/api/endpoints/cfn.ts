@@ -2,10 +2,10 @@ import {apiClient} from '../client';
 import type {Cfn, CreateCfnRequest, CreateCfnResponse, ListCfnResponse, UpdateCfnRequest} from '../types/cfn';
 
 export const cfnApi = {
-  list: async (workspaceId: string): Promise<ListCfnResponse> => {
-    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/cognitive-fabric-node', {
+  list: async (workspaceId?: string): Promise<ListCfnResponse> => {
+    const {data, error} = await apiClient.GET('/api/cognitive-fabric-nodes', {
       params: {
-        path: {workspace_id: workspaceId}
+        query: workspaceId ? {workspace_id: workspaceId} : undefined
       }
     });
 
@@ -15,10 +15,10 @@ export const cfnApi = {
     return data;
   },
 
-  get: async (workspaceId: string, cfnId: string): Promise<Cfn> => {
-    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/cognitive-fabric-node/{cfn_id}', {
+  get: async (cfnId: string): Promise<Cfn> => {
+    const {data, error} = await apiClient.GET('/api/cognitive-fabric-nodes/{cfn_id}', {
       params: {
-        path: {workspace_id: workspaceId, cfn_id: cfnId}
+        path: {cfn_id: cfnId}
       }
     });
 
@@ -28,10 +28,21 @@ export const cfnApi = {
     return data;
   },
 
-  create: async (payload: CreateCfnRequest, workspaceId: string): Promise<CreateCfnResponse> => {
-    const {data, error} = await apiClient.POST('/api/workspaces/{workspace_id}/cognitive-fabric-node', {
+  create: async (payload: CreateCfnRequest): Promise<CreateCfnResponse> => {
+    const {data, error} = await apiClient.POST('/api/cognitive-fabric-nodes', {
+      body: payload
+    });
+
+    if (error) {
+      throw error;
+    }
+    return data;
+  },
+
+  update: async (cfnId: string, payload: UpdateCfnRequest): Promise<Cfn> => {
+    const {data, error} = await apiClient.PUT('/api/cognitive-fabric-nodes/{cfn_id}', {
       params: {
-        path: {workspace_id: workspaceId}
+        path: {cfn_id: cfnId}
       },
       body: payload
     });
@@ -42,24 +53,10 @@ export const cfnApi = {
     return data;
   },
 
-  update: async (workspaceId: string, cfnId: string, payload: UpdateCfnRequest): Promise<Cfn> => {
-    const {data, error} = await apiClient.PUT('/api/workspaces/{workspace_id}/cognitive-fabric-node/{cfn_id}', {
+  delete: async (cfnId: string): Promise<void> => {
+    const {error} = await apiClient.DELETE('/api/cognitive-fabric-nodes/{cfn_id}', {
       params: {
-        path: {workspace_id: workspaceId, cfn_id: cfnId}
-      },
-      body: payload
-    });
-
-    if (error) {
-      throw error;
-    }
-    return data;
-  },
-
-  delete: async (workspaceId: string, cfnId: string): Promise<void> => {
-    const {error} = await apiClient.DELETE('/api/workspaces/{workspace_id}/cognitive-fabric-node/{cfn_id}', {
-      params: {
-        path: {workspace_id: workspaceId, cfn_id: cfnId}
+        path: {cfn_id: cfnId}
       }
     });
 
@@ -68,10 +65,10 @@ export const cfnApi = {
     }
   },
 
-  enable: async (workspaceId: string, cfnId: string): Promise<Cfn> => {
-    const {data, error} = await apiClient.PATCH('/api/workspaces/{workspace_id}/cognitive-fabric-node/{cfn_id}/enable', {
+  enable: async (cfnId: string): Promise<Cfn> => {
+    const {data, error} = await apiClient.PATCH('/api/cognitive-fabric-nodes/{cfn_id}/enable', {
       params: {
-        path: {workspace_id: workspaceId, cfn_id: cfnId}
+        path: {cfn_id: cfnId}
       }
     });
 
@@ -81,10 +78,10 @@ export const cfnApi = {
     return data;
   },
 
-  disable: async (workspaceId: string, cfnId: string): Promise<Cfn> => {
-    const {data, error} = await apiClient.PATCH('/api/workspaces/{workspace_id}/cognitive-fabric-node/{cfn_id}/disable', {
+  disable: async (cfnId: string): Promise<Cfn> => {
+    const {data, error} = await apiClient.PATCH('/api/cognitive-fabric-nodes/{cfn_id}/disable', {
       params: {
-        path: {workspace_id: workspaceId, cfn_id: cfnId}
+        path: {cfn_id: cfnId}
       }
     });
 

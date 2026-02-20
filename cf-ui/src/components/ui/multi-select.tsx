@@ -11,6 +11,7 @@ export interface MultiSelectProps {
   value?: string[];
   options: Option[];
   placeholder?: string;
+  emptyMessage?: string;
   onChange?: (value: string[]) => void;
   disabled?: boolean;
   className?: string;
@@ -22,6 +23,7 @@ export function MultiSelect({
   value = [],
   options,
   placeholder = 'Select items...',
+  emptyMessage = 'No items available',
   onChange,
   disabled = false,
   className,
@@ -55,33 +57,37 @@ export function MultiSelect({
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className={cn('min-w-[200px]', contentClassName)} align={align}>
-        {norm.map((option) => {
-          const isSelected = value.includes(option.value);
-          return (
-            <div
-              key={option.value}
-              className="relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-              onClick={(e) => {
-                e.preventDefault();
-                if (!disabled && onChange) {
-                  const newValue = isSelected ? value.filter((v) => v !== option.value) : [...value, option.value];
-                  onChange(newValue);
-                }
-              }}
-            >
-              <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
-                {isSelected ? (
-                  <div className="h-4 w-4 rounded border border-primary bg-primary flex items-center justify-center">
-                    <Check className="h-3 w-3 text-primary-foreground" />
-                  </div>
-                ) : (
-                  <div className="h-4 w-4 rounded border border-input soft-card" />
-                )}
-              </span>
-              {option.label}
-            </div>
-          );
-        })}
+        {norm.length === 0 ? (
+          <div className="py-2 px-2 text-sm text-muted-foreground">{emptyMessage}</div>
+        ) : (
+          norm.map((option) => {
+            const isSelected = value.includes(option.value);
+            return (
+              <div
+                key={option.value}
+                className="relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (!disabled && onChange) {
+                    const newValue = isSelected ? value.filter((v) => v !== option.value) : [...value, option.value];
+                    onChange(newValue);
+                  }
+                }}
+              >
+                <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
+                  {isSelected ? (
+                    <div className="h-4 w-4 rounded border border-primary bg-primary flex items-center justify-center">
+                      <Check className="h-3 w-3 text-primary-foreground" />
+                    </div>
+                  ) : (
+                    <div className="h-4 w-4 rounded border border-input soft-card" />
+                  )}
+                </span>
+                {option.label}
+              </div>
+            );
+          })
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -17,13 +17,9 @@ import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
 import {routes} from '@/constants/routes';
 
-interface CfnListProps {
-  workspaceId: string;
-}
-
-export function CfnList({workspaceId}: CfnListProps) {
+export function CfnList() {
   const router = useRouter();
-  const {cfns = [], isLoading: loading, error: swrError, deleteCfn, enableCfn, disableCfn} = useCfn(workspaceId);
+  const {cfns = [], isLoading: loading, error: swrError, deleteCfn, enableCfn, disableCfn} = useCfn();
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [disableError, setDisableError] = useState<string | null>(null);
   const deleteDialog = useConfirmDialog<{cfn_id: string; cfn_name: string; enabled: boolean}>();
@@ -54,7 +50,9 @@ export function CfnList({workspaceId}: CfnListProps) {
   };
 
   const handleDisableInModal = async () => {
-    if (!deleteDialog.data) return;
+    if (!deleteDialog.data) {
+      return;
+    }
 
     setIsDisabling(true);
     setDisableError(null);
@@ -71,7 +69,9 @@ export function CfnList({workspaceId}: CfnListProps) {
   };
 
   const handleDeleteInModal = async () => {
-    if (!deleteDialog.data) return;
+    if (!deleteDialog.data) {
+      return;
+    }
 
     setIsDeleting(true);
     setDeleteError(null);
@@ -103,7 +103,7 @@ export function CfnList({workspaceId}: CfnListProps) {
                 </Button>
               )}
               <Button asChild variant="sidebar" className="gap-2">
-                <Link href={routes.workspaces.cfn.create(workspaceId)}>
+                <Link href={routes.cfn.create}>
                   <Plus className="w-4 h-4" />
                   Create CFN
                 </Link>
@@ -121,10 +121,10 @@ export function CfnList({workspaceId}: CfnListProps) {
                 <ListShell
                   empty={{
                     icon: Network,
-                    title: 'No Cognitive Fabric Nodes exist in this workspace.',
+                    title: 'No Cognitive Fabric Nodes exist.',
                     description: 'Create a Cognitive Fabric Node to start managing your distributed memory plane.',
                     actionLabel: 'Create Cognitive Fabric Node',
-                    href: routes.workspaces.cfn.create(workspaceId)
+                    href: routes.cfn.create
                   }}
                 />
               </div>
@@ -133,11 +133,10 @@ export function CfnList({workspaceId}: CfnListProps) {
             {viewMode === 'table' ? (
               <CfnTableList
                 cfns={cfns}
-                workspaceId={workspaceId}
                 selectedId={selectedId}
                 onRowClick={(cfn) => {
                   setSelectedId(cfn.cfn_id);
-                  router.push(routes.workspaces.cfn.details(workspaceId, cfn.cfn_id));
+                  router.push(routes.cfn.details(cfn.cfn_id));
                 }}
                 onOpenDelete={(payload) => {
                   setHasDisabled(false);
@@ -145,18 +144,17 @@ export function CfnList({workspaceId}: CfnListProps) {
                   setDeleteError(null);
                   deleteDialog.open(payload);
                 }}
-                onOpenEdit={(cfn) => router.push(`${routes.workspaces.cfn.details(workspaceId, cfn.cfn_id)}?edit=true`)}
+                onOpenEdit={(cfn) => router.push(`${routes.cfn.details(cfn.cfn_id)}?edit=true`)}
                 onEnable={handleEnable}
                 onDisable={handleDisable}
               />
             ) : (
               <CfnCardList
                 cfns={cfns}
-                workspaceId={workspaceId}
                 selectedId={selectedId}
                 onCardClick={(cfn) => {
                   setSelectedId(cfn.cfn_id);
-                  router.push(routes.workspaces.cfn.details(workspaceId, cfn.cfn_id));
+                  router.push(routes.cfn.details(cfn.cfn_id));
                 }}
                 onOpenDelete={(payload) => {
                   setHasDisabled(false);
@@ -164,7 +162,7 @@ export function CfnList({workspaceId}: CfnListProps) {
                   setDeleteError(null);
                   deleteDialog.open(payload);
                 }}
-                onOpenEdit={(cfn) => router.push(`${routes.workspaces.cfn.details(workspaceId, cfn.cfn_id)}?edit=true`)}
+                onOpenEdit={(cfn) => router.push(`${routes.cfn.details(cfn.cfn_id)}?edit=true`)}
                 onEnable={handleEnable}
                 onDisable={handleDisable}
               />

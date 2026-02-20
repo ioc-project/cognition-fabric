@@ -46,7 +46,7 @@ function SignupForm() {
       });
 
       if (result?.ok) {
-        window.location.href = '/workspaces?ensureDefault=1';
+        window.location.href = '/workspaces';
       } else {
         setError('Account created but login failed. Please try logging in manually.');
         setLoading(false);

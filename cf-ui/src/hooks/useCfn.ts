@@ -6,17 +6,14 @@ import type {CreateCfnRequest, ListCfnResponse} from '@/api/types/cfn';
 import {parseError, sortByCreatedAtDesc} from '@/lib/utils';
 import {useInvalidateMutation} from './useSWRResource';
 
-export function useCfn(workspaceId: string) {
-  const {data, error, isLoading, isValidating, mutate} = useSWR<ListCfnResponse>(
-    workspaceId ? ['cfn-list', workspaceId] : null,
-    () => cfnApi.list(workspaceId),
-    {revalidateOnMount: true, keepPreviousData: true}
-  );
+export function useCfn(workspaceId?: string) {
+  const swrKey = workspaceId ? ['cfn-list', workspaceId] : ['cfn-list'];
+  const {data, error, isLoading, isValidating, mutate} = useSWR<ListCfnResponse>(swrKey, () => cfnApi.list(workspaceId), {
+    revalidateOnMount: true,
+    keepPreviousData: true
+  });
 
-  const {run: runAddCfn} = useInvalidateMutation(
-    {keys: ['cfn-list', workspaceId], prefixes: [['cfn-list', workspaceId]]},
-    (payload: CreateCfnRequest) => cfnApi.create(payload, workspaceId)
-  );
+  const {run: runAddCfn} = useInvalidateMutation({keys: swrKey, prefixes: [['cfn-list']]}, (payload: CreateCfnRequest) => cfnApi.create(payload));
 
   const addCfn = async (payload: CreateCfnRequest) => {
     const response = await runAddCfn(payload);
@@ -24,9 +21,7 @@ export function useCfn(workspaceId: string) {
     return response;
   };
 
-  const {run: runDeleteCfn} = useInvalidateMutation({keys: ['cfn-list', workspaceId], prefixes: [['cfn-list', workspaceId]]}, (cfnId: string) =>
-    cfnApi.delete(workspaceId, cfnId)
-  );
+  const {run: runDeleteCfn} = useInvalidateMutation({keys: swrKey, prefixes: [['cfn-list']]}, (cfnId: string) => cfnApi.delete(cfnId));
 
   const deleteCfn = async (cfnId: string) => {
     const prev = data?.nodes || [];
@@ -39,9 +34,7 @@ export function useCfn(workspaceId: string) {
     }
   };
 
-  const {run: runEnableCfn} = useInvalidateMutation({keys: ['cfn-list', workspaceId], prefixes: [['cfn-list', workspaceId]]}, (cfnId: string) =>
-    cfnApi.enable(workspaceId, cfnId)
-  );
+  const {run: runEnableCfn} = useInvalidateMutation({keys: swrKey, prefixes: [['cfn-list']]}, (cfnId: string) => cfnApi.enable(cfnId));
 
   const enableCfn = async (cfnId: string) => {
     const result = await runEnableCfn(cfnId);
@@ -49,9 +42,7 @@ export function useCfn(workspaceId: string) {
     return result;
   };
 
-  const {run: runDisableCfn} = useInvalidateMutation({keys: ['cfn-list', workspaceId], prefixes: [['cfn-list', workspaceId]]}, (cfnId: string) =>
-    cfnApi.disable(workspaceId, cfnId)
-  );
+  const {run: runDisableCfn} = useInvalidateMutation({keys: swrKey, prefixes: [['cfn-list']]}, (cfnId: string) => cfnApi.disable(cfnId));
 
   const disableCfn = async (cfnId: string) => {
     const result = await runDisableCfn(cfnId);

@@ -9,7 +9,6 @@ import type {Cfn} from '@/api/types/cfn';
 
 export interface CfnCardListProps {
   cfns: Cfn[];
-  workspaceId: string;
   selectedId: string | null;
   onCardClick: (cfn: Cfn) => void;
   onOpenDelete: (payload: {cfn_id: string; cfn_name: string; enabled: boolean}) => void;
@@ -18,16 +17,7 @@ export interface CfnCardListProps {
   onDisable: (payload: {cfn_id: string; cfn_name: string}) => void;
 }
 
-export function CfnCardList({
-  cfns,
-  workspaceId: _workspaceId,
-  selectedId,
-  onCardClick,
-  onOpenDelete,
-  onOpenEdit,
-  onEnable,
-  onDisable
-}: CfnCardListProps) {
+export function CfnCardList({cfns, selectedId, onCardClick, onOpenDelete, onOpenEdit, onEnable, onDisable}: CfnCardListProps) {
   return (
     <div className="list-grid">
       {cfns.map((cfn) => (

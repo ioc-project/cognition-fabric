@@ -2,8 +2,6 @@ import {NextAuthOptions} from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import {authApi} from '@/api/endpoints/auth';
 
-const TOKEN_LIFETIME_MS = 60 * 60 * 1000;
-
 if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV !== 'production') {
   console.warn('NEXTAUTH_SECRET is not set. Using a temporary secret for build.');
 }
@@ -60,40 +58,11 @@ export const authOptions: NextAuthOptions = {
         token.username = userWithTokens.username || user.name || '';
         token.role = userWithTokens.role;
         token.id = user.id;
-        token.accessTokenExpires = Date.now() + TOKEN_LIFETIME_MS;
         return token;
       }
 
-      const expiresAt = token.accessTokenExpires;
-      if (typeof expiresAt === 'number' && Date.now() < expiresAt) {
-        return token;
-      }
-
-      const refreshToken = token.refreshToken;
-      if (typeof refreshToken !== 'string') {
-        console.error('Refresh token is not available');
-        return {...token, error: 'RefreshTokenMissing'};
-      }
-
-      try {
-        const refreshedTokens = await authApi.refresh(refreshToken);
-
-        if (!refreshedTokens.access_token) {
-          throw new Error('Refresh response missing access token');
-        }
-
-        return {
-          ...token,
-          accessToken: refreshedTokens.access_token,
-          accessTokenExpires: Date.now() + TOKEN_LIFETIME_MS
-        };
-      } catch (error) {
-        console.error('Token refresh failed:', error);
-        return {
-          ...token,
-          error: 'RefreshAccessTokenError'
-        };
-      }
+      // Return existing token without refresh (backend doesn't support /api/auth/refresh)
+      return token;
     },
     session({session, token}) {
       if (session.user && typeof token.accessToken === 'string') {

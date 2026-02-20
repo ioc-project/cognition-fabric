@@ -25,17 +25,5 @@ export const authApi = {
     }
 
     return response;
-  },
-
-  refresh: async (refreshToken: string) => {
-    const {data, error} = await apiClient.POST('/api/auth/refresh', {
-      body: {refresh_token: refreshToken}
-    });
-
-    if (error) {
-      throw new Error('Token refresh failed');
-    }
-
-    return data;
   }
 };

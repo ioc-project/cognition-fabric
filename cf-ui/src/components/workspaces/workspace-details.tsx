@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {Boxes, Trash2, Users, UserPlus} from 'lucide-react';
+import {Boxes, Trash2, Users, UserPlus, Pencil} from 'lucide-react';
 import {useMemo, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
@@ -22,6 +22,7 @@ import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {workspaceApi} from '@/api/endpoints';
 import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
+import {EditWorkspaceDialog} from './edit-workspace-dialog';
 
 export function WorkspaceDetails() {
   const router = useRouter();
@@ -33,6 +34,7 @@ export function WorkspaceDetails() {
   const {members} = useWorkspaceMembers(workspaceId || '');
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const deleteDialog = useConfirmDialog<{id: string; name: string}>();
 
   const loading = workspaceLoading;
@@ -115,6 +117,10 @@ export function WorkspaceDetails() {
           workspace &&
           workspaceId && (
             <ObjectOptionsDropdown objectName={workspace.name}>
+              <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
                 onClick={() => deleteDialog.open({id: workspaceId, name: workspace.name})}
@@ -284,10 +290,10 @@ export function WorkspaceDetails() {
                       <h2 className="text-base font-medium">Latest Cognitive Fabric Nodes</h2>
                       <div className="flex gap-2">
                         <Button asChild size="sm" variant="sidebar">
-                          <Link href={routes.workspaces.cfn.list(workspaceId!)}>View All</Link>
+                          <Link href={routes.cfn.list}>View All</Link>
                         </Button>
                         <Button asChild size="sm" variant="sidebar">
-                          <Link href={routes.workspaces.cfn.create(workspaceId!)}>Create</Link>
+                          <Link href={routes.cfn.create}>Create</Link>
                         </Button>
                       </div>
                     </div>
@@ -326,6 +332,7 @@ export function WorkspaceDetails() {
         variant="destructive"
         loading={deleteDialog.isLoading}
       />
+      {workspace && <EditWorkspaceDialog workspace={workspace} open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen} />}
     </>
   );
 }

@@ -9,7 +9,6 @@ import type {Cfn} from '@/api/types/cfn';
 
 export interface CfnTableListProps {
   cfns: Cfn[];
-  workspaceId: string;
   selectedId: string | null;
   onRowClick: (cfn: Cfn) => void;
   onOpenDelete: (payload: {cfn_id: string; cfn_name: string; enabled: boolean}) => void;
@@ -18,16 +17,7 @@ export interface CfnTableListProps {
   onDisable: (payload: {cfn_id: string; cfn_name: string}) => void;
 }
 
-export function CfnTableList({
-  cfns,
-  workspaceId: _workspaceId,
-  selectedId,
-  onRowClick,
-  onOpenDelete,
-  onOpenEdit,
-  onEnable,
-  onDisable
-}: CfnTableListProps) {
+export function CfnTableList({cfns, selectedId, onRowClick, onOpenDelete, onOpenEdit, onEnable, onDisable}: CfnTableListProps) {
   return (
     <ResourceTable
       items={cfns}

@@ -31,14 +31,9 @@ export function Sidebar() {
   useEffect(() => {
     const hrefs: string[] = [];
     hrefs.push(routes.workspaces.list);
+    hrefs.push(routes.cfn.list);
     if (workspaceBasePath) {
-      hrefs.push(
-        `${workspaceBasePath}`,
-        `${workspaceBasePath}/cognitive-fabric-node`,
-        `${workspaceBasePath}/mas`,
-        `${workspaceBasePath}/cognitive-engines`,
-        `${workspaceBasePath}/summary`
-      );
+      hrefs.push(`${workspaceBasePath}`, `${workspaceBasePath}/mas`, `${workspaceBasePath}/cognitive-engines`, `${workspaceBasePath}/summary`);
     }
     hrefs.forEach((h) => {
       try {
@@ -57,6 +52,13 @@ export function Sidebar() {
         icon: FolderOpen,
         label: 'Workspaces',
         isActive: () => segments[0] === 'workspaces' || segments.length === 0
+      },
+      {
+        id: 'cfn',
+        href: routes.cfn.list,
+        icon: Network,
+        label: 'Cognitive Fabric Nodes',
+        isActive: () => segments[0] === 'cfn'
       },
       {
         id: 'api-keys',
@@ -98,13 +100,6 @@ export function Sidebar() {
         icon: FolderOpen,
         label: 'Overview',
         isActive: () => isWorkspaceSection()
-      },
-      {
-        id: 'cfn',
-        href: `${workspaceBasePath}/cognitive-fabric-node`,
-        icon: Network,
-        label: 'Cognitive Fabric Nodes',
-        isActive: () => isWorkspaceSection('cognitive-fabric-node')
       },
       {
         id: 'mas',

@@ -3,7 +3,7 @@ import {CreateWorkspaceRequest, CreateWorkspaceResponse, ListWorkspacesResponse,
 
 export const workspaceApi = {
   create: async (data: CreateWorkspaceRequest): Promise<CreateWorkspaceResponse> => {
-    const {data: response, error} = await apiClient.POST('/api/workspaces/', {
+    const {data: response, error} = await apiClient.POST('/api/workspaces/create', {
       body: data
     });
 
@@ -14,7 +14,7 @@ export const workspaceApi = {
   },
 
   list: async (): Promise<ListWorkspacesResponse> => {
-    const {data, error} = await apiClient.GET('/api/workspaces/');
+    const {data, error} = await apiClient.GET('/api/workspaces');
 
     if (error) {
       throw error;

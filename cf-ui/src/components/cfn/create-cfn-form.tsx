@@ -11,13 +11,11 @@ import {Card, CardContent} from '@/components/ui/card';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
-import {routes} from '@/constants/routes';
+import {routes, breadcrumbs} from '@/constants/routes';
 import {parseError, formatJson} from '@/lib/utils';
 import {toast} from 'sonner';
 import {BasePage} from '@/components/ui/base-page';
-import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {useCfn} from '@/hooks/useCfn';
-import {breadcrumbs} from '@/constants/routes';
 
 const formSchema = z.object({
   cfn_id: z.string().min(1, 'CFN ID is required'),
@@ -44,17 +42,14 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 interface CreateCfnFormProps {
-  workspaceId: string;
   onCancel?: () => void;
 }
 
-export function CreateCfnForm({workspaceId, onCancel}: CreateCfnFormProps) {
+export function CreateCfnForm({onCancel}: CreateCfnFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const {workspace} = useCurrentWorkspace();
-  const workspaceName = workspace?.name || 'Workspace';
-  const {addCfn} = useCfn(workspaceId);
+  const {addCfn} = useCfn();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -87,7 +82,7 @@ export function CreateCfnForm({workspaceId, onCancel}: CreateCfnFormProps) {
 
       toast.success(`Cognitive Fabric Node "${response.cfn_name}" created successfully`);
 
-      router.push(routes.workspaces.cfn.list(workspaceId));
+      router.push(routes.cfn.list);
     } catch (err) {
       const errorMessage = parseError(err);
       setError(errorMessage);
@@ -101,7 +96,7 @@ export function CreateCfnForm({workspaceId, onCancel}: CreateCfnFormProps) {
     if (onCancel) {
       onCancel();
     } else {
-      router.push(routes.workspaces.cfn.list(workspaceId));
+      router.push(routes.cfn.list);
     }
   };
 
@@ -109,9 +104,9 @@ export function CreateCfnForm({workspaceId, onCancel}: CreateCfnFormProps) {
     <div className="space-y-8 px-8 pt-4">
       <BasePage
         title="Create Cognitive Fabric Node"
-        description="Register a new Cognitive Fabric Node for this workspace."
+        description="Register a new Cognitive Fabric Node."
         useBreadcrumbs
-        breadcrumbs={breadcrumbs.createCfn(workspaceId, workspaceName)}
+        breadcrumbs={breadcrumbs.createCfn()}
       >
         <div className="flex justify-center">
           <Card className="w-full max-w-4xl">
@@ -178,7 +173,7 @@ export function CreateCfnForm({workspaceId, onCancel}: CreateCfnFormProps) {
                       </Button>
                     ) : (
                       <Button asChild type="button" variant="outline" disabled={isLoading}>
-                        <Link href={routes.workspaces.cfn.list(workspaceId)}>Cancel</Link>
+                        <Link href={routes.cfn.list}>Cancel</Link>
                       </Button>
                     )}
                     <Button type="submit" variant="sidebar" disabled={isLoading}>
