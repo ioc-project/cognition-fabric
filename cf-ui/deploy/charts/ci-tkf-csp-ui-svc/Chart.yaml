@@ -1,5 +1,0 @@
-apiVersion: v1
-appVersion: '1.1'
-description: ioc-cfn-mgmt-ui-svc
-name: ioc-cfn-mgmt-ui-svc
-version: '1.2'

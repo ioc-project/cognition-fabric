@@ -11,7 +11,7 @@ fi
 echo "NEXTAUTH_SECRET: set"
 
 if [ -z "$NEXTAUTH_URL" ]; then
-  export NEXTAUTH_URL="http://localhost:3000"
+  export NEXTAUTH_URL="http://localhost:9001"
 fi
 echo "NEXTAUTH_URL: ${NEXTAUTH_URL}"
 

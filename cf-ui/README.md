@@ -1,4 +1,4 @@
-# ioc-cfn-mgmt-ui-svc
+# ioc-cfn-mgmt-plane-ui
 
 Cognitive Fabric Node Management UI Service
 
@@ -44,7 +44,7 @@ Run dev server:
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:9001](http://localhost:9001)
 
 ### Docker
 
@@ -67,5 +67,3 @@ Use these below to login:
 npm run build
 npm start
 ```
-
- 

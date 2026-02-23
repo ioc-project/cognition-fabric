@@ -1,7 +1,7 @@
 #!/bin/bash -e
 # Syntax build-docker.sh [-i|--image imagename]
 
-PROJECT=ioc-cfn-mgmt-ui-svc
+PROJECT=ioc-cfn-mgmt-plane-ui
 DOCKER_IMAGE=${PROJECT}:latest
 
 while [[ $# -gt 0 ]]

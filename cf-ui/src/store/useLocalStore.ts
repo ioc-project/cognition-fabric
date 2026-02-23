@@ -15,7 +15,7 @@ export const useLocalStore = create<LocalStore>(
       setTemplate: (template?: string) => set(() => ({template}))
     }),
     {
-      name: 'ioc-cfn-mgmt-ui-svc-local-store',
+      name: 'ioc-cfn-mgmt-plane-ui-local-store',
       storage: createJSONStorage(() => (typeof window !== 'undefined' ? window.localStorage : (undefined as unknown as Storage)))
     }
   )

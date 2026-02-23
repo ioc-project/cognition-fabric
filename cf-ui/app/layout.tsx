@@ -25,7 +25,7 @@ export default function RootLayout({children}: {children: React.ReactNode}) {
             __html: `
               (function() {
                 try {
-                  var stored = localStorage.getItem('ioc-cfn-mgmt-ui-svc-theme-store');
+                  var stored = localStorage.getItem('ioc-cfn-mgmt-plane-ui-theme-store');
                   if (stored) {
                     var theme = JSON.parse(stored).state.theme;
                     if (theme === 'dark') {

@@ -4,11 +4,11 @@ services:
       context: .
       dockerfile: ./ci/docker/Dockerfile.next
       args:
-        CFN_UI_API_BASE_URL: ${CFN_UI_API_BASE_URL:-http://host.docker.internal:8000}
-    image: ioc-cfn-mgmt-ui-svc:latest
-    container_name: ioc-cfn-mgmt-ui-svc
+        CFN_UI_API_BASE_URL: ${CFN_UI_API_BASE_URL:-http://host.docker.internal:9000}
+    image: ioc-cfn-mgmt-plane-ui:latest
+    container_name: ioc-cfn-mgmt-plane-ui
     ports:
-      - '3000:3000'
+      - '9001:9001'
     env_file:
       - .env.docker
     environment:
