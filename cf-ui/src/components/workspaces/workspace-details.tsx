@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {Boxes, Trash2, Users, UserPlus, Pencil} from 'lucide-react';
+import {Boxes, Trash2, Pencil} from 'lucide-react';
 import {useMemo, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
@@ -12,8 +12,7 @@ import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {routes, breadcrumbs} from '@/constants/routes';
 import {LoaderRelative} from '@/components/ui/loading';
 import {useMAS} from '@/hooks/useMAS';
-import {useCognitiveEngines} from '@/hooks/useCognitiveEngines';
-import {useWorkspaceMembers} from '@/hooks/useWorkspaceMembers';
+import {useCognitiveAgents} from '@/hooks/useCognitiveAgents';
 import {useCfn} from '@/hooks/useCfn';
 import {ObjectOptionsDropdown} from '@/components/ui/object-options-dropdown';
 import {DropdownMenuItem} from '@/components/ui/dropdown-menu';
@@ -26,12 +25,12 @@ import {EditWorkspaceDialog} from './edit-workspace-dialog';
 
 export function WorkspaceDetails() {
   const router = useRouter();
-  const {workspaceId, workspace, isLoading: workspaceLoading, isAdmin} = useCurrentWorkspace();
+  const {workspaceId, workspace, isLoading: workspaceLoading} = useCurrentWorkspace();
 
   const {masList, isLoading: masLoading} = useMAS(workspaceId || '');
-  const {cognitiveEngines: cognitiveAgents = [], isLoading: cognitiveAgentsLoading} = useCognitiveEngines(workspaceId || '');
+  const {cognitiveAgents = [], isLoading: cognitiveAgentsLoading} = useCognitiveAgents(workspaceId || '');
   const {cfns = [], isLoading: cfnLoading} = useCfn(workspaceId || '');
-  const {members} = useWorkspaceMembers(workspaceId || '');
+  // const {members} = useWorkspaceMembers(workspaceId || '');
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -150,7 +149,7 @@ export function WorkspaceDetails() {
           }
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            {isAdmin && (
+            {/* {isAdmin && (
               <div className="p-4 border rounded-lg bg-card soft-card">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="card-title">Members</h4>
@@ -158,17 +157,8 @@ export function WorkspaceDetails() {
                 </div>
                 <p className="text-4xl font-bold mb-1">{members.length}</p>
                 <p className="text-sm text-muted-foreground mb-6">{members.length === 1 ? 'Team member' : 'Team members'}</p>
-                <Button
-                  variant="sidebar"
-                  size="sm"
-                  className="w-full"
-                  onClick={() => workspaceId && router.push(routes.workspaces.members(workspaceId))}
-                >
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  Invite Members
-                </Button>
               </div>
-            )}
+            )} */}
             <div className="p-4 border rounded-lg bg-card soft-card">
               <div className="flex flex-col gap-6">
                 <h4 className="card-title">Multi‑Agentic Systems (MAS)</h4>
@@ -177,7 +167,7 @@ export function WorkspaceDetails() {
             </div>
             <div className="p-4 border rounded-lg bg-card soft-card">
               <div className="flex flex-col gap-6">
-                <h4 className="card-title">Cognitive Engines</h4>
+                <h4 className="card-title">Cognitive Agents</h4>
                 <p className="card-stats">{cognitiveAgents.length}</p>
               </div>
             </div>
@@ -249,27 +239,30 @@ export function WorkspaceDetails() {
                 cognitiveAgents.length > 0 && (
                   <div className="p-6 border rounded-lg bg-card soft-card">
                     <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-base font-medium">Latest Cognitive Engines</h2>
+                      <h2 className="text-base font-medium">Latest Cognitive Agents</h2>
                       <div className="flex gap-2">
                         <Button asChild size="sm" variant="sidebar">
-                          <Link href={routes.workspaces.cognitiveEngines.list(workspaceId!)}>View All</Link>
+                          <Link href={routes.workspaces.cognitiveAgents.list(workspaceId!)}>View All</Link>
                         </Button>
                         <Button asChild size="sm" variant="sidebar">
-                          <Link href={routes.workspaces.cognitiveEngines.create(workspaceId!)}>Create</Link>
+                          <Link href={routes.workspaces.cognitiveAgents.create(workspaceId!)}>Create</Link>
                         </Button>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
                       {latestCognitiveAgents.map((r) => (
-                        <div key={r.id} className="p-4 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors h-full">
+                        <div
+                          key={r.cognitive_agent_id}
+                          className="p-4 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors h-full"
+                        >
                           <div className="flex flex-col h-full">
                             <div className="flex-1">
-                              <h3 className="text-sm font-medium text-foreground mb-2">{r.name}</h3>
+                              <h3 className="text-sm font-medium text-foreground mb-2">{r.cognitive_agent_name}</h3>
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                               <span>{r.created_at ? new Date(r.created_at).toLocaleDateString() : 'Unknown date'}</span>
-                              <span>{r.mas_id ? '1 MAS' : 'No MAS'}</span>
+                              <span>{r.enabled ? 'Enabled' : 'Disabled'}</span>
                             </div>
                           </div>
                         </div>

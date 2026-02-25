@@ -1,12 +1,42 @@
-import type {components} from '../generated/schema';
 import {z} from 'zod';
 
-export type SignupRequest = components['schemas']['SignupRequest'];
-export type SignupResponse = components['schemas']['TokenResponse'];
-export type LoginRequest = components['schemas']['LoginRequest'];
-export type TokenResponse = components['schemas']['TokenResponse'];
-export type RefreshTokenRequest = components['schemas']['RefreshTokenRequest'];
-export type TokenRefreshResponse = components['schemas']['TokenRefreshResponse'];
+// Manual types for auth (not in generated schema)
+export interface SignupRequest {
+  username: string;
+  email: string;
+  password: string;
+  domain?: string;
+  role?: string;
+}
+
+export interface TokenResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  user: {
+    id: string;
+    username: string;
+    email: string;
+    name?: string;
+    role?: string;
+  };
+}
+
+export type SignupResponse = TokenResponse;
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface RefreshTokenRequest {
+  refresh_token: string;
+}
+
+export interface TokenRefreshResponse {
+  access_token: string;
+  token_type: string;
+}
 
 export const SignupRequestSchema = z.object({
   username: z

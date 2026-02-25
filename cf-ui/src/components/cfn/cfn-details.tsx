@@ -6,6 +6,7 @@ import useSWR, {mutate as globalMutate} from 'swr';
 import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
+import {ChevronDown, ChevronUp} from 'lucide-react';
 import {swrKeys} from '@/lib/swr-config';
 import {cfnApi, userApi} from '@/api/endpoints';
 import type {Cfn, UpdateCfnRequest} from '@/api/types/cfn';
@@ -14,7 +15,6 @@ import {BasePage} from '@/components/ui/base-page';
 import {Card, CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
-import {Textarea} from '@/components/ui/textarea';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes, breadcrumbs} from '@/constants/routes';
@@ -26,24 +26,16 @@ import {toast} from 'sonner';
 
 const UpdateCfnFormSchema = z.object({
   cfn_name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters').optional(),
-  mgmt_host_ip: z.string().optional(),
-  mgmt_port: z.string().optional(),
-  cfn_config: z
+  ip_address: z.string().min(1, 'IP Address is required'),
+  port: z
     .string()
-    .optional()
+    .min(1, 'Port is required')
     .refine(
       (val) => {
-        if (!val || val.trim() === '') {
-          return true;
-        }
-        try {
-          JSON.parse(val);
-          return true;
-        } catch {
-          return false;
-        }
+        const num = parseInt(val, 10);
+        return !isNaN(num) && num > 0 && num <= 65535;
       },
-      {message: 'Must be valid JSON'}
+      {message: 'Port must be a number between 1 and 65535'}
     )
 });
 
@@ -56,7 +48,15 @@ export default function CfnDetailsPage() {
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [expandedWorkspaces, setExpandedWorkspaces] = useState<Record<string, boolean>>({});
   const deleteDialog = useConfirmDialog<{cfn_id: string; cfn_name: string}>();
+
+  const toggleWorkspace = (workspaceId: string) => {
+    setExpandedWorkspaces((prev) => ({
+      ...prev,
+      [workspaceId]: !prev[workspaceId]
+    }));
+  };
 
   const {data: cfn, error, isLoading, mutate} = useSWR<Cfn>(cfnId ? swrKeys.cfnDetails(cfnId) : null, () => cfnApi.get(cfnId as string));
   const {data: usersData} = useSWR<ListUsersResponse>('users', () => userApi.list());
@@ -65,7 +65,7 @@ export default function CfnDetailsPage() {
     if (!userId || !usersData?.users) {
       return userId || 'Unknown';
     }
-    const user = usersData.users.find((u) => u.id === userId);
+    const user = usersData.users.find((u: {id: string; username: string}) => u.id === userId);
     return user ? user.username : userId;
   };
 
@@ -73,9 +73,8 @@ export default function CfnDetailsPage() {
     resolver: zodResolver(UpdateCfnFormSchema),
     defaultValues: {
       cfn_name: '',
-      mgmt_host_ip: '',
-      mgmt_port: '',
-      cfn_config: ''
+      ip_address: '',
+      port: ''
     }
   });
 
@@ -89,7 +88,8 @@ export default function CfnDetailsPage() {
     if (cfn) {
       form.reset({
         cfn_name: cfn.cfn_name,
-        cfn_config: cfn.config ? JSON.stringify(cfn.config, null, 2) : ''
+        ip_address: cfn.ip_address || '',
+        port: cfn.port ? String(cfn.port) : ''
       });
     }
   }, [cfn, form]);
@@ -120,12 +120,10 @@ export default function CfnDetailsPage() {
   const handleSave = async (values: z.infer<typeof UpdateCfnFormSchema>) => {
     try {
       const payload: UpdateCfnRequest = {
-        cfn_name: values.cfn_name
+        cfn_name: values.cfn_name,
+        ip_address: values.ip_address,
+        port: parseInt(values.port, 10)
       };
-
-      if (values.cfn_config && values.cfn_config.trim()) {
-        payload.cfn_config = JSON.parse(values.cfn_config) as Record<string, unknown>;
-      }
 
       await cfnApi.update(cfnId as string, payload);
       toast.success('Cognitive Fabric Node updated successfully');
@@ -144,7 +142,8 @@ export default function CfnDetailsPage() {
     setIsEditMode(false);
     form.reset({
       cfn_name: cfn?.cfn_name,
-      cfn_config: cfn?.config ? JSON.stringify(cfn.config, null, 2) : ''
+      ip_address: cfn?.ip_address || '',
+      port: cfn?.port ? String(cfn.port) : ''
     });
     router.replace(routes.cfn.details(cfnId!));
   };
@@ -214,37 +213,47 @@ export default function CfnDetailsPage() {
                         </div>
                       )}
 
-                      <div className="md:col-span-2">
-                        {isEditMode ? (
-                          <FormField
-                            control={form.control}
-                            name="cfn_config"
-                            render={({field}) => (
-                              <FormItem>
-                                <FormLabel>Configuration (JSON)</FormLabel>
-                                <FormControl>
-                                  <Textarea
-                                    {...field}
-                                    className="font-mono text-sm min-h-[150px] resize-y"
-                                    placeholder="Leave empty or enter JSON configuration"
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        ) : (
-                          <div className="space-y-2">
-                            <Label>Configuration</Label>
-                            <Textarea
-                              value={cfn?.config ? JSON.stringify(cfn.config, null, 2) : ''}
-                              disabled
-                              readOnly
-                              className="font-mono text-sm min-h-[150px] resize-none"
-                            />
-                          </div>
-                        )}
-                      </div>
+                      {isEditMode ? (
+                        <FormField
+                          control={form.control}
+                          name="ip_address"
+                          render={({field}) => (
+                            <FormItem>
+                              <FormLabel required>IP Address</FormLabel>
+                              <FormControl>
+                                <Input {...field} placeholder="192.168.1.100" autoComplete="off" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <div className="space-y-2">
+                          <Label>IP Address</Label>
+                          <Input value={cfn?.ip_address || ''} disabled readOnly />
+                        </div>
+                      )}
+
+                      {isEditMode ? (
+                        <FormField
+                          control={form.control}
+                          name="port"
+                          render={({field}) => (
+                            <FormItem>
+                              <FormLabel required>Port</FormLabel>
+                              <FormControl>
+                                <Input {...field} type="number" placeholder="8080" autoComplete="off" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <div className="space-y-2">
+                          <Label>Port</Label>
+                          <Input value={cfn?.port ? String(cfn.port) : ''} disabled readOnly />
+                        </div>
+                      )}
 
                       <div className="space-y-2">
                         <Label>Status</Label>
@@ -255,8 +264,17 @@ export default function CfnDetailsPage() {
                         <Input value={cfn?.enabled ? 'Yes' : 'No'} disabled readOnly />
                       </div>
                       <div className="space-y-2">
-                        <Label>Workspace IDs</Label>
-                        <Input value={cfn?.workspace_ids?.join(', ') || 'None'} disabled readOnly className="font-mono text-xs" />
+                        <Label>Memory Provider</Label>
+                        <Input
+                          value={
+                            (cfn?.config as any)?.memory_providers?.[0]?.provider_name ||
+                            (cfn?.config as any)?.memory_providers?.[0]?.name ||
+                            (cfn?.config as any)?.memory_providers?.[0]?.id ||
+                            'None'
+                          }
+                          disabled
+                          readOnly
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label>Last Seen</Label>
@@ -291,6 +309,92 @@ export default function CfnDetailsPage() {
                         <Input value={getUserName(cfn?.updated_by ?? undefined)} disabled readOnly />
                       </div>
                     </div>
+
+                    {/* Configuration Details */}
+                    {cfn?.config && (
+                      <div className="mt-8 space-y-6">
+                        <div className="border-t pt-6">
+                          {/* Workspaces */}
+                          {(cfn.config as any).workspaces && Array.isArray((cfn.config as any).workspaces) && (
+                            <div className="mb-4">
+                              <Label className="text-sm font-medium mb-2 block">
+                                Associated Workspaces ({(cfn.config as any).workspaces.length})
+                              </Label>
+                              {(cfn.config as any).workspaces.length > 0 ? (
+                                <div className="space-y-3">
+                                  {(cfn.config as any).workspaces.map((workspace: any, index: number) => {
+                                    const isExpanded = expandedWorkspaces[workspace.workspace_id] ?? false;
+                                    return (
+                                      <div
+                                        key={workspace.workspace_id || index}
+                                        className="rounded-md border p-4 space-y-4"
+                                        style={{backgroundColor: 'hsl(216.7, 100%, 95.5%)'}}
+                                      >
+                                        <div className="flex items-center justify-between">
+                                          <div className="cursor-pointer flex-1" onClick={() => toggleWorkspace(workspace.workspace_id)}>
+                                            <div className="font-medium">{workspace.workspace_name}</div>
+                                            <div className="font-mono text-xs text-muted-foreground mt-1">{workspace.workspace_id}</div>
+                                          </div>
+                                          <button
+                                            type="button"
+                                            className="h-6 w-6 p-0 text-xs leading-none inline-flex items-center justify-center rounded bg-white hover:bg-gray-100 ml-2"
+                                            onClick={() => toggleWorkspace(workspace.workspace_id)}
+                                          >
+                                            {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                          </button>
+                                        </div>
+
+                                        {isExpanded && (
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-blue-200">
+                                            {/* Multi-Agentic Systems */}
+                                            <div className="space-y-2">
+                                              <Label className="text-sm font-medium">Multi-Agentic Systems</Label>
+                                              {workspace.multi_agentic_systems && workspace.multi_agentic_systems.length > 0 ? (
+                                                workspace.multi_agentic_systems.map((mas: any, masIndex: number) => (
+                                                  <Input
+                                                    key={masIndex}
+                                                    value={mas.name || mas.mas_name || mas.id || `MAS ${masIndex + 1}`}
+                                                    disabled
+                                                    readOnly
+                                                    className="mb-2"
+                                                  />
+                                                ))
+                                              ) : (
+                                                <Input value="None" disabled readOnly />
+                                              )}
+                                            </div>
+
+                                            {/* Cognitive Agents */}
+                                            <div className="space-y-2">
+                                              <Label className="text-sm font-medium">Cognitive Agents</Label>
+                                              {workspace.cognitive_agents && workspace.cognitive_agents.length > 0 ? (
+                                                workspace.cognitive_agents.map((agent: any, agentIndex: number) => (
+                                                  <Input
+                                                    key={agentIndex}
+                                                    value={agent.name || agent.agent_name || agent.id || `Agent ${agentIndex + 1}`}
+                                                    disabled
+                                                    readOnly
+                                                    className="mb-2"
+                                                  />
+                                                ))
+                                              ) : (
+                                                <Input value="None" disabled readOnly />
+                                              )}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : (
+                                <div className="text-sm text-muted-foreground italic">No workspaces associated</div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </form>
                 </Form>
               </CardContent>

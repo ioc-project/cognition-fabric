@@ -13,8 +13,8 @@ import {toast} from 'sonner';
 import type {Workspace} from '@/api/types';
 
 const formSchema = z.object({
-  name: z.string().min(1, 'Workspace name is required').min(3, 'Workspace name must be at least 3 characters'),
-  cfn_id: z.string().min(1, 'CFN selection is required')
+  name: z.string().min(3, 'Workspace name must be at least 3 characters').optional().nullable(),
+  cfn_id: z.string().optional().nullable()
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -35,15 +35,25 @@ export function EditWorkspaceDialog({workspace, open, onOpenChange}: EditWorkspa
   const availableCfns = cfnData?.nodes?.filter((cfn: any) => cfn.enabled) || [];
 
   const handleSubmit = async (values: FormValues) => {
-    await workspaceApi.update(workspace.id, {
-      name: values.name,
-      cfn_id: values.cfn_id
-    });
+    const updates: {name?: string | null; cfn_id?: string | null} = {};
 
-    toast.success(`Workspace "${values.name}" updated successfully`);
+    if (values.name !== undefined && values.name !== workspace.name) {
+      updates.name = values.name || null;
+    }
+
+    if (values.cfn_id !== undefined && values.cfn_id !== workspace.cfn_id) {
+      updates.cfn_id = values.cfn_id || null;
+    }
+
+    await workspaceApi.update(workspace.id, updates);
+
+    toast.success(`Workspace "${values.name || workspace.name}" updated successfully`);
 
     await swrMutate(swrKeys.workspaces());
     await swrMutate(swrKeys.workspace(workspace.id));
+    await swrMutate(['cfn-list', workspace.id]);
+    await swrMutate(swrKeys.mas(workspace.id));
+    await swrMutate(swrKeys.cognitiveAgents(workspace.id));
 
     onOpenChange(false);
   };
@@ -72,9 +82,9 @@ export function EditWorkspaceDialog({workspace, open, onOpenChange}: EditWorkspa
             render={({field}) => (
               <FormItem>
                 <div className="space-y-2">
-                  <FormLabel required>Workspace Name</FormLabel>
+                  <FormLabel>Workspace Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter workspace name" {...field} />
+                    <Input placeholder="Enter workspace name" {...field} value={field.value ?? ''} />
                   </FormControl>
                 </div>
                 <FormMessage />
@@ -87,8 +97,8 @@ export function EditWorkspaceDialog({workspace, open, onOpenChange}: EditWorkspa
             render={({field}) => (
               <FormItem>
                 <div className="space-y-2">
-                  <FormLabel required>Cognitive Fabric Node</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
+                  <FormLabel>Cognitive Fabric Node</FormLabel>
+                  <Select value={field.value ?? ''} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a CFN" />

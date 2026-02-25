@@ -12,6 +12,7 @@ import {useWorkspaceMembers} from '@/hooks/useWorkspaceMembers';
 import {parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {toast} from 'sonner';
 import {useSession} from 'next-auth/react';
+import type {WorkspaceMember} from '@/api/types';
 
 interface MembersListProps {
   workspaceId: string;
@@ -59,8 +60,8 @@ export function MembersList({workspaceId, onInvite}: MembersListProps) {
       <ResourceTable
         items={members}
         headers={[{content: 'Username'}, {content: 'Role'}, {content: 'Joined'}, {content: 'Actions', className: 'text-right'}]}
-        rowKey={(member) => member.id}
-        renderRow={(member) => [
+        rowKey={(member: WorkspaceMember) => member.id}
+        renderRow={(member: WorkspaceMember) => [
           {content: member.username || 'Unknown', className: 'font-medium'},
           {
             content: (

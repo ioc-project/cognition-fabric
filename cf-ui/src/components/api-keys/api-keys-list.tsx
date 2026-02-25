@@ -68,7 +68,7 @@ export function ApiKeysList() {
             empty={{
               icon: KeyRound,
               title: 'No API keys',
-              description: 'Create an API key to authenticate requests across Cognitive Engines.',
+              description: 'Create an API key to authenticate requests across your ',
               actionLabel: 'Create Your First API Key',
               onAction: () => setIsCreateDialogOpen(true)
             }}
@@ -107,7 +107,7 @@ export function ApiKeysList() {
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
                       onClick={() => {
-                        deleteDialog.open({id: apiKey.id, preview: apiKey.name});
+                        deleteDialog.open({id: apiKey.id, preview: apiKey.name || apiKey.key_name});
                       }}
                       className="text-destructive"
                     >
@@ -140,10 +140,12 @@ export function ApiKeysList() {
           useBreadcrumbs={true}
           breadcrumbs={breadcrumbs.apiKeysList()}
           callToAction={
-            <Button onClick={() => setIsCreateDialogOpen(true)} variant="sidebar" className="gap-2" size="default">
-              <Plus className="w-4 h-4" />
-              Create API Key
-            </Button>
+            apiKeys.length > 0 ? (
+              <Button onClick={() => setIsCreateDialogOpen(true)} variant="sidebar" className="gap-2" size="default">
+                <Plus className="w-4 h-4" />
+                Create API Key
+              </Button>
+            ) : undefined
           }
         >
           {renderContent()}

@@ -22,6 +22,7 @@ const statusVariants: Record<InvitationStatus, 'default' | 'secondary' | 'destru
   pending: 'default',
   accepted: 'secondary',
   declined: 'outline',
+  cancelled: 'destructive',
   expired: 'destructive'
 };
 
@@ -29,6 +30,7 @@ const statusLabels: Record<InvitationStatus, string> = {
   pending: 'Pending',
   accepted: 'Accepted',
   declined: 'Declined',
+  cancelled: 'Cancelled',
   expired: 'Expired'
 };
 
@@ -49,7 +51,7 @@ export function InvitationsList({workspaceId, onInvite}: InvitationsListProps) {
     });
   };
 
-  const pendingInvitations = invitations.filter((inv) => inv.status === 'pending');
+  const pendingInvitations = invitations.filter((inv: Invitation) => inv.status === 'pending');
 
   if (pendingInvitations.length === 0) {
     return (

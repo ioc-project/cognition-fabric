@@ -10,32 +10,24 @@ import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
-import {Textarea} from '@/components/ui/textarea';
 import {routes, breadcrumbs} from '@/constants/routes';
-import {parseError, formatJson} from '@/lib/utils';
+import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
 import {BasePage} from '@/components/ui/base-page';
 import {useCfn} from '@/hooks/useCfn';
 
 const formSchema = z.object({
-  cfn_id: z.string().min(1, 'CFN ID is required'),
   cfn_name: z.string().min(1, 'CFN Name is required').min(3, 'CFN Name must be at least 3 characters'),
-  cfn_config: z
+  ip_address: z.string().min(1, 'IP Address is required'),
+  port: z
     .string()
-    .optional()
+    .min(1, 'Port is required')
     .refine(
       (val) => {
-        if (!val || val.trim() === '') {
-          return true;
-        }
-        try {
-          JSON.parse(val);
-          return true;
-        } catch {
-          return false;
-        }
+        const num = parseInt(val, 10);
+        return !isNaN(num) && num > 0 && num <= 65535;
       },
-      {message: 'Invalid JSON format for config'}
+      {message: 'Port must be a number between 1 and 65535'}
     )
 });
 
@@ -54,9 +46,9 @@ export function CreateCfnForm({onCancel}: CreateCfnFormProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      cfn_id: '',
       cfn_name: '',
-      cfn_config: ''
+      ip_address: '',
+      port: ''
     }
   });
 
@@ -65,19 +57,10 @@ export function CreateCfnForm({onCancel}: CreateCfnFormProps) {
       setIsLoading(true);
       setError(null);
 
-      let cfn_config: Record<string, unknown> | undefined;
-      if (values.cfn_config && values.cfn_config.trim() !== '') {
-        try {
-          cfn_config = JSON.parse(values.cfn_config);
-        } catch {
-          throw new Error('Invalid JSON format for config');
-        }
-      }
-
       const response = await addCfn({
-        cfn_id: values.cfn_id,
         cfn_name: values.cfn_name,
-        cfn_config
+        ip_address: values.ip_address,
+        port: parseInt(values.port, 10)
       });
 
       toast.success(`Cognitive Fabric Node "${response.cfn_name}" created successfully`);
@@ -121,20 +104,6 @@ export function CreateCfnForm({onCancel}: CreateCfnFormProps) {
 
                   <FormField
                     control={form.control}
-                    name="cfn_id"
-                    render={({field}) => (
-                      <FormItem>
-                        <FormLabel required>CFN ID</FormLabel>
-                        <FormControl>
-                          <Input placeholder="cfn-prod-us-east-1" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
                     name="cfn_name"
                     render={({field}) => (
                       <FormItem>
@@ -147,24 +116,35 @@ export function CreateCfnForm({onCancel}: CreateCfnFormProps) {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="cfn_config"
-                    render={({field}) => (
-                      <FormItem>
-                        <FormLabel>Configuration (JSON)</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder='{"max_connections": 100, "memory_limit": "4GB"}'
-                            className="font-mono text-sm min-h-[150px] resize-y"
-                            {...field}
-                            onBlur={() => field.onChange(formatJson(field.value || ''))}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <FormField
+                      control={form.control}
+                      name="ip_address"
+                      render={({field}) => (
+                        <FormItem>
+                          <FormLabel required>IP Address</FormLabel>
+                          <FormControl>
+                            <Input placeholder="192.168.1.100" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="port"
+                      render={({field}) => (
+                        <FormItem>
+                          <FormLabel required>Port</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="8080" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
                   <div className="flex w-full items-center justify-between pt-4">
                     {onCancel ? (

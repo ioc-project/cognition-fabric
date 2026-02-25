@@ -64,6 +64,7 @@ export const safeGetDate = (date?: string | number | Date | null | undefined): n
 
   try {
     const result = new Date(date);
+
     const isValid = result instanceof Date && !isNaN(Number(result));
     if (!isValid) {
       return null;
@@ -108,5 +109,14 @@ export function formatJson(value: string): string {
     return JSON.stringify(parsed, null, 2);
   } catch {
     return value;
+  }
+}
+
+export function validateJSON(jsonString: string): boolean {
+  try {
+    JSON.parse(jsonString);
+    return true;
+  } catch {
+    return false;
   }
 }

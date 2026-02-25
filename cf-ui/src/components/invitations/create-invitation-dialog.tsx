@@ -5,7 +5,7 @@ import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/compon
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {useWorkspaceInvitations} from '@/hooks/useInvitations';
 import {useWorkspaceMembers} from '@/hooks/useWorkspaceMembers';
-import {InvitationRole} from '@/api/types';
+import {InvitationRole, WorkspaceMember} from '@/api/types';
 import {toast} from 'sonner';
 import useSWR from 'swr';
 import {userApi} from '@/api/endpoints';
@@ -40,7 +40,7 @@ export function CreateInvitationDialog({workspaceId, workspaceName, open, onOpen
   }
 
   const currentUserId = session?.user?.id;
-  const memberUsernames = new Set(members.map((m) => m.username));
+  const memberUsernames = new Set(members.map((m: WorkspaceMember) => m.username));
   const availableUsers =
     usersData?.users?.filter(
       (u: {id: string; username: string}) => u.id !== currentUserId && u.username !== 'admin' && !memberUsernames.has(u.username)

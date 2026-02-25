@@ -11,18 +11,19 @@ import {CreateInvitationDialog} from '@/components/invitations/create-invitation
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {useWorkspaceMembers} from '@/hooks/useWorkspaceMembers';
 import {useWorkspaceInvitations} from '@/hooks/useInvitations';
+import type {Invitation} from '@/api/types';
 
 type ViewMode = 'members' | 'invitations';
 
 export function WorkspaceMembersPage() {
   const {workspaceId, workspace, isLoading: workspaceLoading} = useCurrentWorkspace();
-  const {isLoading: membersLoading} = useWorkspaceMembers(workspaceId || '');
+  const {members, isLoading: membersLoading} = useWorkspaceMembers(workspaceId || '');
   const {invitations, isLoading: invitationsLoading} = useWorkspaceInvitations(workspaceId || '');
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>('members');
 
   const workspaceName = workspace?.name || 'Workspace';
-  const pendingInvitations = invitations.filter((inv) => inv.status === 'pending');
+  const pendingInvitations = invitations.filter((inv: Invitation) => inv.status === 'pending');
 
   const tabs = useMemo(
     () => [
@@ -58,10 +59,12 @@ export function WorkspaceMembersPage() {
           activeTabKey={viewMode}
           onTabChange={(key) => setViewMode(key as ViewMode)}
           callToAction={
-            <Button onClick={() => setIsInviteDialogOpen(true)} variant="sidebar" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Invite Member
-            </Button>
+            (viewMode === 'members' && members.length > 0) || (viewMode === 'invitations' && pendingInvitations.length > 0) ? (
+              <Button onClick={() => setIsInviteDialogOpen(true)} variant="sidebar" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Invite Member
+              </Button>
+            ) : undefined
           }
         >
           {viewMode === 'members' &&

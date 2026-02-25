@@ -15,7 +15,6 @@ class ApiError extends Error {
 }
 
 let config = getApiConfig();
-console.log('[API Client] Initial config:', {baseUrl: config.baseUrl, isServer: typeof window === 'undefined'});
 export let apiClient = createClient<paths>({
   baseUrl: config.baseUrl,
   headers: config.headers
@@ -27,7 +26,6 @@ export function recreateApiClient(newBaseUrl: string): void {
     baseUrl: newBaseUrl,
     headers: config.headers
   });
-  console.log('[API Client] Recreated with baseUrl:', newBaseUrl);
 
   setupMiddleware();
 }

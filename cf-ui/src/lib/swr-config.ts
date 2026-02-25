@@ -13,11 +13,14 @@ export const swrKeys = {
   mas: (workspaceId: string) => ['mas-list', workspaceId] as const,
   masDetails: (workspaceId: string, masId: string) => ['mas-details', workspaceId, masId] as const,
 
-  cognitiveEngines: (workspaceId: string) => ['cognitive-engines', workspaceId] as const,
-  cognitiveEngineDetails: (workspaceId: string, cognitiveEngineId: string) => ['cognitive-engine-details', workspaceId, cognitiveEngineId] as const,
+  cognitiveAgents: (workspaceId: string) => ['cognitive-agents', workspaceId] as const,
+  cognitiveAgentDetails: (workspaceId: string, cognitiveAgentId: string) => ['cognitive-agent-details', workspaceId, cognitiveAgentId] as const,
 
   cfn: () => ['cfn-list'] as const,
   cfnDetails: (cfnId: string) => ['cfn-details', cfnId] as const,
+
+  memoryProviders: () => ['memory-providers'] as const,
+  memoryProviderDetails: (providerId: string) => ['memory-provider-details', providerId] as const,
 
   workspaceInvitations: (workspaceId: string) => ['workspace-invitations', workspaceId] as const,
   workspaceMembers: (workspaceId: string) => ['workspace-members', workspaceId] as const,

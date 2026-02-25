@@ -1,12 +1,44 @@
-import type {components} from '../generated/schema';
+import type {MemberRole} from './member';
 
-export type Invitation = components['schemas']['WorkspaceInvitationDetail'];
-export type InvitationStatus = components['schemas']['InvitationStatus'];
-export type InvitationRole = components['schemas']['WorkspaceRole'];
+// Custom interfaces - these schemas don't exist in the generated file yet
+export type InvitationStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';
 
-export type CreateInvitationRequest = components['schemas']['WorkspaceInvitationCreate'];
-export type CreateInvitationResponse = components['schemas']['WorkspaceInvitationResponse'];
+export type InvitationRole = MemberRole;
 
-export type ListInvitationsResponse = components['schemas']['WorkspaceInvitationList'];
+export interface Invitation {
+  id: string;
+  workspace_id: string;
+  inviter_user_id: string;
+  invitee_username: string;
+  role: InvitationRole;
+  status: InvitationStatus;
+  created_at: string;
+  expires_at: string;
+  workspace_name?: string;
+  inviter_username?: string;
+}
 
-export type AcceptInvitationResponse = components['schemas']['WorkspaceInvitationAcceptResponse'];
+export interface CreateInvitationRequest {
+  invitee_username: string;
+  role: InvitationRole;
+}
+
+export interface CreateInvitationResponse {
+  id: string;
+  workspace_id: string;
+  invitee_username: string;
+  role: InvitationRole;
+  status: InvitationStatus;
+  created_at: string;
+  expires_at: string;
+}
+
+export interface ListInvitationsResponse {
+  invitations: Invitation[];
+  total?: number;
+}
+
+export interface AcceptInvitationResponse {
+  workspace_id: string;
+  message?: string;
+}

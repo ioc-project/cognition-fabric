@@ -1,23 +1,23 @@
 'use client';
 
-import {User, LogOut, Sun, Moon, Mail} from 'lucide-react';
+import {User, LogOut, Sun, Moon} from 'lucide-react';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator} from '@/components/ui/dropdown-menu';
-import {Badge} from '@/components/ui/badge';
+// import {Badge} from '@/components/ui/badge';
 import {useThemeStore} from '@/store';
 import {signOut, useSession} from 'next-auth/react';
 import Image from 'next/image';
 import {useCallback} from 'react';
-import {useRouter} from 'next/navigation';
-import {routes} from '@/constants/routes';
-import {useMyPendingInvitations} from '@/hooks/useInvitations';
+// import {useRouter} from 'next/navigation';
+// import {routes} from '@/constants/routes';
+// import {useMyPendingInvitations} from '@/hooks/useInvitations';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import WorkspaceSwitcher from '@/components/workspaces/workspace-switcher';
 
 export function NavBar() {
-  const router = useRouter();
+  // const router = useRouter();
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
-  const {pendingCount} = useMyPendingInvitations();
+  // const {pendingCount} = useMyPendingInvitations();
   const {data: session} = useSession();
   const {userRole} = useCurrentWorkspace();
 
@@ -31,9 +31,9 @@ export function NavBar() {
     await signOut({callbackUrl: '/login'});
   };
 
-  const handleInvitationsClick = () => {
-    router.push(routes.invitations);
-  };
+  // const handleInvitationsClick = () => {
+  //   router.push(routes.invitations);
+  // };
 
   return (
     <div className="h-[52px] bg-[hsl(var(--navbar-background))] border-b border-[hsl(var(--navbar-border))] flex items-center justify-between px-4 gap-2 relative z-[100]">
@@ -53,7 +53,7 @@ export function NavBar() {
       <div className="flex items-center gap-2">
         <WorkspaceSwitcher />
 
-        <button onClick={handleInvitationsClick} className="p-2 hover:bg-accent rounded-lg transition-colors relative" title="Workspace Invitations">
+        {/* <button onClick={handleInvitationsClick} className="p-2 hover:bg-accent rounded-lg transition-colors relative" title="Workspace Invitations">
           <Mail className="w-5 h-5 text-muted-foreground" />
           {pendingCount > 0 && (
             <Badge
@@ -63,7 +63,7 @@ export function NavBar() {
               {pendingCount}
             </Badge>
           )}
-        </button>
+        </button> */}
 
         <button
           onClick={toggleTheme}

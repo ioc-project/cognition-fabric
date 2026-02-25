@@ -17,12 +17,11 @@ export const routes = {
       create: (workspaceId: string) => `/workspaces/${workspaceId}/mas/create`,
       details: (workspaceId: string, masId: string) => `/workspaces/${workspaceId}/mas/${masId}`
     },
-    cognitiveEngines: {
-      list: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-engines`,
-      create: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-engines/create`,
-      details: (workspaceId: string, cognitiveEngineId: string) => `/workspaces/${workspaceId}/cognitive-engines/${cognitiveEngineId}`
+    cognitiveAgents: {
+      list: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-agents`,
+      create: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-agents/create`,
+      details: (workspaceId: string, cognitiveAgentId: string) => `/workspaces/${workspaceId}/cognitive-agents/${cognitiveAgentId}`
     },
-    summary: (workspaceId: string) => `/workspaces/${workspaceId}/summary`,
     members: (workspaceId: string) => `/workspaces/${workspaceId}/members`
   },
 
@@ -30,6 +29,12 @@ export const routes = {
     list: '/cfn',
     create: '/cfn/create',
     details: (cfnId: string) => `/cfn/${cfnId}`
+  },
+
+  memoryProviders: {
+    list: '/memory-providers',
+    create: '/memory-providers/create',
+    details: (providerId: string) => `/memory-providers/${providerId}`
   },
 
   queries: {
@@ -50,8 +55,7 @@ export const apiRoutes = {
 
   workspaces: {
     list: '/api/workspaces/',
-    details: (id: string) => `/api/workspaces/${id}/`,
-    summary: (id: string) => `/api/workspaces/${id}/summary/`
+    details: (id: string) => `/api/workspaces/${id}/`
   },
 
   users: {
@@ -110,21 +114,15 @@ export const breadcrumbs = {
     {link: '', text: 'Create', active: true}
   ],
 
-  workspaceCognitiveEngines: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
+  workspaceCognitiveAgents: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
     {link: routes.workspaces.list, text: 'Workspaces'},
     {link: routes.workspaces.details(workspaceId), text: workspaceName},
-    {link: '', text: 'Cognitive Engines', active: true}
+    {link: '', text: 'Cognitive Agents', active: true}
   ],
 
-  createCognitiveEngine: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.cognitiveEngines.list(workspaceId), text: 'Cognitive Engines'},
+  createCognitiveAgent: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
+    {link: routes.workspaces.cognitiveAgents.list(workspaceId), text: 'Cognitive Agents'},
     {link: '', text: 'Create', active: true}
-  ],
-
-  workspaceSummary: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.list, text: 'Workspaces'},
-    {link: routes.workspaces.details(workspaceId), text: workspaceName},
-    {link: '', text: 'Summary', active: true}
   ],
 
   apiKeysList: (): BreadcrumbItem[] => [
@@ -144,6 +142,21 @@ export const breadcrumbs = {
 
   createCfn: (): BreadcrumbItem[] => [
     {link: routes.cfn.list, text: 'Cognitive Fabric Nodes'},
+    {link: '', text: 'Create', active: true}
+  ],
+
+  memoryProvidersList: (): BreadcrumbItem[] => [
+    {link: routes.home, text: 'Home'},
+    {link: '', text: 'Memory Providers', active: true}
+  ],
+
+  memoryProviderDetails: (providerName: string): BreadcrumbItem[] => [
+    {link: routes.memoryProviders.list, text: 'Memory Providers'},
+    {link: '', text: providerName, active: true}
+  ],
+
+  createMemoryProvider: (): BreadcrumbItem[] => [
+    {link: routes.memoryProviders.list, text: 'Memory Providers'},
     {link: '', text: 'Create', active: true}
   ]
 } as const;

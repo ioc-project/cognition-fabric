@@ -169,10 +169,12 @@ export function WorkspacesList() {
         <BasePage
           title="Workspaces"
           callToAction={
-            <Button onClick={() => setIsCreateDialogOpen(true)} variant="sidebar" className="gap-2" size="default">
-              <Plus className="w-4 h-4" />
-              Create Workspace
-            </Button>
+            workspaces.length > 0 ? (
+              <Button onClick={() => setIsCreateDialogOpen(true)} variant="sidebar" className="gap-2" size="default">
+                <Plus className="w-4 h-4" />
+                Create Workspace
+              </Button>
+            ) : undefined
           }
         >
           {renderContent()}

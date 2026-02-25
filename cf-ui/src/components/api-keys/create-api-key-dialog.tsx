@@ -23,7 +23,7 @@ export function CreateApiKeyDialog({open, onOpenChange, onSuccess}: CreateApiKey
 
   const handleSubmit = async (values: FormValues) => {
     const response = await generateApiKey({name: values.name});
-    onSuccess({id: response.id, apiKey: response.key});
+    onSuccess({id: response.id, apiKey: response.key || response.api_key});
   };
 
   return (

@@ -51,19 +51,19 @@ export function MASList({workspaceId}: MASListProps) {
           title="Multi-Agentic Systems"
           description="View and manage all multi‑agentic systems"
           callToAction={
-            <div className="flex gap-2">
-              {masList.length > 0 && (
+            masList.length > 0 ? (
+              <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
                   {viewMode === 'table' ? 'Card View' : 'Table View'}
                 </Button>
-              )}
-              <Button asChild variant="sidebar" className="gap-2" size="default">
-                <Link href={routes.workspaces.mas.create(workspaceId)}>
-                  <Plus className="w-4 h-4" />
-                  Create MAS
-                </Link>
-              </Button>
-            </div>
+                <Button asChild variant="sidebar" className="gap-2" size="default">
+                  <Link href={routes.workspaces.mas.create(workspaceId)}>
+                    <Plus className="w-4 h-4" />
+                    Create MAS
+                  </Link>
+                </Button>
+              </div>
+            ) : undefined
           }
         >
           <ConditionalSWRRenderer

@@ -16,7 +16,6 @@ export function Providers({children}: {children: React.ReactNode}) {
     fetch('/api/config')
       .then((res) => res.json())
       .then((config) => {
-        console.log('[Providers] Runtime config loaded:', config);
         if (config.apiBaseUrl) {
           updateApiConfig({baseUrl: config.apiBaseUrl});
         }

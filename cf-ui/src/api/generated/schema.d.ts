@@ -58,83 +58,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/auth/signup": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Signup
-         * @description Register a new user account.
-         *
-         *     - **username**: Desired username (3-100 characters, alphanumeric with hyphens and underscores)
-         *     - **email**: Email address
-         *     - **password**: Password (minimum 8 characters)
-         *     - **domain**: User domain (optional, default: ioc.local)
-         *     - **role**: User role (optional, default: user)
-         *
-         *     Returns JWT access token, refresh token, and user information
-         */
-        post: operations["signup_api_auth_signup_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/login": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Login
-         * @description Authenticate user with username and password, return JWT tokens.
-         *
-         *     - **username**: User's username
-         *     - **password**: User's password
-         *
-         *     Returns JWT access token (1 hour) and refresh token (7 days)
-         */
-        post: operations["login_api_auth_login_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/auth/refresh": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Refresh Token
-         * @description Refresh an access token using a valid refresh token.
-         *
-         *     - **refresh_token**: Valid JWT refresh token
-         *
-         *     Returns a new JWT access token
-         */
-        post: operations["refresh_token_api_auth_refresh_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/cognitive-fabric-nodes/register": {
         parameters: {
             query?: never;
@@ -369,12 +292,15 @@ export interface paths {
         get?: never;
         /**
          * Cfn Heartbeat
-         * @description CFN heartbeat endpoint - updates last_seen timestamp
+         * @description CFN heartbeat endpoint - updates last_seen timestamp and returns config_timestamp
          *
          *     - **cfn_id**: CFN identifier
          *
          *     CFN nodes call this periodically (e.g., every 30 seconds) to indicate they are online.
-         *     Returns the current status and last_seen timestamp.
+         *     Returns the current status, last_seen timestamp, and config_timestamp.
+         *
+         *     CFN compares the returned config_timestamp with its stored value.
+         *     If timestamps differ, CFN should call GET /cognitive-fabric-nodes/{cfn_id} to fetch updated config.
          *
          *     Note: This endpoint requires authentication but not write access.
          *     Disabled or deleted nodes will receive 403 Forbidden.
@@ -410,7 +336,7 @@ export interface paths {
          *     - **workspaces**: List of workspaces with their resources:
          *       - workspace_id: Workspace identifier
          *       - workspace_name: Workspace name
-         *       - multi_agent_systems: MAS available in this workspace
+         *       - multi_agentic_systems: MAS available in this workspace
          *       - cognitive_agents: Cognitive agents in this workspace
          *       - cognitive_engines: Cognitive engines in this workspace (not included for March 2026)
          *       - policies: Policies in this workspace (not included for March 2026)
@@ -673,7 +599,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/cognitive-agents/{cognitive_agent_id}": {
+    "/api/workspaces/{workspace_id}/cognitive-agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Cognitive Agents
+         * @description Get list of all cognitive agents in workspace
+         */
+        get: operations["list_cognitive_agents_api_workspaces__workspace_id__cognitive_agents_get"];
+        put?: never;
+        /**
+         * Create Cognitive Agent
+         * @description Create a new cognitive agent in workspace
+         */
+        post: operations["create_cognitive_agent_api_workspaces__workspace_id__cognitive_agents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/cognitive-agents/{cognitive_agent_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -684,33 +634,21 @@ export interface paths {
          * Get Cognitive Agent
          * @description Get details of a specific cognitive agent
          */
-        get: operations["get_cognitive_agent_api_cognitive_agents__cognitive_agent_id__get"];
+        get: operations["get_cognitive_agent_api_workspaces__workspace_id__cognitive_agents__cognitive_agent_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cognitive-agents": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
         /**
-         * List Cognitive Agents
-         * @description Get list of all cognitive agents (global, read-only)
+         * Delete Cognitive Agent
+         * @description Delete a cognitive agent (soft delete)
          */
-        get: operations["list_cognitive_agents_api_cognitive_agents_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
+        delete: operations["delete_cognitive_agent_api_workspaces__workspace_id__cognitive_agents__cognitive_agent_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Cognitive Agent
+         * @description Update an existing cognitive agent
+         */
+        patch: operations["update_cognitive_agent_api_workspaces__workspace_id__cognitive_agents__cognitive_agent_id__patch"];
         trace?: never;
     };
     "/api/workspaces/{workspace_id}/cognitive-engines": {
@@ -765,7 +703,7 @@ export interface paths {
         patch: operations["update_cognitive_engine_api_workspaces__workspace_id__cognitive_engines__cognitive_engine_id__patch"];
         trace?: never;
     };
-    "/api/audits/": {
+    "/api/workspaces/{workspace_id}/policies": {
         parameters: {
             query?: never;
             header?: never;
@@ -773,26 +711,23 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List Audits
-         * @description List all audits with pagination
+         * List Policies
+         * @description Get list of all policies in workspace
          */
-        get: operations["list_audits_api_audits__get"];
+        get: operations["list_policies_api_workspaces__workspace_id__policies_get"];
         put?: never;
         /**
-         * Create Audit
-         * @description Create a new audit entry
-         *
-         *     Note: Audit entries are created automatically by the system.
-         *     This endpoint is for documentation purposes.
+         * Create Policy
+         * @description Create a new policy in workspace
          */
-        post: operations["create_audit_api_audits__post"];
+        post: operations["create_policy_api_workspaces__workspace_id__policies_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/audits/{audit_id}": {
+    "/api/workspaces/{workspace_id}/policies/{policy_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -800,517 +735,52 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Audit
-         * @description Get a specific audit entry by ID
+         * Get Policy
+         * @description Get details of a specific policy
          */
-        get: operations["get_audit_api_audits__audit_id__get"];
+        get: operations["get_policy_api_workspaces__workspace_id__policies__policy_id__get"];
         put?: never;
         post?: never;
         /**
-         * Delete Audit
-         * @description Delete a specific audit by ID (soft delete)
+         * Delete Policy
+         * @description Delete a policy (soft delete)
          */
-        delete: operations["delete_audit_api_audits__audit_id__delete"];
+        delete: operations["delete_policy_api_workspaces__workspace_id__policies__policy_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/iam/api-keys": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
         /**
-         * List Api Keys
-         * @description List API keys
-         *
-         *     - Non-admin users see only their own API keys
-         *     - Admin users see all API keys in the system
-         *
-         *     Returns a list of API keys (without the full key value)
+         * Update Policy
+         * @description Update an existing policy
          */
-        get: operations["list_api_keys_api_iam_api_keys_get"];
-        put?: never;
-        /**
-         * Create Api Key
-         * @description Create a new API key
-         *
-         *     - **name**: Human-readable name for the API key
-         *
-         *     The API key is linked to the current authenticated user and inherits their role.
-         *     Returns the created API key information including the full key (only shown once).
-         */
-        post: operations["create_api_key_api_iam_api_keys_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/iam/api-keys/{key_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Delete Api Key
-         * @description Delete an API key
-         *
-         *     - **key_id**: UUID of the API key to delete
-         *
-         *     Users can only delete their own API keys unless they are admins.
-         *     Performs a soft delete of the API key.
-         */
-        delete: operations["delete_api_key_api_iam_api_keys__key_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/iam/roles": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Roles
-         * @description List all available IAM roles
-         *
-         *     Returns a list of role names that can be assigned to API keys
-         */
-        get: operations["list_roles_api_iam_roles_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/iam/users": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Iam Users
-         * @description List all users in the system
-         *
-         *     Returns a list of all users with their basic information
-         */
-        get: operations["list_iam_users_api_iam_users_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/workspaces/{workspace_id}/invitations": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Workspace Invitations
-         * @description List all invitations for a workspace (admin only)
-         *
-         *     - **workspace_id**: UUID of the workspace
-         *
-         *     Returns a list of all invitations (pending, accepted, declined, expired)
-         */
-        get: operations["list_workspace_invitations_api_workspaces__workspace_id__invitations_get"];
-        put?: never;
-        /**
-         * Create Invitation
-         * @description Create a workspace invitation (admin only)
-         *
-         *     - **workspace_id**: UUID of the workspace
-         *     - **invitee_username**: Username of user to invite
-         *     - **role**: Role to assign (admin/viewer/guest)
-         *
-         *     Returns the UUID of the created invitation
-         */
-        post: operations["create_invitation_api_workspaces__workspace_id__invitations_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/workspaces/{workspace_id}/invitations/{invitation_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Cancel Invitation
-         * @description Cancel a pending invitation (admin only)
-         *
-         *     - **workspace_id**: UUID of the workspace
-         *     - **invitation_id**: UUID of the invitation
-         *
-         *     Returns success message
-         */
-        delete: operations["cancel_invitation_api_workspaces__workspace_id__invitations__invitation_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/invitations/pending": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Pending Invitations
-         * @description Get all pending invitations for the current user
-         *
-         *     Returns a list of pending invitations
-         */
-        get: operations["get_pending_invitations_api_invitations_pending_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/invitations/{invitation_id}/accept": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Accept Invitation
-         * @description Accept a workspace invitation
-         *
-         *     - **invitation_id**: UUID of the invitation
-         *
-         *     Returns success message with workspace details and assigned role
-         */
-        post: operations["accept_invitation_api_invitations__invitation_id__accept_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/invitations/{invitation_id}/decline": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Decline Invitation
-         * @description Decline a workspace invitation
-         *
-         *     - **invitation_id**: UUID of the invitation
-         *
-         *     Returns success message
-         */
-        post: operations["decline_invitation_api_invitations__invitation_id__decline_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/workspaces/{workspace_id}/members": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Members
-         * @description List all members of a workspace
-         *
-         *     - **workspace_id**: UUID of the workspace
-         *
-         *     Returns a list of all workspace members with their roles
-         */
-        get: operations["list_members_api_workspaces__workspace_id__members_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/workspaces/{workspace_id}/members/{user_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Update Member Role
-         * @description Update a member's role in a workspace (admin only)
-         *
-         *     - **workspace_id**: UUID of the workspace
-         *     - **user_id**: UUID of the user
-         *     - **role**: New role to assign (admin/viewer/guest)
-         *
-         *     Returns the updated member details
-         */
-        put: operations["update_member_role_api_workspaces__workspace_id__members__user_id__put"];
-        post?: never;
-        /**
-         * Remove Member
-         * @description Remove a member from a workspace (admin only, cannot remove self or creator)
-         *
-         *     - **workspace_id**: UUID of the workspace
-         *     - **user_id**: UUID of the user to remove
-         *
-         *     Returns success message
-         */
-        delete: operations["remove_member_api_workspaces__workspace_id__members__user_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
+        patch: operations["update_policy_api_workspaces__workspace_id__policies__policy_id__patch"];
         trace?: never;
     };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** ApiKeyCreate */
-        ApiKeyCreate: {
-            /**
-             * Name
-             * @description Human-readable name for the API key
-             */
-            name: string;
-        };
         /**
-         * ApiKeyList
-         * @example {
-         *       "api_keys": [
-         *         {
-         *           "created_at": "2024-11-14T10:30:00Z",
-         *           "id": "550e8400-e29b-41d4-a716-446655440000",
-         *           "key_preview": "ioc_abc123...",
-         *           "name": "Production API Key",
-         *           "user_id": "550e8400-e29b-41d4-a716-446655440002"
-         *         }
-         *       ],
-         *       "total": 1
-         *     }
+         * CognitiveAgentCreate
+         * @description Schema for creating a cognitive agent
          */
-        ApiKeyList: {
-            /** Api Keys */
-            api_keys: components["schemas"]["ApiKeyListItem"][];
-            /** Total */
-            total: number;
-        };
-        /**
-         * ApiKeyListItem
-         * @example {
-         *       "created_at": "2024-11-14T10:30:00Z",
-         *       "id": "550e8400-e29b-41d4-a716-446655440000",
-         *       "key_preview": "ioc_abc123...",
-         *       "name": "Production API Key",
-         *       "user_id": "550e8400-e29b-41d4-a716-446655440002"
-         *     }
-         */
-        ApiKeyListItem: {
+        CognitiveAgentCreate: {
             /**
-             * Id
-             * @description Unique identifier for the API key
+             * Cognitive Agent Name
+             * @description Agent name
              */
-            id: string;
+            cognitive_agent_name: string;
             /**
-             * Key Preview
-             * @description Preview of the API key (first few characters)
+             * Description
+             * @description Agent description
              */
-            key_preview: string;
+            description?: string | null;
             /**
-             * Name
-             * @description Human-readable name for the API key
+             * Config
+             * @description Agent-specific configuration
              */
-            name: string;
-            /**
-             * User Id
-             * @description ID of the user who owns this API key
-             */
-            user_id: string;
-            /**
-             * Created At
-             * Format: date-time
-             * @description Timestamp when the API key was created
-             */
-            created_at: string;
-        };
-        /**
-         * ApiKeyResponse
-         * @example {
-         *       "created_at": "2024-11-14T10:30:00Z",
-         *       "id": "550e8400-e29b-41d4-a716-446655440000",
-         *       "key": "ioc_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
-         *       "key_preview": "ioc_xxx...",
-         *       "name": "Production API Key",
-         *       "user_id": "550e8400-e29b-41d4-a716-446655440002"
-         *     }
-         */
-        ApiKeyResponse: {
-            /**
-             * Id
-             * @description Unique identifier for the API key
-             */
-            id: string;
-            /**
-             * Key
-             * @description Full API key (only returned on creation)
-             */
-            key: string;
-            /**
-             * Key Preview
-             * @description Preview of the API key (first few characters)
-             */
-            key_preview: string;
-            /**
-             * Name
-             * @description Human-readable name for the API key
-             */
-            name: string;
-            /**
-             * User Id
-             * @description ID of the user who owns this API key
-             */
-            user_id: string;
-            /**
-             * Created At
-             * Format: date-time
-             * @description Timestamp when the API key was created
-             */
-            created_at: string;
-        };
-        /**
-         * AuditListResponse
-         * @description Response model for listing audits
-         */
-        AuditListResponse: {
-            /**
-             * Total
-             * @description Total number of audits
-             */
-            total: number;
-            /**
-             * Audits
-             * @description List of audit entries
-             */
-            audits: components["schemas"]["AuditResponse"][];
-        };
-        /**
-         * AuditResponse
-         * @description Response model for audit entries
-         */
-        AuditResponse: {
-            /**
-             * Id
-             * @description Unique audit ID
-             */
-            id: string;
-            /**
-             * Request Id
-             * @description Unique request ID
-             */
-            request_id?: string | null;
-            /**
-             * Resource Type
-             * @description Type of the resource being audited
-             */
-            resource_type: string;
-            /**
-             * Audit Type
-             * @description Type of audit action
-             */
-            audit_type: string;
-            /**
-             * Audit Resource Id
-             * @description ID of the resource being audited
-             */
-            audit_resource_id?: string | null;
-            /**
-             * Audit Information
-             * @description Information about the audit as a JSON object
-             */
-            audit_information?: {
+            config?: {
                 [key: string]: unknown;
             } | null;
-            /**
-             * Audit Extra Information
-             * @description Additional audit information
-             */
-            audit_extra_information?: string | null;
-            /**
-             * Created By
-             * @description User who created the audit
-             */
-            created_by?: string | null;
-            /**
-             * Updated By
-             * @description User who last updated the audit
-             */
-            updated_by?: string | null;
-            /**
-             * Deleted By
-             * @description User who deleted the audit
-             */
-            deleted_by?: string | null;
-            /**
-             * Created At
-             * Format: date-time
-             * @description Timestamp when the audit was created
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * @description Timestamp when the audit was last updated
-             */
-            updated_at?: string | null;
-            /**
-             * Deleted At
-             * @description Timestamp when the audit was deleted
-             */
-            deleted_at?: string | null;
         };
         /**
          * CognitiveAgentDetail
@@ -1319,6 +789,8 @@ export interface components {
         CognitiveAgentDetail: {
             /** Cognitive Agent Id */
             cognitive_agent_id: string;
+            /** Workspace Id */
+            workspace_id: string;
             /** Cognitive Agent Name */
             cognitive_agent_name: string;
             /** Description */
@@ -1336,6 +808,10 @@ export interface components {
             created_at: string;
             /** Updated At */
             updated_at: string | null;
+            /** Created By */
+            created_by: string;
+            /** Updated By */
+            updated_by: string | null;
         };
         /**
          * CognitiveAgentList
@@ -1360,6 +836,8 @@ export interface components {
         CognitiveAgentListItem: {
             /** Cognitive Agent Id */
             cognitive_agent_id: string;
+            /** Workspace Id */
+            workspace_id: string;
             /** Cognitive Agent Name */
             cognitive_agent_name: string;
             /** Description */
@@ -1377,15 +855,38 @@ export interface components {
             created_at: string;
         };
         /**
+         * CognitiveAgentUpdate
+         * @description Schema for updating a cognitive agent
+         */
+        CognitiveAgentUpdate: {
+            /**
+             * Cognitive Agent Name
+             * @description Agent name
+             */
+            cognitive_agent_name?: string | null;
+            /**
+             * Description
+             * @description Agent description
+             */
+            description?: string | null;
+            /**
+             * Config
+             * @description Agent-specific configuration
+             */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Enabled
+             * @description Whether agent is enabled
+             */
+            enabled?: boolean | null;
+        };
+        /**
          * CognitiveEngineCreate
          * @description Schema for creating a cognitive engine
          */
         CognitiveEngineCreate: {
-            /**
-             * Cognitive Engine Id
-             * @description Engine identifier
-             */
-            cognitive_engine_id: string;
             /**
              * Cognitive Engine Name
              * @description Engine name
@@ -1494,6 +995,7 @@ export interface components {
          * CognitiveFabricNodeHeartbeatResponse
          * @description Schema for heartbeat response
          * @example {
+         *       "config_timestamp": "2026-01-30T12:34:56Z",
          *       "last_seen": "2026-01-30T12:34:56Z",
          *       "status": "online"
          *     }
@@ -1507,6 +1009,12 @@ export interface components {
              * @description Last heartbeat timestamp
              */
             last_seen: string;
+            /**
+             * Config Timestamp
+             * Format: date-time
+             * @description Current config timestamp for change detection
+             */
+            config_timestamp: string;
         };
         /**
          * CognitiveFabricNodeList
@@ -1598,19 +1106,15 @@ export interface components {
          *       "cfn_config": {
          *         "log_level": "info"
          *       },
-         *       "cfn_id": "cfn-persistent-id-123",
-         *       "cfn_name": "cfn-node-prod-1"
+         *       "cfn_name": "cfn-node-prod-1",
+         *       "ip_address": "192.168.1.100",
+         *       "port": 8080
          *     }
          */
         CognitiveFabricNodeRegisterRequest: {
             /**
-             * Cfn Id
-             * @description Persistent CFN identifier (provided by CFN, immutable)
-             */
-            cfn_id: string;
-            /**
              * Cfn Name
-             * @description Human-readable CFN name (can be updated)
+             * @description Human-readable CFN name (unique identifier)
              */
             cfn_name: string;
             /**
@@ -1620,6 +1124,16 @@ export interface components {
             cfn_config?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Ip Address
+             * @description IP address of the CFN node
+             */
+            ip_address?: string | null;
+            /**
+             * Port
+             * @description Port number of the CFN node
+             */
+            port?: number | null;
         };
         /**
          * CognitiveFabricNodeResponse
@@ -1628,13 +1142,7 @@ export interface components {
          *       "cfn_id": "cfn-persistent-id-123",
          *       "cfn_name": "cfn-node-prod-1",
          *       "config": {
-         *         "cfn_config": {
-         *           "log_level": "info"
-         *         },
-         *         "cognitive_agents": [],
-         *         "cognitive_engines": [],
          *         "memory_providers": [],
-         *         "policies": [],
          *         "workspaces": []
          *       },
          *       "created_at": "2026-02-19T19:46:49.102012",
@@ -1683,6 +1191,16 @@ export interface components {
              */
             enabled: boolean;
             /**
+             * Ip Address
+             * @description IP address of the CFN node
+             */
+            ip_address?: string | null;
+            /**
+             * Port
+             * @description Port number of the CFN node
+             */
+            port?: number | null;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp
@@ -1717,7 +1235,9 @@ export interface components {
          *       "cfn_config": {
          *         "log_level": "debug"
          *       },
-         *       "cfn_name": "cfn-node-prod-1-updated"
+         *       "cfn_name": "cfn-node-prod-1-updated",
+         *       "ip_address": "192.168.1.101",
+         *       "port": 8081
          *     }
          */
         CognitiveFabricNodeUpdateRequest: {
@@ -1733,6 +1253,16 @@ export interface components {
             cfn_config?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Ip Address
+             * @description Updated IP address of the CFN node
+             */
+            ip_address?: string | null;
+            /**
+             * Port
+             * @description Updated port number of the CFN node
+             */
+            port?: number | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1740,52 +1270,15 @@ export interface components {
             detail?: components["schemas"]["ValidationError"][];
         };
         /**
-         * InvitationStatus
-         * @description Invitation status values
-         * @enum {string}
-         */
-        InvitationStatus: "pending" | "accepted" | "declined" | "expired";
-        /**
-         * LoginRequest
-         * @description Schema for login request
-         */
-        LoginRequest: {
-            /**
-             * Username
-             * @description Username
-             */
-            username: string;
-            /**
-             * Password
-             * @description Password
-             */
-            password: string;
-        };
-        /**
          * MemoryProviderCreate
          * @description Schema for creating a memory provider
          */
         MemoryProviderCreate: {
             /**
-             * Memory Provider Id
-             * @description Memory provider identifier
-             */
-            memory_provider_id: string;
-            /**
              * Memory Provider Name
              * @description Memory provider name
              */
             memory_provider_name: string;
-            /**
-             * Provider Type
-             * @description Provider type (internal, external)
-             */
-            provider_type: string;
-            /**
-             * Provider
-             * @description Provider name (e.g., ioc-memory-provider)
-             */
-            provider: string;
             /**
              * Config
              * @description Provider-specific configuration
@@ -1803,10 +1296,6 @@ export interface components {
             memory_provider_id: string;
             /** Memory Provider Name */
             memory_provider_name: string;
-            /** Provider Type */
-            provider_type: string;
-            /** Provider */
-            provider: string;
             /** Config */
             config: {
                 [key: string]: unknown;
@@ -1834,37 +1323,12 @@ export interface components {
              * Providers
              * @description List of memory providers
              */
-            providers: components["schemas"]["MemoryProviderListItem"][];
+            providers: components["schemas"]["MemoryProviderDetail"][];
             /**
              * Total
              * @description Total number of providers
              */
             total: number;
-        };
-        /**
-         * MemoryProviderListItem
-         * @description Schema for memory provider list item
-         */
-        MemoryProviderListItem: {
-            /** Memory Provider Id */
-            memory_provider_id: string;
-            /** Memory Provider Name */
-            memory_provider_name: string;
-            /** Provider Type */
-            provider_type: string;
-            /** Provider */
-            provider: string;
-            /** Config */
-            config: {
-                [key: string]: unknown;
-            } | null;
-            /** Enabled */
-            enabled: boolean;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
         };
         /**
          * MemoryProviderUpdate
@@ -1876,16 +1340,6 @@ export interface components {
              * @description Memory provider name
              */
             memory_provider_name?: string | null;
-            /**
-             * Provider Type
-             * @description Provider type (internal, external)
-             */
-            provider_type?: string | null;
-            /**
-             * Provider
-             * @description Provider name (e.g., ioc-memory-provider)
-             */
-            provider?: string | null;
             /**
              * Config
              * @description Provider-specific configuration
@@ -2046,145 +1500,118 @@ export interface components {
             systems: components["schemas"]["MultiAgenticSystem"][];
         };
         /**
-         * RefreshTokenRequest
-         * @description Schema for token refresh request
+         * PolicyCreate
+         * @description Schema for creating a policy
          */
-        RefreshTokenRequest: {
+        PolicyCreate: {
             /**
-             * Refresh Token
-             * @description Refresh token
+             * Policy Id
+             * @description Policy identifier
              */
-            refresh_token: string;
-        };
-        /**
-         * SignupRequest
-         * @description Schema for user sign-up request
-         */
-        SignupRequest: {
+            policy_id: string;
             /**
-             * Username
-             * @description Desired username
+             * Policy Name
+             * @description Policy name
              */
-            username: string;
+            policy_name: string;
             /**
-             * Email
-             * Format: email
-             * @description Email address
+             * Config
+             * @description Policy-specific configuration
              */
-            email: string;
-            /**
-             * Password
-             * @description Password (minimum 8 characters)
-             */
-            password: string;
-            /**
-             * Domain
-             * @description User domain
-             * @default ioc.local
-             */
-            domain: string;
-            /**
-             * Role
-             * @description User role
-             * @default admin
-             */
-            role: string;
-        };
-        /**
-         * TokenRefreshResponse
-         * @description Schema for token refresh response
-         */
-        TokenRefreshResponse: {
-            /**
-             * Access Token
-             * @description New JWT access token
-             */
-            access_token: string;
-            /**
-             * Token Type
-             * @description Token type
-             * @default bearer
-             */
-            token_type: string;
-        };
-        /**
-         * TokenResponse
-         * @description Schema for token response
-         */
-        TokenResponse: {
-            /**
-             * Access Token
-             * @description JWT access token
-             */
-            access_token: string;
-            /**
-             * Refresh Token
-             * @description JWT refresh token
-             */
-            refresh_token: string;
-            /**
-             * Token Type
-             * @description Token type
-             * @default bearer
-             */
-            token_type: string;
-            /**
-             * User
-             * @description User information
-             */
-            user: {
+            config?: {
                 [key: string]: unknown;
-            };
+            } | null;
         };
         /**
-         * User
-         * @example {
-         *       "created_at": "2024-11-14T10:30:00Z",
-         *       "domain": "ioc.local",
-         *       "id": "550e8400-e29b-41d4-a716-446655440000",
-         *       "role": "admin",
-         *       "updated_at": "2024-11-14T11:15:00Z",
-         *       "username": "admin"
-         *     }
+         * PolicyDetail
+         * @description Schema for detailed policy information
          */
-        User: {
-            /** Id */
-            id: string;
-            /** Username */
-            username: string;
-            /** Domain */
-            domain: string;
-            /** Role */
-            role: string;
+        PolicyDetail: {
+            /** Policy Id */
+            policy_id: string;
+            /** Workspace Id */
+            workspace_id: string;
+            /** Policy Name */
+            policy_name: string;
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            } | null;
+            /** Enabled */
+            enabled: boolean;
             /**
              * Created At
              * Format: date-time
              */
             created_at: string;
             /** Updated At */
-            updated_at?: string | null;
+            updated_at: string | null;
+            /** Created By */
+            created_by: string;
+            /** Updated By */
+            updated_by: string | null;
         };
         /**
-         * Users
-         * @example {
-         *       "total": 1,
-         *       "users": [
-         *         {
-         *           "created_at": "2024-11-14T10:30:00Z",
-         *           "domain": "ioc.local",
-         *           "id": "550e8400-e29b-41d4-a716-446655440000",
-         *           "role": "admin",
-         *           "updated_at": "2024-11-14T11:15:00Z",
-         *           "username": "admin"
-         *         }
-         *       ]
-         *     }
+         * PolicyList
+         * @description Schema for policy list response
          */
-        Users: {
-            /** Users */
-            users: components["schemas"]["User"][];
-            /** Total */
+        PolicyList: {
+            /**
+             * Policies
+             * @description List of policies
+             */
+            policies: components["schemas"]["PolicyListItem"][];
+            /**
+             * Total
+             * @description Total number of policies
+             */
             total: number;
+        };
+        /**
+         * PolicyListItem
+         * @description Schema for policy list item
+         */
+        PolicyListItem: {
+            /** Policy Id */
+            policy_id: string;
+            /** Workspace Id */
+            workspace_id: string;
+            /** Policy Name */
+            policy_name: string;
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            } | null;
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * PolicyUpdate
+         * @description Schema for updating a policy
+         */
+        PolicyUpdate: {
+            /**
+             * Policy Name
+             * @description Policy name
+             */
+            policy_name?: string | null;
+            /**
+             * Config
+             * @description Policy-specific configuration
+             */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Enabled
+             * @description Whether policy is enabled
+             */
+            enabled?: boolean | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -2199,7 +1626,17 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
-        /** WorkspaceCreate */
+        /**
+         * WorkspaceCreate
+         * @example {
+         *       "cfn_id": "cfn-node-001",
+         *       "config": {
+         *         "setting1": "value1",
+         *         "setting2": "value2"
+         *       },
+         *       "name": "cfn-workspace-001"
+         *     }
+         */
         WorkspaceCreate: {
             /**
              * Name
@@ -2270,93 +1707,6 @@ export interface components {
             } | null;
         };
         /**
-         * WorkspaceInvitationAcceptResponse
-         * @description Schema for invitation acceptance response
-         */
-        WorkspaceInvitationAcceptResponse: {
-            /** Message */
-            message: string;
-            /** Workspace Id */
-            workspace_id: string;
-            /** Workspace Name */
-            workspace_name: string;
-            /** Assigned Role */
-            assigned_role: string;
-        };
-        /**
-         * WorkspaceInvitationCreate
-         * @description Schema for creating a workspace invitation
-         */
-        WorkspaceInvitationCreate: {
-            /**
-             * Invitee Username
-             * @description Username of user to invite
-             */
-            invitee_username: string;
-            /**
-             * Role
-             * @description Role to assign (admin/viewer/guest)
-             */
-            role: string;
-        };
-        /**
-         * WorkspaceInvitationDetail
-         * @description Schema for workspace invitation details
-         */
-        WorkspaceInvitationDetail: {
-            /** Id */
-            id: string;
-            /** Workspace Id */
-            workspace_id: string;
-            /**
-             * Workspace Name
-             * @description Workspace name joined from workspace table
-             */
-            workspace_name?: string | null;
-            /** Inviter Id */
-            inviter_id: string;
-            /**
-             * Inviter Username
-             * @description Inviter username joined from user table
-             */
-            inviter_username?: string | null;
-            /** Invitee Username */
-            invitee_username: string;
-            /** Role */
-            role: string;
-            status: components["schemas"]["InvitationStatus"];
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /**
-             * Expires At
-             * Format: date-time
-             */
-            expires_at: string;
-            /** Responded At */
-            responded_at?: string | null;
-        };
-        /**
-         * WorkspaceInvitationList
-         * @description Schema for list of workspace invitations
-         */
-        WorkspaceInvitationList: {
-            /** Invitations */
-            invitations: components["schemas"]["WorkspaceInvitationDetail"][];
-            /** Total */
-            total: number;
-        };
-        /**
-         * WorkspaceInvitationResponse
-         * @description Schema for invitation creation response
-         */
-        WorkspaceInvitationResponse: {
-            /** Id */
-            id: string;
-        };
-        /**
          * WorkspaceList
          * @example {
          *       "total": 1,
@@ -2408,24 +1758,6 @@ export interface components {
              * @default false
              */
             is_creator: boolean;
-        };
-        /**
-         * WorkspaceMemberList
-         * @description Schema for list of workspace members
-         */
-        WorkspaceMemberList: {
-            /** Members */
-            members: components["schemas"]["WorkspaceMemberDetail"][];
-            /** Total */
-            total: number;
-        };
-        /**
-         * WorkspaceMemberRoleUpdate
-         * @description Schema for updating a member's role
-         */
-        WorkspaceMemberRoleUpdate: {
-            /** @description New role to assign */
-            role: components["schemas"]["WorkspaceRole"];
         };
         /**
          * WorkspaceResponse
@@ -2524,105 +1856,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
-                };
-            };
-        };
-    };
-    signup_api_auth_signup_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["SignupRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    login_api_auth_login_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["LoginRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    refresh_token_api_auth_refresh_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["RefreshTokenRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["TokenRefreshResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -3434,11 +2667,78 @@ export interface operations {
             };
         };
     };
-    get_cognitive_agent_api_cognitive_agents__cognitive_agent_id__get: {
+    list_cognitive_agents_api_workspaces__workspace_id__cognitive_agents_get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CognitiveAgentList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_cognitive_agent_api_workspaces__workspace_id__cognitive_agents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CognitiveAgentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CognitiveAgentDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_cognitive_agent_api_workspaces__workspace_id__cognitive_agents__cognitive_agent_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
                 cognitive_agent_id: string;
             };
             cookie?: never;
@@ -3465,11 +2765,14 @@ export interface operations {
             };
         };
     };
-    list_cognitive_agents_api_cognitive_agents_get: {
+    delete_cognitive_agent_api_workspaces__workspace_id__cognitive_agents__cognitive_agent_id__delete: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                workspace_id: string;
+                cognitive_agent_id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -3480,7 +2783,54 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CognitiveAgentList"];
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_cognitive_agent_api_workspaces__workspace_id__cognitive_agents__cognitive_agent_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                cognitive_agent_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CognitiveAgentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CognitiveAgentDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -3653,241 +3003,7 @@ export interface operations {
             };
         };
     };
-    list_audits_api_audits__get: {
-        parameters: {
-            query?: {
-                skip?: number;
-                limit?: number;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuditListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_audit_api_audits__post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuditResponse"];
-                };
-            };
-        };
-    };
-    get_audit_api_audits__audit_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                audit_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["AuditResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_audit_api_audits__audit_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                audit_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_api_keys_api_iam_api_keys_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiKeyList"];
-                };
-            };
-        };
-    };
-    create_api_key_api_iam_api_keys_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ApiKeyCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ApiKeyResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_api_key_api_iam_api_keys__key_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                key_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_roles_api_iam_roles_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": string[];
-                };
-            };
-        };
-    };
-    list_iam_users_api_iam_users_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["Users"];
-                };
-            };
-        };
-    };
-    list_workspace_invitations_api_workspaces__workspace_id__invitations_get: {
+    list_policies_api_workspaces__workspace_id__policies_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -3904,7 +3020,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkspaceInvitationList"];
+                    "application/json": components["schemas"]["PolicyList"];
                 };
             };
             /** @description Validation Error */
@@ -3918,7 +3034,7 @@ export interface operations {
             };
         };
     };
-    create_invitation_api_workspaces__workspace_id__invitations_post: {
+    create_policy_api_workspaces__workspace_id__policies_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -3929,7 +3045,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["WorkspaceInvitationCreate"];
+                "application/json": components["schemas"]["PolicyCreate"];
             };
         };
         responses: {
@@ -3939,7 +3055,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkspaceInvitationResponse"];
+                    "application/json": components["schemas"]["PolicyDetail"];
                 };
             };
             /** @description Validation Error */
@@ -3953,62 +3069,13 @@ export interface operations {
             };
         };
     };
-    cancel_invitation_api_workspaces__workspace_id__invitations__invitation_id__delete: {
+    get_policy_api_workspaces__workspace_id__policies__policy_id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 workspace_id: string;
-                invitation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_pending_invitations_api_invitations_pending_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["WorkspaceInvitationList"];
-                };
-            };
-        };
-    };
-    accept_invitation_api_invitations__invitation_id__accept_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                invitation_id: string;
+                policy_id: string;
             };
             cookie?: never;
         };
@@ -4020,7 +3087,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkspaceInvitationAcceptResponse"];
+                    "application/json": components["schemas"]["PolicyDetail"];
                 };
             };
             /** @description Validation Error */
@@ -4034,43 +3101,13 @@ export interface operations {
             };
         };
     };
-    decline_invitation_api_invitations__invitation_id__decline_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                invitation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_members_api_workspaces__workspace_id__members_get: {
+    delete_policy_api_workspaces__workspace_id__policies__policy_id__delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 workspace_id: string;
+                policy_id: string;
             };
             cookie?: never;
         };
@@ -4082,7 +3119,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkspaceMemberList"];
+                    "application/json": {
+                        [key: string]: string;
+                    };
                 };
             };
             /** @description Validation Error */
@@ -4096,19 +3135,19 @@ export interface operations {
             };
         };
     };
-    update_member_role_api_workspaces__workspace_id__members__user_id__put: {
+    update_policy_api_workspaces__workspace_id__policies__policy_id__patch: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 workspace_id: string;
-                user_id: string;
+                policy_id: string;
             };
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["WorkspaceMemberRoleUpdate"];
+                "application/json": components["schemas"]["PolicyUpdate"];
             };
         };
         responses: {
@@ -4118,38 +3157,8 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["WorkspaceMemberDetail"];
+                    "application/json": components["schemas"]["PolicyDetail"];
                 };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    remove_member_api_workspaces__workspace_id__members__user_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                workspace_id: string;
-                user_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Validation Error */
             422: {

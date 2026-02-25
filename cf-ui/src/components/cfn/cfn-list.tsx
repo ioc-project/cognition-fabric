@@ -96,19 +96,19 @@ export function CfnList() {
           title="Cognitive Fabric Nodes"
           description="View and manage Cognitive Fabric Nodes"
           callToAction={
-            <div className="flex gap-2">
-              {cfns.length > 0 && (
+            cfns.length > 0 ? (
+              <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
                   {viewMode === 'table' ? 'Card View' : 'Table View'}
                 </Button>
-              )}
-              <Button asChild variant="sidebar" className="gap-2">
-                <Link href={routes.cfn.create}>
-                  <Plus className="w-4 h-4" />
-                  Create CFN
-                </Link>
-              </Button>
-            </div>
+                <Button asChild variant="sidebar" className="gap-2">
+                  <Link href={routes.cfn.create}>
+                    <Plus className="w-4 h-4" />
+                    Create CFN
+                  </Link>
+                </Button>
+              </div>
+            ) : undefined
           }
         >
           <ConditionalSWRRenderer

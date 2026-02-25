@@ -3,49 +3,55 @@ import {CreateApiKeyRequest, CreateApiKeyResponse, IamUsersResponse, ListApiKeys
 
 export const apiKeyApi = {
   list: async (): Promise<ListApiKeysResponse> => {
-    const {data, error} = await apiClient.GET('/api/iam/api-keys');
+    const {data, error} = await apiClient.GET('/api/iam/api-keys' as any, {} as any);
 
     if (error) {
       throw error;
     }
-    return data;
+    return data as ListApiKeysResponse;
   },
 
   roles: async (): Promise<{roles: string[]}> => {
-    const {data, error} = await apiClient.GET('/api/iam/roles');
+    const {data, error} = await apiClient.GET('/api/iam/roles' as any, {} as any);
 
     if (error) {
       throw error;
     }
-    return {roles: data};
+    return {roles: data as string[]};
   },
 
   users: async (): Promise<IamUsersResponse> => {
-    const {data, error} = await apiClient.GET('/api/iam/users');
+    const {data, error} = await apiClient.GET('/api/iam/users' as any, {} as any);
 
     if (error) {
       throw error;
     }
-    return data;
+    return data as IamUsersResponse;
   },
 
   create: async (payload: CreateApiKeyRequest): Promise<CreateApiKeyResponse> => {
-    const {data, error} = await apiClient.POST('/api/iam/api-keys', {
-      body: payload
-    });
+    const {data, error} = await apiClient.POST(
+      '/api/iam/api-keys' as any,
+      {
+        body: payload
+      } as any
+    );
 
     if (error) {
       throw error;
     }
-    return data;
+    return data as CreateApiKeyResponse;
   },
 
   delete: async (id: string): Promise<void> => {
-    const {error} = await apiClient.DELETE('/api/iam/api-keys/{key_id}', {
-      params: {
-        path: {key_id: id}
-      }
-    });
+    const {error} = await apiClient.DELETE(
+      '/api/iam/api-keys/{key_id}' as any,
+      {
+        params: {
+          path: {key_id: id}
+        }
+      } as any
+    );
 
     if (error) {
       throw error;

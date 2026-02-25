@@ -3,38 +3,47 @@ import type {ListWorkspaceMembersResponse, UpdateMemberRoleRequest, WorkspaceMem
 
 export const memberApi = {
   list: async (workspaceId: string): Promise<ListWorkspaceMembersResponse> => {
-    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/members', {
-      params: {
-        path: {workspace_id: workspaceId}
-      }
-    });
+    const {data, error} = await apiClient.GET(
+      '/api/workspaces/{workspace_id}/members' as any,
+      {
+        params: {
+          path: {workspace_id: workspaceId}
+        }
+      } as any
+    );
 
     if (error) {
       throw error;
     }
-    return data;
+    return data as ListWorkspaceMembersResponse;
   },
 
   updateRole: async (workspaceId: string, memberId: string, data: UpdateMemberRoleRequest): Promise<WorkspaceMember> => {
-    const {data: response, error} = await apiClient.PUT('/api/workspaces/{workspace_id}/members/{user_id}', {
-      params: {
-        path: {workspace_id: workspaceId, user_id: memberId}
-      },
-      body: data
-    });
+    const {data: response, error} = await apiClient.PUT(
+      '/api/workspaces/{workspace_id}/members/{user_id}' as any,
+      {
+        params: {
+          path: {workspace_id: workspaceId, user_id: memberId}
+        },
+        body: data
+      } as any
+    );
 
     if (error) {
       throw error;
     }
-    return response;
+    return response as WorkspaceMember;
   },
 
   remove: async (workspaceId: string, memberId: string): Promise<void> => {
-    const {error} = await apiClient.DELETE('/api/workspaces/{workspace_id}/members/{user_id}', {
-      params: {
-        path: {workspace_id: workspaceId, user_id: memberId}
-      }
-    });
+    const {error} = await apiClient.DELETE(
+      '/api/workspaces/{workspace_id}/members/{user_id}' as any,
+      {
+        params: {
+          path: {workspace_id: workspaceId, user_id: memberId}
+        }
+      } as any
+    );
 
     if (error) {
       throw error;

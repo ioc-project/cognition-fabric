@@ -94,7 +94,7 @@ export function PendingInvitationsPage() {
     return diffDays;
   };
 
-  const pendingInvitations = invitations.filter((inv) => inv.status === 'pending');
+  const pendingInvitations = invitations.filter((inv: Invitation) => inv.status === 'pending');
 
   if (isLoading) {
     return (

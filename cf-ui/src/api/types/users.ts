@@ -1,4 +1,13 @@
-import type {components} from '../generated/schema';
+export interface UserListItem {
+  id: string;
+  username: string;
+  email?: string;
+  name?: string;
+  role?: string;
+  created_at?: string;
+}
 
-export type UserListItem = components['schemas']['User'];
-export type ListUsersResponse = components['schemas']['Users'];
+export interface ListUsersResponse {
+  users: UserListItem[];
+  total?: number;
+}

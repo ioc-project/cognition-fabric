@@ -1,7 +1,8 @@
 'use client';
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Boxes, FolderOpen, BarChart3, ChevronDown, ChevronRight, Brain, Key, Users, Network, type LucideIcon} from 'lucide-react';
+import {Boxes, FolderOpen, ChevronDown, ChevronRight, Brain, Network, Database, type LucideIcon} from 'lucide-react';
+// import {Key} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments, useRouter} from 'next/navigation';
 import {Badge} from '@/components/ui/badge';
@@ -33,7 +34,7 @@ export function Sidebar() {
     hrefs.push(routes.workspaces.list);
     hrefs.push(routes.cfn.list);
     if (workspaceBasePath) {
-      hrefs.push(`${workspaceBasePath}`, `${workspaceBasePath}/mas`, `${workspaceBasePath}/cognitive-engines`, `${workspaceBasePath}/summary`);
+      hrefs.push(`${workspaceBasePath}`, `${workspaceBasePath}/mas`, `${workspaceBasePath}/cognitive-agents`);
     }
     hrefs.forEach((h) => {
       try {
@@ -61,19 +62,18 @@ export function Sidebar() {
         isActive: () => segments[0] === 'cfn'
       },
       {
-        id: 'api-keys',
-        href: routes.apiKeys,
-        icon: Key,
-        label: 'API Keys',
-        isActive: () => pathname === routes.apiKeys
+        id: 'memory-providers',
+        href: routes.memoryProviders.list,
+        icon: Database,
+        label: 'Memory Providers',
+        isActive: () => segments[0] === 'memory-providers'
       }
-      // Software Templates hidden - may be reused later
       // {
-      //   id: 'software',
-      //   href: routes.software.list,
-      //   icon: Package,
-      //   label: 'Software Templates',
-      //   isActive: () => segments[0] === 'software'
+      //   id: 'api-keys',
+      //   href: routes.apiKeys,
+      //   icon: Key,
+      //   label: 'API Keys',
+      //   isActive: () => pathname === routes.apiKeys
       // }
     ],
     [segments, pathname]
@@ -109,30 +109,23 @@ export function Sidebar() {
         isActive: () => isWorkspaceSection('mas')
       },
       {
-        id: 'cognitive-engines',
-        href: `${workspaceBasePath}/cognitive-engines`,
+        id: 'cognitive-agents',
+        href: `${workspaceBasePath}/cognitive-agents`,
         icon: Brain,
-        label: 'Cognitive Engines',
-        isActive: () => isWorkspaceSection('cognitive-engines')
-      },
-      {
-        id: 'summary',
-        href: `${workspaceBasePath}/summary`,
-        icon: BarChart3,
-        label: 'Summary',
-        isActive: () => isWorkspaceSection('summary')
-      },
-      ...(isAdmin
-        ? [
-            {
-              id: 'members',
-              href: `${workspaceBasePath}/members`,
-              icon: Users,
-              label: 'Members',
-              isActive: () => isWorkspaceSection('members')
-            }
-          ]
-        : [])
+        label: 'Cognitive Agents',
+        isActive: () => isWorkspaceSection('cognitive-agents')
+      }
+      // ...(isAdmin
+      //   ? [
+      //       {
+      //         id: 'members',
+      //         href: `${workspaceBasePath}/members`,
+      //         icon: Users,
+      //         label: 'Members',
+      //         isActive: () => isWorkspaceSection('members')
+      //       }
+      //     ]
+      //   : [])
     ],
     [workspaceBasePath, isWorkspaceSection, isAdmin]
   );

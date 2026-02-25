@@ -30,7 +30,7 @@ function LoginForm() {
         setError('Invalid username or password');
         setLoading(false);
       } else if (result?.ok) {
-        window.location.href = '/workspaces';
+        window.location.href = '/workspaces?ensureDefault=1';
       }
     } catch (err) {
       setError('An unexpected error occurred during login. Please try again.');
