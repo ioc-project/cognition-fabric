@@ -2,7 +2,7 @@
 
 import useSWR from 'swr';
 import {cognitiveAgentApi} from '@/api/endpoints/cognitive-agent';
-import type {CognitiveAgent, CognitiveAgentListItem, CreateCognitiveAgentRequest, UpdateCognitiveAgentRequest} from '@/api/types/cognitive-agent';
+import type {CognitiveAgentDetail, CognitiveAgentListItem, CognitiveAgentCreate, CognitiveAgentUpdate} from '@/api/endpoints/cognitive-agent';
 import {swrKeys} from '@/lib/swr-config';
 import {parseError, sortByCreatedAtDesc} from '@/lib/utils';
 import {useInvalidateMutation} from './useSWRResource';
@@ -16,10 +16,10 @@ export function useCognitiveAgents(workspaceId: string) {
 
   const {run: runAddCognitiveAgent} = useInvalidateMutation(
     {keys: swrKeys.cognitiveAgents(workspaceId), prefixes: [['cognitive-agents', workspaceId]]},
-    (payload: CreateCognitiveAgentRequest) => cognitiveAgentApi.create(workspaceId, payload)
+    (payload: CognitiveAgentCreate) => cognitiveAgentApi.create(workspaceId, payload)
   );
 
-  const addCognitiveAgent = async (payload: CreateCognitiveAgentRequest) => {
+  const addCognitiveAgent = async (payload: CognitiveAgentCreate) => {
     const response = await runAddCognitiveAgent(payload);
     await mutate(undefined, {revalidate: true});
     return response;
@@ -27,11 +27,11 @@ export function useCognitiveAgents(workspaceId: string) {
 
   const {run: runUpdateCognitiveAgent} = useInvalidateMutation(
     {keys: swrKeys.cognitiveAgents(workspaceId), prefixes: [['cognitive-agents', workspaceId]]},
-    ({cognitiveAgentId, payload}: {cognitiveAgentId: string; payload: UpdateCognitiveAgentRequest}) =>
+    ({cognitiveAgentId, payload}: {cognitiveAgentId: string; payload: CognitiveAgentUpdate}) =>
       cognitiveAgentApi.update(workspaceId, cognitiveAgentId, payload)
   );
 
-  const updateCognitiveAgent = async (cognitiveAgentId: string, payload: UpdateCognitiveAgentRequest) => {
+  const updateCognitiveAgent = async (cognitiveAgentId: string, payload: CognitiveAgentUpdate) => {
     const response = await runUpdateCognitiveAgent({cognitiveAgentId, payload});
     await mutate(undefined, {revalidate: true});
     return response;
@@ -66,7 +66,7 @@ export function useCognitiveAgents(workspaceId: string) {
 }
 
 export function useCognitiveAgent(workspaceId: string, cognitiveAgentId: string) {
-  const {data, error, isLoading, isValidating, mutate} = useSWR<CognitiveAgent>(
+  const {data, error, isLoading, isValidating, mutate} = useSWR<CognitiveAgentDetail>(
     workspaceId && cognitiveAgentId ? swrKeys.cognitiveAgentDetails(workspaceId, cognitiveAgentId) : null,
     () => cognitiveAgentApi.get(workspaceId, cognitiveAgentId),
     {revalidateOnMount: true, keepPreviousData: true}

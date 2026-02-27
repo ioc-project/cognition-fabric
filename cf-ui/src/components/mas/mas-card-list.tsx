@@ -7,13 +7,13 @@ import {routes} from '@/constants/routes';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import Link from 'next/link';
 import {MoreVertical, Trash2} from 'lucide-react';
-import type {MAS} from '@/api/types/mas';
+import type {MultiAgenticSystem} from '@/api/endpoints/mas';
 
 export interface MASCardListProps {
-  masList: MAS[];
+  masList: MultiAgenticSystem[];
   workspaceId: string;
   selectedId: string | null;
-  onCardClick: (m: MAS) => void;
+  onCardClick: (m: MultiAgenticSystem) => void;
   onOpenDelete: (payload: {id: string; name: string}) => void;
 }
 

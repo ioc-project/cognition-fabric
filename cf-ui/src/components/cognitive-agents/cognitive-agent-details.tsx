@@ -6,7 +6,7 @@ import useSWR from 'swr';
 import {swrKeys} from '@/lib/swr-config';
 import {cognitiveAgentApi} from '@/api/endpoints/cognitive-agent';
 import {workspaceApi} from '@/api/endpoints';
-import type {CognitiveAgent} from '@/api/types/cognitive-agent';
+import type {CognitiveAgentDetail} from '@/api/endpoints/cognitive-agent';
 import type {Workspace} from '@/api/types/workspace';
 import {BasePage} from '@/components/ui/base-page';
 import {Card, CardContent} from '@/components/ui/card';
@@ -19,6 +19,7 @@ import {DATE_TIME_FORMAT_OPTIONS, parseError} from '@/lib/utils';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
+import {useCognitiveAgents} from '@/hooks/useCognitiveAgents';
 import {toast} from 'sonner';
 
 export default function CognitiveAgentDetailsPage() {
@@ -29,6 +30,7 @@ export default function CognitiveAgentDetailsPage() {
   const workspaceId = Array.isArray(rawWorkspaceId) ? rawWorkspaceId[0] : rawWorkspaceId;
   const cognitiveAgentId = Array.isArray(rawCognitiveAgentId) ? rawCognitiveAgentId[0] : rawCognitiveAgentId;
 
+  const {deleteCognitiveAgent} = useCognitiveAgents(workspaceId!);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const deleteDialog = useConfirmDialog<{id: string; name: string}>();
 
@@ -36,7 +38,7 @@ export default function CognitiveAgentDetailsPage() {
     data: cognitiveAgent,
     error,
     isLoading
-  } = useSWR<CognitiveAgent>(workspaceId && cognitiveAgentId ? swrKeys.cognitiveAgentDetails(workspaceId, cognitiveAgentId) : null, () =>
+  } = useSWR<CognitiveAgentDetail>(workspaceId && cognitiveAgentId ? swrKeys.cognitiveAgentDetails(workspaceId, cognitiveAgentId) : null, () =>
     cognitiveAgentApi.get(workspaceId as string, cognitiveAgentId as string)
   );
 
@@ -65,7 +67,7 @@ export default function CognitiveAgentDetailsPage() {
   const handleDelete = async () => {
     await deleteDialog.confirm(async (data) => {
       try {
-        await cognitiveAgentApi.delete(workspaceId!, data.id);
+        await deleteCognitiveAgent(data.id);
         toast.success(`Cognition Agent "${data.name}" deleted successfully`);
         router.push(routes.workspaces.cognitiveAgents.list(workspaceId!));
       } catch (err) {

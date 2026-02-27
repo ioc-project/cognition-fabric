@@ -5,7 +5,7 @@ import {FormLabel} from '@/components/ui/form';
 import {Button} from '@/components/ui/button';
 import {AgentCard} from './agent-card';
 import type {Control, UseFormWatch} from 'react-hook-form';
-import type {AgentWithMemory} from '@/api/types/mas';
+import type {AgentWithMemory} from '@/api/endpoints/mas';
 
 interface Agent {
   agent_id: string;

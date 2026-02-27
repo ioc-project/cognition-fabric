@@ -760,6 +760,49 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * AgentConfig
+         * @description Schema for individual agent configuration in MAS (input)
+         */
+        AgentConfig: {
+            /**
+             * Agent Id
+             * @description Unique identifier for the agent
+             */
+            agent_id: string;
+            /**
+             * Agentic Memory Provider Id
+             * @description Memory provider ID for agent's private memory
+             */
+            agentic_memory_provider_id?: string | null;
+            /**
+             * Config
+             * @description Agent-specific configuration
+             */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * AgentWithMemory
+         * @description Schema for agent with full memory provider details (output)
+         */
+        AgentWithMemory: {
+            /**
+             * Agent Id
+             * @description Unique identifier for the agent
+             */
+            agent_id: string;
+            /** @description Full memory provider configuration for agent's private memory */
+            agentic_memory?: components["schemas"]["MemoryProviderDetail"] | null;
+            /**
+             * Config
+             * @description Agent-specific configuration
+             */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
          * CognitiveAgentCreate
          * @description Schema for creating a cognitive agent
          */
@@ -1357,14 +1400,22 @@ export interface components {
          * MultiAgenticSystem
          * @description Schema for detailed multi-agentic system information
          * @example {
-         *       "agents": {
-         *         "agent1": {
-         *           "type": "planner"
-         *         },
-         *         "agent2": {
-         *           "type": "executor"
+         *       "agents": [
+         *         {
+         *           "agent_id": "agent-1",
+         *           "agentic_memory": {
+         *             "config": {
+         *               "host": "ioc-mem0",
+         *               "port": 8765
+         *             },
+         *             "memory_provider_id": "mem-provider-2",
+         *             "memory_provider_name": "ioc-mem0"
+         *           },
+         *           "config": {
+         *             "type": "planner"
+         *           }
          *         }
-         *       },
+         *       ],
          *       "config": {
          *         "memory": {
          *           "retention": "90d",
@@ -1375,6 +1426,14 @@ export interface components {
          *       "description": "A system for collaborative AI agents",
          *       "id": "550e8400-e29b-41d4-a716-446655440000",
          *       "name": "unique-name-within-a-workspace",
+         *       "shared_memory": {
+         *         "config": {
+         *           "host": "ioc-knowledge-memory-svc",
+         *           "port": 9003
+         *         },
+         *         "memory_provider_id": "mem-provider-1",
+         *         "memory_provider_name": "ioc-knowledge-memory-svc"
+         *       },
          *       "updated_at": "2024-12-11T10:30:00Z",
          *       "workspace_id": "660e8400-e29b-41d4-a716-446655440000"
          *     }
@@ -1388,10 +1447,13 @@ export interface components {
             name: string;
             /** Description */
             description?: string | null;
-            /** Agents */
-            agents?: {
-                [key: string]: unknown;
-            } | null;
+            /** @description Full configuration of shared memory provider for all agents */
+            shared_memory?: components["schemas"]["MemoryProviderDetail"] | null;
+            /**
+             * Agents
+             * @description List of agents with their memory provider configurations
+             */
+            agents?: components["schemas"]["AgentWithMemory"][] | null;
             /** Config */
             config?: {
                 [key: string]: unknown;
@@ -1424,12 +1486,15 @@ export interface components {
              */
             description?: string | null;
             /**
-             * Agents
-             * @description Configuration of agents in the system
+             * Shared Memory Provider Id
+             * @description Memory provider ID for shared memory across all agents in MAS
              */
-            agents?: {
-                [key: string]: unknown;
-            } | null;
+            shared_memory_provider_id?: string | null;
+            /**
+             * Agents
+             * @description List of agents in the system with their configurations
+             */
+            agents?: components["schemas"]["AgentConfig"][] | null;
             /**
              * Config
              * @description Configuration object
@@ -1474,12 +1539,15 @@ export interface components {
              */
             description?: string | null;
             /**
-             * Agents
-             * @description Updated configuration of agents in the system
+             * Shared Memory Provider Id
+             * @description Updated memory provider ID for shared memory
              */
-            agents?: {
-                [key: string]: unknown;
-            } | null;
+            shared_memory_provider_id?: string | null;
+            /**
+             * Agents
+             * @description Updated list of agents in the system
+             */
+            agents?: components["schemas"]["AgentConfig"][] | null;
             /**
              * Config
              * @description Updated configuration object
@@ -1645,9 +1713,9 @@ export interface components {
             name: string;
             /**
              * Cfn Id
-             * @description CFN identifier to associate with this workspace (required)
+             * @description CFN identifier to associate with this workspace (optional for default workspace)
              */
-            cfn_id: string;
+            cfn_id?: string | null;
             /**
              * Config
              * @description Workspace configuration settings

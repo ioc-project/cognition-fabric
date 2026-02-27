@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
+import {z} from 'zod';
 import {BasePage} from '@/components/ui/base-page';
 import {Card, CardContent} from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
@@ -15,8 +16,15 @@ import {routes, breadcrumbs} from '@/constants/routes';
 import {toast} from 'sonner';
 import {useCognitiveAgents} from '@/hooks/useCognitiveAgents';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
-import {CreateCognitiveAgentRequestSchema, type CreateCognitiveAgentRequest} from '@/api/types/cognitive-agent';
 import {parseError} from '@/lib/utils';
+
+const createCognitiveAgentSchema = z.object({
+  cognitive_agent_name: z.string().min(1, 'Name is required').min(3, 'Name must be at least 3 characters'),
+  description: z.string().optional(),
+  config: z.record(z.unknown()).optional()
+});
+
+type CreateCognitiveAgentFormData = z.infer<typeof createCognitiveAgentSchema>;
 
 interface CreateCognitiveAgentFormProps {
   workspaceId: string;
@@ -30,8 +38,8 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
   const workspaceName = workspace?.name || 'Workspace';
   const {addCognitiveAgent} = useCognitiveAgents(workspaceId);
 
-  const form = useForm<CreateCognitiveAgentRequest>({
-    resolver: zodResolver(CreateCognitiveAgentRequestSchema),
+  const form = useForm<CreateCognitiveAgentFormData>({
+    resolver: zodResolver(createCognitiveAgentSchema),
     defaultValues: {
       cognitive_agent_name: '',
       description: '',
@@ -39,7 +47,7 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
     }
   });
 
-  const onSubmit = async (data: CreateCognitiveAgentRequest) => {
+  const onSubmit = async (data: CreateCognitiveAgentFormData) => {
     try {
       setIsLoading(true);
       setError(null);

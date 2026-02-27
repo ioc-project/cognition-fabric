@@ -1,22 +1,30 @@
 import {apiClient} from '../client';
-import type {CreateMASRequest, CreateMASResponse, MAS, UpdateMASRequest} from '../types/mas';
+import type {components} from '../generated/schema';
+
+type MultiAgenticSystem = components['schemas']['MultiAgenticSystem'];
+type MultiAgenticSystemRequest = components['schemas']['MultiAgenticSystemRequest'];
+type MultiAgenticSystemResponse = components['schemas']['MultiAgenticSystemResponse'];
+type MultiAgenticSystemUpdate = components['schemas']['MultiAgenticSystemUpdate'];
+type MultiAgenticSystems = components['schemas']['MultiAgenticSystems'];
+type AgentConfig = components['schemas']['AgentConfig'];
+type AgentWithMemory = components['schemas']['AgentWithMemory'];
 
 export const masApi = {
-  create: async (workspaceId: string, data: CreateMASRequest): Promise<CreateMASResponse> => {
+  create: async (workspaceId: string, data: MultiAgenticSystemRequest): Promise<MultiAgenticSystemResponse> => {
     const {data: response, error} = await apiClient.POST('/api/workspaces/{workspace_id}/multi-agentic-systems', {
       params: {
         path: {workspace_id: workspaceId}
       },
-      body: data as any
+      body: data
     });
 
     if (error) {
       throw error;
     }
-    return response as CreateMASResponse;
+    return response;
   },
 
-  list: async (workspaceId: string): Promise<MAS[]> => {
+  list: async (workspaceId: string): Promise<MultiAgenticSystem[]> => {
     const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/multi-agentic-systems', {
       params: {
         path: {workspace_id: workspaceId}
@@ -26,10 +34,10 @@ export const masApi = {
     if (error) {
       throw error;
     }
-    return data.systems as MAS[];
+    return data.systems;
   },
 
-  get: async (workspaceId: string, id: string): Promise<MAS> => {
+  get: async (workspaceId: string, id: string): Promise<MultiAgenticSystem> => {
     const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}', {
       params: {
         path: {workspace_id: workspaceId, mas_id: id}
@@ -39,21 +47,21 @@ export const masApi = {
     if (error) {
       throw error;
     }
-    return data as MAS;
+    return data;
   },
 
-  update: async (workspaceId: string, id: string, data: UpdateMASRequest): Promise<MAS> => {
+  update: async (workspaceId: string, id: string, data: MultiAgenticSystemUpdate): Promise<MultiAgenticSystem> => {
     const {data: response, error} = await apiClient.PUT('/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}', {
       params: {
         path: {workspace_id: workspaceId, mas_id: id}
       },
-      body: data as any
+      body: data
     });
 
     if (error) {
       throw error;
     }
-    return response as MAS;
+    return response;
   },
 
   delete: async (workspaceId: string, id: string): Promise<void> => {
@@ -67,4 +75,14 @@ export const masApi = {
       throw error;
     }
   }
+};
+
+export type {
+  MultiAgenticSystem,
+  MultiAgenticSystemRequest,
+  MultiAgenticSystemResponse,
+  MultiAgenticSystemUpdate,
+  MultiAgenticSystems,
+  AgentConfig,
+  AgentWithMemory
 };

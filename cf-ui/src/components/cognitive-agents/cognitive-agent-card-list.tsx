@@ -6,17 +6,18 @@ import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 import {routes} from '@/constants/routes';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import Link from 'next/link';
-import {MoreVertical, Shield} from 'lucide-react';
-import type {CognitiveAgentListItem} from '@/api/types/cognitive-agent';
+import {MoreVertical, Shield, Trash2} from 'lucide-react';
+import type {CognitiveAgentListItem} from '@/api/endpoints/cognitive-agent';
 
 export interface CognitiveAgentCardListProps {
   cognitiveAgents: CognitiveAgentListItem[];
   workspaceId: string;
   selectedId: string | null;
   onCardClick: (r: CognitiveAgentListItem) => void;
+  onOpenDelete: (payload: {id: string; name: string}) => void;
 }
 
-export function CognitiveAgentCardList({cognitiveAgents, workspaceId, selectedId, onCardClick}: CognitiveAgentCardListProps) {
+export function CognitiveAgentCardList({cognitiveAgents, workspaceId, selectedId, onCardClick, onOpenDelete}: CognitiveAgentCardListProps) {
   return (
     <div className="list-grid">
       {cognitiveAgents.map((r) => (
@@ -48,6 +49,16 @@ export function CognitiveAgentCardList({cognitiveAgents, workspaceId, selectedId
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
                   <Link href={routes.workspaces.cognitiveAgents.details(workspaceId, r.cognitive_agent_id)}>View Details</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-red-600 dark:text-red-400"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenDelete({id: r.cognitive_agent_id, name: r.cognitive_agent_name});
+                  }}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

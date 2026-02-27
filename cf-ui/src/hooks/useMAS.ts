@@ -2,13 +2,13 @@
 
 import useSWR from 'swr';
 import {masApi} from '@/api/endpoints';
-import type {MAS, CreateMASRequest} from '@/api/types/mas';
+import type {MultiAgenticSystem, MultiAgenticSystemRequest} from '@/api/endpoints/mas';
 import {swrKeys} from '@/lib/swr-config';
 import {parseError, sortByCreatedAtDesc} from '@/lib/utils';
 import {useInvalidateMutation} from './useSWRResource';
 
 export function useMAS(workspaceId: string) {
-  const {data, error, isLoading, isValidating, mutate} = useSWR<MAS[]>(
+  const {data, error, isLoading, isValidating, mutate} = useSWR<MultiAgenticSystem[]>(
     workspaceId ? swrKeys.mas(workspaceId) : null,
     () => masApi.list(workspaceId),
     {revalidateOnMount: true, keepPreviousData: true}
@@ -16,10 +16,10 @@ export function useMAS(workspaceId: string) {
 
   const {run: runAddMAS} = useInvalidateMutation(
     {keys: swrKeys.mas(workspaceId), prefixes: [['mas-list', workspaceId]]},
-    (payload: CreateMASRequest) => masApi.create(workspaceId, payload)
+    (payload: MultiAgenticSystemRequest) => masApi.create(workspaceId, payload)
   );
 
-  const addMAS = async (payload: CreateMASRequest) => {
+  const addMAS = async (payload: MultiAgenticSystemRequest) => {
     const response = await runAddMAS(payload);
     await mutate(undefined, {revalidate: true});
     return response;

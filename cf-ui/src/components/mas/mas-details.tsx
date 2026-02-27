@@ -8,7 +8,7 @@ import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
 import {swrKeys} from '@/lib/swr-config';
 import {masApi, workspaceApi} from '@/api/endpoints';
-import type {MAS, UpdateMASRequest} from '@/api/types/mas';
+import type {MultiAgenticSystem, MultiAgenticSystemUpdate} from '@/api/endpoints/mas';
 import type {Workspace} from '@/api/types/workspace';
 import {BasePage} from '@/components/ui/base-page';
 import {Card, CardContent} from '@/components/ui/card';
@@ -78,7 +78,9 @@ export default function MASDetailsPage() {
     error,
     isLoading,
     mutate
-  } = useSWR<MAS>(workspaceId && masId ? swrKeys.masDetails(workspaceId, masId) : null, () => masApi.get(workspaceId as string, masId as string));
+  } = useSWR<MultiAgenticSystem>(workspaceId && masId ? swrKeys.masDetails(workspaceId, masId) : null, () =>
+    masApi.get(workspaceId as string, masId as string)
+  );
   const {data: workspace, error: workspaceError} = useSWR<Workspace | null>(workspaceId ? swrKeys.workspace(workspaceId) : null, () =>
     workspaceApi.get(workspaceId as string)
   );
@@ -185,7 +187,7 @@ export default function MASDetailsPage() {
 
       const configPayload = parseJsonField(values.config) || {};
 
-      const payload: UpdateMASRequest = {
+      const payload: MultiAgenticSystemUpdate = {
         name: values.name,
         description: values.description,
         ...(values.shared_memory_provider_id && {shared_memory_provider_id: values.shared_memory_provider_id}),

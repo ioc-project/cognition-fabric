@@ -6,13 +6,13 @@ import {ResourceTable} from '@/components/ui/resource-table';
 import {TruncatedText} from '@/components/ui/truncated-text';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {MoreVertical, Trash2} from 'lucide-react';
-import type {MAS} from '@/api/types/mas';
+import type {MultiAgenticSystem} from '@/api/endpoints/mas';
 
 export interface MASTableListProps {
-  masList: MAS[];
+  masList: MultiAgenticSystem[];
   workspaceId: string;
   selectedId: string | null;
-  onRowClick: (m: MAS) => void;
+  onRowClick: (m: MultiAgenticSystem) => void;
   onOpenDelete: (payload: {id: string; name: string}) => void;
 }
 
