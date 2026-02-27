@@ -167,13 +167,13 @@ export function WorkspaceDetails() {
             </div>
             <div className="p-4 border rounded-lg bg-card soft-card">
               <div className="flex flex-col gap-6">
-                <h4 className="card-title">Cognitive Agents</h4>
+                <h4 className="card-title">Cognition Agents</h4>
                 <p className="card-stats">{cognitiveAgents.length}</p>
               </div>
             </div>
             <div className="p-4 border rounded-lg bg-card soft-card">
               <div className="flex flex-col gap-6">
-                <h4 className="card-title">Cognitive Fabric Nodes</h4>
+                <h4 className="card-title">Cognition Fabric Nodes</h4>
                 <p className="card-stats">{cfns.length}</p>
               </div>
             </div>
@@ -239,7 +239,7 @@ export function WorkspaceDetails() {
                 cognitiveAgents.length > 0 && (
                   <div className="p-6 border rounded-lg bg-card soft-card">
                     <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-base font-medium">Latest Cognitive Agents</h2>
+                      <h2 className="text-base font-medium">Latest Cognition Agents</h2>
                       <div className="flex gap-2">
                         <Button asChild size="sm" variant="sidebar">
                           <Link href={routes.workspaces.cognitiveAgents.list(workspaceId!)}>View All</Link>
@@ -280,7 +280,7 @@ export function WorkspaceDetails() {
                 cfns.length > 0 && (
                   <div className="p-6 border rounded-lg bg-card soft-card">
                     <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-base font-medium">Latest Cognitive Fabric Nodes</h2>
+                      <h2 className="text-base font-medium">Latest Cognition Fabric Nodes</h2>
                       <div className="flex gap-2">
                         <Button asChild size="sm" variant="sidebar">
                           <Link href={routes.cfn.list}>View All</Link>

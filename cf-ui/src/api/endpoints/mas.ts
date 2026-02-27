@@ -7,13 +7,13 @@ export const masApi = {
       params: {
         path: {workspace_id: workspaceId}
       },
-      body: data
+      body: data as any
     });
 
     if (error) {
       throw error;
     }
-    return response;
+    return response as CreateMASResponse;
   },
 
   list: async (workspaceId: string): Promise<MAS[]> => {
@@ -26,7 +26,7 @@ export const masApi = {
     if (error) {
       throw error;
     }
-    return data.systems;
+    return data.systems as MAS[];
   },
 
   get: async (workspaceId: string, id: string): Promise<MAS> => {
@@ -39,7 +39,7 @@ export const masApi = {
     if (error) {
       throw error;
     }
-    return data;
+    return data as MAS;
   },
 
   update: async (workspaceId: string, id: string, data: UpdateMASRequest): Promise<MAS> => {
@@ -47,13 +47,13 @@ export const masApi = {
       params: {
         path: {workspace_id: workspaceId, mas_id: id}
       },
-      body: data
+      body: data as any
     });
 
     if (error) {
       throw error;
     }
-    return response;
+    return response as MAS;
   },
 
   delete: async (workspaceId: string, id: string): Promise<void> => {

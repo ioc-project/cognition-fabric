@@ -209,7 +209,7 @@ export default function Signup() {
         <div className="relative z-10 flex w-full max-w-[600px] flex-col items-start">
           <h2 className="font-cisco mb-1 text-[28px] font-bold leading-tight tracking-tight text-neutral-alt">Create Account</h2>
           <p className="font-cisco mb-8 text-[16px] leading-relaxed font-normal text-gray-600 whitespace-nowrap">
-            Get started with Cognitive Fabric Node
+            Get started with Cognition Fabric Node
           </p>
           <SignupForm />
         </div>

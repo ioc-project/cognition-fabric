@@ -8,9 +8,8 @@ import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
 import {ChevronDown, ChevronUp} from 'lucide-react';
 import {swrKeys} from '@/lib/swr-config';
-import {cfnApi, userApi} from '@/api/endpoints';
+import {cfnApi} from '@/api/endpoints';
 import type {Cfn, UpdateCfnRequest} from '@/api/types/cfn';
-import type {ListUsersResponse} from '@/api/types/users';
 import {BasePage} from '@/components/ui/base-page';
 import {Card, CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
@@ -59,15 +58,15 @@ export default function CfnDetailsPage() {
   };
 
   const {data: cfn, error, isLoading, mutate} = useSWR<Cfn>(cfnId ? swrKeys.cfnDetails(cfnId) : null, () => cfnApi.get(cfnId as string));
-  const {data: usersData} = useSWR<ListUsersResponse>('users', () => userApi.list());
+  // const {data: usersData} = useSWR<ListUsersResponse>('users', () => userApi.list());
 
-  const getUserName = (userId: string | undefined) => {
-    if (!userId || !usersData?.users) {
-      return userId || 'Unknown';
-    }
-    const user = usersData.users.find((u: {id: string; username: string}) => u.id === userId);
-    return user ? user.username : userId;
-  };
+  // const getUserName = (userId: string | undefined) => {
+  //   if (!userId || !usersData?.users) {
+  //     return userId || 'Unknown';
+  //   }
+  //   const user = usersData.users.find((u: {id: string; username: string}) => u.id === userId);
+  //   return user ? user.username : userId;
+  // };
 
   const form = useForm({
     resolver: zodResolver(UpdateCfnFormSchema),
@@ -106,7 +105,7 @@ export default function CfnDetailsPage() {
     await deleteDialog.confirm(async (data) => {
       try {
         await cfnApi.delete(data.cfn_id);
-        toast.success(`Cognitive Fabric Node "${data.cfn_name}" disabled successfully`);
+        toast.success(`Cognition Fabric Node "${data.cfn_name}" disabled successfully`);
         await globalMutate(swrKeys.cfn());
         router.push(routes.cfn.list);
       } catch (err) {
@@ -126,7 +125,7 @@ export default function CfnDetailsPage() {
       };
 
       await cfnApi.update(cfnId as string, payload);
-      toast.success('Cognitive Fabric Node updated successfully');
+      toast.success('Cognition Fabric Node updated successfully');
       await mutate();
       await globalMutate(swrKeys.cfn());
       setIsEditMode(false);
@@ -152,7 +151,7 @@ export default function CfnDetailsPage() {
     <>
       <BasePage
         title={cfn?.cfn_name || 'CFN Details'}
-        description="View details about your Cognitive Fabric Node"
+        description="View details about your Cognition Fabric Node"
         useBreadcrumbs
         breadcrumbs={crumbs}
         callToAction={
@@ -292,7 +291,7 @@ export default function CfnDetailsPage() {
                           readOnly
                         />
                       </div>
-                      <div className="space-y-2">
+                      {/* <div className="space-y-2">
                         <Label>Updated At</Label>
                         <Input
                           value={cfn?.updated_at ? new Date(cfn.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'}
@@ -307,7 +306,7 @@ export default function CfnDetailsPage() {
                       <div className="space-y-2">
                         <Label>Updated By</Label>
                         <Input value={getUserName(cfn?.updated_by ?? undefined)} disabled readOnly />
-                      </div>
+                      </div> */}
                     </div>
 
                     {/* Configuration Details */}
@@ -364,9 +363,8 @@ export default function CfnDetailsPage() {
                                               )}
                                             </div>
 
-                                            {/* Cognitive Agents */}
-                                            <div className="space-y-2">
-                                              <Label className="text-sm font-medium">Cognitive Agents</Label>
+                                            <div className="mb-4">
+                                              <Label className="text-sm font-medium">Cognition Agents</Label>
                                               {workspace.cognitive_agents && workspace.cognitive_agents.length > 0 ? (
                                                 workspace.cognitive_agents.map((agent: any, agentIndex: number) => (
                                                   <Input
@@ -406,7 +404,7 @@ export default function CfnDetailsPage() {
         open={deleteDialog.isOpen}
         onOpenChange={deleteDialog.close}
         onConfirm={handleDelete}
-        title={`Disable ${deleteDialog.data?.cfn_name || 'Cognitive Fabric Node'}`}
+        title={`Disable ${deleteDialog.data?.cfn_name || 'Cognition Fabric Node'}`}
         description={
           deleteError ??
           `Are you sure you want to disable "${deleteDialog.data?.cfn_name}"? The node will be removed and cannot reconnect until you re-register it.`

@@ -9,9 +9,9 @@ import type {Control} from 'react-hook-form';
 interface AgentCardProps {
   index: number;
   agentId: string;
-  agentName: string;
-  agentUrl: string;
-  remoteMemoryProviderId: string;
+  agentIdValue: string;
+  agenticMemoryProviderId?: string;
+  agenticMemoryProviderName?: string;
   isExpanded: boolean;
   isEditMode: boolean;
   control: Control<any>;
@@ -23,9 +23,9 @@ interface AgentCardProps {
 export function AgentCard({
   index,
   agentId: _agentId,
-  agentName,
-  agentUrl,
-  remoteMemoryProviderId,
+  agentIdValue,
+  agenticMemoryProviderId,
+  agenticMemoryProviderName,
   isExpanded,
   isEditMode,
   control,
@@ -37,7 +37,7 @@ export function AgentCard({
     <div className="rounded-md border p-4 space-y-4" style={{backgroundColor: 'hsl(216.7, 100%, 95.5%)'}}>
       <div className="flex items-center justify-between">
         <div className={isEditMode ? 'cursor-pointer' : ''} onClick={isEditMode ? onToggleExpand : undefined}>
-          <FormLabel className="mb-0">{agentName || `Agent ${index + 1}`}</FormLabel>
+          <FormLabel className="mb-0">{agentIdValue || `Agent ${index + 1}`}</FormLabel>
         </div>
         {isEditMode && (
           <div className="flex items-center gap-2">
@@ -63,59 +63,36 @@ export function AgentCard({
 
       {isExpanded && (
         <>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div>
             {isEditMode ? (
-              <>
-                <FormField
-                  control={control}
-                  name={`agents.${index}.name`}
-                  render={({field}) => (
-                    <FormItem>
-                      <FormLabel required>Agent Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="e.g. Retrieval-Agent" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={control}
-                  name={`agents.${index}.url`}
-                  render={({field}) => (
-                    <FormItem className="md:col-span-2">
-                      <FormLabel required>Agent URL</FormLabel>
-                      <FormControl>
-                        <Input placeholder="https://agent.example.com:8000" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </>
+              <FormField
+                control={control}
+                name={`agents.${index}.agent_id`}
+                render={({field}) => (
+                  <FormItem>
+                    <FormLabel required>Agent ID</FormLabel>
+                    <FormControl>
+                      <Input placeholder="retrieval-agent-1" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             ) : (
-              <>
-                <div>
-                  <FormLabel required>Agent Name</FormLabel>
-                  <Input value={agentName} disabled readOnly />
-                </div>
-
-                <div className="md:col-span-2">
-                  <FormLabel required>Agent URL</FormLabel>
-                  <Input value={agentUrl} disabled readOnly />
-                </div>
-              </>
+              <div>
+                <FormLabel required>Agent ID</FormLabel>
+                <Input value={agentIdValue} disabled readOnly />
+              </div>
             )}
           </div>
 
           {isEditMode ? (
             <FormField
               control={control}
-              name={`agents.${index}.remote_memory_provider_id`}
+              name={`agents.${index}.agentic_memory_provider_id`}
               render={({field}) => (
                 <FormItem>
-                  <FormLabel required>Remote Memory Provider</FormLabel>
+                  <FormLabel>Agentic Memory Provider</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -123,11 +100,15 @@ export function AgentCard({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {userMemoryProviders.map((provider) => (
-                        <SelectItem key={provider.id} value={provider.id}>
-                          {provider.provider_name}
-                        </SelectItem>
-                      ))}
+                      {userMemoryProviders.length === 0 ? (
+                        <div className="py-2 px-2 text-sm text-muted-foreground">No agentic memory providers available</div>
+                      ) : (
+                        userMemoryProviders.map((provider) => (
+                          <SelectItem key={provider.id} value={provider.id}>
+                            {provider.provider_name}
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -135,14 +116,12 @@ export function AgentCard({
               )}
             />
           ) : (
-            <div>
-              <FormLabel>Remote Memory Provider</FormLabel>
-              <Input
-                value={userMemoryProviders.find((p) => p.id === remoteMemoryProviderId)?.provider_name || remoteMemoryProviderId}
-                disabled
-                readOnly
-              />
-            </div>
+            agenticMemoryProviderId && (
+              <div>
+                <FormLabel>Agentic Memory Provider</FormLabel>
+                <Input value={agenticMemoryProviderName || agenticMemoryProviderId} disabled readOnly />
+              </div>
+            )
           )}
         </>
       )}

@@ -10,9 +10,8 @@ import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
-import {Textarea} from '@/components/ui/textarea';
 import {routes} from '@/constants/routes';
-import {parseError, formatJson, validateJSON} from '@/lib/utils';
+import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
 import {BasePage} from '@/components/ui/base-page';
 import {useMemoryProviders} from '@/hooks/useMemoryProviders';
@@ -20,22 +19,16 @@ import {breadcrumbs} from '@/constants/routes';
 
 const formSchema = z.object({
   memory_provider_name: z.string().min(1, 'Name is required').min(3, 'Name must be at least 3 characters'),
-  config: z
+  host: z.string().min(1, 'Host is required'),
+  port: z
     .string()
-    .optional()
+    .min(1, 'Port is required')
     .refine(
       (val) => {
-        if (!val || val.trim() === '') {
-          return true;
-        }
-        try {
-          JSON.parse(val);
-          return true;
-        } catch {
-          return false;
-        }
+        const num = Number(val);
+        return !isNaN(num) && Number.isInteger(num) && num >= 1 && num <= 65535;
       },
-      {message: 'Invalid JSON format for config'}
+      {message: 'Port must be an integer between 1 and 65535'}
     )
 });
 
@@ -55,7 +48,8 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
     resolver: zodResolver(formSchema),
     defaultValues: {
       memory_provider_name: '',
-      config: ''
+      host: '',
+      port: ''
     }
   });
 
@@ -64,14 +58,12 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
       setIsLoading(true);
       setError(null);
 
-      let config: Record<string, unknown> | null | undefined = undefined;
-      if (values.config && values.config.trim()) {
-        config = JSON.parse(values.config) as Record<string, unknown>;
-      }
-
       const response = await addProvider({
         memory_provider_name: values.memory_provider_name,
-        ...(config && {config})
+        config: {
+          host: values.host,
+          port: Number(values.port)
+        }
       });
 
       toast.success(`Memory Provider "${response.memory_provider_name}" registered successfully`);
@@ -120,7 +112,7 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
                       <FormItem>
                         <FormLabel required>Provider Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="e.g., Production Memory Provider" {...field} />
+                          <Input placeholder="ioc-knowledge-memory-svc" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -129,28 +121,26 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
 
                   <FormField
                     control={form.control}
-                    name="config"
+                    name="host"
                     render={({field}) => (
                       <FormItem>
-                        <div className="flex items-center gap-2">
-                          <FormLabel>Configuration (JSON)</FormLabel>
-                          {field.value && field.value.trim() !== '' && (
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded ${
-                                validateJSON(field.value) ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'
-                              }`}
-                            >
-                              {validateJSON(field.value) ? 'Valid JSON' : 'Invalid JSON'}
-                            </span>
-                          )}
-                        </div>
+                        <FormLabel required>Host</FormLabel>
                         <FormControl>
-                          <Textarea
-                            placeholder={`{\n  "provider_type": "mem0",\n  "provider_url": "https://api.mem0.ai",\n  "auth_type": "api_key",\n  "auth_config": {\n    "api_key": "your-api-key"\n  }\n}`}
-                            className="font-mono text-sm min-h-[200px] resize-y"
-                            {...field}
-                            onBlur={() => field.onChange(formatJson(field.value || ''))}
-                          />
+                          <Input placeholder="ioc-knowledge-memory-svc" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="port"
+                    render={({field}) => (
+                      <FormItem>
+                        <FormLabel required>Port</FormLabel>
+                        <FormControl>
+                          <Input type="number" placeholder="9003" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

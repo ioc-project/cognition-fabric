@@ -57,8 +57,8 @@ export default function CognitiveAgentDetailsPage() {
   const crumbs =
     workspace && workspaceId
       ? [
-          {link: routes.workspaces.cognitiveAgents.list(workspaceId), text: 'Cognitive Agents'},
-          {link: '', text: cognitiveAgent?.cognitive_agent_name || 'Cognitive Agent', active: true}
+          {link: routes.workspaces.cognitiveAgents.list(workspaceId), text: 'Cognition Agents'},
+          {link: '', text: cognitiveAgent?.cognitive_agent_name || 'Cognition Agent', active: true}
         ]
       : undefined;
 
@@ -66,7 +66,7 @@ export default function CognitiveAgentDetailsPage() {
     await deleteDialog.confirm(async (data) => {
       try {
         await cognitiveAgentApi.delete(workspaceId!, data.id);
-        toast.success(`Cognitive Agent "${data.name}" deleted successfully`);
+        toast.success(`Cognition Agent "${data.name}" deleted successfully`);
         router.push(routes.workspaces.cognitiveAgents.list(workspaceId!));
       } catch (err) {
         const errorMessage = parseError(err);
@@ -79,8 +79,8 @@ export default function CognitiveAgentDetailsPage() {
   return (
     <>
       <BasePage
-        title={cognitiveAgent?.cognitive_agent_name || 'Cognitive Agent'}
-        description="View details about your cognitive agent"
+        title={cognitiveAgent?.cognitive_agent_name || 'Cognition Agent'}
+        description="View details about your cognition agent"
         useBreadcrumbs
         breadcrumbs={crumbs}
         callToAction={
@@ -95,8 +95,8 @@ export default function CognitiveAgentDetailsPage() {
           data={cognitiveAgent}
           error={error}
           customIsLoading={isLoading}
-          itemName="Cognitive Agent details"
-          errorListStateProps={{title: 'Failed to load Cognitive Agent details'}}
+          itemName="Cognition Agent details"
+          errorListStateProps={{title: 'Failed to load Cognition Agent details'}}
           emptyListStateProps={{title: 'No details found'}}
         >
           <div className="flex justify-center py-4">
@@ -166,7 +166,6 @@ export default function CognitiveAgentDetailsPage() {
                   )}
 
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">Metadata</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label>Created At</Label>
@@ -180,7 +179,7 @@ export default function CognitiveAgentDetailsPage() {
                           readOnly
                         />
                       </div>
-                      <div className="space-y-2">
+                      {/* <div className="space-y-2">
                         <Label>Updated At</Label>
                         <Input
                           value={
@@ -199,7 +198,7 @@ export default function CognitiveAgentDetailsPage() {
                       <div className="space-y-2">
                         <Label>Updated By</Label>
                         <Input value={cognitiveAgent?.updated_by || 'N/A'} disabled readOnly className="font-mono text-xs" />
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </div>
@@ -212,7 +211,7 @@ export default function CognitiveAgentDetailsPage() {
         open={deleteDialog.isOpen}
         onOpenChange={deleteDialog.close}
         onConfirm={handleDelete}
-        title="Delete Cognitive Agent"
+        title="Delete Cognition Agent"
         description={deleteError ?? `Are you sure you want to delete "${deleteDialog.data?.name}"? This action cannot be undone.`}
         confirmText="Delete"
         variant="destructive"

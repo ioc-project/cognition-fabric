@@ -117,11 +117,11 @@ export const breadcrumbs = {
   workspaceCognitiveAgents: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
     {link: routes.workspaces.list, text: 'Workspaces'},
     {link: routes.workspaces.details(workspaceId), text: workspaceName},
-    {link: '', text: 'Cognitive Agents', active: true}
+    {link: '', text: 'Cognition Agents', active: true}
   ],
 
   createCognitiveAgent: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.cognitiveAgents.list(workspaceId), text: 'Cognitive Agents'},
+    {link: routes.workspaces.cognitiveAgents.list(workspaceId), text: 'Cognition Agents'},
     {link: '', text: 'Create', active: true}
   ],
 
@@ -132,16 +132,16 @@ export const breadcrumbs = {
 
   cfnList: (): BreadcrumbItem[] => [
     {link: routes.home, text: 'Home'},
-    {link: '', text: 'Cognitive Fabric Nodes', active: true}
+    {link: '', text: 'Cognition Fabric Nodes', active: true}
   ],
 
   cfnDetails: (cfnName: string): BreadcrumbItem[] => [
-    {link: routes.cfn.list, text: 'Cognitive Fabric Nodes'},
+    {link: routes.cfn.list, text: 'Cognition Fabric Nodes'},
     {link: '', text: cfnName, active: true}
   ],
 
   createCfn: (): BreadcrumbItem[] => [
-    {link: routes.cfn.list, text: 'Cognitive Fabric Nodes'},
+    {link: routes.cfn.list, text: 'Cognition Fabric Nodes'},
     {link: '', text: 'Create', active: true}
   ],
 

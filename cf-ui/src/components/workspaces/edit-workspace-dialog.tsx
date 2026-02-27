@@ -63,7 +63,7 @@ export function EditWorkspaceDialog({workspace, open, onOpenChange}: EditWorkspa
       open={open}
       onOpenChange={onOpenChange}
       title="Edit Workspace"
-      description="Update workspace name and Cognitive Fabric Node"
+      description="Update workspace name and Cognition Fabric Node"
       schema={formSchema}
       defaultValues={{
         name: workspace.name,
@@ -97,7 +97,7 @@ export function EditWorkspaceDialog({workspace, open, onOpenChange}: EditWorkspa
             render={({field}) => (
               <FormItem>
                 <div className="space-y-2">
-                  <FormLabel>Cognitive Fabric Node</FormLabel>
+                  <FormLabel>Cognition Fabric Node</FormLabel>
                   <Select value={field.value ?? ''} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger>
@@ -106,7 +106,7 @@ export function EditWorkspaceDialog({workspace, open, onOpenChange}: EditWorkspa
                     </FormControl>
                     <SelectContent>
                       {availableCfns.length === 0 ? (
-                        <div className="py-2 px-2 text-sm text-muted-foreground">No Cognitive Fabric Nodes available</div>
+                        <div className="py-2 px-2 text-sm text-muted-foreground">No Cognition Fabric Nodes available</div>
                       ) : (
                         availableCfns.map((cfn: any) => (
                           <SelectItem key={cfn.cfn_id} value={cfn.cfn_id}>

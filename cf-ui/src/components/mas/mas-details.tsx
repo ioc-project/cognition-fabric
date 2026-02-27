@@ -14,10 +14,11 @@ import {BasePage} from '@/components/ui/base-page';
 import {Card, CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes, breadcrumbs} from '@/constants/routes';
-import {DATE_TIME_FORMAT_OPTIONS, parseError} from '@/lib/utils';
+import {parseError} from '@/lib/utils';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
@@ -27,33 +28,16 @@ import {AgentsList} from './agents-list';
 import {CollapsibleJsonField} from './collapsible-json-field';
 
 const AgentFormSchema = z.object({
-  name: z.string().min(1, 'Agent name is required'),
-  url: z.string().url('Must be a valid URL'),
-  remote_memory_provider_id: z.string().min(1, 'Remote Memory Provider is required')
+  agent_id: z.string().min(1, 'Agent ID is required'),
+  agentic_memory_provider_id: z.string().optional()
 });
 
 const UpdateMASFormSchema = z.object({
   name: z.string().min(1, 'Name is required').min(3, 'Name must be at least 3 characters'),
   description: z.string().optional(),
+  shared_memory_provider_id: z.string().optional(),
   agents: z.array(AgentFormSchema).optional().default([]),
   config: z
-    .string()
-    .optional()
-    .refine(
-      (val) => {
-        if (!val || val.trim() === '') {
-          return true;
-        }
-        try {
-          JSON.parse(val);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      {message: 'Must be valid JSON'}
-    ),
-  mcp_servers: z
     .string()
     .optional()
     .refine(
@@ -86,7 +70,6 @@ export default function MASDetailsPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [masConfigExpanded, setMasConfigExpanded] = useState(true);
-  const [mcpServersExpanded, setMcpServersExpanded] = useState(true);
   const [agentExpandedState, setAgentExpandedState] = useState<Record<string, boolean>>({});
   const deleteDialog = useConfirmDialog<{id: string; name: string}>();
 
@@ -101,7 +84,7 @@ export default function MASDetailsPage() {
   );
   const {providers = []} = useMemoryProviders();
 
-  const ootbMemoryProvider = providers.find((p) => p.enabled);
+  // const ootbMemoryProvider = providers.find((p) => p.enabled);
   const userMemoryProviders = providers.map((p) => ({id: p.memory_provider_id, provider_name: p.memory_provider_name}));
 
   const form = useForm<FormValues>({
@@ -109,9 +92,9 @@ export default function MASDetailsPage() {
     defaultValues: {
       name: '',
       description: '',
+      shared_memory_provider_id: '',
       agents: [],
-      config: '',
-      mcp_servers: ''
+      config: ''
     }
   });
 
@@ -133,35 +116,22 @@ export default function MASDetailsPage() {
   useEffect(() => {
     if (mas) {
       const masConfig = mas.config || {};
-      const mcp_servers = typeof masConfig === 'object' && masConfig !== null && 'mcp_servers' in masConfig ? masConfig.mcp_servers : undefined;
 
       const cleanConfig = typeof masConfig === 'object' && masConfig !== null ? {...masConfig} : {};
-      if ('uses_a2a' in cleanConfig) {
-        delete cleanConfig.uses_a2a;
-      }
-      if ('memory_provider_id' in cleanConfig) {
-        delete cleanConfig.memory_provider_id;
-      }
-      if ('mcp_servers' in cleanConfig) {
-        delete cleanConfig.mcp_servers;
-      }
 
-      // Convert agents object to array format for form
-      const agentsArray =
-        mas.agents && Object.keys(mas.agents).length > 0
-          ? Object.entries(mas.agents).map(([name, agentData]: [string, any]) => ({
-              name,
-              url: agentData.url || '',
-              remote_memory_provider_id: agentData.remote_memory_provider_id || ''
-            }))
-          : [];
+      const agentsArray = mas.agents
+        ? mas.agents.map((agent) => ({
+            agent_id: agent.agent_id,
+            agentic_memory_provider_id: agent.agentic_memory?.memory_provider_id || ''
+          }))
+        : [];
 
       form.reset({
         name: mas.name,
         description: mas.description || '',
+        shared_memory_provider_id: mas.shared_memory?.memory_provider_id || '',
         agents: agentsArray,
-        config: Object.keys(cleanConfig).length > 0 ? JSON.stringify(cleanConfig, null, 2) : '',
-        mcp_servers: mcp_servers && typeof mcp_servers === 'object' && Object.keys(mcp_servers).length > 0 ? JSON.stringify(mcp_servers, null, 2) : ''
+        config: Object.keys(cleanConfig).length > 0 ? JSON.stringify(cleanConfig, null, 2) : ''
       });
     }
   }, [mas, form]);
@@ -201,35 +171,26 @@ export default function MASDetailsPage() {
 
   const handleSave = async (values: FormValues) => {
     try {
-      // Convert agents array to object payload
-      const agentsPayload = (values.agents || []).reduce<Record<string, unknown>>((acc, agent) => {
-        const key = agent.name.trim();
-        if (!key) {
-          return acc;
+      const parseJsonField = (value?: string): Record<string, unknown> | undefined => {
+        if (!value || value.trim() === '') {
+          return undefined;
         }
-        acc[key] = {
-          url: agent.url,
-          remote_memory_provider_id: agent.remote_memory_provider_id
-        };
-        return acc;
-      }, {});
-
-      const configPayload = values.config && values.config.trim() ? (JSON.parse(values.config) as Record<string, unknown>) : {};
-      const mcpServersPayload =
-        values.mcp_servers && values.mcp_servers.trim() ? (JSON.parse(values.mcp_servers) as Record<string, unknown>) : undefined;
-
-      const finalConfig = {
-        ...configPayload,
-        uses_a2a: true, // Always true based on assumptions
-        ...(ootbMemoryProvider && {memory_provider_id: ootbMemoryProvider.memory_provider_id}),
-        ...(mcpServersPayload && {mcp_servers: mcpServersPayload})
+        return JSON.parse(value) as Record<string, unknown>;
       };
+
+      const agentsPayload = (values.agents || []).map((agent) => ({
+        agent_id: agent.agent_id,
+        ...(agent.agentic_memory_provider_id && {agentic_memory_provider_id: agent.agentic_memory_provider_id})
+      }));
+
+      const configPayload = parseJsonField(values.config) || {};
 
       const payload: UpdateMASRequest = {
         name: values.name,
         description: values.description,
-        ...(agentsPayload && {agents: agentsPayload}),
-        ...(Object.keys(finalConfig).length > 0 && {config: finalConfig})
+        ...(values.shared_memory_provider_id && {shared_memory_provider_id: values.shared_memory_provider_id}),
+        ...(agentsPayload.length > 0 && {agents: agentsPayload}),
+        ...(Object.keys(configPayload).length > 0 && {config: configPayload})
       };
 
       await masApi.update(workspaceId as string, masId as string, payload);
@@ -247,35 +208,23 @@ export default function MASDetailsPage() {
   const handleCancelEdit = () => {
     setIsEditMode(false);
     const masConfig = mas?.config || {};
-    const mcp_servers = typeof masConfig === 'object' && masConfig !== null && 'mcp_servers' in masConfig ? masConfig.mcp_servers : undefined;
 
     const cleanConfig = typeof masConfig === 'object' && masConfig !== null ? {...masConfig} : {};
-    if ('uses_a2a' in cleanConfig) {
-      delete cleanConfig.uses_a2a;
-    }
-    if ('memory_provider_id' in cleanConfig) {
-      delete cleanConfig.memory_provider_id;
-    }
-    if ('mcp_servers' in cleanConfig) {
-      delete cleanConfig.mcp_servers;
-    }
 
-    // Convert agents object to array format for form
-    const agentsArray =
-      mas?.agents && Object.keys(mas.agents).length > 0
-        ? Object.entries(mas.agents).map(([name, agentData]: [string, any]) => ({
-            name,
-            url: agentData.url || '',
-            remote_memory_provider_id: agentData.remote_memory_provider_id || ''
-          }))
-        : [];
+    // Convert agents array from API to form format
+    const agentsArray = mas?.agents
+      ? mas.agents.map((agent) => ({
+          agent_id: agent.agent_id,
+          agentic_memory_provider_id: agent.agentic_memory?.memory_provider_id || ''
+        }))
+      : [];
 
     form.reset({
       name: mas?.name || '',
       description: mas?.description || '',
+      shared_memory_provider_id: mas?.shared_memory?.memory_provider_id || '',
       agents: agentsArray,
-      config: Object.keys(cleanConfig).length > 0 ? JSON.stringify(cleanConfig, null, 2) : '',
-      mcp_servers: mcp_servers && typeof mcp_servers === 'object' && Object.keys(mcp_servers).length > 0 ? JSON.stringify(mcp_servers, null, 2) : ''
+      config: Object.keys(cleanConfig).length > 0 ? JSON.stringify(cleanConfig, null, 2) : ''
     });
     router.replace(routes.workspaces.mas.details(workspaceId!, masId!));
   };
@@ -366,8 +315,38 @@ export default function MASDetailsPage() {
                       )}
 
                       <div className="space-y-2">
-                        <Label>Memory Provider</Label>
-                        <Input value={ootbMemoryProvider?.memory_provider_name || 'Outshift Memory Provider'} disabled readOnly />
+                        <Label>Shared Memory Provider</Label>
+                        {isEditMode ? (
+                          <FormField
+                            control={form.control}
+                            name="shared_memory_provider_id"
+                            render={({field}) => (
+                              <FormItem>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select a memory provider" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    {userMemoryProviders.length === 0 ? (
+                                      <div className="py-2 px-2 text-sm text-muted-foreground">No shared memory providers available</div>
+                                    ) : (
+                                      userMemoryProviders.map((provider) => (
+                                        <SelectItem key={provider.id} value={provider.id}>
+                                          {provider.provider_name}
+                                        </SelectItem>
+                                      ))
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        ) : (
+                          <Input value={mas?.shared_memory?.memory_provider_name || 'None'} disabled readOnly />
+                        )}
                       </div>
                     </div>
 
@@ -377,8 +356,8 @@ export default function MASDetailsPage() {
                       watch={form.watch}
                       isEditMode={isEditMode}
                       agentExpandedState={agentExpandedState}
-                      onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !prev[id]}))}
-                      onAddAgent={isEditMode ? () => appendAgent({name: '', url: '', remote_memory_provider_id: ''}) : undefined}
+                      onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
+                      onAddAgent={isEditMode ? () => appendAgent({agent_id: '', agentic_memory_provider_id: ''}) : undefined}
                       onRemoveAgent={isEditMode ? removeAgent : undefined}
                       masAgentsData={!isEditMode && mas?.agents ? mas.agents : undefined}
                       userMemoryProviders={userMemoryProviders}
@@ -388,76 +367,19 @@ export default function MASDetailsPage() {
                       <FormField
                         control={form.control}
                         name="config"
-                        render={({field}) => {
-                          const cleanConfigValue = (() => {
-                            if (!isEditMode && mas?.config) {
-                              const masConfig = mas.config;
-                              const cleanConfig = typeof masConfig === 'object' && masConfig !== null ? {...masConfig} : {};
-                              if ('uses_a2a' in cleanConfig) {
-                                delete cleanConfig.uses_a2a;
-                              }
-                              if ('memory_provider_id' in cleanConfig) {
-                                delete cleanConfig.memory_provider_id;
-                              }
-                              if ('mcp_servers' in cleanConfig) {
-                                delete cleanConfig.mcp_servers;
-                              }
-                              return Object.keys(cleanConfig).length > 0 ? JSON.stringify(cleanConfig, null, 2) : 'None configured';
-                            }
-                            return field.value || '';
-                          })();
-
-                          return (
-                            <CollapsibleJsonField
-                              label="MAS Config"
-                              value={cleanConfigValue}
-                              isExpanded={masConfigExpanded}
-                              onToggleExpand={() => setMasConfigExpanded(!masConfigExpanded)}
-                              isEditMode={isEditMode}
-                              field={field}
-                              placeholder={`{
-  "orchestration": "sequential",
-  "retry_policy": {
-    "max_retries": 3
-  },
-  "timeout": 30000
+                        render={({field}) => (
+                          <CollapsibleJsonField
+                            label="Config"
+                            value={field.value || ''}
+                            isExpanded={masConfigExpanded}
+                            onToggleExpand={() => setMasConfigExpanded(!masConfigExpanded)}
+                            isEditMode={isEditMode}
+                            field={field}
+                            placeholder={`{
+  "key": "value"
 }`}
-                            />
-                          );
-                        }}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="mcp_servers"
-                        render={({field}) => {
-                          const mcpValue = (() => {
-                            if (!isEditMode && mas?.config) {
-                              const mcp =
-                                typeof mas.config === 'object' && mas.config !== null && 'mcp_servers' in mas.config
-                                  ? mas.config.mcp_servers
-                                  : undefined;
-                              return mcp && typeof mcp === 'object' && Object.keys(mcp).length > 0 ? JSON.stringify(mcp, null, 2) : 'None configured';
-                            }
-                            return field.value || '';
-                          })();
-
-                          return (
-                            <CollapsibleJsonField
-                              label="MCP Servers"
-                              value={mcpValue}
-                              isExpanded={mcpServersExpanded}
-                              onToggleExpand={() => setMcpServersExpanded(!mcpServersExpanded)}
-                              isEditMode={isEditMode}
-                              field={field}
-                              placeholder={`{
-  "MCP-Server-1": {
-    "url": "https://192.168.1.200:3000"
-  }
-}`}
-                            />
-                          );
-                        }}
+                          />
+                        )}
                       />
                     </div>
 
@@ -467,7 +389,7 @@ export default function MASDetailsPage() {
                         <Label>Workspace ID</Label>
                         <Input value={mas?.workspace_id || ''} disabled readOnly className="font-mono text-xs" />
                       </div>
-                      <div className="space-y-2">
+                      {/* <div className="space-y-2">
                         <Label>Created By</Label>
                         <Input value={mas?.created_by || 'Unknown'} disabled readOnly />
                       </div>
@@ -486,7 +408,7 @@ export default function MASDetailsPage() {
                           disabled
                           readOnly
                         />
-                      </div>
+                      </div> */}
                     </div>
                   </form>
                 </Form>

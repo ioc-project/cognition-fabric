@@ -5,11 +5,11 @@ import {FormLabel} from '@/components/ui/form';
 import {Button} from '@/components/ui/button';
 import {AgentCard} from './agent-card';
 import type {Control, UseFormWatch} from 'react-hook-form';
+import type {AgentWithMemory} from '@/api/types/mas';
 
 interface Agent {
-  name: string;
-  url: string;
-  remote_memory_provider_id: string;
+  agent_id: string;
+  agentic_memory_provider_id?: string;
 }
 
 interface AgentsListProps {
@@ -21,7 +21,7 @@ interface AgentsListProps {
   onToggleExpand: (id: string) => void;
   onAddAgent?: () => void;
   onRemoveAgent?: (index: number) => void;
-  masAgentsData?: Record<string, any>;
+  masAgentsData?: AgentWithMemory[];
   userMemoryProviders?: Array<{id: string; provider_name: string}>;
 }
 
@@ -38,10 +38,10 @@ export function AgentsList({
   userMemoryProviders = []
 }: AgentsListProps) {
   const viewModeAgents = masAgentsData
-    ? Object.entries(masAgentsData).map(([name, agentData]: [string, any]) => ({
-        name,
-        url: agentData.url || '',
-        remote_memory_provider_id: agentData.remote_memory_provider_id || ''
+    ? masAgentsData.map((agent) => ({
+        agent_id: agent.agent_id,
+        agentic_memory_provider_id: agent.agentic_memory?.memory_provider_id || '',
+        agentic_memory_provider_name: agent.agentic_memory?.memory_provider_name || ''
       }))
     : [];
 
@@ -69,17 +69,16 @@ export function AgentsList({
           ) : (
             agents.map((agent, index) => {
               const isExpanded = agentExpandedState[agent.id] ?? true;
-              const agentName = watch(`agents.${index}.name`);
-              const remoteMemoryProviderId = watch(`agents.${index}.remote_memory_provider_id`);
+              const agentId = watch(`agents.${index}.agent_id`);
+              const agenticMemoryProviderId = watch(`agents.${index}.agentic_memory_provider_id`);
 
               return (
                 <AgentCard
                   key={agent.id}
                   index={index}
                   agentId={agent.id}
-                  agentName={agentName}
-                  agentUrl={agent.url}
-                  remoteMemoryProviderId={remoteMemoryProviderId}
+                  agentIdValue={agentId}
+                  agenticMemoryProviderId={agenticMemoryProviderId}
                   isExpanded={isExpanded}
                   isEditMode={isEditMode}
                   control={control}
@@ -105,12 +104,12 @@ export function AgentsList({
           {hasAgents ? (
             viewModeAgents.map((agent, index) => (
               <AgentCard
-                key={agent.name}
+                key={agent.agent_id}
                 index={index}
-                agentId={agent.name}
-                agentName={agent.name}
-                agentUrl={agent.url}
-                remoteMemoryProviderId={agent.remote_memory_provider_id}
+                agentId={agent.agent_id}
+                agentIdValue={agent.agent_id}
+                agenticMemoryProviderId={agent.agentic_memory_provider_id}
+                agenticMemoryProviderName={agent.agentic_memory_provider_name}
                 isExpanded={true}
                 isEditMode={false}
                 control={control}

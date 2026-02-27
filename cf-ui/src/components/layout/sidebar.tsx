@@ -58,7 +58,7 @@ export function Sidebar() {
         id: 'cfn',
         href: routes.cfn.list,
         icon: Network,
-        label: 'Cognitive Fabric Nodes',
+        label: 'Cognition Fabric Nodes',
         isActive: () => segments[0] === 'cfn'
       },
       {
@@ -112,7 +112,7 @@ export function Sidebar() {
         id: 'cognitive-agents',
         href: `${workspaceBasePath}/cognitive-agents`,
         icon: Brain,
-        label: 'Cognitive Agents',
+        label: 'Cognition Agents',
         isActive: () => isWorkspaceSection('cognitive-agents')
       }
       // ...(isAdmin

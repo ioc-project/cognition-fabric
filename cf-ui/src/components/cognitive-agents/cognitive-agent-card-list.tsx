@@ -66,12 +66,6 @@ export function CognitiveAgentCardList({cognitiveAgents, workspaceId, selectedId
               </span>
             </div>
           </div>
-
-          <div className="mt-auto">
-            <Button asChild variant="sidebar" className="w-full">
-              <Link href={routes.workspaces.cognitiveAgents.details(workspaceId, r.cognitive_agent_id)}>View Details</Link>
-            </Button>
-          </div>
         </Card>
       ))}
     </div>

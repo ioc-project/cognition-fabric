@@ -19,19 +19,18 @@ import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {breadcrumbs} from '@/constants/routes';
 import {useMAS} from '@/hooks/useMAS';
 import {useMemoryProviders} from '@/hooks/useMemoryProviders';
-import {useCfn} from '@/hooks/useCfn';
 import {AgentsList} from './agents-list';
 import {CollapsibleJsonField} from './collapsible-json-field';
 
 const AgentFormSchema = z.object({
-  name: z.string().min(1, 'Agent name is required'),
-  url: z.string().url('Must be a valid URL'),
-  remote_memory_provider_id: z.string().min(1, 'Remote Memory Provider is required')
+  agent_id: z.string().min(1, 'Agent ID is required'),
+  agentic_memory_provider_id: z.string().optional()
 });
 
 const formSchema = z.object({
   name: z.string().min(1, 'Multi-Agent System name is required').min(3, 'Name must be at least 3 characters'),
   description: z.string().optional(),
+  shared_memory_provider_id: z.string().optional(),
   agents: z.array(AgentFormSchema).optional().default([]),
   config: z
     .string()
@@ -49,25 +48,7 @@ const formSchema = z.object({
         }
       },
       {message: 'Invalid JSON format for config'}
-    ),
-  mcp_servers: z
-    .string()
-    .optional()
-    .refine(
-      (val) => {
-        if (!val || val.trim() === '') {
-          return true;
-        }
-        try {
-          JSON.parse(val);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      {message: 'Invalid JSON format for MCP servers'}
-    ),
-  cfn_id: z.string().min(1, 'CFN Node is required')
+    )
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -82,27 +63,23 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [masConfigExpanded, setMasConfigExpanded] = useState(true);
-  const [mcpServersExpanded, setMcpServersExpanded] = useState(true);
   const [agentExpandedState, setAgentExpandedState] = useState<Record<string, boolean>>({});
   const {workspace} = useCurrentWorkspace();
   const workspaceName = workspace?.name || 'Workspace';
   const {addMAS} = useMAS(workspaceId);
   const {providers} = useMemoryProviders();
-  const {cfns, isLoading: isLoadingCfns} = useCfn(workspaceId);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       description: '',
+      shared_memory_provider_id: '',
       agents: [],
-      config: '',
-      mcp_servers: '',
-      cfn_id: ''
+      config: ''
     }
   });
 
-  const ootbMemoryProvider = providers?.find((p) => p.enabled);
   const userMemoryProviders = providers || [];
 
   const {
@@ -119,38 +96,24 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
       setIsLoading(true);
       setError(null);
 
-      const agentsPayload = (values.agents || []).reduce<Record<string, unknown>>((acc, agent) => {
-        const key = agent.name.trim();
-        if (!key) {
-          return acc;
-        }
-        acc[key] = {
-          url: agent.url,
-          remote_memory_provider_id: agent.remote_memory_provider_id
-        };
-        return acc;
-      }, {});
-
-      const parseJsonField = (value?: string): Record<string, unknown> => {
+      const parseJsonField = (value?: string): Record<string, unknown> | undefined => {
         if (!value || value.trim() === '') {
-          return {};
+          return undefined;
         }
         return JSON.parse(value) as Record<string, unknown>;
       };
 
-      const configPayload = {
-        ...parseJsonField(values.config),
-        uses_a2a: true,
-        ...(ootbMemoryProvider && {memory_provider_id: ootbMemoryProvider.memory_provider_id}),
-        ...(values.cfn_id && {cfn_id: values.cfn_id}),
-        ...(values.mcp_servers && {mcp_servers: parseJsonField(values.mcp_servers)})
-      };
+      const agentsPayload = (values.agents || []).map((agent) => ({
+        agent_id: agent.agent_id,
+        ...(agent.agentic_memory_provider_id && {agentic_memory_provider_id: agent.agentic_memory_provider_id})
+      }));
 
       const response = await addMAS({
         name: values.name,
         description: values.description,
-        agents: agentsPayload,
-        config: configPayload
+        ...(values.shared_memory_provider_id && {shared_memory_provider_id: values.shared_memory_provider_id}),
+        ...(agentsPayload.length > 0 && {agents: agentsPayload}),
+        ...(values.config && {config: parseJsonField(values.config)})
       });
 
       toast.success(`Multi-Agent System "${response.name}" created successfully`);
@@ -225,29 +188,28 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                     )}
                   />
 
-                  <div className="space-y-2">
-                    <FormLabel>Memory Provider</FormLabel>
-                    <Input value={ootbMemoryProvider?.memory_provider_name || 'Memory Provider'} disabled readOnly />
-                  </div>
-
                   <FormField
                     control={form.control}
-                    name="cfn_id"
+                    name="shared_memory_provider_id"
                     render={({field}) => (
                       <FormItem>
-                        <FormLabel required>Cognitive Fabric Nodes </FormLabel>
+                        <FormLabel>Shared Memory Provider</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
-                              <SelectValue placeholder={isLoadingCfns ? 'Loading...' : 'Select a CFN'} />
+                              <SelectValue placeholder="Select a memory provider" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {cfns?.map((node) => (
-                              <SelectItem key={node.cfn_id} value={node.cfn_id}>
-                                {node.cfn_name} ({node.status})
-                              </SelectItem>
-                            ))}
+                            {userMemoryProviders.length === 0 ? (
+                              <div className="py-2 px-2 text-sm text-muted-foreground">No shared memory providers available</div>
+                            ) : (
+                              userMemoryProviders.map((provider) => (
+                                <SelectItem key={provider.memory_provider_id} value={provider.memory_provider_id}>
+                                  {provider.memory_provider_name}
+                                </SelectItem>
+                              ))
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -261,8 +223,8 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                     watch={form.watch}
                     isEditMode={true}
                     agentExpandedState={agentExpandedState}
-                    onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !prev[id]}))}
-                    onAddAgent={() => appendAgent({name: '', url: '', remote_memory_provider_id: ''})}
+                    onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
+                    onAddAgent={() => appendAgent({agent_id: '', agentic_memory_provider_id: ''})}
                     onRemoveAgent={removeAgent}
                     userMemoryProviders={userMemoryProviders.map((p) => ({id: p.memory_provider_id, provider_name: p.memory_provider_name}))}
                   />
@@ -273,41 +235,14 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                       name="config"
                       render={({field}) => (
                         <CollapsibleJsonField
-                          label="MAS Config"
+                          label="Config"
                           value={field.value || ''}
                           isExpanded={masConfigExpanded}
                           onToggleExpand={() => setMasConfigExpanded(!masConfigExpanded)}
                           isEditMode={true}
                           field={field}
                           placeholder={`{
-  "orchestration": "sequential",
-  "retry_policy": {
-    "max_retries": 3
-  },
-  "timeout": 30000
-}`}
-                        />
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="mcp_servers"
-                      render={({field}) => (
-                        <CollapsibleJsonField
-                          label="MCP Servers"
-                          value={field.value || ''}
-                          isExpanded={mcpServersExpanded}
-                          onToggleExpand={() => setMcpServersExpanded(!mcpServersExpanded)}
-                          isEditMode={true}
-                          field={field}
-                          placeholder={`{
-  "MCP-Server-1": {
-    "url": "https://192.168.1.200:3000"
-  },
-  "MCP-Server-2": {
-    "url": "https://192.168.1.201:3000"
-  }
+  "key": "value"
 }`}
                         />
                       )}

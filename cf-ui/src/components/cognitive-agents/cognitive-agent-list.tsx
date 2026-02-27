@@ -1,7 +1,8 @@
 'use client';
 
 import {useState} from 'react';
-import {Brain} from 'lucide-react';
+import {Brain, Plus} from 'lucide-react';
+import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
@@ -26,15 +27,20 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
   return (
     <div className="space-y-8">
       <BasePage
-        title="Cognitive Agents"
-        description="Manage your cognitive agents"
+        title="Cognition Agents"
+        description="Manage your Cognition Agents"
         callToAction={
           cognitiveAgents.length > 0 ? (
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
                 {viewMode === 'table' ? 'Card View' : 'Table View'}
               </Button>
-              <Button onClick={() => router.push(routes.workspaces.cognitiveAgents.create(workspaceId))}>Create Agent</Button>
+              <Button asChild variant="sidebar" className="gap-2">
+                <Link href={routes.workspaces.cognitiveAgents.create(workspaceId)}>
+                  <Plus className="w-4 h-4" />
+                  Create Cognition Agent
+                </Link>
+              </Button>
             </div>
           ) : undefined
         }
@@ -42,16 +48,16 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
         <ConditionalSWRRenderer
           data={cognitiveAgents}
           error={error}
-          itemName="Cognitive Agents"
+          itemName="Cognition Agents"
           customIsLoading={isLoading}
           customEmptyComponent={
             <div className="flex items-center justify-center min-h-[50vh]">
               <ListShell
                 empty={{
                   icon: Brain,
-                  title: 'No cognitive agents yet.',
-                  description: 'Create your first cognitive agent to get started.',
-                  actionLabel: 'Create Agent',
+                  title: 'No Cognition Agents yet.',
+                  description: 'Create your first cognition agent to get started.',
+                  actionLabel: 'Create Cognition Agent',
                   href: routes.workspaces.cognitiveAgents.create(workspaceId)
                 }}
               />

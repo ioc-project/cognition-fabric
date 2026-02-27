@@ -17,7 +17,7 @@ import {Textarea} from '@/components/ui/textarea';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes} from '@/constants/routes';
-import {DATE_TIME_FORMAT_OPTIONS, parseError} from '@/lib/utils';
+import {parseError} from '@/lib/utils';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
@@ -247,7 +247,7 @@ export default function MemoryProviderDetailsPage() {
                         )}
                       </div>
 
-                      <div className="space-y-2">
+                      {/* <div className="space-y-2">
                         <Label>Created By</Label>
                         <Input value={provider?.created_by || 'Unknown'} disabled readOnly />
                       </div>
@@ -266,7 +266,7 @@ export default function MemoryProviderDetailsPage() {
                           disabled
                           readOnly
                         />
-                      </div>
+                      </div> */}
                     </div>
                   </form>
                 </Form>

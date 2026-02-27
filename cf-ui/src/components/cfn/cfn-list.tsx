@@ -32,7 +32,7 @@ export function CfnList() {
   const handleEnable = async (payload: {cfn_id: string; cfn_name: string}) => {
     try {
       await enableCfn(payload.cfn_id);
-      toast.success(`Cognitive Fabric Node "${payload.cfn_name}" enabled successfully`);
+      toast.success(`Cognition Fabric Node "${payload.cfn_name}" enabled successfully`);
     } catch (err) {
       const errorMessage = parseError(err);
       toast.error(errorMessage);
@@ -42,7 +42,7 @@ export function CfnList() {
   const handleDisable = async (payload: {cfn_id: string; cfn_name: string}) => {
     try {
       await disableCfn(payload.cfn_id);
-      toast.success(`Cognitive Fabric Node "${payload.cfn_name}" disabled successfully`);
+      toast.success(`Cognition Fabric Node "${payload.cfn_name}" disabled successfully`);
     } catch (err) {
       const errorMessage = parseError(err);
       toast.error(errorMessage);
@@ -59,7 +59,7 @@ export function CfnList() {
     try {
       await disableCfn(deleteDialog.data.cfn_id);
       setHasDisabled(true);
-      toast.success(`Cognitive Fabric Node "${deleteDialog.data.cfn_name}" disabled successfully`);
+      toast.success(`Cognition Fabric Node "${deleteDialog.data.cfn_name}" disabled successfully`);
     } catch (err) {
       const errorMessage = parseError(err);
       setDisableError(errorMessage);
@@ -77,7 +77,7 @@ export function CfnList() {
     setDeleteError(null);
     try {
       await deleteCfn(deleteDialog.data.cfn_id);
-      toast.success(`Cognitive Fabric Node "${deleteDialog.data.cfn_name}" deleted successfully`);
+      toast.success(`Cognition Fabric Node "${deleteDialog.data.cfn_name}" deleted successfully`);
       deleteDialog.close();
       setHasDisabled(false);
       setDisableError(null);
@@ -93,8 +93,8 @@ export function CfnList() {
     <>
       <div className="space-y-8">
         <BasePage
-          title="Cognitive Fabric Nodes"
-          description="View and manage Cognitive Fabric Nodes"
+          title="Cognition Fabric Nodes"
+          description="View and manage Cognition Fabric Nodes"
           callToAction={
             cfns.length > 0 ? (
               <div className="flex gap-2">
@@ -114,16 +114,16 @@ export function CfnList() {
           <ConditionalSWRRenderer
             data={cfns}
             error={swrError}
-            itemName="Cognitive Fabric Nodes"
+            itemName="Cognition Fabric Nodes"
             customIsLoading={loading}
             customEmptyComponent={
               <div className="flex items-center justify-center min-h-[50vh]">
                 <ListShell
                   empty={{
                     icon: Network,
-                    title: 'No Cognitive Fabric Nodes exist.',
-                    description: 'Create a Cognitive Fabric Node to start managing your distributed memory plane.',
-                    actionLabel: 'Create Cognitive Fabric Node',
+                    title: 'No Cognition Fabric Nodes exist.',
+                    description: 'Create a Cognition Fabric Node to start managing your distributed memory plane.',
+                    actionLabel: 'Create Cognition Fabric Node',
                     href: routes.cfn.create
                   }}
                 />
@@ -184,8 +184,8 @@ export function CfnList() {
         onConfirm={deleteDialog.data?.enabled && !hasDisabled ? handleDisableInModal : handleDeleteInModal}
         title={
           deleteDialog.data?.enabled && !hasDisabled
-            ? `Disable ${deleteDialog.data?.cfn_name || 'Cognitive Fabric Node'}`
-            : `Delete ${deleteDialog.data?.cfn_name || 'Cognitive Fabric Node'}`
+            ? `Disable ${deleteDialog.data?.cfn_name || 'Cognition Fabric Node'}`
+            : `Delete ${deleteDialog.data?.cfn_name || 'Cognition Fabric Node'}`
         }
         description={
           deleteError ||

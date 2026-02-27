@@ -150,7 +150,7 @@ export default function Login() {
 
       <div className="relative flex min-h-screen w-1/2 flex-col items-center justify-center bg-white px-8">
         <div className="relative z-10 flex w-full max-w-[600px] flex-col items-start">
-          <h2 className="font-cisco mb-1 text-[28px] font-bold leading-tight tracking-tight text-neutral-alt">Cognitive Fabric Node</h2>
+          <h2 className="font-cisco mb-1 text-[28px] font-bold leading-tight tracking-tight text-neutral-alt">Cognition Fabric Node</h2>
           <p className="font-cisco mb-8 text-[16px] leading-relaxed font-normal text-gray-600 whitespace-nowrap">
             Configure and manage multi-agent systems and their knowledge
           </p>

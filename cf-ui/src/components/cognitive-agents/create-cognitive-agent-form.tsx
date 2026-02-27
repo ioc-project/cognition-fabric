@@ -1,13 +1,14 @@
 'use client';
 
 import {useState} from 'react';
+import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {BasePage} from '@/components/ui/base-page';
 import {Card, CardContent} from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription} from '@/components/ui/form';
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
 import {routes, breadcrumbs} from '@/constants/routes';
@@ -23,7 +24,8 @@ interface CreateCognitiveAgentFormProps {
 
 export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const {workspace} = useCurrentWorkspace();
   const workspaceName = workspace?.name || 'Workspace';
   const {addCognitiveAgent} = useCognitiveAgents(workspaceId);
@@ -39,23 +41,25 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
 
   const onSubmit = async (data: CreateCognitiveAgentRequest) => {
     try {
-      setIsSubmitting(true);
-      const agent = await addCognitiveAgent(data);
-      toast.success(`Cognitive Agent "${data.cognitive_agent_name}" created successfully`);
-      router.push(routes.workspaces.cognitiveAgents.details(workspaceId, agent.cognitive_agent_id));
+      setIsLoading(true);
+      setError(null);
+      await addCognitiveAgent(data);
+      toast.success(`Cognition Agent "${data.cognitive_agent_name}" created successfully`);
+      router.push(routes.workspaces.cognitiveAgents.list(workspaceId));
     } catch (err) {
       const errorMessage = parseError(err);
-      toast.error(errorMessage);
+      setError(errorMessage);
+      toast.error(`Failed to create Cognition Agent: ${errorMessage}`);
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="space-y-8 px-8 pt-4">
       <BasePage
-        title="Create Cognitive Agent"
-        description="Create a new cognitive agent in this workspace"
+        title="Create Cognition Agent"
+        description="Create a new cognition agent in this workspace"
         useBreadcrumbs
         breadcrumbs={breadcrumbs.createCognitiveAgent(workspaceId, workspaceName)}
       >
@@ -64,16 +68,21 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
             <CardContent className="p-8">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  {error && (
+                    <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md">
+                      {error}
+                    </div>
+                  )}
+
                   <FormField
                     control={form.control}
                     name="cognitive_agent_name"
                     render={({field}) => (
                       <FormItem>
-                        <FormLabel>Agent Name</FormLabel>
+                        <FormLabel required>Agent Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="My Cognitive Agent" {...field} />
+                          <Input placeholder="My Cognition Agent" {...field} />
                         </FormControl>
-                        <FormDescription>A descriptive name for your cognitive agent</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -84,7 +93,7 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
                     name="description"
                     render={({field}) => (
                       <FormItem>
-                        <FormLabel>Description (Optional)</FormLabel>
+                        <FormLabel>Description</FormLabel>
                         <FormControl>
                           <Textarea
                             placeholder="Describe what this agent does..."
@@ -94,18 +103,17 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
                             value={field.value || ''}
                           />
                         </FormControl>
-                        <FormDescription>A brief description of the agent's purpose</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
 
-                  <div className="flex justify-end gap-4">
-                    <Button type="button" variant="outline" onClick={() => router.back()} disabled={isSubmitting}>
-                      Cancel
+                  <div className="flex w-full items-center justify-between pt-4">
+                    <Button asChild type="button" variant="outline" disabled={isLoading}>
+                      <Link href={routes.workspaces.cognitiveAgents.list(workspaceId)}>Cancel</Link>
                     </Button>
-                    <Button type="submit" disabled={isSubmitting}>
-                      {isSubmitting ? 'Creating...' : 'Create Agent'}
+                    <Button type="submit" variant="sidebar" disabled={isLoading}>
+                      {isLoading ? 'Creating...' : 'Create Cognition Agent'}
                     </Button>
                   </div>
                 </form>
