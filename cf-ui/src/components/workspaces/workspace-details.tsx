@@ -29,7 +29,7 @@ export function WorkspaceDetails() {
 
   const {masList, isLoading: masLoading} = useMAS(workspaceId || '');
   const {cognitiveAgents = [], isLoading: cognitiveAgentsLoading} = useCognitiveAgents(workspaceId || '');
-  const {cfns = [], isLoading: cfnLoading} = useCfn(workspaceId || '');
+  const {cfns = [], isLoading: cfnLoading} = useCfn();
   // const {members} = useWorkspaceMembers(workspaceId || '');
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -89,22 +89,17 @@ export function WorkspaceDetails() {
       .slice(0, 4);
   }, [cognitiveAgents]);
 
+  // Get the CFN associated with this workspace
+  const workspaceCfn = useMemo(() => {
+    if (!workspace?.cfn_id) {
+      return null;
+    }
+    return cfns.find((cfn) => cfn.cfn_id === workspace.cfn_id) || null;
+  }, [cfns, workspace?.cfn_id]);
+
   const latestCfns = useMemo(() => {
-    return [...cfns]
-      .sort((a, b) => {
-        if (!a.created_at && !b.created_at) {
-          return 0;
-        }
-        if (!a.created_at) {
-          return 1;
-        }
-        if (!b.created_at) {
-          return -1;
-        }
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      })
-      .slice(0, 4);
-  }, [cfns]);
+    return workspaceCfn ? [workspaceCfn] : [];
+  }, [workspaceCfn]);
 
   return (
     <>
@@ -174,7 +169,7 @@ export function WorkspaceDetails() {
             <div className="p-4 border rounded-lg bg-card soft-card">
               <div className="flex flex-col gap-6">
                 <h4 className="card-title">Cognition Fabric Nodes</h4>
-                <p className="card-stats">{cfns.length}</p>
+                <p className="card-stats">{workspace?.cfn_id ? 1 : 0}</p>
               </div>
             </div>
           </div>
@@ -272,15 +267,15 @@ export function WorkspaceDetails() {
                 )
               )}
 
-              {cfnLoading && cfns.length === 0 ? (
+              {cfnLoading && !workspaceCfn && workspace?.cfn_id ? (
                 <div className="p-6 border rounded-lg bg-card soft-card">
                   <LoaderRelative />
                 </div>
               ) : (
-                cfns.length > 0 && (
+                workspaceCfn && (
                   <div className="p-6 border rounded-lg bg-card soft-card">
                     <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-base font-medium">Latest Cognition Fabric Nodes</h2>
+                      <h2 className="text-base font-medium">Cognition Fabric Node</h2>
                       <div className="flex gap-2">
                         <Button asChild size="sm" variant="sidebar">
                           <Link href={routes.cfn.list}>View All</Link>

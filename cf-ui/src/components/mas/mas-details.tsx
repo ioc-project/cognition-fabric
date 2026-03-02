@@ -89,6 +89,10 @@ export default function MASDetailsPage() {
   // const ootbMemoryProvider = providers.find((p) => p.enabled);
   const userMemoryProviders = providers.map((p) => ({id: p.memory_provider_id, provider_name: p.memory_provider_name}));
 
+  // Filter providers: shared memory only shows "ioc-memory-provider", agentic shows all except it
+  const sharedMemoryProviders = userMemoryProviders.filter((p) => p.provider_name === 'ioc-memory-provider');
+  const agenticMemoryProviders = userMemoryProviders.filter((p) => p.provider_name !== 'ioc-memory-provider');
+
   const form = useForm<FormValues>({
     resolver: zodResolver(UpdateMASFormSchema),
     defaultValues: {
@@ -331,10 +335,10 @@ export default function MASDetailsPage() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    {userMemoryProviders.length === 0 ? (
+                                    {sharedMemoryProviders.length === 0 ? (
                                       <div className="py-2 px-2 text-sm text-muted-foreground">No shared memory providers available</div>
                                     ) : (
-                                      userMemoryProviders.map((provider) => (
+                                      sharedMemoryProviders.map((provider) => (
                                         <SelectItem key={provider.id} value={provider.id}>
                                           {provider.provider_name}
                                         </SelectItem>
@@ -362,7 +366,7 @@ export default function MASDetailsPage() {
                       onAddAgent={isEditMode ? () => appendAgent({agent_id: '', agentic_memory_provider_id: ''}) : undefined}
                       onRemoveAgent={isEditMode ? removeAgent : undefined}
                       masAgentsData={!isEditMode && mas?.agents ? mas.agents : undefined}
-                      userMemoryProviders={userMemoryProviders}
+                      userMemoryProviders={agenticMemoryProviders}
                     />
 
                     <div className="space-y-6 border-t pt-6">
