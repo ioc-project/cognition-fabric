@@ -1,41 +1,18 @@
 'use client';
 
-import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {Boxes, FolderOpen, ChevronDown, ChevronRight, Brain, Network, Database, type LucideIcon} from 'lucide-react';
-// import {Key} from 'lucide-react';
+import React, {useEffect, useMemo} from 'react';
+import {Boxes, Brain, Network, Database, type LucideIcon} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments, useRouter} from 'next/navigation';
-import {Badge} from '@/components/ui/badge';
-import {useWorkspaceNavigation} from '@/hooks/useWorkspaceNavigation';
-import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {routes} from '@/constants/routes';
 
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const segments = useSelectedLayoutSegments();
-  const isWorkspaceRoute = segments[0] === 'workspaces';
-
-  const {currentId: workspaceIdRaw, base: workspaceBasePathRaw} = useWorkspaceNavigation();
-  const {workspace: workspaceRaw, isAdmin} = useCurrentWorkspace();
-  const workspaceId = isWorkspaceRoute ? workspaceIdRaw : undefined;
-  const workspaceBasePath = isWorkspaceRoute ? workspaceBasePathRaw : '';
-  const workspace = isWorkspaceRoute ? workspaceRaw : undefined;
-  const workspaceName: string = String(workspace?.name ?? (workspaceId ? `Workspace ${workspaceId.slice(0, 8)}` : 'Workspace'));
-
-  const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
 
   useEffect(() => {
-    setIsWorkspaceOpen(isWorkspaceRoute);
-  }, [isWorkspaceRoute]);
-
-  useEffect(() => {
-    const hrefs: string[] = [];
-    hrefs.push(routes.workspaces.list);
-    hrefs.push(routes.cfn.list);
-    if (workspaceBasePath) {
-      hrefs.push(`${workspaceBasePath}`, `${workspaceBasePath}/mas`, `${workspaceBasePath}/cognitive-agents`);
-    }
+    const hrefs: string[] = [routes.cfn.list, routes.memoryProviders.list, routes.mas.list, routes.cognitiveAgents.list];
     hrefs.forEach((h) => {
       try {
         router.prefetch(h);
@@ -43,17 +20,10 @@ export function Sidebar() {
         void 0;
       }
     });
-  }, [router, workspaceBasePath]);
+  }, [router]);
 
-  const topLevelItems = useMemo(
+  const navItems = useMemo(
     () => [
-      {
-        id: 'workspaces',
-        href: routes.workspaces.list,
-        icon: FolderOpen,
-        label: 'Workspaces',
-        isActive: () => segments[0] === 'workspaces' || segments.length === 0
-      },
       {
         id: 'cfn',
         href: routes.cfn.list,
@@ -67,82 +37,26 @@ export function Sidebar() {
         icon: Database,
         label: 'Memory Providers',
         isActive: () => segments[0] === 'memory-providers'
+      },
+      {
+        id: 'mas',
+        href: routes.mas.list,
+        icon: Boxes,
+        label: 'Multi-Agentic Systems',
+        isActive: () => segments[0] === 'mas'
+      },
+      {
+        id: 'cognitive-agents',
+        href: routes.cognitiveAgents.list,
+        icon: Brain,
+        label: 'Cognition Engines',
+        isActive: () => segments[0] === 'cognitive-agents'
       }
-      // {
-      //   id: 'api-keys',
-      //   href: routes.apiKeys,
-      //   icon: Key,
-      //   label: 'API Keys',
-      //   isActive: () => pathname === routes.apiKeys
-      // }
     ],
     [segments, pathname]
   );
 
-  const isWorkspaceSection = useCallback(
-    (section?: string) => {
-      if (segments[0] !== 'workspaces' || segments[1] !== workspaceId) {
-        return false;
-      }
-      if (!section) {
-        return segments.length === 2 || segments[2] === 'overview';
-      }
-      return segments[2] === section;
-    },
-    [segments, workspaceId]
-  );
-
-  const workspaceChildren = useMemo(
-    () => [
-      {
-        id: 'overview',
-        href: `${workspaceBasePath}`,
-        icon: FolderOpen,
-        label: 'Overview',
-        isActive: () => isWorkspaceSection()
-      },
-      {
-        id: 'mas',
-        href: `${workspaceBasePath}/mas`,
-        icon: Boxes,
-        label: 'Multi-Agentic Systems',
-        isActive: () => isWorkspaceSection('mas')
-      },
-      {
-        id: 'cognitive-agents',
-        href: `${workspaceBasePath}/cognitive-agents`,
-        icon: Brain,
-        label: 'Cognition Agents',
-        isActive: () => isWorkspaceSection('cognitive-agents')
-      }
-      // ...(isAdmin
-      //   ? [
-      //       {
-      //         id: 'members',
-      //         href: `${workspaceBasePath}/members`,
-      //         icon: Users,
-      //         label: 'Members',
-      //         isActive: () => isWorkspaceSection('members')
-      //       }
-      //     ]
-      //   : [])
-    ],
-    [workspaceBasePath, isWorkspaceSection, isAdmin]
-  );
-
-  const NavItem = React.memo(function NavItem({
-    href,
-    icon: Icon,
-    label,
-    active,
-    badge
-  }: {
-    href: string;
-    icon: LucideIcon;
-    label: string;
-    active: boolean;
-    badge?: number;
-  }) {
+  const NavItem = React.memo(function NavItem({href, icon: Icon, label, active}: {href: string; icon: LucideIcon; label: string; active: boolean}) {
     return (
       <Link
         href={href}
@@ -160,11 +74,6 @@ export function Sidebar() {
           />
           <span className="sidebar-text">{label}</span>
         </div>
-        {badge !== undefined && badge > 0 && (
-          <Badge variant="destructive" className="h-5 min-w-5 flex items-center justify-center px-1 text-xs">
-            {badge}
-          </Badge>
-        )}
       </Link>
     );
   });
@@ -173,44 +82,11 @@ export function Sidebar() {
     <div className="w-72 bg-[hsl(var(--navbar-background))] border-r border-[hsl(var(--sidebar-border))] flex flex-col">
       <nav className="flex-1 p-4 pt-6">
         <ul className="space-y-1">
-          {topLevelItems.map((item) => (
+          {navItems.map((item) => (
             <li key={item.id}>
               <NavItem href={item.href} icon={item.icon} label={item.label} active={item.isActive()} />
             </li>
           ))}
-
-          {workspaceId && (
-            <li aria-hidden className="my-2">
-              <div className="border-t border-[hsl(var(--sidebar-border))]" />
-            </li>
-          )}
-
-          {workspaceId && (
-            <li className="mt-2">
-              <button
-                type="button"
-                onClick={() => setIsWorkspaceOpen((open) => !open)}
-                className="w-full flex items-center justify-between px-2 py-1.5 rounded-md text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))]"
-              >
-                <span className="sidebar-text truncate font-medium mr-2">{workspaceName}</span>
-                {isWorkspaceOpen ? (
-                  <ChevronDown className="w-4 h-4 text-[hsl(var(--sidebar-icon))]" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-[hsl(var(--sidebar-icon))]" />
-                )}
-              </button>
-
-              {isWorkspaceOpen && (
-                <ul className="mt-1 ml-8 space-y-1">
-                  {workspaceChildren.map((item) => (
-                    <li key={item.id}>
-                      <NavItem href={item.href} icon={item.icon} label={item.label} active={item.isActive()} />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          )}
         </ul>
       </nav>
     </div>

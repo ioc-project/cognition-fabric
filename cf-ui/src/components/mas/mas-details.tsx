@@ -7,9 +7,8 @@ import {useForm, useFieldArray} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
 import {swrKeys} from '@/lib/swr-config';
-import {masApi, workspaceApi} from '@/api/endpoints';
+import {masApi} from '@/api/endpoints';
 import type {MultiAgenticSystem, MultiAgenticSystemUpdate} from '@/api/endpoints/mas';
-import type {Workspace} from '@/api/types/workspace';
 import {BasePage} from '@/components/ui/base-page';
 import {Card, CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
@@ -17,12 +16,13 @@ import {Label} from '@/components/ui/label';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
-import {routes, breadcrumbs} from '@/constants/routes';
+import {routes} from '@/constants/routes';
 import {parseError} from '@/lib/utils';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {useMemoryProviders} from '@/hooks/useMemoryProviders';
+import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {toast} from 'sonner';
 import {AgentsList} from './agents-list';
 import {CollapsibleJsonField} from './collapsible-json-field';
@@ -62,9 +62,10 @@ export default function MASDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
-  const rawWorkspaceId = params?.id as string | string[] | undefined;
+  const {defaultWorkspaceId} = useDefaultWorkspace();
+
   const rawMasId = (params as Record<string, string | string[] | undefined>)?.masId;
-  const workspaceId = Array.isArray(rawWorkspaceId) ? rawWorkspaceId[0] : rawWorkspaceId;
+  const workspaceId = defaultWorkspaceId;
   const masId = Array.isArray(rawMasId) ? rawMasId[0] : rawMasId;
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -81,15 +82,10 @@ export default function MASDetailsPage() {
   } = useSWR<MultiAgenticSystem>(workspaceId && masId ? swrKeys.masDetails(workspaceId, masId) : null, () =>
     masApi.get(workspaceId as string, masId as string)
   );
-  const {data: workspace, error: workspaceError} = useSWR<Workspace | null>(workspaceId ? swrKeys.workspace(workspaceId) : null, () =>
-    workspaceApi.get(workspaceId as string)
-  );
   const {providers = []} = useMemoryProviders();
 
-  // const ootbMemoryProvider = providers.find((p) => p.enabled);
   const userMemoryProviders = providers.map((p) => ({id: p.memory_provider_id, provider_name: p.memory_provider_name}));
 
-  // Filter providers: shared memory only shows "ioc-memory-provider", agentic shows all except it
   const sharedMemoryProviders = userMemoryProviders.filter((p) => p.provider_name === 'ioc-memory-provider');
   const agenticMemoryProviders = userMemoryProviders.filter((p) => p.provider_name !== 'ioc-memory-provider');
 
@@ -142,23 +138,18 @@ export default function MASDetailsPage() {
     }
   }, [mas, form]);
 
-  if (workspaceError) {
-    console.warn('Failed to load workspace:', workspaceError);
-  }
-
   useEffect(() => {
     if (!workspaceId || !masId) {
       router.replace('/not-found');
     }
   }, [workspaceId, masId, router]);
 
-  const crumbs =
-    workspace && workspaceId
-      ? [
-          {link: routes.workspaces.mas.list(workspaceId), text: 'Multi-Agentic Systems'},
-          {link: '', text: mas?.name || 'MAS', active: true}
-        ]
-      : undefined;
+  const crumbs = mas
+    ? [
+        {link: routes.mas.list, text: 'Multi-Agentic Systems'},
+        {link: '', text: mas.name, active: true}
+      ]
+    : undefined;
 
   const handleDelete = async () => {
     await deleteDialog.confirm(async (data) => {
@@ -166,7 +157,7 @@ export default function MASDetailsPage() {
         await masApi.delete(workspaceId!, data.id);
         toast.success(`Multi-Agentic System "${data.name}" deleted successfully`);
         await globalMutate(swrKeys.mas(workspaceId!));
-        router.push(routes.workspaces.mas.list(workspaceId!));
+        router.push(routes.mas.list);
       } catch (err) {
         const errorMessage = parseError(err);
         setDeleteError(errorMessage);
@@ -203,7 +194,7 @@ export default function MASDetailsPage() {
       toast.success('Multi-Agentic System updated successfully');
       await mutate();
       setIsEditMode(false);
-      router.replace(routes.workspaces.mas.details(workspaceId!, masId!));
+      router.replace(routes.mas.details(masId!));
     } catch (err) {
       const errorMessage = parseError(err);
       toast.error(errorMessage);
@@ -232,7 +223,7 @@ export default function MASDetailsPage() {
       agents: agentsArray,
       config: Object.keys(cleanConfig).length > 0 ? JSON.stringify(cleanConfig, null, 2) : ''
     });
-    router.replace(routes.workspaces.mas.details(workspaceId!, masId!));
+    router.replace(routes.mas.details(masId!));
   };
 
   return (
@@ -241,7 +232,7 @@ export default function MASDetailsPage() {
         title={mas?.name || 'MAS Details'}
         description="View details about your multi-agentic system"
         useBreadcrumbs
-        breadcrumbs={crumbs || (workspaceId ? breadcrumbs.workspaceMAS(workspaceId, workspace?.name || '') : undefined)}
+        breadcrumbs={crumbs}
         callToAction={
           mas && (
             <DetailsPageActions

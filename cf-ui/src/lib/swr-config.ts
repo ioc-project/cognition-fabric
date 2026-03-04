@@ -4,6 +4,7 @@
 export const swrKeys = {
   workspaces: () => ['workspaces'] as const,
   workspace: (id: string) => ['workspace', id] as const,
+  defaultWorkspace: () => ['default-workspace'] as const,
 
   users: (workspaceId: string) => ['users', workspaceId] as const,
   apiKeys: () => ['api-keys'] as const,

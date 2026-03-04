@@ -47,16 +47,8 @@ export default function CfnDetailsPage() {
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [expandedWorkspaces, setExpandedWorkspaces] = useState<Record<string, boolean>>({});
   const [expandedMAS, setExpandedMAS] = useState<Record<string, boolean>>({});
   const deleteDialog = useConfirmDialog<{cfn_id: string; cfn_name: string}>();
-
-  const toggleWorkspace = (workspaceId: string) => {
-    setExpandedWorkspaces((prev) => ({
-      ...prev,
-      [workspaceId]: !prev[workspaceId]
-    }));
-  };
 
   const toggleMAS = (masId: string) => {
     setExpandedMAS((prev) => ({
@@ -308,154 +300,103 @@ export default function CfnDetailsPage() {
                     {cfn?.config && (
                       <div className="mt-8 space-y-6">
                         <div className="border-t pt-6">
-                          {/* Workspaces */}
+                          {/* Multi-Agentic Systems */}
                           {(cfn.config as any).workspaces && Array.isArray((cfn.config as any).workspaces) && (
                             <div className="mb-4">
-                              <Label className="text-sm font-medium mb-2 block">
-                                {(cfn.config as any).workspaces.length} Associated Workspace{(cfn.config as any).workspaces.length !== 1 ? 's' : ''}
-                              </Label>
                               {(cfn.config as any).workspaces.length > 0 ? (
                                 <div className="space-y-3">
                                   {(cfn.config as any).workspaces.map((workspace: any, index: number) => {
-                                    const isExpanded = expandedWorkspaces[workspace.workspace_id] ?? false;
                                     return (
-                                      <div
-                                        key={workspace.workspace_id || index}
-                                        className="rounded-md border p-4 space-y-4"
-                                        style={{backgroundColor: 'hsl(216.7, 100%, 95.5%)'}}
-                                      >
-                                        <div className="flex items-center justify-between">
-                                          <div className="cursor-pointer flex-1" onClick={() => toggleWorkspace(workspace.workspace_id)}>
-                                            <div className="font-medium">{workspace.workspace_name}</div>
-                                            <div className="font-mono text-xs text-muted-foreground mt-1">{workspace.workspace_id}</div>
-                                          </div>
-                                          <button
-                                            type="button"
-                                            className="h-6 w-6 p-0 text-xs leading-none inline-flex items-center justify-center rounded bg-white hover:bg-gray-100 ml-2"
-                                            onClick={() => toggleWorkspace(workspace.workspace_id)}
-                                          >
-                                            {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                          </button>
-                                        </div>
+                                      <div key={workspace.workspace_id || index}>
+                                        {workspace.multi_agentic_systems && workspace.multi_agentic_systems.length > 0 && (
+                                          <div>
+                                            <Label className="text-sm font-medium mb-3 block">
+                                              {workspace.multi_agentic_systems.length} Multi-Agentic System
+                                              {workspace.multi_agentic_systems.length !== 1 ? 's' : ''}
+                                            </Label>
+                                            <div className="space-y-3">
+                                              {workspace.multi_agentic_systems.map((mas: any, masIndex: number) => {
+                                                const isMASExpanded = expandedMAS[mas.id] ?? false;
+                                                return (
+                                                  <div key={mas.id || masIndex} className="rounded-md border bg-white p-3 space-y-3">
+                                                    <div className="flex items-start justify-between">
+                                                      <div className="flex-1 cursor-pointer" onClick={() => toggleMAS(mas.id)}>
+                                                        <div className="font-medium text-sm">{mas.name}</div>
+                                                        {mas.description && (
+                                                          <div className="text-xs text-muted-foreground mt-1">{mas.description}</div>
+                                                        )}
+                                                      </div>
+                                                      <button
+                                                        type="button"
+                                                        className="h-6 w-6 inline-flex items-center justify-center rounded hover:bg-gray-100 ml-2"
+                                                        onClick={() => toggleMAS(mas.id)}
+                                                      >
+                                                        {isMASExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                                      </button>
+                                                    </div>
 
-                                        {isExpanded && (
-                                          <div className="pt-4 border-t border-blue-200 space-y-4">
-                                            {/* Cognitive Agents */}
-                                            <div>
-                                              <Label className="text-sm font-medium mb-2 block">
-                                                {workspace.cognitive_agents && workspace.cognitive_agents.length > 0
-                                                  ? `${workspace.cognitive_agents.length} Cognition Agent${workspace.cognitive_agents.length !== 1 ? 's' : ''}`
-                                                  : 'Cognition Agents'}
-                                              </Label>
-                                              {workspace.cognitive_agents && workspace.cognitive_agents.length > 0 ? (
-                                                workspace.cognitive_agents.map((agent: any, agentIndex: number) => (
-                                                  <Input
-                                                    key={agentIndex}
-                                                    value={agent.name || agent.agent_name || agent.id || `Agent ${agentIndex + 1}`}
-                                                    disabled
-                                                    readOnly
-                                                    className="mb-2"
-                                                  />
-                                                ))
-                                              ) : (
-                                                <Input value="None" disabled readOnly />
-                                              )}
-                                            </div>
-
-                                            <div>
-                                              <Label className="text-sm font-medium mb-3 block">
-                                                {workspace.multi_agentic_systems && workspace.multi_agentic_systems.length > 0
-                                                  ? `${workspace.multi_agentic_systems.length} Multi-Agentic System${workspace.multi_agentic_systems.length !== 1 ? 's' : ''}`
-                                                  : 'Multi-Agentic Systems'}
-                                              </Label>
-                                              {workspace.multi_agentic_systems && workspace.multi_agentic_systems.length > 0 ? (
-                                                <div className="space-y-3">
-                                                  {workspace.multi_agentic_systems.map((mas: any, masIndex: number) => {
-                                                    const isMASExpanded = expandedMAS[mas.id] ?? false;
-                                                    return (
-                                                      <div key={mas.id || masIndex} className="rounded-md border bg-white p-3 space-y-3">
-                                                        <div className="flex items-start justify-between">
-                                                          <div className="flex-1 cursor-pointer" onClick={() => toggleMAS(mas.id)}>
-                                                            <div className="font-medium text-sm">{mas.name}</div>
-                                                            {mas.description && (
-                                                              <div className="text-xs text-muted-foreground mt-1">{mas.description}</div>
-                                                            )}
-                                                          </div>
-                                                          <button
-                                                            type="button"
-                                                            className="h-6 w-6 inline-flex items-center justify-center rounded hover:bg-gray-100 ml-2"
-                                                            onClick={() => toggleMAS(mas.id)}
-                                                          >
-                                                            {isMASExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                                          </button>
-                                                        </div>
-
-                                                        {isMASExpanded && (
-                                                          <div className="pt-3 border-t space-y-3">
-                                                            {/* Shared Memory */}
-                                                            {mas.shared_memory && (
-                                                              <div className="bg-purple-50 rounded p-3">
-                                                                <Label className="text-xs font-semibold mb-2 block">Shared Memory</Label>
-                                                                <div className="space-y-1 text-xs">
-                                                                  <div>
-                                                                    <span className="text-muted-foreground">Provider:</span>{' '}
-                                                                    <span className="font-medium">
-                                                                      {mas.shared_memory.memory_provider_name || 'Unknown'}
-                                                                    </span>
-                                                                  </div>
-                                                                  <div>
-                                                                    <span className="text-muted-foreground">Enabled:</span>{' '}
-                                                                    <span className={mas.shared_memory.enabled ? 'text-green-600' : 'text-gray-500'}>
-                                                                      {mas.shared_memory.enabled ? 'Yes' : 'No'}
-                                                                    </span>
-                                                                  </div>
-                                                                </div>
-                                                              </div>
-                                                            )}
-
-                                                            {mas.agents && mas.agents.length > 0 && (
+                                                    {isMASExpanded && (
+                                                      <div className="pt-3 border-t space-y-3">
+                                                        {/* Shared Memory */}
+                                                        {mas.shared_memory && (
+                                                          <div className="bg-purple-50 rounded p-3">
+                                                            <Label className="text-xs font-semibold mb-2 block">Shared Memory</Label>
+                                                            <div className="space-y-1 text-xs">
                                                               <div>
-                                                                <Label className="text-xs font-semibold mb-2 block">
-                                                                  {mas.agents.length} Agent{mas.agents.length !== 1 ? 's' : ''}
-                                                                </Label>
-                                                                <div className="space-y-2">
-                                                                  {mas.agents.map((agent: any, agentIndex: number) => (
-                                                                    <div key={agentIndex} className="bg-blue-50 rounded p-3">
-                                                                      <div className="font-medium text-xs mb-2">{agent.agent_id}</div>
-                                                                      {agent.agentic_memory && (
-                                                                        <div className="text-xs space-y-1">
-                                                                          <div>
-                                                                            <span className="text-muted-foreground">Agentic Memory Provider:</span>{' '}
-                                                                            <span className="font-medium">
-                                                                              {agent.agentic_memory.memory_provider_name || 'Unknown'}
-                                                                            </span>
-                                                                          </div>
-                                                                          <div>
-                                                                            <span className="text-muted-foreground">Enabled:</span>{' '}
-                                                                            <span
-                                                                              className={
-                                                                                agent.agentic_memory.enabled ? 'text-green-600' : 'text-gray-500'
-                                                                              }
-                                                                            >
-                                                                              {agent.agentic_memory.enabled ? 'Yes' : 'No'}
-                                                                            </span>
-                                                                          </div>
-                                                                        </div>
-                                                                      )}
-                                                                    </div>
-                                                                  ))}
-                                                                </div>
+                                                                <span className="text-muted-foreground">Provider:</span>{' '}
+                                                                <span className="font-medium">
+                                                                  {mas.shared_memory.memory_provider_name || 'Unknown'}
+                                                                </span>
                                                               </div>
-                                                            )}
+                                                              <div>
+                                                                <span className="text-muted-foreground">Enabled:</span>{' '}
+                                                                <span className={mas.shared_memory.enabled ? 'text-green-600' : 'text-gray-500'}>
+                                                                  {mas.shared_memory.enabled ? 'Yes' : 'No'}
+                                                                </span>
+                                                              </div>
+                                                            </div>
+                                                          </div>
+                                                        )}
+
+                                                        {mas.agents && mas.agents.length > 0 && (
+                                                          <div>
+                                                            <Label className="text-xs font-semibold mb-2 block">
+                                                              {mas.agents.length} Agent{mas.agents.length !== 1 ? 's' : ''}
+                                                            </Label>
+                                                            <div className="space-y-2">
+                                                              {mas.agents.map((agent: any, agentIndex: number) => (
+                                                                <div key={agentIndex} className="bg-blue-50 rounded p-3">
+                                                                  <div className="font-medium text-xs mb-2">{agent.agent_id}</div>
+                                                                  {agent.agentic_memory && (
+                                                                    <div className="text-xs space-y-1">
+                                                                      <div>
+                                                                        <span className="text-muted-foreground">Agentic Memory Provider:</span>{' '}
+                                                                        <span className="font-medium">
+                                                                          {agent.agentic_memory.memory_provider_name || 'Unknown'}
+                                                                        </span>
+                                                                      </div>
+                                                                      <div>
+                                                                        <span className="text-muted-foreground">Enabled:</span>{' '}
+                                                                        <span
+                                                                          className={
+                                                                            agent.agentic_memory.enabled ? 'text-green-600' : 'text-gray-500'
+                                                                          }
+                                                                        >
+                                                                          {agent.agentic_memory.enabled ? 'Yes' : 'No'}
+                                                                        </span>
+                                                                      </div>
+                                                                    </div>
+                                                                  )}
+                                                                </div>
+                                                              ))}
+                                                            </div>
                                                           </div>
                                                         )}
                                                       </div>
-                                                    );
-                                                  })}
-                                                </div>
-                                              ) : (
-                                                <Input value="None" disabled readOnly />
-                                              )}
+                                                    )}
+                                                  </div>
+                                                );
+                                              })}
                                             </div>
                                           </div>
                                         )}
@@ -464,7 +405,7 @@ export default function CfnDetailsPage() {
                                   })}
                                 </div>
                               ) : (
-                                <div className="text-sm text-muted-foreground italic">No workspaces associated</div>
+                                <div className="text-sm text-muted-foreground italic">No Multi-Agentic Systems found</div>
                               )}
                             </div>
                           )}

@@ -15,7 +15,6 @@ import {routes} from '@/constants/routes';
 import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
 import {BasePage} from '@/components/ui/base-page';
-import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {breadcrumbs} from '@/constants/routes';
 import {useMAS} from '@/hooks/useMAS';
 import {useMemoryProviders} from '@/hooks/useMemoryProviders';
@@ -64,8 +63,6 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [masConfigExpanded, setMasConfigExpanded] = useState(true);
   const [agentExpandedState, setAgentExpandedState] = useState<Record<string, boolean>>({});
-  const {workspace} = useCurrentWorkspace();
-  const workspaceName = workspace?.name || 'Workspace';
   const {addMAS} = useMAS(workspaceId);
   const {providers} = useMemoryProviders();
 
@@ -122,7 +119,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
 
       toast.success(`Multi-Agent System "${response.name}" created successfully`);
 
-      router.push(routes.workspaces.mas.list(workspaceId));
+      router.push(routes.mas.list);
     } catch (err) {
       const errorMessage = parseError(err);
       setError(errorMessage);
@@ -136,7 +133,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
     if (onCancel) {
       onCancel();
     } else {
-      router.push(routes.workspaces.details(workspaceId));
+      router.push(routes.mas.list);
     }
   };
 
@@ -146,7 +143,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
         title="Create Multi‑Agent System"
         description="Create a multi‑agent system for this workspace."
         useBreadcrumbs
-        breadcrumbs={breadcrumbs.createMAS(workspaceId, workspaceName)}
+        breadcrumbs={breadcrumbs.masCreate()}
       >
         <div className="flex justify-center">
           <Card className="w-full max-w-4xl">

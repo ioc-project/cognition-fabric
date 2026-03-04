@@ -15,7 +15,6 @@ import {Textarea} from '@/components/ui/textarea';
 import {routes, breadcrumbs} from '@/constants/routes';
 import {toast} from 'sonner';
 import {useCognitiveAgents} from '@/hooks/useCognitiveAgents';
-import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {parseError} from '@/lib/utils';
 
 const createCognitiveAgentSchema = z.object({
@@ -34,8 +33,6 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const {workspace} = useCurrentWorkspace();
-  const workspaceName = workspace?.name || 'Workspace';
   const {addCognitiveAgent} = useCognitiveAgents(workspaceId);
 
   const form = useForm<CreateCognitiveAgentFormData>({
@@ -52,12 +49,12 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
       setIsLoading(true);
       setError(null);
       await addCognitiveAgent(data);
-      toast.success(`Cognition Agent "${data.cognitive_agent_name}" created successfully`);
-      router.push(routes.workspaces.cognitiveAgents.list(workspaceId));
+      toast.success(`Cognition Engine "${data.cognitive_agent_name}" created successfully`);
+      router.push(routes.cognitiveAgents.list);
     } catch (err) {
       const errorMessage = parseError(err);
       setError(errorMessage);
-      toast.error(`Failed to create Cognition Agent: ${errorMessage}`);
+      toast.error(`Failed to create Cognition Engine: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -66,11 +63,12 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
   return (
     <div className="space-y-8 px-8 pt-4">
       <BasePage
-        title="Create Cognition Agent"
-        description="Create a new cognition agent in this workspace"
+        title="Create Cognition Engine"
+        description="Create a new cognition engine in this workspace"
         useBreadcrumbs
-        breadcrumbs={breadcrumbs.createCognitiveAgent(workspaceId, workspaceName)}
+        breadcrumbs={breadcrumbs.cognitiveAgentCreate()}
       >
+        {' '}
         <div className="flex justify-center">
           <Card className="w-full max-w-4xl">
             <CardContent className="p-8">
@@ -89,7 +87,7 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
                       <FormItem>
                         <FormLabel required>Agent Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="My Cognition Agent" {...field} />
+                          <Input placeholder="My Cognition Engine" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -118,10 +116,10 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
 
                   <div className="flex w-full items-center justify-between pt-4">
                     <Button asChild type="button" variant="outline" disabled={isLoading}>
-                      <Link href={routes.workspaces.cognitiveAgents.list(workspaceId)}>Cancel</Link>
+                      <Link href={routes.cognitiveAgents.list}>Cancel</Link>
                     </Button>
                     <Button type="submit" variant="sidebar" disabled={isLoading}>
-                      {isLoading ? 'Creating...' : 'Create Cognition Agent'}
+                      {isLoading ? 'Creating...' : 'Create Cognition Engine'}
                     </Button>
                   </div>
                 </form>

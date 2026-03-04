@@ -57,7 +57,7 @@ export function MASList({workspaceId}: MASListProps) {
                   {viewMode === 'table' ? 'Card View' : 'Table View'}
                 </Button>
                 <Button asChild variant="sidebar" className="gap-2" size="default">
-                  <Link href={routes.workspaces.mas.create(workspaceId)}>
+                  <Link href={routes.mas.create}>
                     <Plus className="w-4 h-4" />
                     Create MAS
                   </Link>
@@ -79,7 +79,7 @@ export function MASList({workspaceId}: MASListProps) {
                     title: 'No Multi-Agentic Systems exist in this workspace.',
                     description: 'Create one to get started.',
                     actionLabel: 'Create Multi-Agent System',
-                    href: routes.workspaces.mas.create(workspaceId)
+                    href: routes.mas.create
                   }}
                 />
               </div>
@@ -92,7 +92,7 @@ export function MASList({workspaceId}: MASListProps) {
                 selectedId={selectedId}
                 onRowClick={(mas) => {
                   setSelectedId(mas.id);
-                  router.push(routes.workspaces.mas.details(workspaceId, mas.id));
+                  router.push(routes.mas.details(mas.id));
                 }}
                 onOpenDelete={(payload) => deleteDialog.open(payload)}
               />
@@ -103,7 +103,7 @@ export function MASList({workspaceId}: MASListProps) {
                 selectedId={selectedId}
                 onCardClick={(mas) => {
                   setSelectedId(mas.id);
-                  router.push(routes.workspaces.mas.details(workspaceId, mas.id));
+                  router.push(routes.mas.details(mas.id));
                 }}
                 onOpenDelete={(payload) => deleteDialog.open(payload)}
               />

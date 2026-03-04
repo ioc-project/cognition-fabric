@@ -11,7 +11,7 @@ import {useCallback} from 'react';
 // import {routes} from '@/constants/routes';
 // import {useMyPendingInvitations} from '@/hooks/useInvitations';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
-import WorkspaceSwitcher from '@/components/workspaces/workspace-switcher';
+// import WorkspaceSwitcher from '@/components/workspaces/workspace-switcher';
 
 export function NavBar() {
   // const router = useRouter();
@@ -51,8 +51,6 @@ export function NavBar() {
       </div>
 
       <div className="flex items-center gap-2">
-        <WorkspaceSwitcher />
-
         {/* <button onClick={handleInvitationsClick} className="p-2 hover:bg-accent rounded-lg transition-colors relative" title="Workspace Invitations">
           <Mail className="w-5 h-5 text-muted-foreground" />
           {pendingCount > 0 && (

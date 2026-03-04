@@ -25,6 +25,18 @@ export const routes = {
     members: (workspaceId: string) => `/workspaces/${workspaceId}/members`
   },
 
+  mas: {
+    list: '/mas',
+    create: '/mas/create',
+    details: (masId: string) => `/mas/${masId}`
+  },
+
+  cognitiveAgents: {
+    list: '/cognitive-agents',
+    create: '/cognitive-agents/create',
+    details: (cognitiveAgentId: string) => `/cognitive-agents/${cognitiveAgentId}`
+  },
+
   cfn: {
     list: '/cfn',
     create: '/cfn/create',
@@ -117,11 +129,42 @@ export const breadcrumbs = {
   workspaceCognitiveAgents: (workspaceId: string, workspaceName: string): BreadcrumbItem[] => [
     {link: routes.workspaces.list, text: 'Workspaces'},
     {link: routes.workspaces.details(workspaceId), text: workspaceName},
-    {link: '', text: 'Cognition Agents', active: true}
+    {link: '', text: 'Cognition Engines', active: true}
   ],
 
   createCognitiveAgent: (workspaceId: string, _workspaceName: string): BreadcrumbItem[] => [
-    {link: routes.workspaces.cognitiveAgents.list(workspaceId), text: 'Cognition Agents'},
+    {link: routes.workspaces.cognitiveAgents.list(workspaceId), text: 'Cognition Engines'},
+    {link: '', text: 'Create', active: true}
+  ],
+
+  // New non-workspace-scoped breadcrumbs
+  masList: (): BreadcrumbItem[] => [
+    {link: routes.home, text: 'Home'},
+    {link: '', text: 'Multi-Agentic Systems', active: true}
+  ],
+
+  masDetails: (masName: string): BreadcrumbItem[] => [
+    {link: routes.mas.list, text: 'Multi-Agentic Systems'},
+    {link: '', text: masName, active: true}
+  ],
+
+  masCreate: (): BreadcrumbItem[] => [
+    {link: routes.mas.list, text: 'Multi-Agentic Systems'},
+    {link: '', text: 'Create', active: true}
+  ],
+
+  cognitiveAgentsList: (): BreadcrumbItem[] => [
+    {link: routes.home, text: 'Home'},
+    {link: '', text: 'Cognition Engines', active: true}
+  ],
+
+  cognitiveAgentDetails: (agentName: string): BreadcrumbItem[] => [
+    {link: routes.cognitiveAgents.list, text: 'Cognition Engines'},
+    {link: '', text: agentName, active: true}
+  ],
+
+  cognitiveAgentCreate: (): BreadcrumbItem[] => [
+    {link: routes.cognitiveAgents.list, text: 'Cognition Engines'},
     {link: '', text: 'Create', active: true}
   ],
 

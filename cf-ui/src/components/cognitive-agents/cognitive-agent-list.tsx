@@ -34,7 +34,7 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
     await deleteDialog.confirm(async (data) => {
       try {
         await deleteCognitiveAgent(data.id);
-        toast.success(`Cognition Agent "${data.name}" deleted successfully`);
+        toast.success(`Cognition Engine "${data.name}" deleted successfully`);
       } catch (err) {
         const errorMessage = parseError(err);
         setDeleteError(errorMessage);
@@ -47,8 +47,8 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
     <>
       <div className="space-y-8">
         <BasePage
-          title="Cognition Agents"
-          description="Manage your Cognition Agents"
+          title="Cognition Engines"
+          description="Manage your Cognition Engines"
           callToAction={
             cognitiveAgents.length > 0 ? (
               <div className="flex gap-2">
@@ -56,9 +56,9 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
                   {viewMode === 'table' ? 'Card View' : 'Table View'}
                 </Button>
                 <Button asChild variant="sidebar" className="gap-2">
-                  <Link href={routes.workspaces.cognitiveAgents.create(workspaceId)}>
+                  <Link href={routes.cognitiveAgents.create}>
                     <Plus className="w-4 h-4" />
-                    Create Cognition Agent
+                    Create Cognition Engine
                   </Link>
                 </Button>
               </div>
@@ -68,17 +68,17 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
           <ConditionalSWRRenderer
             data={cognitiveAgents}
             error={error}
-            itemName="Cognition Agents"
+            itemName="Cognition Engines"
             customIsLoading={isLoading}
             customEmptyComponent={
               <div className="flex items-center justify-center min-h-[50vh]">
                 <ListShell
                   empty={{
                     icon: Brain,
-                    title: 'No Cognition Agents yet.',
-                    description: 'Create your first cognition agent to get started.',
-                    actionLabel: 'Create Cognition Agent',
-                    href: routes.workspaces.cognitiveAgents.create(workspaceId)
+                    title: 'No Cognition Engines yet.',
+                    description: 'Create your first cognition engine to get started.',
+                    actionLabel: 'Create Cognition Engine',
+                    href: routes.cognitiveAgents.create
                   }}
                 />
               </div>
@@ -91,7 +91,7 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
                 selectedId={selectedId}
                 onRowClick={(r) => {
                   setSelectedId(r.cognitive_agent_id);
-                  router.push(routes.workspaces.cognitiveAgents.details(workspaceId, r.cognitive_agent_id));
+                  router.push(routes.cognitiveAgents.details(r.cognitive_agent_id));
                 }}
                 onOpenDelete={(payload) => deleteDialog.open(payload)}
               />
@@ -102,7 +102,7 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
                 selectedId={selectedId}
                 onCardClick={(r) => {
                   setSelectedId(r.cognitive_agent_id);
-                  router.push(routes.workspaces.cognitiveAgents.details(workspaceId, r.cognitive_agent_id));
+                  router.push(routes.cognitiveAgents.details(r.cognitive_agent_id));
                 }}
                 onOpenDelete={(payload) => deleteDialog.open(payload)}
               />
@@ -120,7 +120,7 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
           }
         }}
         onConfirm={handleDelete}
-        title={`Delete ${deleteDialog.data?.name || 'Cognition Agent'}`}
+        title={`Delete ${deleteDialog.data?.name || 'Cognition Engine'}`}
         description={deleteError ?? `Delete "${deleteDialog.data?.name}"? This action is permanent and cannot be undone.`}
         confirmText="Delete"
         loading={deleteDialog.isLoading}
