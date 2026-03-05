@@ -25,6 +25,7 @@ import {toast} from 'sonner';
 
 const UpdateMemoryProviderFormSchema = z.object({
   memory_provider_name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters').optional(),
+  description: z.string().optional(),
   config: z
     .string()
     .optional()
@@ -66,6 +67,7 @@ export default function MemoryProviderDetailsPage() {
     resolver: zodResolver(UpdateMemoryProviderFormSchema),
     defaultValues: {
       memory_provider_name: '',
+      description: '',
       config: ''
     }
   });
@@ -79,6 +81,7 @@ export default function MemoryProviderDetailsPage() {
   useEffect(() => {
     if (provider) {
       form.reset({
+        description: provider.description || '',
         memory_provider_name: provider.memory_provider_name,
         config: provider.config ? JSON.stringify(provider.config, null, 2) : ''
       });
@@ -121,6 +124,10 @@ export default function MemoryProviderDetailsPage() {
         payload.memory_provider_name = values.memory_provider_name;
       }
 
+      if (values.description !== undefined) {
+        payload.description = values.description;
+      }
+
       if (values.config && values.config.trim()) {
         payload.config = JSON.parse(values.config) as Record<string, unknown>;
       }
@@ -141,6 +148,7 @@ export default function MemoryProviderDetailsPage() {
     setIsEditMode(false);
     form.reset({
       memory_provider_name: provider?.memory_provider_name,
+      description: provider?.description || '',
       config: provider?.config ? JSON.stringify(provider.config, null, 2) : ''
     });
     router.replace(routes.memoryProviders.details(providerId as string));
@@ -213,6 +221,29 @@ export default function MemoryProviderDetailsPage() {
                       <div className="space-y-2">
                         <Label>Enabled</Label>
                         <Input value={provider?.enabled ? 'Yes' : 'No'} disabled readOnly />
+                      </div>
+
+                      <div className="md:col-span-2">
+                        {isEditMode ? (
+                          <FormField
+                            control={form.control}
+                            name="description"
+                            render={({field}) => (
+                              <FormItem>
+                                <FormLabel>Description</FormLabel>
+                                <FormControl>
+                                  <Textarea {...field} rows={3} placeholder="Optional description" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        ) : (
+                          <div className="space-y-2">
+                            <Label>Description</Label>
+                            <Textarea value={provider?.description || 'No description provided'} disabled readOnly rows={3} />
+                          </div>
+                        )}
                       </div>
 
                       <div className="md:col-span-2">

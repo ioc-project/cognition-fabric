@@ -3,6 +3,7 @@
 import {Button} from '@/components/ui/button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {ResourceTable} from '@/components/ui/resource-table';
+import {TruncatedText} from '@/components/ui/truncated-text';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {MoreVertical, Trash2, Edit} from 'lucide-react';
 import type {MemoryProvider} from '@/api/types/memory-provider';
@@ -19,7 +20,13 @@ export function MemoryProviderTableList({providers, selectedId, onRowClick, onOp
   return (
     <ResourceTable
       items={providers}
-      headers={[{content: 'Name'}, {content: 'Status'}, {content: 'Created'}, {content: 'Actions', className: 'text-right'}]}
+      headers={[
+        {content: 'Name'},
+        {content: 'Description'},
+        {content: 'Status'},
+        {content: 'Created'},
+        {content: 'Actions', className: 'text-right'}
+      ]}
       rowKey={(provider) => provider.memory_provider_id}
       isSelected={(provider) => selectedId === provider.memory_provider_id}
       onRowClick={(provider) => onRowClick(provider)}
@@ -30,6 +37,10 @@ export function MemoryProviderTableList({providers, selectedId, onRowClick, onOp
               <span className="font-medium">{provider.memory_provider_name}</span>
             </div>
           )
+        },
+        {
+          content: provider.description ? <TruncatedText text={provider.description} maxLength={50} className="text-muted-foreground" /> : '-',
+          className: 'text-muted-foreground'
         },
         {
           content: (

@@ -35,6 +35,7 @@ export function MemoryProviderCardList({providers, selectedId, onCardClick, onOp
                   {provider.enabled ? 'Enabled' : 'Disabled'}
                 </span>
               </div>
+              {provider.description && <div className="text-xs text-muted-foreground mt-1">{provider.description}</div>}
             </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

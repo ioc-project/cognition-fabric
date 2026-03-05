@@ -360,25 +360,27 @@ export default function MASDetailsPage() {
                       userMemoryProviders={agenticMemoryProviders}
                     />
 
-                    <div className="space-y-6 border-t pt-6">
-                      <FormField
-                        control={form.control}
-                        name="config"
-                        render={({field}) => (
-                          <CollapsibleJsonField
-                            label="Config"
-                            value={field.value || ''}
-                            isExpanded={masConfigExpanded}
-                            onToggleExpand={() => setMasConfigExpanded(!masConfigExpanded)}
-                            isEditMode={isEditMode}
-                            field={field}
-                            placeholder={`{
+                    {mas?.config && Object.keys(mas.config).length > 0 && (
+                      <div className="space-y-6 border-t pt-6">
+                        <FormField
+                          control={form.control}
+                          name="config"
+                          render={({field}) => (
+                            <CollapsibleJsonField
+                              label="Config"
+                              value={field.value || ''}
+                              isExpanded={masConfigExpanded}
+                              onToggleExpand={() => setMasConfigExpanded(!masConfigExpanded)}
+                              isEditMode={isEditMode}
+                              field={field}
+                              placeholder={`{
   "key": "value"
 }`}
-                          />
-                        )}
-                      />
-                    </div>
+                            />
+                          )}
+                        />
+                      </div>
+                    )}
 
                     {/* System Fields */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">

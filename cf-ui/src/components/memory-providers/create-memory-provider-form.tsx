@@ -10,6 +10,8 @@ import {Button} from '@/components/ui/button';
 import {Card, CardContent} from '@/components/ui/card';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
+import {Textarea} from '@/components/ui/textarea';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {routes} from '@/constants/routes';
 import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
@@ -17,20 +19,71 @@ import {BasePage} from '@/components/ui/base-page';
 import {useMemoryProviders} from '@/hooks/useMemoryProviders';
 import {breadcrumbs} from '@/constants/routes';
 
-const formSchema = z.object({
-  memory_provider_name: z.string().min(1, 'Name is required').min(3, 'Name must be at least 3 characters'),
-  host: z.string().min(1, 'Host is required'),
-  port: z
-    .string()
-    .min(1, 'Port is required')
-    .refine(
-      (val) => {
-        const num = Number(val);
-        return !isNaN(num) && Number.isInteger(num) && num >= 1 && num <= 65535;
-      },
-      {message: 'Port must be an integer between 1 and 65535'}
-    )
-});
+const formSchema = z
+  .object({
+    memory_provider_name: z.string().min(1, 'Name is required').min(3, 'Name must be at least 3 characters'),
+    description: z.string().optional(),
+    url: z.string().min(1, 'URL is required').url('Must be a valid URL'),
+    authType: z.enum(['api_key', 'bearer', 'basic', 'custom', 'none']),
+    // Auth credentials - conditionally validated
+    api_key: z.string().optional(),
+    access_token: z.string().optional(),
+    refresh_token: z.string().optional(),
+    token_type: z.string().optional(),
+    expires_at: z.string().optional(),
+    username: z.string().optional(),
+    password: z.string().optional(),
+    header_name: z.string().optional(),
+    header_value: z.string().optional()
+  })
+  .refine(
+    (data) => {
+      if (data.authType === 'api_key') {
+        return !!data.api_key;
+      }
+      return true;
+    },
+    {
+      message: 'API key is required for API key authentication',
+      path: ['api_key']
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.authType === 'bearer') {
+        return !!data.access_token;
+      }
+      return true;
+    },
+    {
+      message: 'Access token is required for bearer authentication',
+      path: ['access_token']
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.authType === 'basic') {
+        return !!data.username && !!data.password;
+      }
+      return true;
+    },
+    {
+      message: 'Username and password are required for basic authentication',
+      path: ['username']
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.authType === 'custom') {
+        return !!data.header_name && !!data.header_value;
+      }
+      return true;
+    },
+    {
+      message: 'Header name and header value are required for custom authentication',
+      path: ['header_name']
+    }
+  );
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -48,23 +101,68 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
     resolver: zodResolver(formSchema),
     defaultValues: {
       memory_provider_name: '',
-      host: '',
-      port: ''
+      description: '',
+      url: '',
+      authType: 'none',
+      api_key: '',
+      access_token: '',
+      refresh_token: '',
+      token_type: '',
+      expires_at: '',
+      username: '',
+      password: '',
+      header_name: '',
+      header_value: ''
     }
   });
+
+  const authType = form.watch('authType');
 
   const handleSubmit = async (values: FormValues) => {
     try {
       setIsLoading(true);
       setError(null);
 
-      const response = await addProvider({
-        memory_provider_name: values.memory_provider_name,
-        config: {
-          host: values.host,
-          port: Number(values.port)
+      const auth: any = {
+        type: values.authType
+      };
+
+      if (values.authType !== 'none') {
+        const credentials: any = {};
+
+        if (values.authType === 'api_key' && values.api_key) {
+          credentials.api_key = values.api_key;
+        } else if (values.authType === 'bearer' && values.access_token) {
+          credentials.access_token = values.access_token;
+        } else if (values.authType === 'basic') {
+          if (values.username) {
+            credentials.username = values.username;
+          }
+          if (values.password) {
+            credentials.password = values.password;
+          }
+        } else if (values.authType === 'custom') {
+          if (values.header_name) {
+            credentials.header_name = values.header_name;
+          }
+          if (values.header_value) {
+            credentials.header_value = values.header_value;
+          }
         }
-      });
+
+        auth.credentials = credentials;
+      }
+
+      const payload = {
+        memory_provider_name: values.memory_provider_name,
+        ...(values.description && {description: values.description}),
+        config: {
+          url: values.url,
+          auth
+        }
+      };
+
+      const response = await addProvider(payload);
 
       toast.success(`Memory Provider "${response.memory_provider_name}" registered successfully`);
 
@@ -98,7 +196,17 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
           <Card className="w-full max-w-4xl">
             <CardContent className="p-8">
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6" autoComplete="off">
+                  {/* Hidden fields to prevent browser autofill */}
+                  <input type="text" name="fakeusernameremembered" style={{position: 'absolute', top: '-9999px'}} tabIndex={-1} autoComplete="off" />
+                  <input
+                    type="password"
+                    name="fakepasswordremembered"
+                    style={{position: 'absolute', top: '-9999px'}}
+                    tabIndex={-1}
+                    autoComplete="new-password"
+                  />
+
                   {error && (
                     <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md">
                       {error}
@@ -112,7 +220,7 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
                       <FormItem>
                         <FormLabel required>Provider Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="ioc-knowledge-memory-svc" {...field} />
+                          <Input placeholder="ioc-knowledge-memory-svc" autoComplete="off" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -121,12 +229,12 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
 
                   <FormField
                     control={form.control}
-                    name="host"
+                    name="description"
                     render={({field}) => (
                       <FormItem>
-                        <FormLabel required>Host</FormLabel>
+                        <FormLabel>Description</FormLabel>
                         <FormControl>
-                          <Input placeholder="ioc-knowledge-memory-svc" {...field} />
+                          <Textarea placeholder="Optional description of this memory provider" rows={3} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -135,17 +243,143 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
 
                   <FormField
                     control={form.control}
-                    name="port"
+                    name="url"
                     render={({field}) => (
                       <FormItem>
-                        <FormLabel required>Port</FormLabel>
+                        <FormLabel required>Provider URL</FormLabel>
                         <FormControl>
-                          <Input type="number" placeholder="9003" {...field} />
+                          <Input placeholder="http://localhost:8765" autoComplete="off" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
+
+                  <FormField
+                    control={form.control}
+                    name="authType"
+                    render={({field}) => (
+                      <FormItem>
+                        <FormLabel required>Authentication Type</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select authentication type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="api_key">API Key</SelectItem>
+                            <SelectItem value="bearer">Bearer Token</SelectItem>
+                            <SelectItem value="basic">Basic Auth</SelectItem>
+                            <SelectItem value="custom">Custom Header</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1.5 font-normal">
+                          Select how requests to this provider should be authenticated
+                        </p>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* API Key Authentication */}
+                  {authType === 'api_key' && (
+                    <FormField
+                      control={form.control}
+                      name="api_key"
+                      render={({field}) => (
+                        <FormItem>
+                          <FormLabel required>API Key</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="Enter API key" autoComplete="new-password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
+                  {/* Bearer Token Authentication */}
+                  {authType === 'bearer' && (
+                    <FormField
+                      control={form.control}
+                      name="access_token"
+                      render={({field}) => (
+                        <FormItem>
+                          <FormLabel required>Access Token</FormLabel>
+                          <FormControl>
+                            <Input type="password" placeholder="Enter access token" autoComplete="new-password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
+
+                  {/* Basic Auth */}
+                  {authType === 'basic' && (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="username"
+                        render={({field}) => (
+                          <FormItem>
+                            <FormLabel required>Username</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Enter username" autoComplete="off" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="password"
+                        render={({field}) => (
+                          <FormItem>
+                            <FormLabel required>Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" placeholder="Enter password" autoComplete="new-password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </>
+                  )}
+
+                  {/* Custom Header Authentication */}
+                  {authType === 'custom' && (
+                    <>
+                      <FormField
+                        control={form.control}
+                        name="header_name"
+                        render={({field}) => (
+                          <FormItem>
+                            <FormLabel required>Header Name</FormLabel>
+                            <FormControl>
+                              <Input placeholder="X-API-Key" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="header_value"
+                        render={({field}) => (
+                          <FormItem>
+                            <FormLabel required>Header Value</FormLabel>
+                            <FormControl>
+                              <Input type="password" placeholder="Enter header value" autoComplete="new-password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </>
+                  )}
 
                   <div className="flex w-full items-center justify-between pt-4">
                     {onCancel ? (

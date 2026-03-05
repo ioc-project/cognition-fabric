@@ -1,21 +1,54 @@
 import type {components} from '../generated/schema';
 
-export type MemoryProvider = components['schemas']['MemoryProviderDetail'];
-export type CreateMemoryProviderRequest = components['schemas']['MemoryProviderCreate'];
-export type UpdateMemoryProviderRequest = components['schemas']['MemoryProviderUpdate'];
+// Base types from generated schema
+export type MemoryProviderBase = components['schemas']['MemoryProviderDetail'];
+export type CreateMemoryProviderRequestBase = components['schemas']['MemoryProviderCreate'];
+export type UpdateMemoryProviderRequestBase = components['schemas']['MemoryProviderUpdate'];
 export type ListMemoryProviderResponse = components['schemas']['MemoryProviderList'];
 
-export type ProviderType = 'native' | 'mem0' | 'hindsight';
-export type AuthType = 'none' | 'api_key' | 'token';
+export interface MemoryProviderAuthCredentials {
+  api_key?: string;
+  access_token?: string;
+  refresh_token?: string;
+  token_type?: string;
+  expires_at?: string;
+  username?: string;
+  password?: string;
+  header_name?: string;
+  header_value?: string;
+}
 
-export const PROVIDER_TYPE_LABELS: Record<ProviderType, string> = {
-  native: 'Native',
-  mem0: 'Mem0',
-  hindsight: 'Hindsight'
-};
+export interface MemoryProviderAuthConfig {
+  type: 'none' | 'api_key' | 'bearer' | 'basic' | 'custom';
+  credentials?: MemoryProviderAuthCredentials;
+}
+
+export interface MemoryProviderConfig {
+  url: string;
+  auth?: MemoryProviderAuthConfig;
+}
+
+export interface MemoryProvider extends Omit<MemoryProviderBase, 'config'> {
+  description?: string;
+  config: MemoryProviderConfig | Record<string, unknown> | null;
+}
+
+export interface CreateMemoryProviderRequest extends Omit<CreateMemoryProviderRequestBase, 'config'> {
+  description?: string;
+  config: MemoryProviderConfig;
+}
+
+export interface UpdateMemoryProviderRequest extends Omit<UpdateMemoryProviderRequestBase, 'config'> {
+  description?: string;
+  config?: MemoryProviderConfig | Record<string, unknown>;
+}
+
+export type AuthType = 'none' | 'api_key' | 'bearer' | 'basic' | 'custom';
 
 export const AUTH_TYPE_LABELS: Record<AuthType, string> = {
   none: 'None',
   api_key: 'API Key',
-  token: 'Token'
+  bearer: 'Bearer Token',
+  basic: 'Basic Auth',
+  custom: 'Custom Header'
 };

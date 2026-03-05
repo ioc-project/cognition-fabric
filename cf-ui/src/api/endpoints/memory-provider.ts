@@ -1,10 +1,5 @@
 import {apiClient} from '../client';
-import type {components} from '../generated/schema';
-
-type MemoryProvider = components['schemas']['MemoryProviderDetail'];
-type CreateMemoryProviderRequest = components['schemas']['MemoryProviderCreate'];
-type UpdateMemoryProviderRequest = components['schemas']['MemoryProviderUpdate'];
-type ListMemoryProviderResponse = components['schemas']['MemoryProviderList'];
+import type {MemoryProvider, CreateMemoryProviderRequest, UpdateMemoryProviderRequest, ListMemoryProviderResponse} from '../types/memory-provider';
 
 export const memoryProviderApi = {
   async list(): Promise<ListMemoryProviderResponse> {
@@ -26,18 +21,18 @@ export const memoryProviderApi = {
     if (error) {
       throw error;
     }
-    return data;
+    return data as MemoryProvider;
   },
 
   async create(data: CreateMemoryProviderRequest): Promise<MemoryProvider> {
     const {data: response, error} = await apiClient.POST('/api/memory-providers', {
-      body: data
+      body: data as any
     });
 
     if (error) {
       throw error;
     }
-    return response;
+    return response as MemoryProvider;
   },
 
   async update(id: string, data: UpdateMemoryProviderRequest): Promise<MemoryProvider> {
@@ -45,13 +40,13 @@ export const memoryProviderApi = {
       params: {
         path: {memory_provider_id: id}
       },
-      body: data
+      body: data as any
     });
 
     if (error) {
       throw error;
     }
-    return response;
+    return response as MemoryProvider;
   },
 
   async delete(id: string): Promise<void> {
