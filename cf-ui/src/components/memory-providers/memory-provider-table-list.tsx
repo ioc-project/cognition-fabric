@@ -44,7 +44,7 @@ export function MemoryProviderTableList({providers, selectedId, onRowClick, onOp
         },
         {
           content: (
-            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-400">
               {provider.enabled ? 'Enabled' : 'Disabled'}
             </span>
           )
@@ -70,16 +70,18 @@ export function MemoryProviderTableList({providers, selectedId, onRowClick, onOp
                   <Edit className="w-4 h-4 mr-2" />
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-red-600 dark:text-red-400"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onOpenDelete({id: provider.memory_provider_id, name: provider.memory_provider_name});
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
+                {provider.memory_provider_name !== 'ioc-memory-provider' && (
+                  <DropdownMenuItem
+                    className="text-red-600 dark:text-red-400"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onOpenDelete({id: provider.memory_provider_id, name: provider.memory_provider_name});
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           ),

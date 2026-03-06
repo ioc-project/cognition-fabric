@@ -104,7 +104,7 @@ export function CfnList() {
                 <Button asChild variant="sidebar" className="gap-2">
                   <Link href={routes.cfn.create}>
                     <Plus className="w-4 h-4" />
-                    Create CFN
+                    Register Cognition Fabric Node
                   </Link>
                 </Button>
               </div>
@@ -122,8 +122,8 @@ export function CfnList() {
                   empty={{
                     icon: Network,
                     title: 'No Cognition Fabric Nodes exist.',
-                    description: 'Create a Cognition Fabric Node to start managing your distributed memory plane.',
-                    actionLabel: 'Create Cognition Fabric Node',
+                    description: 'Register a Cognition Fabric Node to start managing your distributed memory plane.',
+                    actionLabel: 'Register Node',
                     href: routes.cfn.create
                   }}
                 />

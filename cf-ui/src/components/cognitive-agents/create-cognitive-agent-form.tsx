@@ -54,7 +54,7 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
     } catch (err) {
       const errorMessage = parseError(err);
       setError(errorMessage);
-      toast.error(`Failed to create Cognition Engine: ${errorMessage}`);
+      toast.error(`Failed to register Cognition Engine: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -63,8 +63,8 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
   return (
     <div className="space-y-8 px-8 pt-4">
       <BasePage
-        title="Create Cognition Engine"
-        description="Create a new cognition engine in this workspace"
+        title="Register Cognition Engine"
+        description="Register a new cognition engine in this workspace"
         useBreadcrumbs
         breadcrumbs={breadcrumbs.cognitiveAgentCreate()}
       >

@@ -63,13 +63,13 @@ export function CreateCfnForm({onCancel}: CreateCfnFormProps) {
         port: parseInt(values.port, 10)
       });
 
-      toast.success(`Cognition Fabric Node "${response.cfn_name}" created successfully`);
+      toast.success(`Cognition Fabric Node "${response.cfn_name}" registered successfully`);
 
       router.push(routes.cfn.list);
     } catch (err) {
       const errorMessage = parseError(err);
       setError(errorMessage);
-      toast.error(`Failed to create Cognition Fabric Node: ${errorMessage}`);
+      toast.error(`Failed to register Cognition Fabric Node: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -86,8 +86,8 @@ export function CreateCfnForm({onCancel}: CreateCfnFormProps) {
   return (
     <div className="space-y-8 px-8 pt-4">
       <BasePage
-        title="Create Cognition Fabric Node"
-        description="Register a new Cognition Fabric Node."
+        title="Register Cognition Fabric Node"
+        description="Register a Cognition Fabric Node."
         useBreadcrumbs
         breadcrumbs={breadcrumbs.createCfn()}
       >
@@ -157,7 +157,7 @@ export function CreateCfnForm({onCancel}: CreateCfnFormProps) {
                       </Button>
                     )}
                     <Button type="submit" variant="sidebar" disabled={isLoading}>
-                      {isLoading ? 'Creating...' : 'Create Cognition Fabric Node'}
+                      {isLoading ? 'Registering...' : 'Register Cognition Fabric Node'}
                     </Button>
                   </div>
                 </form>

@@ -19,7 +19,7 @@ export interface MemoryProviderAuthCredentials {
 }
 
 export interface MemoryProviderAuthConfig {
-  type: 'none' | 'api_key' | 'bearer' | 'basic' | 'custom';
+  type: 'none' | 'token' | 'bearer' | 'basic' | 'custom';
   credentials?: MemoryProviderAuthCredentials;
 }
 
@@ -43,11 +43,11 @@ export interface UpdateMemoryProviderRequest extends Omit<UpdateMemoryProviderRe
   config?: MemoryProviderConfig | Record<string, unknown>;
 }
 
-export type AuthType = 'none' | 'api_key' | 'bearer' | 'basic' | 'custom';
+export type AuthType = 'none' | 'token' | 'bearer' | 'basic' | 'custom';
 
 export const AUTH_TYPE_LABELS: Record<AuthType, string> = {
   none: 'None',
-  api_key: 'API Key',
+  token: 'API Key',
   bearer: 'Bearer Token',
   basic: 'Basic Auth',
   custom: 'Custom Header'

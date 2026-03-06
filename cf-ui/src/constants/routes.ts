@@ -185,7 +185,7 @@ export const breadcrumbs = {
 
   createCfn: (): BreadcrumbItem[] => [
     {link: routes.cfn.list, text: 'Cognition Fabric Nodes'},
-    {link: '', text: 'Create', active: true}
+    {link: '', text: 'Register Cognition Fabric Node', active: true}
   ],
 
   memoryProvidersList: (): BreadcrumbItem[] => [

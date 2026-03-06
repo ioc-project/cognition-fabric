@@ -1,8 +1,7 @@
 'use client';
 
 import {useState} from 'react';
-import {Brain, Plus} from 'lucide-react';
-import Link from 'next/link';
+import {Brain} from 'lucide-react';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
@@ -48,18 +47,12 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
       <div className="space-y-8">
         <BasePage
           title="Cognition Engines"
-          description="Manage your Cognition Engines"
+          description="View your Cognition Engines"
           callToAction={
             cognitiveAgents.length > 0 ? (
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
                   {viewMode === 'table' ? 'Card View' : 'Table View'}
-                </Button>
-                <Button asChild variant="sidebar" className="gap-2">
-                  <Link href={routes.cognitiveAgents.create}>
-                    <Plus className="w-4 h-4" />
-                    Create Cognition Engine
-                  </Link>
                 </Button>
               </div>
             ) : undefined
@@ -76,9 +69,7 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
                   empty={{
                     icon: Brain,
                     title: 'No Cognition Engines yet.',
-                    description: 'Create your first cognition engine to get started.',
-                    actionLabel: 'Create Cognition Engine',
-                    href: routes.cognitiveAgents.create
+                    description: 'Cognition engines will appear here once they are created.'
                   }}
                 />
               </div>

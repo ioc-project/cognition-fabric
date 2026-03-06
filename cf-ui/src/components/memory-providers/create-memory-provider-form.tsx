@@ -24,9 +24,9 @@ const formSchema = z
     memory_provider_name: z.string().min(1, 'Name is required').min(3, 'Name must be at least 3 characters'),
     description: z.string().optional(),
     url: z.string().min(1, 'URL is required').url('Must be a valid URL'),
-    authType: z.enum(['api_key', 'bearer', 'basic', 'custom', 'none']),
+    authType: z.enum(['token', 'bearer', 'basic', 'custom', 'none']),
     // Auth credentials - conditionally validated
-    api_key: z.string().optional(),
+    token: z.string().optional(),
     access_token: z.string().optional(),
     refresh_token: z.string().optional(),
     token_type: z.string().optional(),
@@ -38,14 +38,14 @@ const formSchema = z
   })
   .refine(
     (data) => {
-      if (data.authType === 'api_key') {
-        return !!data.api_key;
+      if (data.authType === 'token') {
+        return !!data.token;
       }
       return true;
     },
     {
-      message: 'API key is required for API key authentication',
-      path: ['api_key']
+      message: 'API Key is required for API Key authentication',
+      path: ['token']
     }
   )
   .refine(
@@ -104,7 +104,7 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
       description: '',
       url: '',
       authType: 'none',
-      api_key: '',
+      token: '',
       access_token: '',
       refresh_token: '',
       token_type: '',
@@ -130,8 +130,8 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
       if (values.authType !== 'none') {
         const credentials: any = {};
 
-        if (values.authType === 'api_key' && values.api_key) {
-          credentials.api_key = values.api_key;
+        if (values.authType === 'token' && values.token) {
+          credentials.api_key = values.token;
         } else if (values.authType === 'bearer' && values.access_token) {
           credentials.access_token = values.access_token;
         } else if (values.authType === 'basic') {
@@ -268,11 +268,11 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="api_key">API Key</SelectItem>
+                            <SelectItem value="none">None</SelectItem>
+                            <SelectItem value="token">API Key</SelectItem>
                             <SelectItem value="bearer">Bearer Token</SelectItem>
                             <SelectItem value="basic">Basic Auth</SelectItem>
                             <SelectItem value="custom">Custom Header</SelectItem>
-                            <SelectItem value="none">None</SelectItem>
                           </SelectContent>
                         </Select>
                         <p className="text-xs text-muted-foreground mt-1.5 font-normal">
@@ -283,11 +283,11 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
                     )}
                   />
 
-                  {/* API Key Authentication */}
-                  {authType === 'api_key' && (
+                  {/* Token Authentication */}
+                  {authType === 'token' && (
                     <FormField
                       control={form.control}
-                      name="api_key"
+                      name="token"
                       render={({field}) => (
                         <FormItem>
                           <FormLabel required>API Key</FormLabel>

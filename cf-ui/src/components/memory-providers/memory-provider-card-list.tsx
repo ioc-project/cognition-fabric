@@ -30,7 +30,7 @@ export function MemoryProviderCardList({providers, selectedId, onCardClick, onOp
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-foreground">{provider.memory_provider_name}</span>
                 <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${provider.enabled ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'}`}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${provider.enabled ? 'bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'}`}
                 >
                   {provider.enabled ? 'Enabled' : 'Disabled'}
                 </span>
@@ -54,17 +54,19 @@ export function MemoryProviderCardList({providers, selectedId, onCardClick, onOp
                   <Edit className="w-4 h-4 mr-2" />
                   Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-red-600 dark:text-red-400"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onOpenDelete({id: provider.memory_provider_id, name: provider.memory_provider_name});
-                  }}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  Delete
-                </DropdownMenuItem>
+                {provider.memory_provider_name !== 'ioc-memory-provider' && (
+                  <DropdownMenuItem
+                    className="text-red-600 dark:text-red-400"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onOpenDelete({id: provider.memory_provider_id, name: provider.memory_provider_name});
+                    }}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
