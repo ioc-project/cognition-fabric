@@ -1,11 +1,7 @@
 'use client';
 
-import {useEffect, useState} from 'react';
+import {useEffect} from 'react';
 import {useParams, useRouter} from 'next/navigation';
-import useSWR from 'swr';
-import {swrKeys} from '@/lib/swr-config';
-import {cognitiveAgentApi} from '@/api/endpoints/cognitive-agent';
-import type {CognitiveAgentDetail} from '@/api/endpoints/cognitive-agent';
 import {BasePage} from '@/components/ui/base-page';
 import {Card, CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
@@ -13,78 +9,38 @@ import {Label} from '@/components/ui/label';
 import {Textarea} from '@/components/ui/textarea';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes} from '@/constants/routes';
-import {DATE_TIME_FORMAT_OPTIONS, parseError} from '@/lib/utils';
-import {ConfirmDialog} from '@/components/ui/confirm-dialog';
-import {DetailsPageActions} from '@/components/ui/details-page-actions';
-import {useConfirmDialog} from '@/hooks/useConfirmDialog';
-import {useCognitiveAgents} from '@/hooks/useCognitiveAgents';
-import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
-import {toast} from 'sonner';
+import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
+import {useCognitionEngine} from '@/hooks/useCognitionEngines';
 
 export default function CognitiveAgentDetailsPage() {
   const router = useRouter();
   const params = useParams();
-  const {defaultWorkspaceId} = useDefaultWorkspace();
 
-  const rawWorkspaceId = params?.id as string | string[] | undefined;
   const rawCognitiveAgentId = (params as Record<string, string | string[] | undefined>)?.cognitiveAgentId;
-  const workspaceIdFromParams = Array.isArray(rawWorkspaceId) ? rawWorkspaceId[0] : rawWorkspaceId;
-  const workspaceId = workspaceIdFromParams || defaultWorkspaceId;
   const cognitiveAgentId = Array.isArray(rawCognitiveAgentId) ? rawCognitiveAgentId[0] : rawCognitiveAgentId;
 
-  const {deleteCognitiveAgent} = useCognitiveAgents(workspaceId!);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const deleteDialog = useConfirmDialog<{id: string; name: string}>();
-
-  const {
-    data: cognitiveAgent,
-    error,
-    isLoading
-  } = useSWR<CognitiveAgentDetail>(workspaceId && cognitiveAgentId ? swrKeys.cognitiveAgentDetails(workspaceId, cognitiveAgentId) : null, () =>
-    cognitiveAgentApi.get(workspaceId as string, cognitiveAgentId as string)
-  );
+  const {cognitionEngine: cognitiveAgent, error, isLoading} = useCognitionEngine(cognitiveAgentId as string);
 
   useEffect(() => {
-    if (!workspaceId || !cognitiveAgentId) {
+    if (!cognitiveAgentId) {
       router.replace('/not-found');
     }
-  }, [workspaceId, cognitiveAgentId, router]);
+  }, [cognitiveAgentId, router]);
 
   const crumbs = cognitiveAgent
     ? [
         {link: routes.cognitiveAgents.list, text: 'Cognition Engines'},
-        {link: '', text: cognitiveAgent.cognitive_agent_name, active: true}
+        {link: '', text: cognitiveAgent.cognitive_engine_name, active: true}
       ]
     : undefined;
-
-  const handleDelete = async () => {
-    await deleteDialog.confirm(async (data) => {
-      try {
-        await deleteCognitiveAgent(data.id);
-        toast.success(`Cognition Engine "${data.name}" deleted successfully`);
-        router.push(routes.cognitiveAgents.list);
-      } catch (err) {
-        const errorMessage = parseError(err);
-        setDeleteError(errorMessage);
-        throw err;
-      }
-    });
-  };
 
   return (
     <>
       <BasePage
-        title={cognitiveAgent?.cognitive_agent_name || 'Cognition Engine'}
+        title={cognitiveAgent?.cognitive_engine_name || 'Cognition Engine'}
         description="View details about your cognition engine"
         useBreadcrumbs
         breadcrumbs={crumbs}
-        callToAction={
-          cognitiveAgent ? (
-            <DetailsPageActions
-              onDelete={() => deleteDialog.open({id: cognitiveAgent.cognitive_agent_id, name: cognitiveAgent.cognitive_agent_name})}
-            />
-          ) : undefined
-        }
       >
         <ConditionalSWRRenderer
           data={cognitiveAgent}
@@ -99,19 +55,15 @@ export default function CognitiveAgentDetailsPage() {
               <CardContent className="p-8">
                 <div className="space-y-8">
                   <div>
-                    <h3 className="text-lg font-semibold mb-4">Agent Information</h3>
+                    <h3 className="text-lg font-semibold mb-4">Engine Information</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label>Agent ID</Label>
-                        <Input value={cognitiveAgent?.cognitive_agent_id || ''} disabled readOnly className="font-mono text-xs" />
+                        <Label>Engine ID</Label>
+                        <Input value={cognitiveAgent?.cognitive_engine_id || ''} disabled readOnly className="font-mono text-xs" />
                       </div>
                       <div className="space-y-2">
                         <Label>Name</Label>
-                        <Input value={cognitiveAgent?.cognitive_agent_name || ''} disabled readOnly />
-                      </div>
-                      <div className="space-y-2 md:col-span-2">
-                        <Label>Description</Label>
-                        <Textarea value={cognitiveAgent?.description || 'N/A'} disabled readOnly className="resize-none" rows={2} />
+                        <Input value={cognitiveAgent?.cognitive_engine_name || ''} disabled readOnly />
                       </div>
                       <div className="space-y-2">
                         <Label>Status</Label>
@@ -119,7 +71,7 @@ export default function CognitiveAgentDetailsPage() {
                       </div>
                       <div className="space-y-2">
                         <Label>Workspace ID</Label>
-                        <Input value={cognitiveAgent?.workspace_id || workspaceId || ''} disabled readOnly className="font-mono text-xs" />
+                        <Input value={cognitiveAgent?.workspace_id || ''} disabled readOnly className="font-mono text-xs" />
                       </div>
                     </div>
                   </div>
@@ -202,16 +154,6 @@ export default function CognitiveAgentDetailsPage() {
           </div>
         </ConditionalSWRRenderer>
       </BasePage>
-      <ConfirmDialog
-        open={deleteDialog.isOpen}
-        onOpenChange={deleteDialog.close}
-        onConfirm={handleDelete}
-        title="Delete Cognition Engine"
-        description={deleteError ?? `Are you sure you want to delete "${deleteDialog.data?.name}"? This action cannot be undone.`}
-        confirmText="Delete"
-        variant="destructive"
-        loading={deleteDialog.isLoading}
-      />
     </>
   );
 }

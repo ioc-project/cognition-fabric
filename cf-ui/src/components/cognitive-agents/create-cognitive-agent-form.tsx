@@ -14,8 +14,6 @@ import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
 import {routes, breadcrumbs} from '@/constants/routes';
 import {toast} from 'sonner';
-import {useCognitiveAgents} from '@/hooks/useCognitiveAgents';
-import {parseError} from '@/lib/utils';
 
 const createCognitiveAgentSchema = z.object({
   cognitive_agent_name: z.string().min(1, 'Name is required').min(3, 'Name must be at least 3 characters'),
@@ -29,11 +27,12 @@ interface CreateCognitiveAgentFormProps {
   workspaceId: string;
 }
 
-export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentFormProps) {
-  const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const {addCognitiveAgent} = useCognitiveAgents(workspaceId);
+export function CreateCognitiveAgentForm({workspaceId: _workspaceId}: CreateCognitiveAgentFormProps) {
+  const _router = useRouter();
+  const [_isLoading, _setIsLoading] = useState(false);
+  const [_error, _setError] = useState<string | null>(null);
+  // NOTE: Cognition engines cannot be created via UI
+  // const {addCognitionEngine} = useCognitionEngines();
 
   const form = useForm<CreateCognitiveAgentFormData>({
     resolver: zodResolver(createCognitiveAgentSchema),
@@ -44,8 +43,12 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
     }
   });
 
-  const onSubmit = async (data: CreateCognitiveAgentFormData) => {
-    try {
+  const onSubmit = async (_data: CreateCognitiveAgentFormData) => {
+    // NOTE: Cognition engines cannot be created via UI
+    toast.error('Cognition engines cannot be created through the UI');
+    return;
+
+    /* try {
       setIsLoading(true);
       setError(null);
       await addCognitiveAgent(data);
@@ -57,7 +60,7 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
       toast.error(`Failed to register Cognition Engine: ${errorMessage}`);
     } finally {
       setIsLoading(false);
-    }
+    } */
   };
 
   return (
@@ -74,9 +77,9 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
             <CardContent className="p-8">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  {error && (
+                  {_error && (
                     <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md">
-                      {error}
+                      {_error}
                     </div>
                   )}
 
@@ -115,11 +118,11 @@ export function CreateCognitiveAgentForm({workspaceId}: CreateCognitiveAgentForm
                   />
 
                   <div className="flex w-full items-center justify-between pt-4">
-                    <Button asChild type="button" variant="outline" disabled={isLoading}>
+                    <Button asChild type="button" variant="outline" disabled={_isLoading}>
                       <Link href={routes.cognitiveAgents.list}>Cancel</Link>
                     </Button>
-                    <Button type="submit" variant="sidebar" disabled={isLoading}>
-                      {isLoading ? 'Creating...' : 'Create Cognition Engine'}
+                    <Button type="submit" variant="sidebar" disabled={_isLoading}>
+                      {_isLoading ? 'Creating...' : 'Create Cognition Engine'}
                     </Button>
                   </div>
                 </form>

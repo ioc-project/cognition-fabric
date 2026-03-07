@@ -7,40 +7,17 @@ import {Button} from '@/components/ui/button';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {ListShell} from '@/components/ui/list-shell';
 import {BasePage} from '@/components/ui/base-page';
-import {ConfirmDialog} from '@/components/ui/confirm-dialog';
-import {parseError} from '@/lib/utils';
-import {toast} from 'sonner';
-import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {routes} from '@/constants/routes';
-import {useCognitiveAgents} from '@/hooks/useCognitiveAgents';
+import {useCognitionEngines} from '@/hooks/useCognitionEngines';
 import {CognitiveAgentTableList} from '@/components/cognitive-agents/cognitive-agent-table-list';
 import {CognitiveAgentCardList} from '@/components/cognitive-agents/cognitive-agent-card-list';
 
-interface CognitiveAgentListProps {
-  workspaceId: string;
-}
-
-export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
+export function CognitiveAgentList() {
   const router = useRouter();
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const deleteDialog = useConfirmDialog<{id: string; name: string}>();
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {cognitiveAgents = [], isLoading, error, deleteCognitiveAgent} = useCognitiveAgents(workspaceId);
-
-  const handleDelete = async () => {
-    await deleteDialog.confirm(async (data) => {
-      try {
-        await deleteCognitiveAgent(data.id);
-        toast.success(`Cognition Engine "${data.name}" deleted successfully`);
-      } catch (err) {
-        const errorMessage = parseError(err);
-        setDeleteError(errorMessage);
-        throw err;
-      }
-    });
-  };
+  const {cognitionEngines = [], isLoading, error} = useCognitionEngines();
 
   return (
     <>
@@ -49,7 +26,7 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
           title="Cognition Engines"
           description="View your Cognition Engines"
           callToAction={
-            cognitiveAgents.length > 0 ? (
+            cognitionEngines.length > 0 ? (
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
                   {viewMode === 'table' ? 'Card View' : 'Table View'}
@@ -59,7 +36,7 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
           }
         >
           <ConditionalSWRRenderer
-            data={cognitiveAgents}
+            data={cognitionEngines}
             error={error}
             itemName="Cognition Engines"
             customIsLoading={isLoading}
@@ -77,46 +54,26 @@ export function CognitiveAgentList({workspaceId}: CognitiveAgentListProps) {
           >
             {viewMode === 'table' ? (
               <CognitiveAgentTableList
-                cognitiveAgents={cognitiveAgents}
-                workspaceId={workspaceId}
+                cognitiveAgents={cognitionEngines}
                 selectedId={selectedId}
                 onRowClick={(r) => {
-                  setSelectedId(r.cognitive_agent_id);
-                  router.push(routes.cognitiveAgents.details(r.cognitive_agent_id));
+                  setSelectedId(r.cognitive_engine_id);
+                  router.push(routes.cognitiveAgents.details(r.cognitive_engine_id));
                 }}
-                onOpenDelete={(payload) => deleteDialog.open(payload)}
               />
             ) : (
               <CognitiveAgentCardList
-                cognitiveAgents={cognitiveAgents}
-                workspaceId={workspaceId}
+                cognitiveAgents={cognitionEngines}
                 selectedId={selectedId}
                 onCardClick={(r) => {
-                  setSelectedId(r.cognitive_agent_id);
-                  router.push(routes.cognitiveAgents.details(r.cognitive_agent_id));
+                  setSelectedId(r.cognitive_engine_id);
+                  router.push(routes.cognitiveAgents.details(r.cognitive_engine_id));
                 }}
-                onOpenDelete={(payload) => deleteDialog.open(payload)}
               />
             )}
           </ConditionalSWRRenderer>
         </BasePage>
       </div>
-
-      <ConfirmDialog
-        open={deleteDialog.isOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDeleteError(null);
-            deleteDialog.close();
-          }
-        }}
-        onConfirm={handleDelete}
-        title={`Delete ${deleteDialog.data?.name || 'Cognition Engine'}`}
-        description={deleteError ?? `Delete "${deleteDialog.data?.name}"? This action is permanent and cannot be undone.`}
-        confirmText="Delete"
-        loading={deleteDialog.isLoading}
-        variant="destructive"
-      />
     </>
   );
 }

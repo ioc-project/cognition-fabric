@@ -29,12 +29,10 @@ export interface MemoryProviderConfig {
 }
 
 export interface MemoryProvider extends Omit<MemoryProviderBase, 'config'> {
-  description?: string;
   config: MemoryProviderConfig | Record<string, unknown> | null;
 }
 
 export interface CreateMemoryProviderRequest extends Omit<CreateMemoryProviderRequestBase, 'config'> {
-  description?: string;
   config: MemoryProviderConfig;
 }
 

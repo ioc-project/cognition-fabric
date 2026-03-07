@@ -53,7 +53,7 @@ export function EditWorkspaceDialog({workspace, open, onOpenChange}: EditWorkspa
     await swrMutate(swrKeys.workspace(workspace.id));
     await swrMutate(['cfn-list', workspace.id]);
     await swrMutate(swrKeys.mas(workspace.id));
-    await swrMutate(swrKeys.cognitiveAgents(workspace.id));
+    await swrMutate(swrKeys.cognitionEngines());
 
     onOpenChange(false);
   };

@@ -12,7 +12,6 @@ import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 import {routes, breadcrumbs} from '@/constants/routes';
 import {LoaderRelative} from '@/components/ui/loading';
 import {useMAS} from '@/hooks/useMAS';
-import {useCognitiveAgents} from '@/hooks/useCognitiveAgents';
 import {useCfn} from '@/hooks/useCfn';
 import {ObjectOptionsDropdown} from '@/components/ui/object-options-dropdown';
 import {DropdownMenuItem} from '@/components/ui/dropdown-menu';
@@ -28,7 +27,6 @@ export function WorkspaceDetails() {
   const {workspaceId, workspace, isLoading: workspaceLoading} = useCurrentWorkspace();
 
   const {masList, isLoading: masLoading} = useMAS(workspaceId || '');
-  const {cognitiveAgents = [], isLoading: cognitiveAgentsLoading} = useCognitiveAgents(workspaceId || '');
   const {cfns = [], isLoading: cfnLoading} = useCfn();
   // const {members} = useWorkspaceMembers(workspaceId || '');
 
@@ -71,23 +69,6 @@ export function WorkspaceDetails() {
       })
       .slice(0, 4);
   }, [masList]);
-
-  const latestCognitiveAgents = useMemo(() => {
-    return [...cognitiveAgents]
-      .sort((a, b) => {
-        if (!a.created_at && !b.created_at) {
-          return 0;
-        }
-        if (!a.created_at) {
-          return 1;
-        }
-        if (!b.created_at) {
-          return -1;
-        }
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      })
-      .slice(0, 4);
-  }, [cognitiveAgents]);
 
   // Get the CFN associated with this workspace
   const workspaceCfn = useMemo(() => {
@@ -162,12 +143,6 @@ export function WorkspaceDetails() {
             </div>
             <div className="p-4 border rounded-lg bg-card soft-card">
               <div className="flex flex-col gap-6">
-                <h4 className="card-title">Cognition Engines</h4>
-                <p className="card-stats">{cognitiveAgents.length}</p>
-              </div>
-            </div>
-            <div className="p-4 border rounded-lg bg-card soft-card">
-              <div className="flex flex-col gap-6">
                 <h4 className="card-title">Cognition Fabric Nodes</h4>
                 <p className="card-stats">{workspace?.cfn_id ? 1 : 0}</p>
               </div>
@@ -225,47 +200,6 @@ export function WorkspaceDetails() {
                   ))}
                 </div>
               </div>
-
-              {cognitiveAgentsLoading && cognitiveAgents.length === 0 ? (
-                <div className="p-6 border rounded-lg bg-card soft-card">
-                  <LoaderRelative />
-                </div>
-              ) : (
-                cognitiveAgents.length > 0 && (
-                  <div className="p-6 border rounded-lg bg-card soft-card">
-                    <div className="flex items-center justify-between mb-6">
-                      <h2 className="text-base font-medium">Latest Cognition Engines</h2>
-                      <div className="flex gap-2">
-                        <Button asChild size="sm" variant="sidebar">
-                          <Link href={routes.workspaces.cognitiveAgents.list(workspaceId!)}>View All</Link>
-                        </Button>
-                        <Button asChild size="sm" variant="sidebar">
-                          <Link href={routes.workspaces.cognitiveAgents.create(workspaceId!)}>Create</Link>
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
-                      {latestCognitiveAgents.map((r) => (
-                        <div
-                          key={r.cognitive_agent_id}
-                          className="p-4 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors h-full"
-                        >
-                          <div className="flex flex-col h-full">
-                            <div className="flex-1">
-                              <h3 className="text-sm font-medium text-foreground mb-2">{r.cognitive_agent_name}</h3>
-                            </div>
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span>{r.created_at ? new Date(r.created_at).toLocaleDateString() : 'Unknown date'}</span>
-                              <span>{r.enabled ? 'Enabled' : 'Disabled'}</span>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )
-              )}
 
               {cfnLoading && !workspaceCfn && workspace?.cfn_id ? (
                 <div className="p-6 border rounded-lg bg-card soft-card">

@@ -755,6 +755,46 @@ export interface paths {
         patch: operations["update_policy_api_workspaces__workspace_id__policies__policy_id__patch"];
         trace?: never;
     };
+    "/api/audit-events/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List CFN Audit Events
+         * @description Retrieve a paginated list of audit events from the CFN control-plane database (cfn_cp). Supports optional filtering by `resource_type` and `audit_type`.
+         */
+        get: operations["list_audit_events_api_audit_events__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/audit-events/{audit_event_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get CFN Audit Event by ID
+         * @description Retrieve a single audit event from the CFN control-plane database by its UUID.
+         */
+        get: operations["get_audit_event_api_audit_events__audit_event_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -801,6 +841,95 @@ export interface components {
             config?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /**
+         * AuditCfnEventListResponse
+         * @description Response model for listing CFN audit events.
+         */
+        AuditCfnEventListResponse: {
+            /**
+             * Total
+             * @description Total number of audit events matching the query
+             */
+            total: number;
+            /**
+             * Audit Events
+             * @description List of audit events
+             */
+            audit_events: components["schemas"]["AuditCfnEventResponse"][];
+        };
+        /**
+         * AuditCfnEventResponse
+         * @description Response model for CFN audit events from cfn_cp database.
+         */
+        AuditCfnEventResponse: {
+            /**
+             * Id
+             * Format: uuid
+             * @description Unique audit event ID (UUID)
+             */
+            id: string;
+            /**
+             * Operation Id
+             * @description Operation identifier
+             */
+            operation_id?: string | null;
+            /**
+             * Resource Type
+             * @description Type of the resource (e.g. MAS, WORKSPACE)
+             */
+            resource_type: string;
+            /**
+             * Resource Identifier
+             * @description Identifier of the resource
+             */
+            resource_identifier: string;
+            /**
+             * Audit Type
+             * @description Type of audit event (e.g. RESOURCE_CREATED)
+             */
+            audit_type: string;
+            /**
+             * Audit Resource Identifier
+             * @description Identifier of the audited resource
+             */
+            audit_resource_identifier: string;
+            /**
+             * Audit Information
+             * @description JSONB audit event details
+             */
+            audit_information?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Audit Extra Information
+             * @description Additional information as text
+             */
+            audit_extra_information?: string | null;
+            /**
+             * Created By
+             * Format: uuid
+             * @description UUID of the user who created the event
+             */
+            created_by: string;
+            /**
+             * Created On
+             * Format: date-time
+             * @description Timestamp when the event was created
+             */
+            created_on: string;
+            /**
+             * Last Modified By
+             * Format: uuid
+             * @description UUID of the user who last modified the event
+             */
+            last_modified_by: string;
+            /**
+             * Last Modified On
+             * Format: date-time
+             * @description Timestamp when the event was last modified
+             */
+            last_modified_on: string;
         };
         /**
          * CognitiveAgentCreate
@@ -1313,6 +1442,76 @@ export interface components {
             detail?: components["schemas"]["ValidationError"][];
         };
         /**
+         * MemoryProviderAuthConfig
+         * @description Authentication configuration for memory provider
+         */
+        MemoryProviderAuthConfig: {
+            /**
+             * Type
+             * @description Auth type: none, token, bearer, basic, custom
+             * @default none
+             * @enum {string}
+             */
+            type: "none" | "token" | "bearer" | "basic" | "custom";
+            /** @description Auth credentials (will be encrypted in database) */
+            credentials?: components["schemas"]["MemoryProviderAuthCredentials"] | null;
+        };
+        /**
+         * MemoryProviderAuthCredentials
+         * @description Auth credentials - structure varies by auth type
+         */
+        MemoryProviderAuthCredentials: {
+            /**
+             * Api Key
+             * @description API key for token-based auth
+             */
+            api_key?: string | null;
+            /**
+             * Access Token
+             * @description Access token for bearer auth
+             */
+            access_token?: string | null;
+            /**
+             * Username
+             * @description Username for basic auth
+             */
+            username?: string | null;
+            /**
+             * Password
+             * @description Password for basic auth
+             */
+            password?: string | null;
+            /**
+             * Header Name
+             * @description Custom header name
+             */
+            header_name?: string | null;
+            /**
+             * Header Value
+             * @description Custom header value
+             */
+            header_value?: string | null;
+        };
+        /**
+         * MemoryProviderConfig
+         * @description Memory Provider configuration
+         */
+        MemoryProviderConfig: {
+            /**
+             * Url
+             * @description Provider URL (e.g., http://localhost:8765)
+             */
+            url: string;
+            /** @description Authentication configuration */
+            auth?: components["schemas"]["MemoryProviderAuthConfig"];
+            /**
+             * Shared
+             * @description Whether provider is shared
+             * @default false
+             */
+            shared: boolean | null;
+        };
+        /**
          * MemoryProviderCreate
          * @description Schema for creating a memory provider
          */
@@ -1323,12 +1522,12 @@ export interface components {
              */
             memory_provider_name: string;
             /**
-             * Config
-             * @description Provider-specific configuration
+             * Description
+             * @description Description of the memory provider
              */
-            config?: {
-                [key: string]: unknown;
-            } | null;
+            description?: string | null;
+            /** @description Provider configuration */
+            config: components["schemas"]["MemoryProviderConfig"];
         };
         /**
          * MemoryProviderDetail
@@ -1339,6 +1538,8 @@ export interface components {
             memory_provider_id: string;
             /** Memory Provider Name */
             memory_provider_name: string;
+            /** Description */
+            description: string | null;
             /** Config */
             config: {
                 [key: string]: unknown;
@@ -1384,12 +1585,12 @@ export interface components {
              */
             memory_provider_name?: string | null;
             /**
-             * Config
-             * @description Provider-specific configuration
+             * Description
+             * @description Description of the memory provider
              */
-            config?: {
-                [key: string]: unknown;
-            } | null;
+            description?: string | null;
+            /** @description Provider configuration */
+            config?: components["schemas"]["MemoryProviderConfig"] | null;
             /**
              * Enabled
              * @description Whether provider is enabled
@@ -3236,6 +3437,96 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
+            };
+        };
+    };
+    list_audit_events_api_audit_events__get: {
+        parameters: {
+            query?: {
+                /** @description Number of records to skip for pagination */
+                skip?: number;
+                /** @description Maximum number of records to return */
+                limit?: number;
+                /** @description Filter by resource type (e.g. MAS, WORKSPACE, COGNITIVE_FABRIC_NODE) */
+                resource_type?: string | null;
+                /** @description Filter by audit type (e.g. RESOURCE_CREATED, RESOURCE_UPDATED, RESOURCE_DELETED) */
+                audit_type?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description List of audit events returned successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditCfnEventListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error while querying cfn_cp database */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    get_audit_event_api_audit_events__audit_event_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                audit_event_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Audit event returned successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditCfnEventResponse"];
+                };
+            };
+            /** @description Audit event not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+            /** @description Internal server error while querying cfn_cp database */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

@@ -1,82 +1,46 @@
 'use client';
 
 import useSWR from 'swr';
-import {cognitiveAgentApi} from '@/api/endpoints/cognitive-agent';
-import type {CognitiveAgentDetail, CognitiveAgentListItem, CognitiveAgentCreate, CognitiveAgentUpdate} from '@/api/endpoints/cognitive-agent';
+import {cognitionEngineApi} from '@/api/endpoints/cognition-engine';
+import type {CognitionEngineDetail, CognitionEngineListItem} from '@/api/endpoints/cognition-engine';
 import {swrKeys} from '@/lib/swr-config';
 import {parseError, sortByCreatedAtDesc} from '@/lib/utils';
-import {useInvalidateMutation} from './useSWRResource';
+import {useDefaultWorkspace} from './useDefaultWorkspace';
 
-export function useCognitiveAgents(workspaceId: string) {
-  const {data, error, isLoading, isValidating, mutate} = useSWR<CognitiveAgentListItem[]>(
-    workspaceId ? swrKeys.cognitiveAgents(workspaceId) : null,
-    () => cognitiveAgentApi.list(workspaceId),
+export function useCognitionEngines() {
+  const {defaultWorkspaceId} = useDefaultWorkspace();
+
+  const {data, error, isLoading, isValidating, mutate} = useSWR<CognitionEngineListItem[]>(
+    defaultWorkspaceId ? swrKeys.cognitionEngines() : null,
+    () => cognitionEngineApi.list(defaultWorkspaceId!),
     {revalidateOnMount: true, keepPreviousData: true}
   );
 
-  const {run: runAddCognitiveAgent} = useInvalidateMutation(
-    {keys: swrKeys.cognitiveAgents(workspaceId), prefixes: [['cognitive-agents', workspaceId]]},
-    (payload: CognitiveAgentCreate) => cognitiveAgentApi.create(workspaceId, payload)
-  );
-
-  const addCognitiveAgent = async (payload: CognitiveAgentCreate) => {
-    const response = await runAddCognitiveAgent(payload);
-    await mutate(undefined, {revalidate: true});
-    return response;
-  };
-
-  const {run: runUpdateCognitiveAgent} = useInvalidateMutation(
-    {keys: swrKeys.cognitiveAgents(workspaceId), prefixes: [['cognitive-agents', workspaceId]]},
-    ({cognitiveAgentId, payload}: {cognitiveAgentId: string; payload: CognitiveAgentUpdate}) =>
-      cognitiveAgentApi.update(workspaceId, cognitiveAgentId, payload)
-  );
-
-  const updateCognitiveAgent = async (cognitiveAgentId: string, payload: CognitiveAgentUpdate) => {
-    const response = await runUpdateCognitiveAgent({cognitiveAgentId, payload});
-    await mutate(undefined, {revalidate: true});
-    return response;
-  };
-
-  const {run: runDeleteCognitiveAgent} = useInvalidateMutation(
-    {keys: swrKeys.cognitiveAgents(workspaceId), prefixes: [['cognitive-agents', workspaceId]]},
-    (cognitiveAgentId: string) => cognitiveAgentApi.delete(workspaceId, cognitiveAgentId)
-  );
-
-  const deleteCognitiveAgent = async (cognitiveAgentId: string) => {
-    try {
-      await runDeleteCognitiveAgent(cognitiveAgentId);
-      await mutate(undefined, {revalidate: true});
-    } catch (err) {
-      throw new Error(parseError(err));
-    }
-  };
-
-  const cognitiveAgents = data ? sortByCreatedAtDesc(data) : undefined;
+  const cognitionEngines = data ? sortByCreatedAtDesc(data) : undefined;
 
   return {
-    cognitiveAgents,
+    cognitionEngines,
     isLoading,
     isValidating,
-    error,
-    mutate,
-    addCognitiveAgent,
-    updateCognitiveAgent,
-    deleteCognitiveAgent
+    error: error ? parseError(error) : null,
+    mutate
   };
 }
 
-export function useCognitiveAgent(workspaceId: string, cognitiveAgentId: string) {
-  const {data, error, isLoading, isValidating, mutate} = useSWR<CognitiveAgentDetail>(
-    workspaceId && cognitiveAgentId ? swrKeys.cognitiveAgentDetails(workspaceId, cognitiveAgentId) : null,
-    () => cognitiveAgentApi.get(workspaceId, cognitiveAgentId),
+export function useCognitionEngine(cognitionEngineId: string) {
+  const {defaultWorkspaceId} = useDefaultWorkspace();
+
+  const {data, error, isLoading, isValidating, mutate} = useSWR<CognitionEngineDetail>(
+    defaultWorkspaceId && cognitionEngineId ? swrKeys.cognitionEngineDetails(cognitionEngineId) : null,
+    () => cognitionEngineApi.get(defaultWorkspaceId!, cognitionEngineId),
     {revalidateOnMount: true, keepPreviousData: true}
   );
 
   return {
-    cognitiveAgent: data,
+    cognitionEngine: data,
     isLoading,
     isValidating,
-    error,
+    error: error ? parseError(error) : null,
     mutate
   };
 }
