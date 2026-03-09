@@ -214,7 +214,7 @@ class CognitiveFabricNodeService:
 
                 # If this is the default-cfn and Default Workspace exists without a CFN, associate them
                 workspace_ids_list = []
-                if cfn_data.cfn_name == os.getenv("CFN_NAME", "default-cfn"):
+                if cfn_data.cfn_name == os.getenv("CFN_NAME", "My Cognition Fabric Node"):
                     default_workspace = (
                         session.query(WorkspaceModel)
                         .filter(
