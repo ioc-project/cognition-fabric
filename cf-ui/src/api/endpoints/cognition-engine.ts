@@ -7,7 +7,7 @@ type CognitionEngineList = components['schemas']['CognitiveEngineList'];
 
 export const cognitionEngineApi = {
   async list(workspaceId: string): Promise<CognitionEngineListItem[]> {
-    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/cognitive-engines', {
+    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/cognition-engines', {
       params: {
         path: {workspace_id: workspaceId}
       }
@@ -20,7 +20,7 @@ export const cognitionEngineApi = {
   },
 
   async get(workspaceId: string, id: string): Promise<CognitionEngineDetail> {
-    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/cognitive-engines/{cognitive_engine_id}', {
+    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/cognition-engines/{cognitive_engine_id}', {
       params: {
         path: {workspace_id: workspaceId, cognitive_engine_id: id}
       }

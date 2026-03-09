@@ -651,7 +651,7 @@ export interface paths {
         patch: operations["update_cognitive_agent_api_workspaces__workspace_id__cognitive_agents__cognitive_agent_id__patch"];
         trace?: never;
     };
-    "/api/workspaces/{workspace_id}/cognitive-engines": {
+    "/api/workspaces/{workspace_id}/cognition-engines": {
         parameters: {
             query?: never;
             header?: never;
@@ -659,23 +659,23 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List Cognitive Engines
-         * @description Get list of all cognitive engines in workspace
+         * List Cognition Engines
+         * @description Get list of all cognition engines in workspace
          */
-        get: operations["list_cognitive_engines_api_workspaces__workspace_id__cognitive_engines_get"];
+        get: operations["list_cognitive_engines_api_workspaces__workspace_id__cognition_engines_get"];
         put?: never;
         /**
-         * Create Cognitive Engine
-         * @description Create a new cognitive engine in workspace
+         * Create Cognition Engine
+         * @description Create a new cognition engine in workspace
          */
-        post: operations["create_cognitive_engine_api_workspaces__workspace_id__cognitive_engines_post"];
+        post: operations["create_cognitive_engine_api_workspaces__workspace_id__cognition_engines_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/workspaces/{workspace_id}/cognitive-engines/{cognitive_engine_id}": {
+    "/api/workspaces/{workspace_id}/cognition-engines/{cognitive_engine_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -683,24 +683,24 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Cognitive Engine
-         * @description Get details of a specific cognitive engine
+         * Get Cognition Engine
+         * @description Get details of a specific cognition engine
          */
-        get: operations["get_cognitive_engine_api_workspaces__workspace_id__cognitive_engines__cognitive_engine_id__get"];
+        get: operations["get_cognitive_engine_api_workspaces__workspace_id__cognition_engines__cognitive_engine_id__get"];
         put?: never;
         post?: never;
         /**
-         * Delete Cognitive Engine
-         * @description Delete a cognitive engine (soft delete)
+         * Delete Cognition Engine
+         * @description Delete a cognition engine (soft delete)
          */
-        delete: operations["delete_cognitive_engine_api_workspaces__workspace_id__cognitive_engines__cognitive_engine_id__delete"];
+        delete: operations["delete_cognitive_engine_api_workspaces__workspace_id__cognition_engines__cognitive_engine_id__delete"];
         options?: never;
         head?: never;
         /**
-         * Update Cognitive Engine
-         * @description Update an existing cognitive engine
+         * Update Cognition Engine
+         * @description Update an existing cognition engine
          */
-        patch: operations["update_cognitive_engine_api_workspaces__workspace_id__cognitive_engines__cognitive_engine_id__patch"];
+        patch: operations["update_cognitive_engine_api_workspaces__workspace_id__cognition_engines__cognitive_engine_id__patch"];
         trace?: never;
     };
     "/api/workspaces/{workspace_id}/policies": {
@@ -3104,7 +3104,7 @@ export interface operations {
             };
         };
     };
-    list_cognitive_engines_api_workspaces__workspace_id__cognitive_engines_get: {
+    list_cognitive_engines_api_workspaces__workspace_id__cognition_engines_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -3135,7 +3135,7 @@ export interface operations {
             };
         };
     };
-    create_cognitive_engine_api_workspaces__workspace_id__cognitive_engines_post: {
+    create_cognitive_engine_api_workspaces__workspace_id__cognition_engines_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -3170,7 +3170,7 @@ export interface operations {
             };
         };
     };
-    get_cognitive_engine_api_workspaces__workspace_id__cognitive_engines__cognitive_engine_id__get: {
+    get_cognitive_engine_api_workspaces__workspace_id__cognition_engines__cognitive_engine_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -3202,7 +3202,7 @@ export interface operations {
             };
         };
     };
-    delete_cognitive_engine_api_workspaces__workspace_id__cognitive_engines__cognitive_engine_id__delete: {
+    delete_cognitive_engine_api_workspaces__workspace_id__cognition_engines__cognitive_engine_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -3236,7 +3236,7 @@ export interface operations {
             };
         };
     };
-    update_cognitive_engine_api_workspaces__workspace_id__cognitive_engines__cognitive_engine_id__patch: {
+    update_cognitive_engine_api_workspaces__workspace_id__cognition_engines__cognitive_engine_id__patch: {
         parameters: {
             query?: never;
             header?: never;
