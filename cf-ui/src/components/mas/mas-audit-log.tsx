@@ -536,10 +536,24 @@ export function MASAuditLog({masId, workspaceId, masName, agents}: MASAuditLogPr
 
   const masEventsToDisplay = parsedEvents;
 
+  // Filter to show only MAS-level events (not agent events)
+  const getMASOnlyEvents = () => {
+    return parsedEvents
+      .filter((event) => event.resource_type === 'MAS')
+      .sort((a, b) => new Date(b.created_on).getTime() - new Date(a.created_on).getTime());
+  };
+
+  // Filter to show specific agent events
   const getAgentEventsForMAS = (agentId: string) => {
     return parsedEvents
       .filter((event) => event.resource_identifier === agentId)
       .sort((a, b) => new Date(b.created_on).getTime() - new Date(a.created_on).getTime());
+  };
+
+  const getFilteredEvents = () => {
+    if (!selectedAgentId) return masEventsToDisplay;
+    if (selectedAgentId === '__MAS__') return getMASOnlyEvents();
+    return getAgentEventsForMAS(selectedAgentId);
   };
 
   const toggleExpanded = (eventId: string) => {
@@ -615,29 +629,30 @@ export function MASAuditLog({masId, workspaceId, masName, agents}: MASAuditLogPr
                 <div className="mx-6 mt-4 mb-6 flex items-center gap-4 pb-4 border-b">
                   <TabsList className="w-auto">
                     <TabsTrigger value="mas-events" className="whitespace-nowrap" onClick={() => setSelectedAgentId(null)}>
-                      MAS Events
+                      All Multi-Agentic System Events
                     </TabsTrigger>
                   </TabsList>
 
-                  {agents && agents.length > 0 && (
-                    <Select value={selectedAgentId || ''} onValueChange={(value) => setSelectedAgentId(value || null)}>
-                      <SelectTrigger className="w-[250px]">
-                        <SelectValue placeholder="All agents" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {agents.map((agent) => (
+                  <Select value={selectedAgentId || ''} onValueChange={(value) => setSelectedAgentId(value || null)}>
+                    <SelectTrigger className="w-[250px]">
+                      <SelectValue placeholder="Filter events" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__MAS__">{masName}</SelectItem>
+                      {agents &&
+                        agents.length > 0 &&
+                        agents.map((agent) => (
                           <SelectItem key={agent.agent_id} value={agent.agent_id}>
                             {agent.agent_id}
                           </SelectItem>
                         ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
                   <TabsContent value="mas-events" className="mt-4">
-                    {selectedAgentId ? renderEventsList(getAgentEventsForMAS(selectedAgentId)) : renderEventsList(masEventsToDisplay)}
+                    {renderEventsList(getFilteredEvents())}
                   </TabsContent>
                 </div>
               </Tabs>

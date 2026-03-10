@@ -6,7 +6,7 @@ import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 import {routes} from '@/constants/routes';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import Link from 'next/link';
-import {MoreVertical, Shield} from 'lucide-react';
+import {MoreVertical} from 'lucide-react';
 import type {CognitionEngineListItem} from '@/api/endpoints/cognition-engine';
 
 export interface CognitiveAgentCardListProps {
@@ -29,12 +29,15 @@ export function CognitiveAgentCardList({cognitiveAgents, selectedId, onCardClick
             <div className="flex-1 mr-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-foreground">{r.cognitive_engine_name}</span>
-                {!r.enabled && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                    <Shield className="w-3 h-3" />
-                    Disabled
-                  </span>
-                )}
+                <span
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    r.enabled
+                      ? 'bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
+                  }`}
+                >
+                  {r.enabled ? 'Enabled' : 'Disabled'}
+                </span>
               </div>
             </div>
             <DropdownMenu>

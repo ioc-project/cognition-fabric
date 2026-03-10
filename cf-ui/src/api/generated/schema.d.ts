@@ -90,7 +90,7 @@ export interface paths {
          *
          *     CFN must send heartbeat to change status from offline to online.
          */
-        post: operations["create_cfn_node_api_cognitive_fabric_nodes_register_post"];
+        post: operations["create_cfn_node_api_cognition_fabric_nodes_register_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -113,7 +113,7 @@ export interface paths {
          *
          *     Returns all CFN nodes (enabled and disabled). Deleted CFNs are never included.
          */
-        get: operations["list_cfn_nodes_api_cognitive_fabric_nodes_get"];
+        get: operations["list_cfn_nodes_api_cognition_fabric_nodes_get"];
         put?: never;
         /**
          * Create Cfn Node
@@ -138,7 +138,7 @@ export interface paths {
          *
          *     CFN must send heartbeat to change status from offline to online.
          */
-        post: operations["create_cfn_node_api_cognitive_fabric_nodes_post"];
+        post: operations["create_cfn_node_api_cognition_fabric_nodes_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -170,7 +170,7 @@ export interface paths {
          *     This endpoint retrieves information for both enabled and disabled CFNs.
          *     Deleted CFNs will return 404 Not Found.
          */
-        get: operations["get_cfn_node_api_cognitive_fabric_nodes__cfn_id__get"];
+        get: operations["get_cfn_node_api_cognition_fabric_nodes__cfn_id__get"];
         /**
          * Update Cfn Node
          * @description Update CFN node information
@@ -188,7 +188,7 @@ export interface paths {
          *
          *     The config is automatically regenerated with each update to ensure CFN has the latest configuration.
          */
-        put: operations["update_cfn_node_api_cognitive_fabric_nodes__cfn_id__put"];
+        put: operations["update_cfn_node_api_cognition_fabric_nodes__cfn_id__put"];
         post?: never;
         /**
          * Delete Cfn Node
@@ -210,7 +210,7 @@ export interface paths {
          *
          *     No response body (204 No Content).
          */
-        delete: operations["delete_cfn_node_api_cognitive_fabric_nodes__cfn_id__delete"];
+        delete: operations["delete_cfn_node_api_cognition_fabric_nodes__cfn_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -245,7 +245,7 @@ export interface paths {
          *       - memory_providers: Global memory providers
          *       - workspaces: List of workspace details with MAS, cognitive agents, engines
          */
-        patch: operations["enable_cfn_node_api_cognitive_fabric_nodes__cfn_id__enable_patch"];
+        patch: operations["enable_cfn_node_api_cognition_fabric_nodes__cfn_id__enable_patch"];
         trace?: never;
     };
     "/api/cognition-fabric-nodes/{cfn_id}/disable": {
@@ -279,7 +279,7 @@ export interface paths {
          *     - Full CFN details with enabled=False
          *     - **config**: Configuration (preserved from last state)
          */
-        patch: operations["disable_cfn_node_api_cognitive_fabric_nodes__cfn_id__disable_patch"];
+        patch: operations["disable_cfn_node_api_cognition_fabric_nodes__cfn_id__disable_patch"];
         trace?: never;
     };
     "/api/cognition-fabric-nodes/{cfn_id}/heartbeat": {
@@ -305,7 +305,7 @@ export interface paths {
          *     Note: This endpoint requires authentication but not write access.
          *     Disabled or deleted nodes will receive 403 Forbidden.
          */
-        put: operations["cfn_heartbeat_api_cognitive_fabric_nodes__cfn_id__heartbeat_put"];
+        put: operations["cfn_heartbeat_api_cognition_fabric_nodes__cfn_id__heartbeat_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -2129,7 +2129,7 @@ export interface operations {
             };
         };
     };
-    create_cfn_node_api_cognitive_fabric_nodes_register_post: {
+    create_cfn_node_api_cognition_fabric_nodes_register_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -2162,7 +2162,7 @@ export interface operations {
             };
         };
     };
-    list_cfn_nodes_api_cognitive_fabric_nodes_get: {
+    list_cfn_nodes_api_cognition_fabric_nodes_get: {
         parameters: {
             query?: {
                 /** @description Filter by workspace ID */
@@ -2196,7 +2196,7 @@ export interface operations {
             };
         };
     };
-    create_cfn_node_api_cognitive_fabric_nodes_post: {
+    create_cfn_node_api_cognition_fabric_nodes_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -2229,7 +2229,7 @@ export interface operations {
             };
         };
     };
-    get_cfn_node_api_cognitive_fabric_nodes__cfn_id__get: {
+    get_cfn_node_api_cognition_fabric_nodes__cfn_id__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -2260,7 +2260,7 @@ export interface operations {
             };
         };
     };
-    update_cfn_node_api_cognitive_fabric_nodes__cfn_id__put: {
+    update_cfn_node_api_cognition_fabric_nodes__cfn_id__put: {
         parameters: {
             query?: never;
             header?: never;
@@ -2295,7 +2295,7 @@ export interface operations {
             };
         };
     };
-    delete_cfn_node_api_cognitive_fabric_nodes__cfn_id__delete: {
+    delete_cfn_node_api_cognition_fabric_nodes__cfn_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -2324,7 +2324,7 @@ export interface operations {
             };
         };
     };
-    enable_cfn_node_api_cognitive_fabric_nodes__cfn_id__enable_patch: {
+    enable_cfn_node_api_cognition_fabric_nodes__cfn_id__enable_patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -2355,7 +2355,7 @@ export interface operations {
             };
         };
     };
-    disable_cfn_node_api_cognitive_fabric_nodes__cfn_id__disable_patch: {
+    disable_cfn_node_api_cognition_fabric_nodes__cfn_id__disable_patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -2386,7 +2386,7 @@ export interface operations {
             };
         };
     };
-    cfn_heartbeat_api_cognitive_fabric_nodes__cfn_id__heartbeat_put: {
+    cfn_heartbeat_api_cognition_fabric_nodes__cfn_id__heartbeat_put: {
         parameters: {
             query?: never;
             header?: never;
