@@ -26,6 +26,8 @@ import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {toast} from 'sonner';
 import {AgentsList} from './agents-list';
 import {CollapsibleJsonField} from './collapsible-json-field';
+import {MASAuditLog} from './mas-audit-log';
+import {CopyableInput} from '@/components/ui/copyable-input';
 
 const AgentFormSchema = z.object({
   agent_id: z.string().min(1, 'Agent ID is required'),
@@ -62,7 +64,7 @@ export default function MASDetailsPage() {
   const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
-  const {defaultWorkspaceId} = useDefaultWorkspace();
+  const {defaultWorkspaceId, isLoading: isWorkspaceLoading} = useDefaultWorkspace();
 
   const rawMasId = (params as Record<string, string | string[] | undefined>)?.masId;
   const workspaceId = defaultWorkspaceId;
@@ -139,10 +141,10 @@ export default function MASDetailsPage() {
   }, [mas, form]);
 
   useEffect(() => {
-    if (!workspaceId || !masId) {
+    if (!isWorkspaceLoading && (!workspaceId || !masId)) {
       router.replace('/not-found');
     }
-  }, [workspaceId, masId, router]);
+  }, [workspaceId, masId, router, isWorkspaceLoading]);
 
   const crumbs = mas
     ? [
@@ -235,14 +237,17 @@ export default function MASDetailsPage() {
         breadcrumbs={crumbs}
         callToAction={
           mas && (
-            <DetailsPageActions
-              onDelete={() => deleteDialog.open({id: mas.id, name: mas.name})}
-              onEdit={() => setIsEditMode(true)}
-              isEditMode={isEditMode}
-              onSave={form.handleSubmit(handleSave)}
-              onCancelEdit={handleCancelEdit}
-              isSaving={form.formState.isSubmitting}
-            />
+            <div className="flex items-center gap-2">
+              <MASAuditLog masId={masId!} workspaceId={workspaceId!} masName={mas.name} agents={mas.agents || undefined} />
+              <DetailsPageActions
+                onDelete={() => deleteDialog.open({id: mas.id, name: mas.name})}
+                onEdit={() => setIsEditMode(true)}
+                isEditMode={isEditMode}
+                onSave={form.handleSubmit(handleSave)}
+                onCancelEdit={handleCancelEdit}
+                isSaving={form.formState.isSubmitting}
+              />
+            </div>
           )
         }
       >
@@ -287,7 +292,7 @@ export default function MASDetailsPage() {
 
                       <div className="space-y-2">
                         <Label>ID</Label>
-                        <Input value={mas?.id || ''} disabled readOnly className="font-mono text-xs" />
+                        <CopyableInput value={mas?.id || ''} />
                       </div>
 
                       {isEditMode ? (
@@ -341,8 +346,16 @@ export default function MASDetailsPage() {
                               </FormItem>
                             )}
                           />
+                        ) : mas?.shared_memory?.memory_provider_id ? (
+                          <div className="space-y-2">
+                            <Input value={mas?.shared_memory?.memory_provider_name || 'None'} disabled readOnly />
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Provider ID</Label>
+                              <CopyableInput value={mas.shared_memory.memory_provider_id} />
+                            </div>
+                          </div>
                         ) : (
-                          <Input value={mas?.shared_memory?.memory_provider_name || 'None'} disabled readOnly />
+                          <Input value="None" disabled readOnly />
                         )}
                       </div>
                     </div>
@@ -386,7 +399,7 @@ export default function MASDetailsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
                       <div className="space-y-2">
                         <Label>Workspace ID</Label>
-                        <Input value={mas?.workspace_id || ''} disabled readOnly className="font-mono text-xs" />
+                        <CopyableInput value={mas?.workspace_id || ''} />
                       </div>
                       {/* <div className="space-y-2">
                         <Label>Created By</Label>

@@ -22,6 +22,7 @@ import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {toast} from 'sonner';
+import {CopyableInput} from '@/components/ui/copyable-input';
 
 const UpdateMemoryProviderFormSchema = z.object({
   memory_provider_name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters').optional(),
@@ -89,7 +90,8 @@ export default function MemoryProviderDetailsPage() {
   }, [provider, form]);
 
   useEffect(() => {
-    if (!providerId) {
+    // Only redirect if providerId is truly missing (not just still loading from params)
+    if (providerId === undefined) {
       router.replace('/not-found');
     }
   }, [providerId, router]);
@@ -194,7 +196,7 @@ export default function MemoryProviderDetailsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label>Provider ID</Label>
-                        <Input value={provider?.memory_provider_id || ''} disabled readOnly className="font-mono text-xs" />
+                        <CopyableInput value={provider?.memory_provider_id || ''} />
                       </div>
 
                       {isEditMode ? (

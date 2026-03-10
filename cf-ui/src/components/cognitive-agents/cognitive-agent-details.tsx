@@ -7,6 +7,7 @@ import {Card, CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {Textarea} from '@/components/ui/textarea';
+import {CopyableInput} from '@/components/ui/copyable-input';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes} from '@/constants/routes';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
@@ -59,7 +60,7 @@ export default function CognitiveAgentDetailsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label>Engine ID</Label>
-                        <Input value={cognitiveAgent?.cognitive_engine_id || ''} disabled readOnly className="font-mono text-xs" />
+                        <CopyableInput value={cognitiveAgent?.cognitive_engine_id || ''} />
                       </div>
                       <div className="space-y-2">
                         <Label>Name</Label>
@@ -71,7 +72,7 @@ export default function CognitiveAgentDetailsPage() {
                       </div>
                       <div className="space-y-2">
                         <Label>Workspace ID</Label>
-                        <Input value={cognitiveAgent?.workspace_id || ''} disabled readOnly className="font-mono text-xs" />
+                        <CopyableInput value={cognitiveAgent?.workspace_id || ''} />
                       </div>
                     </div>
                   </div>

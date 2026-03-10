@@ -7,3 +7,4 @@ export * from './invitations';
 export * from './members';
 export * from './cfn';
 export * from './memory-provider';
+export * from './audit';

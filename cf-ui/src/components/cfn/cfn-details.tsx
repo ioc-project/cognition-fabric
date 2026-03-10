@@ -18,10 +18,9 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes, breadcrumbs} from '@/constants/routes';
 import {DATE_TIME_FORMAT_OPTIONS, parseError} from '@/lib/utils';
-import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
-import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {toast} from 'sonner';
+import {CopyableInput} from '@/components/ui/copyable-input';
 
 const UpdateCfnFormSchema = z.object({
   cfn_name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters').optional(),
@@ -45,10 +44,8 @@ export default function CfnDetailsPage() {
   const rawCfnId = params?.cfnId as string | string[] | undefined;
   const cfnId = Array.isArray(rawCfnId) ? rawCfnId[0] : rawCfnId;
 
-  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [expandedMAS, setExpandedMAS] = useState<Record<string, boolean>>({});
-  const deleteDialog = useConfirmDialog<{cfn_id: string; cfn_name: string}>();
 
   const toggleMAS = (masId: string) => {
     setExpandedMAS((prev) => ({
@@ -94,27 +91,13 @@ export default function CfnDetailsPage() {
   }, [cfn, form]);
 
   useEffect(() => {
-    if (!cfnId) {
+    // Only redirect if cfnId is truly missing (not just still loading from params)
+    if (cfnId === undefined) {
       router.replace('/not-found');
     }
   }, [cfnId, router]);
 
   const crumbs = breadcrumbs.cfnDetails(cfn?.cfn_name || 'CFN');
-
-  const handleDelete = async () => {
-    await deleteDialog.confirm(async (data) => {
-      try {
-        await cfnApi.delete(data.cfn_id);
-        toast.success(`Cognition Fabric Node "${data.cfn_name}" disabled successfully`);
-        await globalMutate(swrKeys.cfn());
-        router.push(routes.cfn.list);
-      } catch (err) {
-        const errorMessage = parseError(err);
-        setDeleteError(errorMessage);
-        throw err;
-      }
-    });
-  };
 
   const handleSave = async (values: z.infer<typeof UpdateCfnFormSchema>) => {
     try {
@@ -157,13 +140,11 @@ export default function CfnDetailsPage() {
         callToAction={
           cfn && (
             <DetailsPageActions
-              onDelete={() => deleteDialog.open({cfn_id: cfn.cfn_id, cfn_name: cfn.cfn_name})}
               onEdit={() => setIsEditMode(true)}
               isEditMode={isEditMode}
               onSave={form.handleSubmit(handleSave)}
               onCancelEdit={handleCancelEdit}
               isSaving={form.formState.isSubmitting}
-              deleteLabel="Disable"
             />
           )
         }
@@ -188,7 +169,7 @@ export default function CfnDetailsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label>CFN ID</Label>
-                        <Input value={cfn?.cfn_id || ''} disabled readOnly className="font-mono text-xs" />
+                        <CopyableInput value={cfn?.cfn_id || ''} />
                       </div>
 
                       {isEditMode ? (
@@ -318,7 +299,7 @@ export default function CfnDetailsPage() {
                                               {workspace.multi_agentic_systems.map((mas: any, masIndex: number) => {
                                                 const isMASExpanded = expandedMAS[mas.id] ?? false;
                                                 return (
-                                                  <div key={mas.id || masIndex} className="rounded-md border bg-white p-3 space-y-3">
+                                                  <div key={mas.id || masIndex} className="rounded-md border bg-card p-3 space-y-3">
                                                     <div className="flex items-start justify-between">
                                                       <div className="flex-1 cursor-pointer" onClick={() => toggleMAS(mas.id)}>
                                                         <div className="font-medium text-sm">{mas.name}</div>
@@ -328,7 +309,7 @@ export default function CfnDetailsPage() {
                                                       </div>
                                                       <button
                                                         type="button"
-                                                        className="h-6 w-6 inline-flex items-center justify-center rounded hover:bg-gray-100 ml-2"
+                                                        className="h-6 w-6 inline-flex items-center justify-center rounded hover:bg-muted ml-2"
                                                         onClick={() => toggleMAS(mas.id)}
                                                       >
                                                         {isMASExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -339,7 +320,7 @@ export default function CfnDetailsPage() {
                                                       <div className="pt-3 border-t space-y-3">
                                                         {/* Shared Memory */}
                                                         {mas.shared_memory && (
-                                                          <div className="bg-purple-50 rounded p-3">
+                                                          <div className="bg-muted/30 rounded p-3 border border-border">
                                                             <Label className="text-xs font-semibold mb-2 block">Shared Memory</Label>
                                                             <div className="space-y-1 text-xs">
                                                               <div>
@@ -350,7 +331,13 @@ export default function CfnDetailsPage() {
                                                               </div>
                                                               <div>
                                                                 <span className="text-muted-foreground">Enabled:</span>{' '}
-                                                                <span className={mas.shared_memory.enabled ? 'text-green-600' : 'text-gray-500'}>
+                                                                <span
+                                                                  className={
+                                                                    mas.shared_memory.enabled
+                                                                      ? 'text-green-600 dark:text-green-400'
+                                                                      : 'text-muted-foreground'
+                                                                  }
+                                                                >
                                                                   {mas.shared_memory.enabled ? 'Yes' : 'No'}
                                                                 </span>
                                                               </div>
@@ -365,7 +352,7 @@ export default function CfnDetailsPage() {
                                                             </Label>
                                                             <div className="space-y-2">
                                                               {mas.agents.map((agent: any, agentIndex: number) => (
-                                                                <div key={agentIndex} className="bg-blue-50 rounded p-3">
+                                                                <div key={agentIndex} className="bg-muted/30 rounded p-3 border border-border">
                                                                   <div className="font-medium text-xs mb-2">{agent.agent_id}</div>
                                                                   {agent.agentic_memory && (
                                                                     <div className="text-xs space-y-1">
@@ -379,7 +366,9 @@ export default function CfnDetailsPage() {
                                                                         <span className="text-muted-foreground">Enabled:</span>{' '}
                                                                         <span
                                                                           className={
-                                                                            agent.agentic_memory.enabled ? 'text-green-600' : 'text-gray-500'
+                                                                            agent.agentic_memory.enabled
+                                                                              ? 'text-green-600 dark:text-green-400'
+                                                                              : 'text-muted-foreground'
                                                                           }
                                                                         >
                                                                           {agent.agentic_memory.enabled ? 'Yes' : 'No'}
@@ -419,19 +408,6 @@ export default function CfnDetailsPage() {
           </div>
         </ConditionalSWRRenderer>
       </BasePage>
-      <ConfirmDialog
-        open={deleteDialog.isOpen}
-        onOpenChange={deleteDialog.close}
-        onConfirm={handleDelete}
-        title={`Disable ${deleteDialog.data?.cfn_name || 'Cognition Fabric Node'}`}
-        description={
-          deleteError ??
-          `Are you sure you want to disable "${deleteDialog.data?.cfn_name}"? The node will be removed and cannot reconnect until you re-register it.`
-        }
-        confirmText="Disable"
-        variant="destructive"
-        loading={deleteDialog.isLoading}
-      />
     </>
   );
 }

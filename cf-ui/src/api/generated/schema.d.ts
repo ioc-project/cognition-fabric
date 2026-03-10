@@ -58,7 +58,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/cognitive-fabric-nodes/register": {
+    "/api/cognition-fabric-nodes/register": {
         parameters: {
             query?: never;
             header?: never;
@@ -97,7 +97,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/cognitive-fabric-nodes": {
+    "/api/cognition-fabric-nodes": {
         parameters: {
             query?: never;
             header?: never;
@@ -145,7 +145,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/cognitive-fabric-nodes/{cfn_id}": {
+    "/api/cognition-fabric-nodes/{cfn_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -216,7 +216,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/cognitive-fabric-nodes/{cfn_id}/enable": {
+    "/api/cognition-fabric-nodes/{cfn_id}/enable": {
         parameters: {
             query?: never;
             header?: never;
@@ -248,7 +248,7 @@ export interface paths {
         patch: operations["enable_cfn_node_api_cognitive_fabric_nodes__cfn_id__enable_patch"];
         trace?: never;
     };
-    "/api/cognitive-fabric-nodes/{cfn_id}/disable": {
+    "/api/cognition-fabric-nodes/{cfn_id}/disable": {
         parameters: {
             query?: never;
             header?: never;
@@ -282,7 +282,7 @@ export interface paths {
         patch: operations["disable_cfn_node_api_cognitive_fabric_nodes__cfn_id__disable_patch"];
         trace?: never;
     };
-    "/api/cognitive-fabric-nodes/{cfn_id}/heartbeat": {
+    "/api/cognition-fabric-nodes/{cfn_id}/heartbeat": {
         parameters: {
             query?: never;
             header?: never;
@@ -300,7 +300,7 @@ export interface paths {
          *     Returns the current status, last_seen timestamp, and config_timestamp.
          *
          *     CFN compares the returned config_timestamp with its stored value.
-         *     If timestamps differ, CFN should call GET /cognitive-fabric-nodes/{cfn_id} to fetch updated config.
+         *     If timestamps differ, CFN should call GET /cognition-fabric-nodes/{cfn_id} to fetch updated config.
          *
          *     Note: This endpoint requires authentication but not write access.
          *     Disabled or deleted nodes will receive 403 Forbidden.

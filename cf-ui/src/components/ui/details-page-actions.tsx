@@ -2,7 +2,7 @@ import {Trash2} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 
 interface DetailsPageActionsProps {
-  onDelete: () => void;
+  onDelete?: () => void;
   onEdit?: () => void;
   isEditMode?: boolean;
   onSave?: () => void;
@@ -40,9 +40,11 @@ export function DetailsPageActions({
           Edit
         </Button>
       )}
-      <Button variant="outline" size="sm" onClick={onDelete}>
-        {deleteLabel ? deleteLabel : <Trash2 className="h-4 w-4" />}
-      </Button>
+      {onDelete && (
+        <Button variant="outline" size="sm" onClick={onDelete}>
+          {deleteLabel ? deleteLabel : <Trash2 className="h-4 w-4" />}
+        </Button>
+      )}
     </div>
   );
 }

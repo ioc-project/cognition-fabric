@@ -59,7 +59,7 @@ export function MASList({workspaceId}: MASListProps) {
                 <Button asChild variant="sidebar" className="gap-2" size="default">
                   <Link href={routes.mas.create}>
                     <Plus className="w-4 h-4" />
-                    Create MAS
+                    Create Multi-Agentic System
                   </Link>
                 </Button>
               </div>

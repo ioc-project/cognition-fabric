@@ -84,10 +84,10 @@ export const apiRoutes = {
   },
 
   cfn: {
-    list: '/api/cognitive-fabric-nodes',
-    details: (id: string) => `/api/cognitive-fabric-nodes/${id}`,
-    create: '/api/cognitive-fabric-nodes',
-    delete: (id: string) => `/api/cognitive-fabric-nodes/${id}`
+    list: '/api/cognition-fabric-nodes',
+    details: (id: string) => `/api/cognition-fabric-nodes/${id}`,
+    create: '/api/cognition-fabric-nodes',
+    delete: (id: string) => `/api/cognition-fabric-nodes/${id}`
   }
 } as const;
 
