@@ -55,7 +55,9 @@ export const routes = {
 
   apiKeys: '/api-keys',
 
-  invitations: '/invitations'
+  invitations: '/invitations',
+
+  audits: '/audits'
 } as const;
 
 export const apiRoutes = {
@@ -201,5 +203,10 @@ export const breadcrumbs = {
   createMemoryProvider: (): BreadcrumbItem[] => [
     {link: routes.memoryProviders.list, text: 'Memory Providers'},
     {link: '', text: 'Create', active: true}
+  ],
+
+  auditsList: (): BreadcrumbItem[] => [
+    {link: routes.home, text: 'Home'},
+    {link: '', text: 'Audits', active: true}
   ]
 } as const;

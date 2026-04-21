@@ -95,6 +95,7 @@ export function MASList({workspaceId}: MASListProps) {
                   router.push(routes.mas.details(mas.id));
                 }}
                 onOpenDelete={(payload) => deleteDialog.open(payload)}
+                onOpenEdit={(mas) => router.push(`${routes.mas.details(mas.id)}?edit=true`)}
               />
             ) : (
               <MASCardList
@@ -106,6 +107,7 @@ export function MASList({workspaceId}: MASListProps) {
                   router.push(routes.mas.details(mas.id));
                 }}
                 onOpenDelete={(payload) => deleteDialog.open(payload)}
+                onOpenEdit={(mas) => router.push(`${routes.mas.details(mas.id)}?edit=true`)}
               />
             )}
           </ConditionalSWRRenderer>

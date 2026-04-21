@@ -6,7 +6,7 @@ import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 import {routes} from '@/constants/routes';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import Link from 'next/link';
-import {MoreVertical, Trash2} from 'lucide-react';
+import {MoreVertical, Trash2, Eye, Edit} from 'lucide-react';
 import type {MultiAgenticSystem} from '@/api/endpoints/mas';
 
 export interface MASCardListProps {
@@ -15,9 +15,10 @@ export interface MASCardListProps {
   selectedId: string | null;
   onCardClick: (m: MultiAgenticSystem) => void;
   onOpenDelete: (payload: {id: string; name: string}) => void;
+  onOpenEdit: (m: MultiAgenticSystem) => void;
 }
 
-export function MASCardList({masList, workspaceId, selectedId, onCardClick, onOpenDelete}: MASCardListProps) {
+export function MASCardList({masList, workspaceId, selectedId, onCardClick, onOpenDelete, onOpenEdit}: MASCardListProps) {
   return (
     <div className="list-grid">
       {masList.map((mas) => (
@@ -39,7 +40,26 @@ export function MASCardList({masList, workspaceId, selectedId, onCardClick, onOp
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem disabled>View Details</DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onCardClick(mas);
+                  }}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  View Details
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onOpenEdit(mas);
+                  }}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-red-600 dark:text-red-400"
                   onClick={(e) => {

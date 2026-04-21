@@ -313,6 +313,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cognition-fabric-nodes/{cfn_id}/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cfn Node Summary
+         * @description Get CFN node summary with detailed workspace configuration
+         *
+         *     - **cfn_id**: CFN identifier
+         *
+         *     Returns CFN summary including:
+         *     - id, name
+         *     - config (workspaces with cognitive_engines, multi_agentic_systems, and config_timestamp)
+         *     - status (online, offline)
+         *     - enabled flag
+         *     - ip_address, port
+         *     - created_at, updated_at, last_seen timestamps
+         *
+         *     The config.workspaces array contains full details of each workspace including:
+         *     - workspace id and name
+         *     - cognitive_engines (list of CEs in the workspace)
+         *     - multi_agentic_systems (list of MAS in the workspace with full details)
+         *     - policies (empty array for now)
+         *
+         *     This endpoint retrieves information for both enabled and disabled CFNs.
+         *     Deleted CFNs will return 404 Not Found.
+         */
+        get: operations["get_cfn_node_summary_api_cognition_fabric_nodes__cfn_id__summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/cognitive-fabric-node/{cfn_id}/workspaces": {
         parameters: {
             query?: never;
@@ -764,7 +803,7 @@ export interface paths {
         };
         /**
          * List CFN Audit Events
-         * @description Retrieve a paginated list of audit events from the CFN control-plane database (cfn_cp). Supports optional filtering by `resource_type` and `audit_type`.
+         * @description Retrieve a paginated list of audit events from ioc-cfn-svc. Supports optional filtering by `resource_type` and `audit_type`.
          */
         get: operations["list_audit_events_api_audit_events__get"];
         put?: never;
@@ -775,7 +814,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/audit-events/{audit_event_id}": {
+    "/api/audit-events/{eventId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -784,9 +823,9 @@ export interface paths {
         };
         /**
          * Get CFN Audit Event by ID
-         * @description Retrieve a single audit event from the CFN control-plane database by its UUID.
+         * @description Retrieve a single audit event from ioc-cfn-svc by its UUID.
          */
-        get: operations["get_audit_event_api_audit_events__audit_event_id__get"];
+        get: operations["get_audit_event_api_audit_events__eventId__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -844,19 +883,16 @@ export interface components {
         };
         /**
          * AuditCfnEventListResponse
-         * @description Response model for listing CFN audit events.
+         * @description Paginated list response matching the upstream cfn-svc shape.
          */
         AuditCfnEventListResponse: {
             /**
-             * Total
-             * @description Total number of audit events matching the query
-             */
-            total: number;
-            /**
-             * Audit Events
+             * Data
              * @description List of audit events
              */
-            audit_events: components["schemas"]["AuditCfnEventResponse"][];
+            data: components["schemas"]["AuditCfnEventResponse"][];
+            /** @description Pagination metadata */
+            pageInfo: components["schemas"]["AuditCfnPageInfo"];
         };
         /**
          * AuditCfnEventResponse
@@ -930,6 +966,32 @@ export interface components {
              * @description Timestamp when the event was last modified
              */
             last_modified_on: string;
+        };
+        /**
+         * AuditCfnPageInfo
+         * @description Pagination metadata matching the upstream cfn-svc response.
+         */
+        AuditCfnPageInfo: {
+            /**
+             * Page
+             * @description Current 0-based page number
+             */
+            page: number;
+            /**
+             * Pagesize
+             * @description Requested page size
+             */
+            pageSize: number;
+            /**
+             * Pagecount
+             * @description Number of elements returned in this page
+             */
+            pageCount: number;
+            /**
+             * Totalelements
+             * @description Total number of matching records across all pages
+             */
+            totalElements: number;
         };
         /**
          * CognitiveAgentCreate
@@ -1400,6 +1462,89 @@ export interface components {
          * @enum {string}
          */
         CognitiveFabricNodeStatus: "online" | "offline";
+        /**
+         * CognitiveFabricNodeSummaryResponse
+         * @description Schema for Cognitive Fabric Node summary response
+         * @example {
+         *       "config": {
+         *         "config_timestamp": "2026-03-09T21:10:03.939351Z",
+         *         "workspaces": []
+         *       },
+         *       "created_at": "2026-03-09T21:10:03.938397",
+         *       "created_by": "00000000-0000-0000-0000-000000000000",
+         *       "enabled": true,
+         *       "id": "db44357c-e7ef-4db4-a32d-dc12731d87d9",
+         *       "ip_address": "172.18.0.8",
+         *       "last_seen": "2026-03-09T22:13:23.994122",
+         *       "name": "My Cognition Fabric Node",
+         *       "port": 9002,
+         *       "status": "online",
+         *       "updated_at": "2026-03-09T22:13:23.993225"
+         *     }
+         */
+        CognitiveFabricNodeSummaryResponse: {
+            /**
+             * Id
+             * @description Cognitive Fabric Node identifier
+             */
+            id: string;
+            /**
+             * Name
+             * @description Cognitive Fabric Node name
+             */
+            name: string;
+            /**
+             * Config
+             * @description Configuration with workspaces and config_timestamp
+             */
+            config: {
+                [key: string]: unknown;
+            };
+            /** @description Current node status */
+            status: components["schemas"]["CognitiveFabricNodeStatus"];
+            /**
+             * Last Seen
+             * Format: date-time
+             * @description Last heartbeat timestamp
+             */
+            last_seen: string;
+            /**
+             * Enabled
+             * @description Whether node is enabled
+             */
+            enabled: boolean;
+            /**
+             * Ip Address
+             * @description IP address of the CFN node
+             */
+            ip_address?: string | null;
+            /**
+             * Port
+             * @description Port number of the CFN node
+             */
+            port?: number | null;
+            /**
+             * Created At
+             * Format: date-time
+             * @description Creation timestamp
+             */
+            created_at: string;
+            /**
+             * Updated At
+             * @description Last update timestamp
+             */
+            updated_at?: string | null;
+            /**
+             * Created By
+             * @description Creator user ID
+             */
+            created_by?: string | null;
+            /**
+             * Updated By
+             * @description Last updater user ID
+             */
+            updated_by?: string | null;
+        };
         /**
          * CognitiveFabricNodeUpdateRequest
          * @description Schema for updating Cognitive Fabric Node
@@ -2404,6 +2549,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CognitiveFabricNodeHeartbeatResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_cfn_node_summary_api_cognition_fabric_nodes__cfn_id__summary_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cfn_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CognitiveFabricNodeSummaryResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3443,13 +3619,13 @@ export interface operations {
     list_audit_events_api_audit_events__get: {
         parameters: {
             query?: {
-                /** @description Number of records to skip for pagination */
-                skip?: number;
-                /** @description Maximum number of records to return */
-                limit?: number;
-                /** @description Filter by resource type (e.g. MAS, WORKSPACE, COGNITIVE_FABRIC_NODE) */
+                /** @description 0-based page number */
+                page?: number;
+                /** @description Number of records per page. Defaults to DEFAULT_PAGE_SIZE env var (fallback 20). Clamped to MAX_PAGE_SIZE env var (fallback 100). */
+                pageSize?: number;
+                /** @description Filter by resource type (e.g. MAS, MAS-AGENT, COGNITION_ENGINE, POLICY_ENFORCER, MEMORY_PROVIDER, WORKFLOW, TASK) */
                 resource_type?: string | null;
-                /** @description Filter by audit type (e.g. RESOURCE_CREATED, RESOURCE_UPDATED, RESOURCE_DELETED) */
+                /** @description Filter by audit type (e.g. RESOURCE_CREATED, RESOURCE_UPDATED, RESOURCE_DELETED, RESOURCE_PURGED, RESOURCE_PRUNED, KNOWLEDGE_INGESTION, KNOWLEDGE_QUERY, MEMORY_OPERATION, SHARED_MEMORY_OPERATION, AGENT_MEMORY_OPERATION) */
                 audit_type?: string | null;
             };
             header?: never;
@@ -3458,7 +3634,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description List of audit events returned successfully */
+            /** @description Paginated list of audit events returned successfully */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3476,7 +3652,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-            /** @description Internal server error while querying cfn_cp database */
+            /** @description Internal server error while querying ioc-cfn-svc */
             500: {
                 headers: {
                     [name: string]: unknown;
@@ -3485,12 +3661,12 @@ export interface operations {
             };
         };
     };
-    get_audit_event_api_audit_events__audit_event_id__get: {
+    get_audit_event_api_audit_events__eventId__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                audit_event_id: string;
+                eventId: string;
             };
             cookie?: never;
         };
@@ -3504,6 +3680,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AuditCfnEventResponse"];
                 };
+            };
+            /** @description Invalid event ID */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Audit event not found */
             404: {
@@ -3521,7 +3704,7 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-            /** @description Internal server error while querying cfn_cp database */
+            /** @description Internal server error while querying ioc-cfn-svc */
             500: {
                 headers: {
                     [name: string]: unknown;

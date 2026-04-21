@@ -1,29 +1,63 @@
 import useSWR from 'swr';
-import {auditApi, type AuditEventFilters} from '@/api/endpoints/audit';
+import useSWRInfinite from 'swr/infinite';
+import {auditApi, type AuditEventFilters, type AuditEventListResponse} from '@/api/endpoints/audit';
 
-export function useAuditEvents(filters?: AuditEventFilters) {
-  const key = filters ? ['audit-events', JSON.stringify(filters)] : null;
+export function useAuditEventsPage(filters?: Omit<AuditEventFilters, 'page' | 'pageSize'>, page = 0, pageSize = 20) {
+  const {data, error, isLoading} = useSWR(
+    filters !== undefined ? ['audit-events-page', JSON.stringify(filters), page, pageSize] : null,
+    async () => auditApi.list({...filters, page, pageSize}),
+    {revalidateOnFocus: false, dedupingInterval: 30000}
+  );
 
-  const {data, error, isLoading, mutate} = useSWR(
-    key,
-    async () => {
-      if (!filters) {
+  const totalElements = data?.pageInfo.totalElements ?? 0;
+  const totalPages = Math.ceil(totalElements / pageSize);
+
+  return {
+    auditEvents: data?.data ?? [],
+    totalElements,
+    totalPages,
+    isLoading,
+    error
+  };
+}
+
+const DEFAULT_PAGE_SIZE = 20;
+
+export function useAuditEvents(filters?: Omit<AuditEventFilters, 'page' | 'pageSize'>, pageSize = DEFAULT_PAGE_SIZE) {
+  const filtersKey = filters ? JSON.stringify(filters) : null;
+
+  const {data, error, isLoading, size, setSize} = useSWRInfinite(
+    (pageIndex: number, previousPageData: AuditEventListResponse | null) => {
+      if (!filtersKey) {
         return null;
       }
-      return auditApi.list(filters);
+      if (previousPageData && previousPageData.pageInfo.pageCount < pageSize) {
+        return null;
+      }
+      return ['audit-events', filtersKey, pageIndex, pageSize];
+    },
+    async ([, , pageIndex]: [string, string, number]) => {
+      return auditApi.list({...filters, page: pageIndex, pageSize});
     },
     {
+      revalidateFirstPage: false,
       revalidateOnFocus: false,
-      dedupingInterval: 30000 // 30 seconds
+      dedupingInterval: 30000
     }
   );
 
+  const auditEvents = data?.flatMap((d) => d.data) ?? [];
+  const totalElements = data?.[0]?.pageInfo.totalElements ?? 0;
+  const hasMore = auditEvents.length < totalElements;
+  const isLoadingMore = isLoading || (size > 0 && data !== undefined && typeof data[size - 1] === 'undefined');
+
   return {
-    auditEvents: data?.audit_events || [],
-    total: data?.total || 0,
-    isLoading,
-    error,
-    mutate
+    auditEvents,
+    total: totalElements,
+    hasMore,
+    loadMore: () => setSize(size + 1),
+    isLoading: isLoadingMore,
+    error
   };
 }
 

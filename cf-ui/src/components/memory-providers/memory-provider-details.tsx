@@ -1,6 +1,6 @@
 'use client';
 
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useCallback} from 'react';
 import {useParams, useRouter, useSearchParams} from 'next/navigation';
 import useSWR, {mutate as globalMutate} from 'swr';
 import {useForm} from 'react-hook-form';
@@ -8,12 +8,13 @@ import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
 import {swrKeys} from '@/lib/swr-config';
 import {memoryProviderApi} from '@/api/endpoints';
-import type {MemoryProvider, UpdateMemoryProviderRequest} from '@/api/types/memory-provider';
+import type {MemoryProvider, UpdateMemoryProviderRequest, MemoryProviderConfig, AuthType} from '@/api/types/memory-provider';
 import {BasePage} from '@/components/ui/base-page';
 import {Card, CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
 import {Label} from '@/components/ui/label';
 import {Textarea} from '@/components/ui/textarea';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes} from '@/constants/routes';
@@ -23,28 +24,38 @@ import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {toast} from 'sonner';
 import {CopyableInput} from '@/components/ui/copyable-input';
+import {Eye, EyeOff} from 'lucide-react';
+import {Button} from '@/components/ui/button';
 
 const UpdateMemoryProviderFormSchema = z.object({
-  memory_provider_name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters').optional(),
+  memory_provider_name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters'),
   description: z.string().optional(),
-  config: z
-    .string()
-    .optional()
-    .refine(
-      (val) => {
-        if (!val || val.trim() === '') {
-          return true;
-        }
-        try {
-          JSON.parse(val);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      {message: 'Must be valid JSON'}
-    )
+  url: z.string().min(1, 'URL is required').url('Must be a valid URL'),
+  authType: z.enum(['token', 'bearer', 'basic', 'custom', 'none']),
+  token: z.string().optional(),
+  access_token: z.string().optional(),
+  username: z.string().optional(),
+  password: z.string().optional(),
+  header_name: z.string().optional(),
+  header_value: z.string().optional()
 });
+
+type FormValues = z.infer<typeof UpdateMemoryProviderFormSchema>;
+
+function parseProviderConfig(config: MemoryProvider['config']): Omit<FormValues, 'memory_provider_name' | 'description'> {
+  const typed = config as MemoryProviderConfig | null;
+  const auth = typed?.auth;
+  return {
+    url: typed?.url ?? '',
+    authType: (auth?.type as AuthType) ?? 'none',
+    token: auth?.credentials?.api_key ?? '',
+    access_token: auth?.credentials?.access_token ?? '',
+    username: auth?.credentials?.username ?? '',
+    password: auth?.credentials?.password ?? '',
+    header_name: auth?.credentials?.header_name ?? '',
+    header_value: auth?.credentials?.header_value ?? ''
+  };
+}
 
 export default function MemoryProviderDetailsPage() {
   const router = useRouter();
@@ -55,6 +66,18 @@ export default function MemoryProviderDetailsPage() {
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [revealedFields, setRevealedFields] = useState<Set<string>>(new Set());
+  const toggleReveal = useCallback((field: string) => {
+    setRevealedFields((prev) => {
+      const next = new Set(prev);
+      if (next.has(field)) {
+        next.delete(field);
+      } else {
+        next.add(field);
+      }
+      return next;
+    });
+  }, []);
   const deleteDialog = useConfirmDialog<{id: string; memory_provider_name: string}>();
 
   const {
@@ -64,33 +87,41 @@ export default function MemoryProviderDetailsPage() {
     mutate
   } = useSWR<MemoryProvider>(providerId ? swrKeys.memoryProviderDetails(providerId) : null, () => memoryProviderApi.get(providerId as string));
 
-  const form = useForm({
+  const form = useForm<FormValues>({
     resolver: zodResolver(UpdateMemoryProviderFormSchema),
     defaultValues: {
       memory_provider_name: '',
       description: '',
-      config: ''
+      url: '',
+      authType: 'none',
+      token: '',
+      access_token: '',
+      username: '',
+      password: '',
+      header_name: '',
+      header_value: ''
     }
   });
 
+  const authType = form.watch('authType');
+
   useEffect(() => {
-    if (searchParams.get('edit') === 'true' && provider?.enabled) {
+    if (searchParams.get('edit') === 'true' && provider?.enabled && provider?.memory_provider_name !== 'ioc-memory-provider') {
       setIsEditMode(true);
     }
-  }, [searchParams, provider?.enabled]);
+  }, [searchParams, provider?.enabled, provider?.memory_provider_name]);
 
   useEffect(() => {
     if (provider) {
       form.reset({
-        description: provider.description || '',
         memory_provider_name: provider.memory_provider_name,
-        config: provider.config ? JSON.stringify(provider.config, null, 2) : ''
+        description: provider.description || '',
+        ...parseProviderConfig(provider.config)
       });
     }
   }, [provider, form]);
 
   useEffect(() => {
-    // Only redirect if providerId is truly missing (not just still loading from params)
     if (providerId === undefined) {
       router.replace('/not-found');
     }
@@ -118,21 +149,39 @@ export default function MemoryProviderDetailsPage() {
     });
   };
 
-  const handleSave = async (values: z.infer<typeof UpdateMemoryProviderFormSchema>) => {
+  const handleSave = async (values: FormValues) => {
     try {
-      const payload: UpdateMemoryProviderRequest = {};
+      const auth: MemoryProviderConfig['auth'] = {type: values.authType};
 
-      if (values.memory_provider_name) {
-        payload.memory_provider_name = values.memory_provider_name;
+      if (values.authType !== 'none') {
+        const credentials: NonNullable<NonNullable<MemoryProviderConfig['auth']>['credentials']> = {};
+        if (values.authType === 'token' && values.token) {
+          credentials.api_key = values.token;
+        } else if (values.authType === 'bearer' && values.access_token) {
+          credentials.access_token = values.access_token;
+        } else if (values.authType === 'basic') {
+          if (values.username) {
+            credentials.username = values.username;
+          }
+          if (values.password) {
+            credentials.password = values.password;
+          }
+        } else if (values.authType === 'custom') {
+          if (values.header_name) {
+            credentials.header_name = values.header_name;
+          }
+          if (values.header_value) {
+            credentials.header_value = values.header_value;
+          }
+        }
+        auth.credentials = credentials;
       }
 
-      if (values.description !== undefined) {
-        payload.description = values.description;
-      }
-
-      if (values.config && values.config.trim()) {
-        payload.config = JSON.parse(values.config) as Record<string, unknown>;
-      }
+      const payload: UpdateMemoryProviderRequest = {
+        memory_provider_name: values.memory_provider_name,
+        description: values.description,
+        config: {url: values.url, auth}
+      };
 
       await memoryProviderApi.update(providerId as string, payload);
       toast.success('Memory Provider updated successfully');
@@ -148,12 +197,25 @@ export default function MemoryProviderDetailsPage() {
 
   const handleCancelEdit = () => {
     setIsEditMode(false);
-    form.reset({
-      memory_provider_name: provider?.memory_provider_name,
-      description: provider?.description || '',
-      config: provider?.config ? JSON.stringify(provider.config, null, 2) : ''
-    });
+    if (provider) {
+      form.reset({
+        memory_provider_name: provider.memory_provider_name,
+        description: provider.description || '',
+        ...parseProviderConfig(provider.config)
+      });
+    }
     router.replace(routes.memoryProviders.details(providerId as string));
+  };
+
+  const authTypeLabel = (type: string) => {
+    const labels: Record<string, string> = {
+      none: 'None',
+      token: 'API Key',
+      bearer: 'Bearer Token',
+      basic: 'Basic Auth',
+      custom: 'Custom Header'
+    };
+    return labels[type] ?? type;
   };
 
   return (
@@ -167,7 +229,7 @@ export default function MemoryProviderDetailsPage() {
           provider && (
             <DetailsPageActions
               onDelete={() => deleteDialog.open({id: provider.memory_provider_id, memory_provider_name: provider.memory_provider_name})}
-              onEdit={() => setIsEditMode(true)}
+              onEdit={provider.memory_provider_name !== 'ioc-memory-provider' ? () => setIsEditMode(true) : undefined}
               isEditMode={isEditMode}
               onSave={form.handleSubmit(handleSave)}
               onCancelEdit={handleCancelEdit}
@@ -192,13 +254,15 @@ export default function MemoryProviderDetailsPage() {
             <Card variant="list" className="w-full max-w-4xl">
               <CardContent className="p-8">
                 <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
+                  <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6" autoComplete="off">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Provider ID — always read-only */}
                       <div className="space-y-2">
                         <Label>Provider ID</Label>
                         <CopyableInput value={provider?.memory_provider_id || ''} />
                       </div>
 
+                      {/* Provider Name */}
                       {isEditMode ? (
                         <FormField
                           control={form.control}
@@ -220,11 +284,13 @@ export default function MemoryProviderDetailsPage() {
                         </div>
                       )}
 
+                      {/* Enabled — always read-only */}
                       <div className="space-y-2">
                         <Label>Enabled</Label>
                         <Input value={provider?.enabled ? 'Yes' : 'No'} disabled readOnly />
                       </div>
 
+                      {/* Description */}
                       <div className="md:col-span-2">
                         {isEditMode ? (
                           <FormField
@@ -248,20 +314,17 @@ export default function MemoryProviderDetailsPage() {
                         )}
                       </div>
 
+                      {/* Provider URL */}
                       <div className="md:col-span-2">
                         {isEditMode ? (
                           <FormField
                             control={form.control}
-                            name="config"
+                            name="url"
                             render={({field}) => (
                               <FormItem>
-                                <FormLabel>Configuration (JSON)</FormLabel>
+                                <FormLabel>Provider URL</FormLabel>
                                 <FormControl>
-                                  <Textarea
-                                    {...field}
-                                    className="font-mono text-sm min-h-[200px] resize-y"
-                                    placeholder="Enter provider configuration as JSON"
-                                  />
+                                  <Input {...field} placeholder="http://localhost:8765" autoComplete="off" />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -269,37 +332,212 @@ export default function MemoryProviderDetailsPage() {
                           />
                         ) : (
                           <div className="space-y-2">
-                            <Label>Configuration</Label>
-                            <Textarea
-                              value={provider?.config ? JSON.stringify(provider.config, null, 2) : ''}
-                              disabled
-                              readOnly
-                              className="font-mono text-sm min-h-[200px] resize-none"
-                            />
+                            <Label>Provider URL</Label>
+                            <CopyableInput value={(provider?.config as MemoryProviderConfig | null)?.url || ''} />
                           </div>
                         )}
                       </div>
 
-                      {/* <div className="space-y-2">
-                        <Label>Created By</Label>
-                        <Input value={provider?.created_by || 'Unknown'} disabled readOnly />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Created At</Label>
-                        <Input
-                          value={provider?.created_at ? new Date(provider.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'}
-                          disabled
-                          readOnly
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Updated At</Label>
-                        <Input
-                          value={provider?.updated_at ? new Date(provider.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'}
-                          disabled
-                          readOnly
-                        />
-                      </div> */}
+                      {/* Authentication Type */}
+                      {isEditMode ? (
+                        <div className="md:col-span-2">
+                          <FormField
+                            control={form.control}
+                            name="authType"
+                            render={({field}) => (
+                              <FormItem>
+                                <FormLabel>Authentication Type</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                  <FormControl>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select authentication type" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="none">None</SelectItem>
+                                    <SelectItem value="token">API Key</SelectItem>
+                                    <SelectItem value="bearer">Bearer Token</SelectItem>
+                                    <SelectItem value="basic">Basic Auth</SelectItem>
+                                    <SelectItem value="custom">Custom Header</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <Label>Authentication Type</Label>
+                          <Input value={authTypeLabel((provider?.config as MemoryProviderConfig | null)?.auth?.type ?? 'none')} disabled readOnly />
+                        </div>
+                      )}
+
+                      {/* Conditional credential fields — view mode */}
+                      {!isEditMode &&
+                        (() => {
+                          const config = provider?.config as MemoryProviderConfig | null;
+                          const creds = config?.auth?.credentials;
+                          const type = config?.auth?.type;
+                          if (!creds || !type || type === 'none') {
+                            return null;
+                          }
+
+                          const RevealInput = ({fieldKey, label, value}: {fieldKey: string; label: string; value: string}) => (
+                            <div className="space-y-2">
+                              <Label>{label}</Label>
+                              <div className="relative">
+                                <Input value={value} type={revealedFields.has(fieldKey) ? 'text' : 'password'} disabled readOnly className="pr-10" />
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground"
+                                  onClick={() => toggleReveal(fieldKey)}
+                                >
+                                  {revealedFields.has(fieldKey) ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </Button>
+                              </div>
+                            </div>
+                          );
+
+                          if (type === 'token') {
+                            return (
+                              <div className="md:col-span-2">
+                                <RevealInput fieldKey="api_key" label="API Key" value={creds.api_key ?? ''} />
+                              </div>
+                            );
+                          }
+                          if (type === 'bearer') {
+                            return (
+                              <div className="md:col-span-2">
+                                <RevealInput fieldKey="access_token" label="Access Token" value={creds.access_token ?? ''} />
+                              </div>
+                            );
+                          }
+                          if (type === 'basic') {
+                            return (
+                              <>
+                                <div className="space-y-2">
+                                  <Label>Username</Label>
+                                  <Input value={creds.username ?? ''} disabled readOnly />
+                                </div>
+                                <RevealInput fieldKey="password" label="Password" value={creds.password ?? ''} />
+                              </>
+                            );
+                          }
+                          if (type === 'custom') {
+                            return (
+                              <>
+                                <div className="space-y-2">
+                                  <Label>Header Name</Label>
+                                  <Input value={creds.header_name ?? ''} disabled readOnly />
+                                </div>
+                                <RevealInput fieldKey="header_value" label="Header Value" value={creds.header_value ?? ''} />
+                              </>
+                            );
+                          }
+                          return null;
+                        })()}
+
+                      {/* Conditional credential fields — edit mode */}
+                      {isEditMode && authType === 'token' && (
+                        <div className="md:col-span-2">
+                          <FormField
+                            control={form.control}
+                            name="token"
+                            render={({field}) => (
+                              <FormItem>
+                                <FormLabel>API Key</FormLabel>
+                                <FormControl>
+                                  <Input type="password" placeholder="Enter API key" autoComplete="new-password" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      )}
+
+                      {isEditMode && authType === 'bearer' && (
+                        <div className="md:col-span-2">
+                          <FormField
+                            control={form.control}
+                            name="access_token"
+                            render={({field}) => (
+                              <FormItem>
+                                <FormLabel>Access Token</FormLabel>
+                                <FormControl>
+                                  <Input type="password" placeholder="Enter access token" autoComplete="new-password" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      )}
+
+                      {isEditMode && authType === 'basic' && (
+                        <>
+                          <FormField
+                            control={form.control}
+                            name="username"
+                            render={({field}) => (
+                              <FormItem>
+                                <FormLabel>Username</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Enter username" autoComplete="off" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="password"
+                            render={({field}) => (
+                              <FormItem>
+                                <FormLabel>Password</FormLabel>
+                                <FormControl>
+                                  <Input type="password" placeholder="Enter password" autoComplete="new-password" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </>
+                      )}
+
+                      {isEditMode && authType === 'custom' && (
+                        <>
+                          <FormField
+                            control={form.control}
+                            name="header_name"
+                            render={({field}) => (
+                              <FormItem>
+                                <FormLabel>Header Name</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="X-API-Key" autoComplete="off" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="header_value"
+                            render={({field}) => (
+                              <FormItem>
+                                <FormLabel>Header Value</FormLabel>
+                                <FormControl>
+                                  <Input type="password" placeholder="Enter header value" autoComplete="new-password" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </>
+                      )}
                     </div>
                   </form>
                 </Form>

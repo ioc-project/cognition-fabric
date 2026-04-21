@@ -5,7 +5,7 @@ import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 import {ResourceTable} from '@/components/ui/resource-table';
 import {TruncatedText} from '@/components/ui/truncated-text';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
-import {MoreVertical, Trash2} from 'lucide-react';
+import {MoreVertical, Trash2, Eye, Edit} from 'lucide-react';
 import type {MultiAgenticSystem} from '@/api/endpoints/mas';
 
 export interface MASTableListProps {
@@ -14,9 +14,10 @@ export interface MASTableListProps {
   selectedId: string | null;
   onRowClick: (m: MultiAgenticSystem) => void;
   onOpenDelete: (payload: {id: string; name: string}) => void;
+  onOpenEdit: (m: MultiAgenticSystem) => void;
 }
 
-export function MASTableList({masList, workspaceId: _workspaceId, selectedId, onRowClick, onOpenDelete}: MASTableListProps) {
+export function MASTableList({masList, workspaceId: _workspaceId, selectedId, onRowClick, onOpenDelete, onOpenEdit}: MASTableListProps) {
   return (
     <ResourceTable
       items={masList}
@@ -47,7 +48,24 @@ export function MASTableList({masList, workspaceId: _workspaceId, selectedId, on
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem disabled>View Details</DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRowClick(mas);
+                  }}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  View Details
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onOpenEdit(mas);
+                  }}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-red-600 dark:text-red-400"
                   onClick={(e) => {

@@ -4,7 +4,7 @@ import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
-import {MoreVertical, Trash2, Edit} from 'lucide-react';
+import {MoreVertical, Trash2, Edit, Eye} from 'lucide-react';
 import type {MemoryProvider} from '@/api/types/memory-provider';
 
 export interface MemoryProviderCardListProps {
@@ -48,24 +48,36 @@ export function MemoryProviderCardList({providers, selectedId, onCardClick, onOp
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    onOpenEdit(provider);
+                    onCardClick(provider);
                   }}
                 >
-                  <Edit className="w-4 h-4 mr-2" />
-                  Edit
+                  <Eye className="w-4 h-4 mr-2" />
+                  View Details
                 </DropdownMenuItem>
                 {provider.memory_provider_name !== 'ioc-memory-provider' && (
-                  <DropdownMenuItem
-                    className="text-red-600 dark:text-red-400"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onOpenDelete({id: provider.memory_provider_id, name: provider.memory_provider_name});
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Delete
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onOpenEdit(provider);
+                      }}
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="text-red-600 dark:text-red-400"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onOpenDelete({id: provider.memory_provider_id, name: provider.memory_provider_name});
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </DropdownMenuItem>
+                  </>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, {useEffect, useMemo} from 'react';
-import {Boxes, Brain, Network, Database, type LucideIcon} from 'lucide-react';
+import {Boxes, Brain, Network, Database, ScrollText, type LucideIcon} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments, useRouter} from 'next/navigation';
 import {routes} from '@/constants/routes';
@@ -12,7 +12,7 @@ export function Sidebar() {
   const segments = useSelectedLayoutSegments();
 
   useEffect(() => {
-    const hrefs: string[] = [routes.cfn.list, routes.memoryProviders.list, routes.mas.list, routes.cognitiveAgents.list];
+    const hrefs: string[] = [routes.cfn.list, routes.memoryProviders.list, routes.mas.list, routes.cognitiveAgents.list, routes.audits];
     hrefs.forEach((h) => {
       try {
         router.prefetch(h);
@@ -51,6 +51,13 @@ export function Sidebar() {
         icon: Brain,
         label: 'Cognition Engines',
         isActive: () => segments[0] === 'cognitive-agents'
+      },
+      {
+        id: 'audits',
+        href: routes.audits,
+        icon: ScrollText,
+        label: 'Audits',
+        isActive: () => segments[0] === 'audits'
       }
     ],
     [segments, pathname]

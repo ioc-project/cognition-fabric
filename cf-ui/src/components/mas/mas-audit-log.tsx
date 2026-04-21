@@ -1,16 +1,15 @@
 'use client';
 
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useState} from 'react';
 import {ChevronDown, ChevronRight, Clock, Edit, Plus, Trash2, User, History, Copy, Check} from 'lucide-react';
 import {useAuditEvents} from '@/hooks/useAuditEvents';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
-import {Tabs, TabsContent, TabsList, TabsTrigger} from '@/components/ui/tabs';
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from '@/components/ui/dialog';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
-import type {AuditEvent} from '@/api/endpoints/audit';
+import type {AuditEvent, AuditInformation} from '@/api/endpoints/audit';
 import {cn} from '@/lib/utils';
 
 interface MASAuditLogProps {
@@ -26,12 +25,13 @@ interface AgentChange {
   changes?: string[];
 }
 
-interface ParsedAuditEvent extends AuditEvent {
+interface ParsedAuditEvent extends Omit<AuditEvent, 'audit_information'> {
+  audit_information?: AuditInformation | null;
   agentChanges?: AgentChange[];
   masChanges?: string[];
 }
 
-function parseAgentChanges(currentEvent: AuditEvent, previousEvent?: AuditEvent): AgentChange[] {
+function parseAgentChanges(currentEvent: ParsedAuditEvent, previousEvent?: ParsedAuditEvent): AgentChange[] {
   const changes: AgentChange[] = [];
 
   const currentAgents = currentEvent.audit_information?.agents || [];
@@ -85,7 +85,7 @@ function parseAgentChanges(currentEvent: AuditEvent, previousEvent?: AuditEvent)
   return changes;
 }
 
-function parseMASChanges(currentEvent: AuditEvent, previousEvent?: AuditEvent): string[] {
+function parseMASChanges(currentEvent: ParsedAuditEvent, previousEvent?: ParsedAuditEvent): string[] {
   const changes: string[] = [];
 
   if (!previousEvent) {
@@ -201,14 +201,15 @@ function AuditEventCard({
   event,
   expanded,
   onToggle,
-  filterAgentId
+  filterAgentId,
+  resolvedResourceName
 }: {
   event: ParsedAuditEvent;
   expanded: boolean;
   onToggle: () => void;
   filterAgentId?: string;
+  resolvedResourceName?: string;
 }) {
-  // Filter agent changes if viewing a specific agent tab
   const displayAgentChanges = filterAgentId ? event.agentChanges?.filter((change) => change.agentId === filterAgentId) : event.agentChanges;
 
   const hasDetails = event.audit_information || event.operation_id;
@@ -263,7 +264,7 @@ function AuditEventCard({
 
         {event.audit_resource_identifier && (
           <div className="flex items-start text-xs">
-            <TruncatedCopyableId id={event.audit_resource_identifier} label="Resource" />
+            <TruncatedCopyableId id={event.audit_resource_identifier} label="Resource" resolvedName={resolvedResourceName} />
           </div>
         )}
 
@@ -327,7 +328,6 @@ function AuditEventCard({
           </div>
         )}
 
-        {/* Footer - User and Timestamp */}
         <div className="flex items-center justify-between pt-2 border-t text-xs text-muted-foreground">
           <div className="flex items-center gap-1">
             <User className="w-3 h-3" />
@@ -347,7 +347,6 @@ function AuditEventCard({
         {/* Expanded Details */}
         {expanded && event.audit_information && (
           <div className="mt-3 space-y-3">
-            {/* HTTP Status */}
             {event.audit_information?.http_status && (
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-muted-foreground font-medium">HTTP Status:</span>
@@ -430,7 +429,7 @@ function getResourceTypeLabel(resourceType: string): string {
   return labels[resourceType] || resourceType;
 }
 
-function TruncatedCopyableId({id, label}: {id: string; label?: string}) {
+function TruncatedCopyableId({id, label, resolvedName}: {id: string; label?: string; resolvedName?: string}) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -443,118 +442,114 @@ function TruncatedCopyableId({id, label}: {id: string; label?: string}) {
 
   return (
     <TooltipProvider>
-      <div className="flex items-center gap-1.5">
-        {label && <span className="text-muted-foreground font-medium">{label}:</span>}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono cursor-help">{truncated}</code>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="font-mono text-xs">{id}</p>
-          </TooltipContent>
-        </Tooltip>
-        <button
-          onClick={handleCopy}
-          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded"
-          title="Copy to clipboard"
-        >
-          {copied ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
-        </button>
-      </div>
+      {resolvedName ? (
+        <div className="flex flex-col gap-0.5">
+          {label && <span className="text-muted-foreground font-medium text-xs">{label}:</span>}
+          <span className="text-xs font-medium">{resolvedName}</span>
+          <div className="flex items-center gap-1.5 group">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono cursor-help truncate max-w-[240px]">{truncated}</code>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="font-mono text-xs">{id}</p>
+              </TooltipContent>
+            </Tooltip>
+            <button onClick={handleCopy} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded" title="Copy">
+              {copied ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1.5 group">
+          {label && <span className="text-muted-foreground font-medium text-xs">{label}:</span>}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono cursor-help">{truncated}</code>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="font-mono text-xs">{id}</p>
+            </TooltipContent>
+          </Tooltip>
+          <button onClick={handleCopy} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded" title="Copy">
+            {copied ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
+          </button>
+        </div>
+      )}
     </TooltipProvider>
   );
 }
 
-export function MASAuditLog({masId, workspaceId, masName, agents}: MASAuditLogProps) {
+export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}: MASAuditLogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
-  const [selectedAgentId, setSelectedAgentId] = useState<string | null>(null);
-  const [currentTab, setCurrentTab] = useState('mas-events');
+  const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
+  const [selectedAuditType, setSelectedAuditType] = useState<string | null>(null);
 
-  // Clear agent selection when tab is clicked
-  const handleTabChange = (value: string) => {
-    setCurrentTab(value);
-    setSelectedAgentId(null);
+  const ALL_AUDIT_TYPES = [
+    {value: 'SHARED_MEMORY_OPERATION', label: 'Shared Memory Operation'},
+    {value: 'AGENT_MEMORY_OPERATION', label: 'Agent Memory Operation'},
+    {value: 'KNOWLEDGE_INGESTION', label: 'Knowledge Ingestion'}
+  ];
+
+  const availableAuditTypes = selectedAgent ? [{value: 'AGENT_MEMORY_OPERATION', label: 'Agent Memory Operation'}] : ALL_AUDIT_TYPES;
+
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedAgent(null);
+      setSelectedAuditType(null);
+      setExpandedEvents(new Set());
+    }
+  }, [isOpen]);
+
+  const auditTypeFilter = selectedAuditType ? {audit_type: selectedAuditType} : {};
+
+  const apiFilters = {
+    ...(selectedAgent ? {resource_type: 'MAS-AGENT'} : {}),
+    ...auditTypeFilter
   };
 
-  // Fetch MAS-level events
-  const {
-    auditEvents: masEvents,
-    isLoading: masLoading,
-    error: masError
-  } = useAuditEvents({
-    resource_type: 'MAS',
-    limit: 100
-  });
+  const {auditEvents, isLoading, error, hasMore, loadMore} = useAuditEvents(apiFilters);
 
-  // Fetch agent-level memory operations
-  const {
-    auditEvents: agentEvents,
-    isLoading: agentLoading,
-    error: agentError
-  } = useAuditEvents({
-    resource_type: 'MAS-AGENT',
-    limit: 100
-  });
-
-  const isLoading = masLoading || agentLoading;
-  const error = masError || agentError;
+  const availableAgents = useMemo(() => agents?.map((a) => a.agent_id) ?? [], [agents]);
 
   const parsedEvents = useMemo<ParsedAuditEvent[]>(() => {
     const agentIds = new Set(agents?.map((a) => a.agent_id) || []);
 
-    const combinedEvents = [...masEvents, ...agentEvents];
-    const masEventsFiltered = combinedEvents.filter((event) => {
+    const combined = auditEvents.filter((event) => {
       if (event.resource_type === 'MAS') {
         return event.audit_resource_identifier === masId || event.audit_information?.id === masId || event.resource_identifier === masId;
       }
-
       if (event.resource_type === 'MAS-AGENT') {
-        if (event.audit_information?.request?.http_request_body?.mas_id === masId) {
+        if (selectedAgent) {
+          return event.resource_identifier === selectedAgent;
+        }
+        if ((event.audit_information as AuditInformation | null)?.request?.http_request_body?.mas_id === masId) {
           return true;
         }
         return agentIds.has(event.resource_identifier);
       }
-
       return false;
     });
 
-    // Sort by date descending
-    const sorted = [...masEventsFiltered].sort((a, b) => new Date(b.created_on).getTime() - new Date(a.created_on).getTime());
+    const sorted = [...combined].sort((a, b) => new Date(b.created_on).getTime() - new Date(a.created_on).getTime());
 
-    return sorted.map((event, index) => {
-      const previousEvent = sorted[index + 1];
+    const parsedSorted: ParsedAuditEvent[] = sorted.map((event) => ({
+      ...event,
+      audit_information: event.audit_information as AuditInformation | null | undefined
+    }));
 
+    return parsedSorted.map((event, index) => {
+      const previousEvent = parsedSorted[index + 1];
       return {
         ...event,
         agentChanges:
           event.audit_type === 'RESOURCE_UPDATED' || event.audit_type === 'RESOURCE_CREATED' ? parseAgentChanges(event, previousEvent) : undefined,
-        masChanges: parseMASChanges(event, previousEvent)
+        masChanges:
+          event.audit_type === 'RESOURCE_UPDATED' || event.audit_type === 'RESOURCE_CREATED' ? parseMASChanges(event, previousEvent) : undefined
       };
     });
-  }, [masEvents, agentEvents, masId, agents]);
-
-  const masEventsToDisplay = parsedEvents;
-
-  // Filter to show only MAS-level events (not agent events)
-  const getMASOnlyEvents = () => {
-    return parsedEvents
-      .filter((event) => event.resource_type === 'MAS')
-      .sort((a, b) => new Date(b.created_on).getTime() - new Date(a.created_on).getTime());
-  };
-
-  // Filter to show specific agent events
-  const getAgentEventsForMAS = (agentId: string) => {
-    return parsedEvents
-      .filter((event) => event.resource_identifier === agentId)
-      .sort((a, b) => new Date(b.created_on).getTime() - new Date(a.created_on).getTime());
-  };
-
-  const getFilteredEvents = () => {
-    if (!selectedAgentId) return masEventsToDisplay;
-    if (selectedAgentId === '__MAS__') return getMASOnlyEvents();
-    return getAgentEventsForMAS(selectedAgentId);
-  };
+  }, [auditEvents, masId, agents, selectedAgent]);
 
   const toggleExpanded = (eventId: string) => {
     setExpandedEvents((prev) => {
@@ -567,28 +562,6 @@ export function MASAuditLog({masId, workspaceId, masName, agents}: MASAuditLogPr
       return next;
     });
   };
-
-  const renderEventsList = (events: ParsedAuditEvent[]) => (
-    <div>
-      {events.length === 0 ? (
-        <div className="text-center py-12 text-muted-foreground">
-          <History className="w-16 h-16 mx-auto mb-3 opacity-30" />
-          <p className="text-lg font-medium">No audit events yet</p>
-          <p className="text-sm mt-1">Events will appear here when activities occur</p>
-        </div>
-      ) : (
-        events.map((event) => (
-          <AuditEventCard
-            key={event.id}
-            event={event}
-            expanded={expandedEvents.has(event.id)}
-            onToggle={() => toggleExpanded(event.id)}
-            filterAgentId={selectedAgentId || undefined}
-          />
-        ))
-      )}
-    </div>
-  );
 
   return (
     <>
@@ -609,10 +582,59 @@ export function MASAuditLog({masId, workspaceId, masName, agents}: MASAuditLogPr
             <div className="flex items-start justify-between">
               <div>
                 <DialogTitle className="text-xl">Audit Trail</DialogTitle>
-                <DialogDescription className="mt-1">View audit logs and actions</DialogDescription>
+                <DialogDescription className="mt-1">View audit logs and actions for {masName}</DialogDescription>
               </div>
             </div>
           </DialogHeader>
+
+          <div className="px-6 py-4 flex items-center gap-3 border-b flex-shrink-0">
+            <Select
+              value={selectedAgent || 'ALL'}
+              onValueChange={(value) => {
+                setSelectedAgent(value === 'ALL' ? null : value);
+                setSelectedAuditType(null);
+              }}
+            >
+              <SelectTrigger className="w-[180px]">
+                <SelectValue>{selectedAgent ?? 'Agents'}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All</SelectItem>
+                {availableAgents.map((agentId) => (
+                  <SelectItem key={agentId} value={agentId}>
+                    {agentId}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={selectedAuditType || 'ALL'} onValueChange={(value) => setSelectedAuditType(value === 'ALL' ? null : value)}>
+              <SelectTrigger className="w-[220px]">
+                <SelectValue>{selectedAuditType ? getAuditTypeLabel(selectedAuditType) : 'Events'}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All</SelectItem>
+                {availableAuditTypes.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {(selectedAgent || selectedAuditType) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSelectedAgent(null);
+                  setSelectedAuditType(null);
+                }}
+              >
+                Clear filters
+              </Button>
+            )}
+          </div>
 
           <div className="flex-1 overflow-hidden flex flex-col">
             <ConditionalSWRRenderer
@@ -621,41 +643,30 @@ export function MASAuditLog({masId, workspaceId, masName, agents}: MASAuditLogPr
               itemName="audit events"
               customIsLoading={isLoading}
               emptyListStateProps={{
-                title: 'No audit events yet',
-                description: 'Audit events will appear here when changes are made to this MAS.'
+                title: 'No audit events found',
+                description: 'Try adjusting your filters or check back after activity occurs.'
               }}
             >
-              <Tabs value={currentTab} onValueChange={handleTabChange} className="flex flex-col h-full">
-                <div className="mx-6 mt-4 mb-6 flex items-center gap-4 pb-4 border-b">
-                  <TabsList className="w-auto">
-                    <TabsTrigger value="mas-events" className="whitespace-nowrap" onClick={() => setSelectedAgentId(null)}>
-                      All Multi-Agentic System Events
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <Select value={selectedAgentId || ''} onValueChange={(value) => setSelectedAgentId(value || null)}>
-                    <SelectTrigger className="w-[250px]">
-                      <SelectValue placeholder="Filter events" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__MAS__">{masName}</SelectItem>
-                      {agents &&
-                        agents.length > 0 &&
-                        agents.map((agent) => (
-                          <SelectItem key={agent.agent_id} value={agent.agent_id}>
-                            {agent.agent_id}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="flex-1 overflow-y-auto px-6 pb-6 min-h-0">
-                  <TabsContent value="mas-events" className="mt-4">
-                    {renderEventsList(getFilteredEvents())}
-                  </TabsContent>
-                </div>
-              </Tabs>
+              <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+                {parsedEvents.map((event) => (
+                  <AuditEventCard
+                    key={event.id}
+                    event={event}
+                    expanded={expandedEvents.has(event.id)}
+                    onToggle={() => toggleExpanded(event.id)}
+                    resolvedResourceName={
+                      event.resource_type === 'MAS' ? masName : event.resource_type === 'MAS-AGENT' ? event.resource_identifier : undefined
+                    }
+                  />
+                ))}
+                {hasMore && (
+                  <div className="flex justify-center pt-4">
+                    <Button variant="outline" size="sm" onClick={loadMore} disabled={isLoading}>
+                      {isLoading ? 'Loading...' : 'Load more'}
+                    </Button>
+                  </div>
+                )}
+              </div>
             </ConditionalSWRRenderer>
           </div>
         </DialogContent>

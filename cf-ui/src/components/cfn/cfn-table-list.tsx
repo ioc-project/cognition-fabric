@@ -4,7 +4,7 @@ import {Button} from '@/components/ui/button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {ResourceTable} from '@/components/ui/resource-table';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
-import {MoreVertical, Edit} from 'lucide-react';
+import {MoreVertical, Edit, Eye} from 'lucide-react';
 import type {Cfn} from '@/api/types/cfn';
 
 export interface CfnTableListProps {
@@ -63,6 +63,15 @@ export function CfnTableList({cfns, selectedId, onRowClick, onOpenEdit}: CfnTabl
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRowClick(cfn);
+                  }}
+                >
+                  <Eye className="w-4 h-4 mr-2" />
+                  View Details
+                </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation();
