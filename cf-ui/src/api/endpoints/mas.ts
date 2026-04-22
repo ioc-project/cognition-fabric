@@ -65,16 +65,23 @@ export const masApi = {
   },
 
   knowledgeGraph: async (workspaceId: string, masId: string): Promise<unknown> => {
-    const {data, error} = await apiClient.GET('/api/workspaces/{workspaceId}/multi-agentic-systems/{masId}/knowledge-graph', {
-      params: {
-        path: {workspaceId, masId}
-      }
-    });
+    try {
+      const {data, error} = await apiClient.GET('/api/workspaces/{workspaceId}/multi-agentic-systems/{masId}/knowledge-graph', {
+        params: {
+          path: {workspaceId, masId}
+        }
+      });
 
-    if (error) {
-      throw error;
+      if (error) {
+        throw error;
+      }
+      return data;
+    } catch (err) {
+      if (err instanceof Error && 'status' in err && (err as {status: number}).status === 404) {
+        return null;
+      }
+      throw err;
     }
-    return data;
   },
 
   delete: async (workspaceId: string, id: string): Promise<void> => {

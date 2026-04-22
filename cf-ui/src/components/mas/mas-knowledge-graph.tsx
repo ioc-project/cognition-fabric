@@ -106,7 +106,7 @@ export default function MASKnowledgeGraphPage() {
           </div>
         )}
 
-        {!isLoading && !error && !data && (
+        {!isLoading && !error && (!data || graph.stats?.nodes === 0) && (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
             No knowledge graph data found for this multi-agentic system.
           </div>
