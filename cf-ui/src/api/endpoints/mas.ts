@@ -64,6 +64,19 @@ export const masApi = {
     return response;
   },
 
+  knowledgeGraph: async (workspaceId: string, masId: string): Promise<unknown> => {
+    const {data, error} = await apiClient.GET('/api/workspaces/{workspaceId}/multi-agentic-systems/{masId}/knowledge-graph', {
+      params: {
+        path: {workspaceId, masId}
+      }
+    });
+
+    if (error) {
+      throw error;
+    }
+    return data;
+  },
+
   delete: async (workspaceId: string, id: string): Promise<void> => {
     const {error} = await apiClient.DELETE('/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}', {
       params: {

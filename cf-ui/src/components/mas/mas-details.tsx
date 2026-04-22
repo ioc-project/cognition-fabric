@@ -9,6 +9,7 @@ import {z} from 'zod';
 import {swrKeys} from '@/lib/swr-config';
 import {masApi} from '@/api/endpoints';
 import type {MultiAgenticSystem, MultiAgenticSystemUpdate} from '@/api/endpoints/mas';
+import {Button} from '@/components/ui/button';
 import {BasePage} from '@/components/ui/base-page';
 import {Card, CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
@@ -24,6 +25,7 @@ import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {useMemoryProviders} from '@/hooks/useMemoryProviders';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {toast} from 'sonner';
+import {Network} from 'lucide-react';
 import {AgentsList} from './agents-list';
 import {CollapsibleJsonField} from './collapsible-json-field';
 import {MASAuditLog} from './mas-audit-log';
@@ -238,6 +240,10 @@ export default function MASDetailsPage() {
         callToAction={
           mas && (
             <div className="flex items-center gap-2">
+              <Button variant="sidebar" size="sm" onClick={() => router.push(routes.mas.knowledgeGraph(masId!))} className="gap-2">
+                <Network className="w-4 h-4" />
+                Knowledge Graph
+              </Button>
               <MASAuditLog masId={masId!} workspaceId={workspaceId!} masName={mas.name} agents={mas.agents || undefined} />
               <DetailsPageActions
                 onDelete={() => deleteDialog.open({id: mas.id, name: mas.name})}

@@ -28,7 +28,8 @@ export const routes = {
   mas: {
     list: '/mas',
     create: '/mas/create',
-    details: (masId: string) => `/mas/${masId}`
+    details: (masId: string) => `/mas/${masId}`,
+    knowledgeGraph: (masId: string) => `/mas/${masId}/knowledge-graph`
   },
 
   cognitiveAgents: {
