@@ -17,7 +17,10 @@ export function GraphControls({onZoomIn, onZoomOut, onFit, typeLegend, hiddenNod
     <>
       {/* Type legend */}
       {typeLegend.length > 0 && (
-        <div className="absolute top-4 left-4 rounded-lg border bg-background/90 shadow-sm px-3 py-2 flex flex-col gap-1.5">
+        <div
+          className="absolute top-4 left-4 z-30 rounded-lg border shadow-sm px-3 py-2 flex flex-col gap-1.5"
+          style={{backgroundColor: 'hsl(var(--card))'}}
+        >
           {typeLegend.map(({type, color}) => (
             <div key={type} className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{backgroundColor: color}} />
@@ -29,7 +32,7 @@ export function GraphControls({onZoomIn, onZoomOut, onFit, typeLegend, hiddenNod
 
       {/* Restore hidden nodes */}
       {hiddenNodeIds.size > 0 && (
-        <div className="absolute bottom-6 left-6">
+        <div className="absolute bottom-6 left-6 z-30">
           <Button variant="outline" size="sm" className="bg-background shadow-sm text-xs gap-1.5" onClick={onRestoreHidden}>
             <X className="w-3 h-3" />
             Restore {hiddenNodeIds.size} hidden node{hiddenNodeIds.size > 1 ? 's' : ''}
@@ -38,7 +41,7 @@ export function GraphControls({onZoomIn, onZoomOut, onFit, typeLegend, hiddenNod
       )}
 
       {/* Zoom controls */}
-      <div className="absolute bottom-6 right-6 flex flex-col gap-1.5">
+      <div className="absolute bottom-6 right-6 z-30 flex flex-col gap-1.5">
         <Button variant="outline" size="icon" className="h-8 w-8 bg-background shadow-sm" onClick={onZoomIn}>
           <ZoomIn className="w-4 h-4" />
         </Button>

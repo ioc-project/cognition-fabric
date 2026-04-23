@@ -64,7 +64,7 @@ export default function MASKnowledgeGraphPage() {
 
         {!isLoading && !error && data && (
           <div style={{display: showRaw ? 'none' : 'contents'}}>
-            <div className="absolute inset-0" style={{right: graph.panelState ? '24rem' : '0'}}>
+            <div className="absolute inset-0 z-0" style={{right: graph.panelState ? '24rem' : '0'}}>
               <div ref={graph.cyRef} className="w-full h-full" style={{backgroundColor: isDark ? '#0f172a' : '#f8fafc'}} />
             </div>
 
