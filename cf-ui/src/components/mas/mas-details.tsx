@@ -197,6 +197,7 @@ export default function MASDetailsPage() {
       await masApi.update(workspaceId as string, masId as string, payload);
       toast.success('Multi-Agentic System updated successfully');
       await mutate();
+      await globalMutate(swrKeys.mas(workspaceId!));
       setIsEditMode(false);
       router.replace(routes.mas.details(masId!));
     } catch (err) {
