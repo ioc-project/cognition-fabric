@@ -509,7 +509,16 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
     ...auditTypeFilter
   };
 
-  const {auditEvents, isLoading, error, hasMore, loadMore} = useAuditEvents(apiFilters);
+  const {auditEvents, isLoading, error, hasMore, loadMore, reset, mutate} = useAuditEvents(isOpen ? apiFilters : undefined);
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    reset();
+    void mutate();
+  }, [isOpen, selectedAgent, selectedAuditType, reset, mutate]);
 
   const availableAgents = useMemo(() => agents?.map((a) => a.agent_id) ?? [], [agents]);
 
@@ -550,6 +559,8 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
       };
     });
   }, [auditEvents, masId, agents, selectedAgent]);
+
+  const showLoadMore = hasMore && parsedEvents.length >= 10;
 
   const toggleExpanded = (eventId: string) => {
     setExpandedEvents((prev) => {
@@ -659,7 +670,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
                     }
                   />
                 ))}
-                {hasMore && (
+                {showLoadMore && (
                   <div className="flex justify-center pt-4">
                     <Button variant="outline" size="sm" onClick={loadMore} disabled={isLoading}>
                       {isLoading ? 'Loading...' : 'Load more'}

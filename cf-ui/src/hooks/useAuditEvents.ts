@@ -26,7 +26,7 @@ const DEFAULT_PAGE_SIZE = 20;
 export function useAuditEvents(filters?: Omit<AuditEventFilters, 'page' | 'pageSize'>, pageSize = DEFAULT_PAGE_SIZE) {
   const filtersKey = filters ? JSON.stringify(filters) : null;
 
-  const {data, error, isLoading, size, setSize} = useSWRInfinite(
+  const {data, error, isLoading, size, setSize, mutate} = useSWRInfinite(
     (pageIndex: number, previousPageData: AuditEventListResponse | null) => {
       if (!filtersKey) {
         return null;
@@ -56,6 +56,8 @@ export function useAuditEvents(filters?: Omit<AuditEventFilters, 'page' | 'pageS
     total: totalElements,
     hasMore,
     loadMore: () => setSize(size + 1),
+    reset: () => setSize(1),
+    mutate,
     isLoading: isLoadingMore,
     error
   };
