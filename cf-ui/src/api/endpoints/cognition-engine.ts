@@ -1,9 +1,9 @@
 import {apiClient} from '../client';
 import type {components} from '../generated/schema';
 
-type CognitionEngineDetail = components['schemas']['CognitiveEngineDetail'];
-type CognitionEngineListItem = components['schemas']['CognitiveEngineListItem'];
-type CognitionEngineList = components['schemas']['CognitiveEngineList'];
+type CognitionEngineDetail = components['schemas']['CognitionEngineDetail'];
+type CognitionEngineListItem = components['schemas']['CognitionEngineListItem'];
+type CognitionEngineList = components['schemas']['CognitionEngineList'];
 
 export const cognitionEngineApi = {
   async list(workspaceId: string): Promise<CognitionEngineListItem[]> {
@@ -20,9 +20,9 @@ export const cognitionEngineApi = {
   },
 
   async get(workspaceId: string, id: string): Promise<CognitionEngineDetail> {
-    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/cognition-engines/{cognitive_engine_id}', {
+    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/cognition-engines/{cognition_engine_id}', {
       params: {
-        path: {workspace_id: workspaceId, cognitive_engine_id: id}
+        path: {workspace_id: workspaceId, cognition_engine_id: id}
       }
     });
 

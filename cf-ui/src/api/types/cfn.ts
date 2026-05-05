@@ -1,9 +1,9 @@
 import type {components} from '../generated/schema';
 
-export type Cfn = components['schemas']['CognitiveFabricNodeResponse'];
-export type CfnListItem = components['schemas']['CognitiveFabricNodeListItem'];
-export type CfnStatus = components['schemas']['CognitiveFabricNodeStatus'];
-export type CreateCfnRequest = components['schemas']['CognitiveFabricNodeRegisterRequest'];
-export type CreateCfnResponse = components['schemas']['CognitiveFabricNodeResponse'];
-export type UpdateCfnRequest = components['schemas']['CognitiveFabricNodeUpdateRequest'];
-export type ListCfnResponse = components['schemas']['CognitiveFabricNodeList'];
+export type Cfn = components['schemas']['CognitionFabricNodeResponse'];
+export type CfnListItem = components['schemas']['CognitionFabricNodeListItem'];
+export type CfnStatus = components['schemas']['CognitionFabricNodeStatus'];
+export type CreateCfnRequest = components['schemas']['CognitionFabricNodeRegisterRequest'];
+export type CreateCfnResponse = components['schemas']['CognitionFabricNodeResponse'];
+export type UpdateCfnRequest = components['schemas']['CognitionFabricNodeUpdateRequest'];
+export type ListCfnResponse = components['schemas']['CognitionFabricNodeList'];

@@ -31,14 +31,14 @@ export default function CognitiveAgentDetailsPage() {
   const crumbs = cognitiveAgent
     ? [
         {link: routes.cognitiveAgents.list, text: 'Cognition Engines'},
-        {link: '', text: cognitiveAgent.cognitive_engine_name, active: true}
+        {link: '', text: cognitiveAgent.cognition_engine_name, active: true}
       ]
     : undefined;
 
   return (
     <>
       <BasePage
-        title={cognitiveAgent?.cognitive_engine_name || 'Cognition Engine'}
+        title={cognitiveAgent?.cognition_engine_name || 'Cognition Engine'}
         description="View details about your cognition engine"
         useBreadcrumbs
         breadcrumbs={crumbs}
@@ -60,11 +60,11 @@ export default function CognitiveAgentDetailsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label>Engine ID</Label>
-                        <CopyableInput value={cognitiveAgent?.cognitive_engine_id || ''} />
+                        <CopyableInput value={cognitiveAgent?.cognition_engine_id || ''} />
                       </div>
                       <div className="space-y-2">
                         <Label>Name</Label>
-                        <Input value={cognitiveAgent?.cognitive_engine_name || ''} disabled readOnly />
+                        <Input value={cognitiveAgent?.cognition_engine_name || ''} disabled readOnly />
                       </div>
                       <div className="space-y-2">
                         <Label>Status</Label>
