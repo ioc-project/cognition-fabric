@@ -26,11 +26,11 @@ export function CfnTableList({cfns, selectedId, onRowClick, onOpenEdit}: CfnTabl
         {content: 'Created'},
         {content: 'Actions', className: 'text-right'}
       ]}
-      rowKey={(cfn) => cfn.cfn_id}
-      isSelected={(cfn) => selectedId === cfn.cfn_id}
+      rowKey={(cfn) => cfn.id}
+      isSelected={(cfn) => selectedId === cfn.id}
       onRowClick={(cfn) => onRowClick(cfn)}
       renderRow={(cfn) => [
-        {content: cfn.cfn_name, className: 'font-medium'},
+        {content: cfn.name, className: 'font-medium'},
         {
           content: (
             <span

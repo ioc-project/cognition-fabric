@@ -17,7 +17,7 @@ import {BasePage} from '@/components/ui/base-page';
 import {useCfn} from '@/hooks/useCfn';
 
 const formSchema = z.object({
-  cfn_name: z.string().min(1, 'CFN Name is required').min(3, 'CFN Name must be at least 3 characters'),
+  name: z.string().min(1, 'CFN Name is required').min(3, 'CFN Name must be at least 3 characters'),
   ip_address: z.string().min(1, 'IP Address is required'),
   port: z
     .string()
@@ -46,7 +46,7 @@ export function CreateCfnForm({onCancel}: CreateCfnFormProps) {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      cfn_name: '',
+      name: '',
       ip_address: '',
       port: ''
     }
@@ -58,12 +58,12 @@ export function CreateCfnForm({onCancel}: CreateCfnFormProps) {
       setError(null);
 
       const response = await addCfn({
-        cfn_name: values.cfn_name,
+        name: values.name,
         ip_address: values.ip_address,
         port: parseInt(values.port, 10)
       });
 
-      toast.success(`Cognition Fabric Node "${response.cfn_name}" registered successfully`);
+      toast.success(`Cognition Fabric Node "${response.name}" registered successfully`);
 
       router.push(routes.cfn.list);
     } catch (err) {
@@ -104,7 +104,7 @@ export function CreateCfnForm({onCancel}: CreateCfnFormProps) {
 
                   <FormField
                     control={form.control}
-                    name="cfn_name"
+                    name="name"
                     render={({field}) => (
                       <FormItem>
                         <FormLabel required>CFN Name</FormLabel>

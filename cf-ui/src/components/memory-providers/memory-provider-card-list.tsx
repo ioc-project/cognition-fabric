@@ -20,15 +20,15 @@ export function MemoryProviderCardList({providers, selectedId, onCardClick, onOp
     <div className="list-grid">
       {providers.map((provider) => (
         <Card
-          key={provider.memory_provider_id}
+          key={provider.id}
           variant="list"
-          className={`transition-shadow duration-200 flex flex-col cursor-pointer ${selectedId === provider.memory_provider_id ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))]' : ''}`}
+          className={`transition-shadow duration-200 flex flex-col cursor-pointer ${selectedId === provider.id ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))]' : ''}`}
           onClick={() => onCardClick(provider)}
         >
           <div className="pb-4 mb-5 border-b border-border/50 flex justify-between items-start">
             <div className="flex-1 mr-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">{provider.memory_provider_name}</span>
+                <span className="text-sm font-medium text-foreground">{provider.name}</span>
                 <span
                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${provider.enabled ? 'bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'}`}
                 >
@@ -54,7 +54,7 @@ export function MemoryProviderCardList({providers, selectedId, onCardClick, onOp
                   <Eye className="w-4 h-4 mr-2" />
                   View Details
                 </DropdownMenuItem>
-                {provider.memory_provider_name !== 'ioc-memory-provider' && (
+                {provider.name !== 'ioc-memory-provider' && (
                   <>
                     <DropdownMenuItem
                       onClick={(e) => {
@@ -71,7 +71,7 @@ export function MemoryProviderCardList({providers, selectedId, onCardClick, onOp
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        onOpenDelete({id: provider.memory_provider_id, name: provider.memory_provider_name});
+                        onOpenDelete({id: provider.id, name: provider.name});
                       }}
                     >
                       <Trash2 className="w-4 h-4 mr-2" />

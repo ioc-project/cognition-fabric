@@ -109,8 +109,8 @@ export function EditWorkspaceDialog({workspace, open, onOpenChange}: EditWorkspa
                         <div className="py-2 px-2 text-sm text-muted-foreground">No Cognition Fabric Nodes available</div>
                       ) : (
                         availableCfns.map((cfn: any) => (
-                          <SelectItem key={cfn.cfn_id} value={cfn.cfn_id}>
-                            {cfn.cfn_name} ({cfn.status})
+                          <SelectItem key={cfn.id} value={cfn.id}>
+                            {cfn.name} ({cfn.status})
                           </SelectItem>
                         ))
                       )}

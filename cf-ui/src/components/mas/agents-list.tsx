@@ -40,8 +40,8 @@ export function AgentsList({
   const viewModeAgents = masAgentsData
     ? masAgentsData.map((agent) => ({
         agent_id: agent.agent_id,
-        agentic_memory_provider_id: agent.agentic_memory?.memory_provider_id || '',
-        agentic_memory_provider_name: agent.agentic_memory?.memory_provider_name || ''
+        agentic_memory_provider_id: agent.agentic_memory?.id || '',
+        agentic_memory_provider_name: agent.agentic_memory?.name || ''
       }))
     : [];
 

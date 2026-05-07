@@ -75,7 +75,7 @@ export function WorkspaceDetails() {
     if (!workspace?.cfn_id) {
       return null;
     }
-    return cfns.find((cfn) => cfn.cfn_id === workspace.cfn_id) || null;
+    return cfns.find((cfn) => cfn.id === workspace.cfn_id) || null;
   }, [cfns, workspace?.cfn_id]);
 
   const latestCfns = useMemo(() => {
@@ -222,10 +222,10 @@ export function WorkspaceDetails() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
                       {latestCfns.map((cfn) => (
-                        <div key={cfn.cfn_id} className="p-4 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors h-full">
+                        <div key={cfn.id} className="p-4 border rounded-lg bg-background/50 hover:bg-background/80 transition-colors h-full">
                           <div className="flex flex-col h-full">
                             <div className="flex-1">
-                              <h3 className="text-sm font-medium text-foreground mb-2">{cfn.cfn_name}</h3>
+                              <h3 className="text-sm font-medium text-foreground mb-2">{cfn.name}</h3>
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
                               <span>{cfn.created_at ? new Date(cfn.created_at).toLocaleDateString() : 'Unknown date'}</span>

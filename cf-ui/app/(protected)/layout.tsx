@@ -37,7 +37,7 @@ function EnsureDefaultWorkspace({children}: {children: React.ReactNode}) {
           const cfnList = await cfnApi.list();
           const enabledCfn = (cfnList.nodes || []).find((cfn: any) => cfn.enabled);
 
-          if (!enabledCfn?.cfn_id) {
+          if (!enabledCfn?.id) {
             console.warn('No enabled CFN available to create default workspace');
             return;
           }
@@ -52,7 +52,7 @@ function EnsureDefaultWorkspace({children}: {children: React.ReactNode}) {
 
           const created = await workspaceApi.create({
             name: 'Default Workspace',
-            cfn_id: enabledCfn.cfn_id
+            cfn_id: enabledCfn.id
           });
 
           if (created?.id) {

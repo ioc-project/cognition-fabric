@@ -80,8 +80,8 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
   const userMemoryProviders = providers || [];
 
   // Filter providers: shared memory only shows "ioc-memory-provider", agentic shows all except it
-  const sharedMemoryProviders = userMemoryProviders.filter((p) => p.memory_provider_name === 'ioc-memory-provider');
-  const agenticMemoryProviders = userMemoryProviders.filter((p) => p.memory_provider_name !== 'ioc-memory-provider');
+  const sharedMemoryProviders = userMemoryProviders.filter((p) => p.name === 'ioc-memory-provider');
+  const agenticMemoryProviders = userMemoryProviders.filter((p) => p.name !== 'ioc-memory-provider');
 
   const {
     fields: agentFields,
@@ -206,8 +206,8 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                               <div className="py-2 px-2 text-sm text-muted-foreground">No shared memory providers available</div>
                             ) : (
                               sharedMemoryProviders.map((provider) => (
-                                <SelectItem key={provider.memory_provider_id} value={provider.memory_provider_id}>
-                                  {provider.memory_provider_name}
+                                <SelectItem key={provider.id} value={provider.id}>
+                                  {provider.name}
                                 </SelectItem>
                               ))
                             )}
@@ -227,7 +227,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                     onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
                     onAddAgent={() => appendAgent({agent_id: '', agentic_memory_provider_id: ''})}
                     onRemoveAgent={removeAgent}
-                    userMemoryProviders={agenticMemoryProviders.map((p) => ({id: p.memory_provider_id, provider_name: p.memory_provider_name}))}
+                    userMemoryProviders={agenticMemoryProviders.map((p) => ({id: p.id, provider_name: p.name}))}
                   />
 
                   <div className="space-y-4 border-t pt-6">

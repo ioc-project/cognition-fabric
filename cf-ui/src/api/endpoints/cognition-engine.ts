@@ -20,9 +20,9 @@ export const cognitionEngineApi = {
   },
 
   async get(workspaceId: string, id: string): Promise<CognitionEngineDetail> {
-    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/cognition-engines/{cognition_engine_id}', {
+    const {data, error} = await apiClient.GET('/api/workspaces/{workspace_id}/cognition-engines/{id}', {
       params: {
-        path: {workspace_id: workspaceId, cognition_engine_id: id}
+        path: {workspace_id: workspaceId, id: id}
       }
     });
 

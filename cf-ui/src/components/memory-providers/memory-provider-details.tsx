@@ -28,7 +28,7 @@ import {Eye, EyeOff} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 
 const UpdateMemoryProviderFormSchema = z.object({
-  memory_provider_name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters'),
+  name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters'),
   description: z.string().optional(),
   url: z.string().min(1, 'URL is required').url('Must be a valid URL'),
   authType: z.enum(['token', 'bearer', 'basic', 'custom', 'none']),
@@ -42,7 +42,7 @@ const UpdateMemoryProviderFormSchema = z.object({
 
 type FormValues = z.infer<typeof UpdateMemoryProviderFormSchema>;
 
-function parseProviderConfig(config: MemoryProvider['config']): Omit<FormValues, 'memory_provider_name' | 'description'> {
+function parseProviderConfig(config: MemoryProvider['config']): Omit<FormValues, 'name' | 'description'> {
   const typed = config as MemoryProviderConfig | null;
   const auth = typed?.auth;
   return {
@@ -78,7 +78,7 @@ export default function MemoryProviderDetailsPage() {
       return next;
     });
   }, []);
-  const deleteDialog = useConfirmDialog<{id: string; memory_provider_name: string}>();
+  const deleteDialog = useConfirmDialog<{id: string; name: string}>();
 
   const {
     data: provider,
@@ -90,7 +90,7 @@ export default function MemoryProviderDetailsPage() {
   const form = useForm<FormValues>({
     resolver: zodResolver(UpdateMemoryProviderFormSchema),
     defaultValues: {
-      memory_provider_name: '',
+      name: '',
       description: '',
       url: '',
       authType: 'none',
@@ -106,15 +106,15 @@ export default function MemoryProviderDetailsPage() {
   const authType = form.watch('authType');
 
   useEffect(() => {
-    if (searchParams.get('edit') === 'true' && provider?.enabled && provider?.memory_provider_name !== 'ioc-memory-provider') {
+    if (searchParams.get('edit') === 'true' && provider?.enabled && provider?.name !== 'ioc-memory-provider') {
       setIsEditMode(true);
     }
-  }, [searchParams, provider?.enabled, provider?.memory_provider_name]);
+  }, [searchParams, provider?.enabled, provider?.name]);
 
   useEffect(() => {
     if (provider) {
       form.reset({
-        memory_provider_name: provider.memory_provider_name,
+        name: provider.name,
         description: provider.description || '',
         ...parseProviderConfig(provider.config)
       });
@@ -130,7 +130,7 @@ export default function MemoryProviderDetailsPage() {
   const crumbs = provider
     ? [
         {link: routes.memoryProviders.list, text: 'Memory Providers'},
-        {link: '', text: provider.memory_provider_name || 'Provider', active: true}
+        {link: '', text: provider.name || 'Provider', active: true}
       ]
     : undefined;
 
@@ -138,7 +138,7 @@ export default function MemoryProviderDetailsPage() {
     await deleteDialog.confirm(async (data) => {
       try {
         await memoryProviderApi.delete(data.id);
-        toast.success(`Memory Provider "${data.memory_provider_name}" removed successfully`);
+        toast.success(`Memory Provider "${data.name}" removed successfully`);
         await globalMutate(swrKeys.memoryProviders());
         router.push(routes.memoryProviders.list);
       } catch (err) {
@@ -178,7 +178,7 @@ export default function MemoryProviderDetailsPage() {
       }
 
       const payload: UpdateMemoryProviderRequest = {
-        memory_provider_name: values.memory_provider_name,
+        name: values.name,
         description: values.description,
         config: {url: values.url, auth}
       };
@@ -199,7 +199,7 @@ export default function MemoryProviderDetailsPage() {
     setIsEditMode(false);
     if (provider) {
       form.reset({
-        memory_provider_name: provider.memory_provider_name,
+        name: provider.name,
         description: provider.description || '',
         ...parseProviderConfig(provider.config)
       });
@@ -221,15 +221,15 @@ export default function MemoryProviderDetailsPage() {
   return (
     <>
       <BasePage
-        title={provider?.memory_provider_name || 'Memory Provider Details'}
+        title={provider?.name || 'Memory Provider Details'}
         description="View and manage memory provider details"
         useBreadcrumbs
         breadcrumbs={crumbs}
         callToAction={
           provider && (
             <DetailsPageActions
-              onDelete={() => deleteDialog.open({id: provider.memory_provider_id, memory_provider_name: provider.memory_provider_name})}
-              onEdit={provider.memory_provider_name !== 'ioc-memory-provider' ? () => setIsEditMode(true) : undefined}
+              onDelete={() => deleteDialog.open({id: provider.id, name: provider.name})}
+              onEdit={provider.name !== 'ioc-memory-provider' ? () => setIsEditMode(true) : undefined}
               isEditMode={isEditMode}
               onSave={form.handleSubmit(handleSave)}
               onCancelEdit={handleCancelEdit}
@@ -259,14 +259,14 @@ export default function MemoryProviderDetailsPage() {
                       {/* Provider ID — always read-only */}
                       <div className="space-y-2">
                         <Label>Provider ID</Label>
-                        <CopyableInput value={provider?.memory_provider_id || ''} />
+                        <CopyableInput value={provider?.id || ''} />
                       </div>
 
                       {/* Provider Name */}
                       {isEditMode ? (
                         <FormField
                           control={form.control}
-                          name="memory_provider_name"
+                          name="name"
                           render={({field}) => (
                             <FormItem>
                               <FormLabel>Provider Name</FormLabel>
@@ -280,7 +280,7 @@ export default function MemoryProviderDetailsPage() {
                       ) : (
                         <div className="space-y-2">
                           <Label>Provider Name</Label>
-                          <Input value={provider?.memory_provider_name || ''} disabled readOnly />
+                          <Input value={provider?.name || ''} disabled readOnly />
                         </div>
                       )}
 
@@ -550,8 +550,8 @@ export default function MemoryProviderDetailsPage() {
         open={deleteDialog.isOpen}
         onOpenChange={deleteDialog.close}
         onConfirm={handleDelete}
-        title={`Remove ${deleteDialog.data?.memory_provider_name || 'Memory Provider'}`}
-        description={deleteError ?? `Are you sure you want to remove "${deleteDialog.data?.memory_provider_name}"? This action cannot be undone.`}
+        title={`Remove ${deleteDialog.data?.name || 'Memory Provider'}`}
+        description={deleteError ?? `Are you sure you want to remove "${deleteDialog.data?.name}"? This action cannot be undone.`}
         confirmText="Remove"
         variant="destructive"
         loading={deleteDialog.isLoading}

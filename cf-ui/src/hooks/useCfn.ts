@@ -25,7 +25,7 @@ export function useCfn(workspaceId?: string) {
 
   const deleteCfn = async (cfnId: string) => {
     const prev = data?.nodes || [];
-    await mutate({nodes: prev.filter((c) => c.cfn_id !== cfnId), total: Math.max((data?.total || 1) - 1, 0)}, {revalidate: false});
+    await mutate({nodes: prev.filter((c) => c.id !== cfnId), total: Math.max((data?.total || 1) - 1, 0)}, {revalidate: false});
     try {
       await runDeleteCfn(cfnId);
     } catch (e) {

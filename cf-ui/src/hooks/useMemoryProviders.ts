@@ -31,10 +31,7 @@ export function useMemoryProviders() {
 
   const deleteProvider = async (providerId: string) => {
     const prev = data?.providers || [];
-    await mutate(
-      {providers: prev.filter((p) => p.memory_provider_id !== providerId), total: Math.max((data?.total || 1) - 1, 0)},
-      {revalidate: false}
-    );
+    await mutate({providers: prev.filter((p) => p.id !== providerId), total: Math.max((data?.total || 1) - 1, 0)}, {revalidate: false});
     try {
       await runDeleteProvider(providerId);
     } catch (e) {

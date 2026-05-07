@@ -20,15 +20,15 @@ export function CognitiveAgentCardList({cognitiveAgents, selectedId, onCardClick
     <div className="list-grid">
       {cognitiveAgents.map((r) => (
         <Card
-          key={r.cognition_engine_id}
+          key={r.id}
           variant="list"
-          className={`transition-shadow duration-200 flex flex-col cursor-pointer ${selectedId === r.cognition_engine_id ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))]' : ''}`}
+          className={`transition-shadow duration-200 flex flex-col cursor-pointer ${selectedId === r.id ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))]' : ''}`}
           onClick={() => onCardClick(r)}
         >
           <div className="pb-4 mb-5 border-b border-border/50 flex justify-between items-start">
             <div className="flex-1 mr-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">{r.cognition_engine_name}</span>
+                <span className="text-sm font-medium text-foreground">{r.name}</span>
                 <span
                   className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
                     r.enabled
@@ -48,7 +48,7 @@ export function CognitiveAgentCardList({cognitiveAgents, selectedId, onCardClick
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href={routes.cognitiveAgents.details(r.cognition_engine_id)}>View Details</Link>
+                  <Link href={routes.cognitiveAgents.details(r.id)}>View Details</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -56,7 +56,7 @@ export function CognitiveAgentCardList({cognitiveAgents, selectedId, onCardClick
 
           <div className="mb-6">
             <div className="text-xs font-medium text-muted-foreground mb-2">ID</div>
-            <div className="text-xs text-foreground font-mono break-all leading-relaxed">{r.cognition_engine_id}</div>
+            <div className="text-xs text-foreground font-mono break-all leading-relaxed">{r.id}</div>
           </div>
 
           <div className="mb-8">

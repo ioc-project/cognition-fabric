@@ -57,8 +57,8 @@ export function CognitiveAgentList() {
                 cognitiveAgents={cognitionEngines}
                 selectedId={selectedId}
                 onRowClick={(r) => {
-                  setSelectedId(r.cognition_engine_id);
-                  router.push(routes.cognitiveAgents.details(r.cognition_engine_id));
+                  setSelectedId(r.id);
+                  router.push(routes.cognitiveAgents.details(r.id));
                 }}
               />
             ) : (
@@ -66,8 +66,8 @@ export function CognitiveAgentList() {
                 cognitiveAgents={cognitionEngines}
                 selectedId={selectedId}
                 onCardClick={(r) => {
-                  setSelectedId(r.cognition_engine_id);
-                  router.push(routes.cognitiveAgents.details(r.cognition_engine_id));
+                  setSelectedId(r.id);
+                  router.push(routes.cognitiveAgents.details(r.id));
                 }}
               />
             )}

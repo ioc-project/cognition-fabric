@@ -12,9 +12,9 @@ export const memoryProviderApi = {
   },
 
   async get(id: string): Promise<MemoryProvider> {
-    const {data, error} = await apiClient.GET('/api/memory-providers/{memory_provider_id}', {
+    const {data, error} = await apiClient.GET('/api/memory-providers/{id}', {
       params: {
-        path: {memory_provider_id: id}
+        path: {id: id}
       }
     });
 
@@ -36,9 +36,9 @@ export const memoryProviderApi = {
   },
 
   async update(id: string, data: UpdateMemoryProviderRequest): Promise<MemoryProvider> {
-    const {data: response, error} = await apiClient.PATCH('/api/memory-providers/{memory_provider_id}', {
+    const {data: response, error} = await apiClient.PATCH('/api/memory-providers/{id}', {
       params: {
-        path: {memory_provider_id: id}
+        path: {id: id}
       },
       body: data as any
     });
@@ -50,9 +50,9 @@ export const memoryProviderApi = {
   },
 
   async delete(id: string): Promise<void> {
-    const {error} = await apiClient.DELETE('/api/memory-providers/{memory_provider_id}', {
+    const {error} = await apiClient.DELETE('/api/memory-providers/{id}', {
       params: {
-        path: {memory_provider_id: id}
+        path: {id: id}
       }
     });
 

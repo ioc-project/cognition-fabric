@@ -21,7 +21,7 @@ import {breadcrumbs} from '@/constants/routes';
 
 const formSchema = z
   .object({
-    memory_provider_name: z.string().min(1, 'Name is required').min(3, 'Name must be at least 3 characters'),
+    name: z.string().min(1, 'Name is required').min(3, 'Name must be at least 3 characters'),
     description: z.string().optional(),
     url: z.string().min(1, 'URL is required').url('Must be a valid URL'),
     authType: z.enum(['token', 'bearer', 'basic', 'custom', 'none']),
@@ -100,7 +100,7 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      memory_provider_name: '',
+      name: '',
       description: '',
       url: '',
       authType: 'none',
@@ -154,7 +154,7 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
       }
 
       const payload = {
-        memory_provider_name: values.memory_provider_name,
+        name: values.name,
         ...(values.description && {description: values.description}),
         config: {
           url: values.url,
@@ -164,7 +164,7 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
 
       const response = await addProvider(payload);
 
-      toast.success(`Memory Provider "${response.memory_provider_name}" registered successfully`);
+      toast.success(`Memory Provider "${response.name}" registered successfully`);
 
       router.push(routes.memoryProviders.list);
     } catch (err) {
@@ -215,7 +215,7 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
 
                   <FormField
                     control={form.control}
-                    name="memory_provider_name"
+                    name="name"
                     render={({field}) => (
                       <FormItem>
                         <FormLabel required>Provider Name</FormLabel>

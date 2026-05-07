@@ -23,7 +23,7 @@ import {toast} from 'sonner';
 import {CopyableInput} from '@/components/ui/copyable-input';
 
 const UpdateCfnFormSchema = z.object({
-  cfn_name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters').optional(),
+  name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters').optional(),
   ip_address: z.string().min(1, 'IP Address is required'),
   port: z
     .string()
@@ -68,7 +68,7 @@ export default function CfnDetailsPage() {
   const form = useForm({
     resolver: zodResolver(UpdateCfnFormSchema),
     defaultValues: {
-      cfn_name: '',
+      name: '',
       ip_address: '',
       port: ''
     }
@@ -83,7 +83,7 @@ export default function CfnDetailsPage() {
   useEffect(() => {
     if (cfn) {
       form.reset({
-        cfn_name: cfn.cfn_name,
+        name: cfn.name,
         ip_address: cfn.ip_address || '',
         port: cfn.port ? String(cfn.port) : ''
       });
@@ -97,12 +97,12 @@ export default function CfnDetailsPage() {
     }
   }, [cfnId, router]);
 
-  const crumbs = breadcrumbs.cfnDetails(cfn?.cfn_name || 'CFN');
+  const crumbs = breadcrumbs.cfnDetails(cfn?.name || 'CFN');
 
   const handleSave = async (values: z.infer<typeof UpdateCfnFormSchema>) => {
     try {
       const payload: UpdateCfnRequest = {
-        cfn_name: values.cfn_name,
+        name: values.name,
         ip_address: values.ip_address,
         port: parseInt(values.port, 10)
       };
@@ -123,7 +123,7 @@ export default function CfnDetailsPage() {
   const handleCancelEdit = () => {
     setIsEditMode(false);
     form.reset({
-      cfn_name: cfn?.cfn_name,
+      name: cfn?.name,
       ip_address: cfn?.ip_address || '',
       port: cfn?.port ? String(cfn.port) : ''
     });
@@ -133,7 +133,7 @@ export default function CfnDetailsPage() {
   return (
     <>
       <BasePage
-        title={cfn?.cfn_name || 'CFN Details'}
+        title={cfn?.name || 'CFN Details'}
         description="View details about your Cognition Fabric Node"
         useBreadcrumbs
         breadcrumbs={crumbs}
@@ -169,13 +169,13 @@ export default function CfnDetailsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <Label>CFN ID</Label>
-                        <CopyableInput value={cfn?.cfn_id || ''} />
+                        <CopyableInput value={cfn?.id || ''} />
                       </div>
 
                       {isEditMode ? (
                         <FormField
                           control={form.control}
-                          name="cfn_name"
+                          name="name"
                           render={({field}) => (
                             <FormItem>
                               <FormLabel>CFN Name</FormLabel>
@@ -189,7 +189,7 @@ export default function CfnDetailsPage() {
                       ) : (
                         <div className="space-y-2">
                           <Label>CFN Name</Label>
-                          <Input value={cfn?.cfn_name || ''} disabled readOnly />
+                          <Input value={cfn?.name || ''} disabled readOnly />
                         </div>
                       )}
 
@@ -325,9 +325,7 @@ export default function CfnDetailsPage() {
                                                             <div className="space-y-1 text-xs">
                                                               <div>
                                                                 <span className="text-muted-foreground">Provider:</span>{' '}
-                                                                <span className="font-medium">
-                                                                  {mas.shared_memory.memory_provider_name || 'Unknown'}
-                                                                </span>
+                                                                <span className="font-medium">{mas.shared_memory.name || 'Unknown'}</span>
                                                               </div>
                                                               <div>
                                                                 <span className="text-muted-foreground">Enabled:</span>{' '}
@@ -358,9 +356,7 @@ export default function CfnDetailsPage() {
                                                                     <div className="text-xs space-y-1">
                                                                       <div>
                                                                         <span className="text-muted-foreground">Agentic Memory Provider:</span>{' '}
-                                                                        <span className="font-medium">
-                                                                          {agent.agentic_memory.memory_provider_name || 'Unknown'}
-                                                                        </span>
+                                                                        <span className="font-medium">{agent.agentic_memory.name || 'Unknown'}</span>
                                                                       </div>
                                                                       <div>
                                                                         <span className="text-muted-foreground">Enabled:</span>{' '}

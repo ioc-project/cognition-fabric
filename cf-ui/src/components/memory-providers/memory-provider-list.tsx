@@ -85,22 +85,22 @@ export function MemoryProviderList() {
                 providers={providers}
                 selectedId={selectedId}
                 onRowClick={(provider: MemoryProvider) => {
-                  setSelectedId(provider.memory_provider_id);
-                  router.push(routes.memoryProviders.details(provider.memory_provider_id));
+                  setSelectedId(provider.id);
+                  router.push(routes.memoryProviders.details(provider.id));
                 }}
                 onOpenDelete={(payload: {id: string; name: string}) => deleteDialog.open(payload)}
-                onOpenEdit={(provider: MemoryProvider) => router.push(`${routes.memoryProviders.details(provider.memory_provider_id)}?edit=true`)}
+                onOpenEdit={(provider: MemoryProvider) => router.push(`${routes.memoryProviders.details(provider.id)}?edit=true`)}
               />
             ) : (
               <MemoryProviderCardList
                 providers={providers}
                 selectedId={selectedId}
                 onCardClick={(provider: MemoryProvider) => {
-                  setSelectedId(provider.memory_provider_id);
-                  router.push(routes.memoryProviders.details(provider.memory_provider_id));
+                  setSelectedId(provider.id);
+                  router.push(routes.memoryProviders.details(provider.id));
                 }}
                 onOpenDelete={(payload: {id: string; name: string}) => deleteDialog.open(payload)}
-                onOpenEdit={(provider: MemoryProvider) => router.push(`${routes.memoryProviders.details(provider.memory_provider_id)}?edit=true`)}
+                onOpenEdit={(provider: MemoryProvider) => router.push(`${routes.memoryProviders.details(provider.id)}?edit=true`)}
               />
             )}
           </ConditionalSWRRenderer>

@@ -65,20 +65,20 @@ export function CfnList() {
                 cfns={cfns}
                 selectedId={selectedId}
                 onRowClick={(cfn) => {
-                  setSelectedId(cfn.cfn_id);
-                  router.push(routes.cfn.details(cfn.cfn_id));
+                  setSelectedId(cfn.id);
+                  router.push(routes.cfn.details(cfn.id));
                 }}
-                onOpenEdit={(cfn) => router.push(`${routes.cfn.details(cfn.cfn_id)}?edit=true`)}
+                onOpenEdit={(cfn) => router.push(`${routes.cfn.details(cfn.id)}?edit=true`)}
               />
             ) : (
               <CfnCardList
                 cfns={cfns}
                 selectedId={selectedId}
                 onCardClick={(cfn) => {
-                  setSelectedId(cfn.cfn_id);
-                  router.push(routes.cfn.details(cfn.cfn_id));
+                  setSelectedId(cfn.id);
+                  router.push(routes.cfn.details(cfn.id));
                 }}
-                onOpenEdit={(cfn) => router.push(`${routes.cfn.details(cfn.cfn_id)}?edit=true`)}
+                onOpenEdit={(cfn) => router.push(`${routes.cfn.details(cfn.id)}?edit=true`)}
               />
             )}
           </ConditionalSWRRenderer>

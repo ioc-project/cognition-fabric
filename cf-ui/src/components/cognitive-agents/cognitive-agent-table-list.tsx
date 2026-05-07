@@ -20,12 +20,12 @@ export function CognitiveAgentTableList({cognitiveAgents, selectedId, onRowClick
     <ResourceTable
       items={cognitiveAgents}
       headers={[{content: 'Name'}, {content: 'Status'}, {content: 'Created'}, {content: 'Actions', className: 'text-right'}]}
-      rowKey={(r) => r.cognition_engine_id}
-      isSelected={(r) => selectedId === r.cognition_engine_id}
+      rowKey={(r) => r.id}
+      isSelected={(r) => selectedId === r.id}
       onRowClick={(r) => onRowClick(r)}
       renderRow={(r) => [
         {
-          content: <span className="font-medium">{r.cognition_engine_name}</span>
+          content: <span className="font-medium">{r.name}</span>
         },
         {
           content: (
@@ -51,7 +51,7 @@ export function CognitiveAgentTableList({cognitiveAgents, selectedId, onRowClick
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem asChild>
-                  <Link href={routes.cognitiveAgents.details(r.cognition_engine_id)}>View Details</Link>
+                  <Link href={routes.cognitiveAgents.details(r.id)}>View Details</Link>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -16,9 +16,9 @@ export const cfnApi = {
   },
 
   get: async (cfnId: string): Promise<Cfn> => {
-    const {data, error} = await apiClient.GET('/api/cognition-fabric-nodes/{cfn_id}', {
+    const {data, error} = await apiClient.GET('/api/cognition-fabric-nodes/{id}', {
       params: {
-        path: {cfn_id: cfnId}
+        path: {id: cfnId}
       }
     });
 
@@ -40,9 +40,9 @@ export const cfnApi = {
   },
 
   update: async (cfnId: string, payload: UpdateCfnRequest): Promise<Cfn> => {
-    const {data, error} = await apiClient.PUT('/api/cognition-fabric-nodes/{cfn_id}', {
+    const {data, error} = await apiClient.PUT('/api/cognition-fabric-nodes/{id}', {
       params: {
-        path: {cfn_id: cfnId}
+        path: {id: cfnId}
       },
       body: payload
     });
@@ -54,9 +54,9 @@ export const cfnApi = {
   },
 
   delete: async (cfnId: string): Promise<void> => {
-    const {error} = await apiClient.DELETE('/api/cognition-fabric-nodes/{cfn_id}', {
+    const {error} = await apiClient.DELETE('/api/cognition-fabric-nodes/{id}', {
       params: {
-        path: {cfn_id: cfnId}
+        path: {id: cfnId}
       }
     });
 
@@ -66,9 +66,9 @@ export const cfnApi = {
   },
 
   enable: async (cfnId: string): Promise<Cfn> => {
-    const {data, error} = await apiClient.PATCH('/api/cognition-fabric-nodes/{cfn_id}/enable', {
+    const {data, error} = await apiClient.PATCH('/api/cognition-fabric-nodes/{id}/enable', {
       params: {
-        path: {cfn_id: cfnId}
+        path: {id: cfnId}
       }
     });
 
@@ -79,9 +79,9 @@ export const cfnApi = {
   },
 
   disable: async (cfnId: string): Promise<Cfn> => {
-    const {data, error} = await apiClient.PATCH('/api/cognition-fabric-nodes/{cfn_id}/disable', {
+    const {data, error} = await apiClient.PATCH('/api/cognition-fabric-nodes/{id}/disable', {
       params: {
-        path: {cfn_id: cfnId}
+        path: {id: cfnId}
       }
     });
 

@@ -88,7 +88,7 @@ export default function MASDetailsPage() {
   );
   const {providers = []} = useMemoryProviders();
 
-  const userMemoryProviders = providers.map((p) => ({id: p.memory_provider_id, provider_name: p.memory_provider_name}));
+  const userMemoryProviders = providers.map((p) => ({id: p.id, provider_name: p.name}));
 
   const sharedMemoryProviders = userMemoryProviders.filter((p) => p.provider_name === 'ioc-memory-provider');
   const agenticMemoryProviders = userMemoryProviders.filter((p) => p.provider_name !== 'ioc-memory-provider');
@@ -128,14 +128,14 @@ export default function MASDetailsPage() {
       const agentsArray = mas.agents
         ? mas.agents.map((agent) => ({
             agent_id: agent.agent_id,
-            agentic_memory_provider_id: agent.agentic_memory?.memory_provider_id || ''
+            agentic_memory_provider_id: agent.agentic_memory?.id || ''
           }))
         : [];
 
       form.reset({
         name: mas.name,
         description: mas.description || '',
-        shared_memory_provider_id: mas.shared_memory?.memory_provider_id || '',
+        shared_memory_provider_id: mas.shared_memory?.id || '',
         agents: agentsArray,
         config: Object.keys(cleanConfig).length > 0 ? JSON.stringify(cleanConfig, null, 2) : ''
       });
@@ -217,14 +217,14 @@ export default function MASDetailsPage() {
     const agentsArray = mas?.agents
       ? mas.agents.map((agent) => ({
           agent_id: agent.agent_id,
-          agentic_memory_provider_id: agent.agentic_memory?.memory_provider_id || ''
+          agentic_memory_provider_id: agent.agentic_memory?.id || ''
         }))
       : [];
 
     form.reset({
       name: mas?.name || '',
       description: mas?.description || '',
-      shared_memory_provider_id: mas?.shared_memory?.memory_provider_id || '',
+      shared_memory_provider_id: mas?.shared_memory?.id || '',
       agents: agentsArray,
       config: Object.keys(cleanConfig).length > 0 ? JSON.stringify(cleanConfig, null, 2) : ''
     });
@@ -353,12 +353,12 @@ export default function MASDetailsPage() {
                               </FormItem>
                             )}
                           />
-                        ) : mas?.shared_memory?.memory_provider_id ? (
+                        ) : mas?.shared_memory?.id ? (
                           <div className="space-y-2">
-                            <Input value={mas?.shared_memory?.memory_provider_name || 'None'} disabled readOnly />
+                            <Input value={mas?.shared_memory?.name || 'None'} disabled readOnly />
                             <div>
                               <Label className="text-xs text-muted-foreground">Provider ID</Label>
-                              <CopyableInput value={mas.shared_memory.memory_provider_id} />
+                              <CopyableInput value={mas.shared_memory.id} />
                             </div>
                           </div>
                         ) : (

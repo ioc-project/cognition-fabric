@@ -27,14 +27,14 @@ export function MemoryProviderTableList({providers, selectedId, onRowClick, onOp
         {content: 'Created'},
         {content: 'Actions', className: 'text-right'}
       ]}
-      rowKey={(provider) => provider.memory_provider_id}
-      isSelected={(provider) => selectedId === provider.memory_provider_id}
+      rowKey={(provider) => provider.id}
+      isSelected={(provider) => selectedId === provider.id}
       onRowClick={(provider) => onRowClick(provider)}
       renderRow={(provider) => [
         {
           content: (
             <div className="flex items-center gap-2">
-              <span className="font-medium">{provider.memory_provider_name}</span>
+              <span className="font-medium">{provider.name}</span>
             </div>
           )
         },
@@ -70,7 +70,7 @@ export function MemoryProviderTableList({providers, selectedId, onRowClick, onOp
                   <Eye className="w-4 h-4 mr-2" />
                   View Details
                 </DropdownMenuItem>
-                {provider.memory_provider_name !== 'ioc-memory-provider' && (
+                {provider.name !== 'ioc-memory-provider' && (
                   <>
                     <DropdownMenuItem
                       onClick={(e) => {
@@ -85,7 +85,7 @@ export function MemoryProviderTableList({providers, selectedId, onRowClick, onOp
                       className="text-red-600 dark:text-red-400"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onOpenDelete({id: provider.memory_provider_id, name: provider.memory_provider_name});
+                        onOpenDelete({id: provider.id, name: provider.name});
                       }}
                     >
                       <Trash2 className="w-4 h-4 mr-2" />

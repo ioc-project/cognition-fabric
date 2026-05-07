@@ -71,17 +71,17 @@ export interface paths {
          * Create Cfn Node
          * @description Register a new CFN node
          *
-         *     - **cfn_id**: Persistent CFN identifier (provided by CFN, immutable)
-         *     - **cfn_name**: Human-readable CFN name (globally unique, can be updated later)
+         *     - **id**: Persistent CFN identifier (provided by CFN, immutable)
+         *     - **name**: Human-readable CFN name (globally unique, can be updated later)
          *     - **cfn_config**: Optional current CFN configuration
          *
-         *     CFN is identifies to the management plane.
+         *     CFN identifies to the management plane.
          *     Registration creates the CFN record without workspace association.
          *     Workspace association happens during workspace creation.
          *
          *     **Response includes:**
-         *     - **cfn_id**: The CFN identifier
-         *     - **cfn_name**: The CFN name
+         *     - **id**: The CFN identifier
+         *     - **name**: The CFN name
          *     - **status**: Current status (offline)
          *     - **config**: Configuration for the CFN to apply locally
          *       - cognition_fabric_node: CFN-specific operational settings (non-workspace scoped)
@@ -119,17 +119,17 @@ export interface paths {
          * Create Cfn Node
          * @description Register a new CFN node
          *
-         *     - **cfn_id**: Persistent CFN identifier (provided by CFN, immutable)
-         *     - **cfn_name**: Human-readable CFN name (globally unique, can be updated later)
+         *     - **id**: Persistent CFN identifier (provided by CFN, immutable)
+         *     - **name**: Human-readable CFN name (globally unique, can be updated later)
          *     - **cfn_config**: Optional current CFN configuration
          *
-         *     CFN is identifies to the management plane.
+         *     CFN identifies to the management plane.
          *     Registration creates the CFN record without workspace association.
          *     Workspace association happens during workspace creation.
          *
          *     **Response includes:**
-         *     - **cfn_id**: The CFN identifier
-         *     - **cfn_name**: The CFN name
+         *     - **id**: The CFN identifier
+         *     - **name**: The CFN name
          *     - **status**: Current status (offline)
          *     - **config**: Configuration for the CFN to apply locally
          *       - cognition_fabric_node: CFN-specific operational settings (non-workspace scoped)
@@ -145,7 +145,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/cognition-fabric-nodes/{cfn_id}": {
+    "/api/cognition-fabric-nodes/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -156,10 +156,10 @@ export interface paths {
          * Get Cfn Node
          * @description Get detailed CFN node information
          *
-         *     - **cfn_id**: CFN identifier
+         *     - **id**: CFN identifier
          *
          *     Returns full CFN details including:
-         *     - cfn_id, cfn_name
+         *     - id, name
          *     - workspace_ids (all associated workspaces)
          *     - cfn_config (node-reported configuration)
          *     - config (aggregated configuration to be applied)
@@ -170,17 +170,17 @@ export interface paths {
          *     This endpoint retrieves information for both enabled and disabled CFNs.
          *     Deleted CFNs will return 404 Not Found.
          */
-        get: operations["get_cfn_node_api_cognition_fabric_nodes__cfn_id__get"];
+        get: operations["get_cfn_node_api_cognition_fabric_nodes__id__get"];
         /**
          * Update Cfn Node
          * @description Update CFN node information
          *
-         *     - **cfn_id**: CFN identifier (immutable)
-         *     - **cfn_name**: Optional updated CFN name (globally unique)
+         *     - **id**: CFN identifier (immutable)
+         *     - **name**: Optional updated CFN name (globally unique)
          *     - **cfn_config**: Optional updated CFN configuration
          *
          *     **Response includes:**
-         *     - Full CFN details (cfn_id, workspace_ids, cfn_name, cfn_config, status, last_seen, enabled, timestamps)
+         *     - Full CFN details (id, workspace_ids, name, cfn_config, status, last_seen, enabled, timestamps)
          *     - **config**: Regenerated configuration for the CFN to apply
          *       - cognition_fabric_node: CFN-specific operational settings
          *       - memory_providers: Global memory providers
@@ -188,13 +188,13 @@ export interface paths {
          *
          *     The config is automatically regenerated with each update to ensure CFN has the latest configuration.
          */
-        put: operations["update_cfn_node_api_cognition_fabric_nodes__cfn_id__put"];
+        put: operations["update_cfn_node_api_cognition_fabric_nodes__id__put"];
         post?: never;
         /**
          * Delete Cfn Node
          * @description Delete CFN node (hard delete)
          *
-         *     - **cfn_id**: CFN identifier
+         *     - **id**: CFN identifier
          *
          *     **IMPORTANT:** A CFN must be disabled first before it can be deleted.
          *
@@ -210,13 +210,13 @@ export interface paths {
          *
          *     No response body (204 No Content).
          */
-        delete: operations["delete_cfn_node_api_cognition_fabric_nodes__cfn_id__delete"];
+        delete: operations["delete_cfn_node_api_cognition_fabric_nodes__id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/cognition-fabric-nodes/{cfn_id}/enable": {
+    "/api/cognition-fabric-nodes/{id}/enable": {
         parameters: {
             query?: never;
             header?: never;
@@ -233,7 +233,7 @@ export interface paths {
          * Enable Cfn Node
          * @description Enable a disabled CFN node
          *
-         *     - **cfn_id**: CFN identifier
+         *     - **id**: CFN identifier
          *
          *     This is an admin operation to re-enable a disabled CFN.
          *     After enabling, the CFN can call /register to reconnect and resume operations.
@@ -245,10 +245,10 @@ export interface paths {
          *       - memory_providers: Global memory providers
          *       - workspaces: List of workspace details with MAS, cognitive agents, engines
          */
-        patch: operations["enable_cfn_node_api_cognition_fabric_nodes__cfn_id__enable_patch"];
+        patch: operations["enable_cfn_node_api_cognition_fabric_nodes__id__enable_patch"];
         trace?: never;
     };
-    "/api/cognition-fabric-nodes/{cfn_id}/disable": {
+    "/api/cognition-fabric-nodes/{id}/disable": {
         parameters: {
             query?: never;
             header?: never;
@@ -265,7 +265,7 @@ export interface paths {
          * Disable Cfn Node
          * @description Disable CFN node (soft disable, prepares for deletion)
          *
-         *     - **cfn_id**: CFN identifier
+         *     - **id**: CFN identifier
          *
          *     Disabling a CFN stops heartbeats and prepares it for deletion.
          *     The CFN will no longer be able to send heartbeats.
@@ -279,10 +279,10 @@ export interface paths {
          *     - Full CFN details with enabled=False
          *     - **config**: Configuration (preserved from last state)
          */
-        patch: operations["disable_cfn_node_api_cognition_fabric_nodes__cfn_id__disable_patch"];
+        patch: operations["disable_cfn_node_api_cognition_fabric_nodes__id__disable_patch"];
         trace?: never;
     };
-    "/api/cognition-fabric-nodes/{cfn_id}/heartbeat": {
+    "/api/cognition-fabric-nodes/{id}/heartbeat": {
         parameters: {
             query?: never;
             header?: never;
@@ -294,18 +294,18 @@ export interface paths {
          * Cfn Heartbeat
          * @description CFN heartbeat endpoint - updates last_seen timestamp and returns config_timestamp
          *
-         *     - **cfn_id**: CFN identifier
+         *     - **id**: CFN identifier
          *
          *     CFN nodes call this periodically (e.g., every 30 seconds) to indicate they are online.
          *     Returns the current status, last_seen timestamp, and config_timestamp.
          *
          *     CFN compares the returned config_timestamp with its stored value.
-         *     If timestamps differ, CFN should call GET /cognition-fabric-nodes/{cfn_id} to fetch updated config.
+         *     If timestamps differ, CFN should call GET /cognition-fabric-nodes/{id} to fetch updated config.
          *
          *     Note: This endpoint requires authentication but not write access.
          *     Disabled or deleted nodes will receive 403 Forbidden.
          */
-        put: operations["cfn_heartbeat_api_cognition_fabric_nodes__cfn_id__heartbeat_put"];
+        put: operations["cfn_heartbeat_api_cognition_fabric_nodes__id__heartbeat_put"];
         post?: never;
         delete?: never;
         options?: never;
@@ -313,7 +313,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/cognition-fabric-nodes/{cfn_id}/summary": {
+    "/api/cognition-fabric-nodes/{id}/summary": {
         parameters: {
             query?: never;
             header?: never;
@@ -324,7 +324,7 @@ export interface paths {
          * Get Cfn Node Summary
          * @description Get CFN node summary with detailed workspace configuration
          *
-         *     - **cfn_id**: CFN identifier
+         *     - **id**: CFN identifier
          *
          *     Returns CFN summary including:
          *     - id, name
@@ -343,7 +343,7 @@ export interface paths {
          *     This endpoint retrieves information for both enabled and disabled CFNs.
          *     Deleted CFNs will return 404 Not Found.
          */
-        get: operations["get_cfn_node_summary_api_cognition_fabric_nodes__cfn_id__summary_get"];
+        get: operations["get_cfn_node_summary_api_cognition_fabric_nodes__id__summary_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -352,7 +352,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/cognitive-fabric-node/{cfn_id}/workspaces": {
+    "/api/cognitive-fabric-node/{id}/workspaces": {
         parameters: {
             query?: never;
             header?: never;
@@ -366,7 +366,7 @@ export interface paths {
          *     This endpoint returns the consolidated configuration document that aggregates
          *     workspace-scoped and global resources for the CFN service to apply.
          *
-         *     - **cfn_id**: CFN identifier
+         *     - **id**: CFN identifier
          *
          *     Returns configuration with:
          *     - **version**: Configuration schema version (0.1.0)
@@ -379,7 +379,7 @@ export interface paths {
          *       - cognition_engines: Cognition engines in this workspace (not included for March 2026)
          *       - policies: Policies in this workspace (not included for March 2026)
          */
-        get: operations["get_cfn_workspaces_config_api_cognitive_fabric_node__cfn_id__workspaces_get"];
+        get: operations["get_cfn_workspaces_config_api_cognitive_fabric_node__id__workspaces_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -412,7 +412,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/memory-providers/{memory_provider_id}": {
+    "/api/memory-providers/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -423,21 +423,21 @@ export interface paths {
          * Get Memory Provider
          * @description Get details of a specific memory provider
          */
-        get: operations["get_memory_provider_api_memory_providers__memory_provider_id__get"];
+        get: operations["get_memory_provider_api_memory_providers__id__get"];
         put?: never;
         post?: never;
         /**
          * Delete Memory Provider
          * @description Delete a memory provider (soft delete)
          */
-        delete: operations["delete_memory_provider_api_memory_providers__memory_provider_id__delete"];
+        delete: operations["delete_memory_provider_api_memory_providers__id__delete"];
         options?: never;
         head?: never;
         /**
          * Update Memory Provider
          * @description Update an existing memory provider
          */
-        patch: operations["update_memory_provider_api_memory_providers__memory_provider_id__patch"];
+        patch: operations["update_memory_provider_api_memory_providers__id__patch"];
         trace?: never;
     };
     "/api/workspaces/create": {
@@ -661,7 +661,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/workspaces/{workspace_id}/cognition-engines/{cognition_engine_id}": {
+    "/api/workspaces/{workspace_id}/cognition-engines/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -672,21 +672,21 @@ export interface paths {
          * Get Cognition Engine
          * @description Get details of a specific cognition engine
          */
-        get: operations["get_cognition_engine_api_workspaces__workspace_id__cognition_engines__cognition_engine_id__get"];
+        get: operations["get_cognition_engine_api_workspaces__workspace_id__cognition_engines__id__get"];
         put?: never;
         post?: never;
         /**
          * Delete Cognition Engine
          * @description Delete a cognition engine (soft delete)
          */
-        delete: operations["delete_cognition_engine_api_workspaces__workspace_id__cognition_engines__cognition_engine_id__delete"];
+        delete: operations["delete_cognition_engine_api_workspaces__workspace_id__cognition_engines__id__delete"];
         options?: never;
         head?: never;
         /**
          * Update Cognition Engine
          * @description Update an existing cognition engine
          */
-        patch: operations["update_cognition_engine_api_workspaces__workspace_id__cognition_engines__cognition_engine_id__patch"];
+        patch: operations["update_cognition_engine_api_workspaces__workspace_id__cognition_engines__id__patch"];
         trace?: never;
     };
     "/api/workspaces/{workspace_id}/policies": {
@@ -966,10 +966,10 @@ export interface components {
          */
         CognitionEngineCreate: {
             /**
-             * Cognition Engine Name
+             * Name
              * @description Engine name
              */
-            cognition_engine_name: string;
+            name: string;
             /**
              * Config
              * @description Engine-specific configuration
@@ -983,12 +983,12 @@ export interface components {
          * @description Schema for detailed cognition engine information
          */
         CognitionEngineDetail: {
-            /** Cognition Engine Id */
-            cognition_engine_id: string;
+            /** Id */
+            id: string;
             /** Workspace Id */
             workspace_id: string;
-            /** Cognition Engine Name */
-            cognition_engine_name: string;
+            /** Name */
+            name: string;
             /** Config */
             config: {
                 [key: string]: unknown;
@@ -1028,12 +1028,12 @@ export interface components {
          * @description Schema for cognition engine list item
          */
         CognitionEngineListItem: {
-            /** Cognition Engine Id */
-            cognition_engine_id: string;
+            /** Id */
+            id: string;
             /** Workspace Id */
             workspace_id: string;
-            /** Cognition Engine Name */
-            cognition_engine_name: string;
+            /** Name */
+            name: string;
             /** Config */
             config: {
                 [key: string]: unknown;
@@ -1052,10 +1052,10 @@ export interface components {
          */
         CognitionEngineUpdate: {
             /**
-             * Cognition Engine Name
+             * Name
              * @description Engine name
              */
-            cognition_engine_name?: string | null;
+            name?: string | null;
             /**
              * Config
              * @description Engine-specific configuration
@@ -1100,11 +1100,11 @@ export interface components {
          * @example {
          *       "nodes": [
          *         {
-         *           "cfn_id": "cfn-persistent-id-123",
-         *           "cfn_name": "cfn-node-prod-1",
          *           "created_at": "2026-01-30T10:00:00Z",
          *           "enabled": true,
+         *           "id": "cfn-persistent-id-123",
          *           "last_seen": "2026-01-30T12:34:56Z",
+         *           "name": "cfn-node-prod-1",
          *           "status": "online",
          *           "workspace_ids": [
          *             "workspace-uuid-1"
@@ -1130,11 +1130,11 @@ export interface components {
          * CognitionFabricNodeListItem
          * @description Schema for Cognition Fabric Node in list view
          * @example {
-         *       "cfn_id": "cfn-persistent-id-123",
-         *       "cfn_name": "cfn-node-prod-1",
          *       "created_at": "2026-01-30T10:00:00Z",
          *       "enabled": true,
+         *       "id": "cfn-persistent-id-123",
          *       "last_seen": "2026-01-30T12:34:56Z",
+         *       "name": "cfn-node-prod-1",
          *       "status": "online",
          *       "workspace_ids": [
          *         "workspace-uuid-1"
@@ -1143,20 +1143,20 @@ export interface components {
          */
         CognitionFabricNodeListItem: {
             /**
-             * Cfn Id
+             * Id
              * @description Cognition Fabric Node identifier
              */
-            cfn_id: string;
+            id: string;
             /**
              * Workspace Ids
              * @description Associated workspace identifiers
              */
             workspace_ids?: string[];
             /**
-             * Cfn Name
+             * Name
              * @description Cognition Fabric Node name
              */
-            cfn_name: string;
+            name: string;
             /** @description Current node status */
             status: components["schemas"]["CognitionFabricNodeStatus"];
             /**
@@ -1184,17 +1184,17 @@ export interface components {
          *       "cfn_config": {
          *         "log_level": "info"
          *       },
-         *       "cfn_name": "cfn-node-prod-1",
          *       "ip_address": "192.168.1.100",
+         *       "name": "cfn-node-prod-1",
          *       "port": 8080
          *     }
          */
         CognitionFabricNodeRegisterRequest: {
             /**
-             * Cfn Name
+             * Name
              * @description Human-readable CFN name (unique identifier)
              */
-            cfn_name: string;
+            name: string;
             /**
              * Cfn Config
              * @description CFN configuration used by the node
@@ -1217,8 +1217,6 @@ export interface components {
          * CognitionFabricNodeResponse
          * @description Schema for Cognition Fabric Node response (common response format)
          * @example {
-         *       "cfn_id": "cfn-persistent-id-123",
-         *       "cfn_name": "cfn-node-prod-1",
          *       "config": {
          *         "memory_providers": [],
          *         "workspaces": []
@@ -1226,7 +1224,9 @@ export interface components {
          *       "created_at": "2026-02-19T19:46:49.102012",
          *       "created_by": "00000000-0000-0000-0000-000000000000",
          *       "enabled": true,
+         *       "id": "cfn-persistent-id-123",
          *       "last_seen": "2026-02-19T19:46:49.185773",
+         *       "name": "cfn-node-prod-1",
          *       "status": "offline",
          *       "updated_at": "2026-02-19T19:46:49.102012",
          *       "workspace_ids": []
@@ -1234,20 +1234,20 @@ export interface components {
          */
         CognitionFabricNodeResponse: {
             /**
-             * Cfn Id
+             * Id
              * @description Cognition Fabric Node identifier
              */
-            cfn_id: string;
+            id: string;
             /**
              * Workspace Ids
              * @description Associated workspace identifiers
              */
             workspace_ids?: string[];
             /**
-             * Cfn Name
+             * Name
              * @description Cognition Fabric Node name
              */
-            cfn_name: string;
+            name: string;
             /**
              * Config
              * @description Aggregated configuration including cfn_config
@@ -1396,17 +1396,17 @@ export interface components {
          *       "cfn_config": {
          *         "log_level": "debug"
          *       },
-         *       "cfn_name": "cfn-node-prod-1-updated",
          *       "ip_address": "192.168.1.101",
+         *       "name": "cfn-node-prod-1-updated",
          *       "port": 8081
          *     }
          */
         CognitionFabricNodeUpdateRequest: {
             /**
-             * Cfn Name
+             * Name
              * @description Updated CFN name
              */
-            cfn_name?: string | null;
+            name?: string | null;
             /**
              * Cfn Config
              * @description Updated CFN configuration
@@ -1506,10 +1506,10 @@ export interface components {
          */
         MemoryProviderCreate: {
             /**
-             * Memory Provider Name
+             * Name
              * @description Memory provider name
              */
-            memory_provider_name: string;
+            name: string;
             /**
              * Description
              * @description Description of the memory provider
@@ -1523,10 +1523,10 @@ export interface components {
          * @description Schema for detailed memory provider information
          */
         MemoryProviderDetail: {
-            /** Memory Provider Id */
-            memory_provider_id: string;
-            /** Memory Provider Name */
-            memory_provider_name: string;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
             /** Description */
             description: string | null;
             /** Config */
@@ -1569,10 +1569,10 @@ export interface components {
          */
         MemoryProviderUpdate: {
             /**
-             * Memory Provider Name
+             * Name
              * @description Memory provider name
              */
-            memory_provider_name?: string | null;
+            name?: string | null;
             /**
              * Description
              * @description Description of the memory provider
@@ -1598,8 +1598,8 @@ export interface components {
          *               "host": "ioc-mem0",
          *               "port": 8765
          *             },
-         *             "memory_provider_id": "mem-provider-2",
-         *             "memory_provider_name": "ioc-mem0"
+         *             "id": "mem-provider-2",
+         *             "name": "ioc-mem0"
          *           },
          *           "config": {
          *             "type": "planner"
@@ -1621,8 +1621,8 @@ export interface components {
          *           "host": "ioc-knowledge-memory-svc",
          *           "port": 9003
          *         },
-         *         "memory_provider_id": "mem-provider-1",
-         *         "memory_provider_name": "ioc-knowledge-memory-svc"
+         *         "id": "mem-provider-1",
+         *         "name": "ioc-knowledge-memory-svc"
          *       },
          *       "updated_at": "2024-12-11T10:30:00Z",
          *       "workspace_id": "660e8400-e29b-41d4-a716-446655440000"
@@ -2218,12 +2218,12 @@ export interface operations {
             };
         };
     };
-    get_cfn_node_api_cognition_fabric_nodes__cfn_id__get: {
+    get_cfn_node_api_cognition_fabric_nodes__id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                cfn_id: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -2249,12 +2249,12 @@ export interface operations {
             };
         };
     };
-    update_cfn_node_api_cognition_fabric_nodes__cfn_id__put: {
+    update_cfn_node_api_cognition_fabric_nodes__id__put: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                cfn_id: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -2284,12 +2284,12 @@ export interface operations {
             };
         };
     };
-    delete_cfn_node_api_cognition_fabric_nodes__cfn_id__delete: {
+    delete_cfn_node_api_cognition_fabric_nodes__id__delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                cfn_id: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -2313,12 +2313,12 @@ export interface operations {
             };
         };
     };
-    enable_cfn_node_api_cognition_fabric_nodes__cfn_id__enable_patch: {
+    enable_cfn_node_api_cognition_fabric_nodes__id__enable_patch: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                cfn_id: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -2344,12 +2344,12 @@ export interface operations {
             };
         };
     };
-    disable_cfn_node_api_cognition_fabric_nodes__cfn_id__disable_patch: {
+    disable_cfn_node_api_cognition_fabric_nodes__id__disable_patch: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                cfn_id: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -2375,12 +2375,12 @@ export interface operations {
             };
         };
     };
-    cfn_heartbeat_api_cognition_fabric_nodes__cfn_id__heartbeat_put: {
+    cfn_heartbeat_api_cognition_fabric_nodes__id__heartbeat_put: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                cfn_id: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -2406,12 +2406,12 @@ export interface operations {
             };
         };
     };
-    get_cfn_node_summary_api_cognition_fabric_nodes__cfn_id__summary_get: {
+    get_cfn_node_summary_api_cognition_fabric_nodes__id__summary_get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                cfn_id: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -2437,12 +2437,12 @@ export interface operations {
             };
         };
     };
-    get_cfn_workspaces_config_api_cognitive_fabric_node__cfn_id__workspaces_get: {
+    get_cfn_workspaces_config_api_cognitive_fabric_node__id__workspaces_get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                cfn_id: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -2523,12 +2523,12 @@ export interface operations {
             };
         };
     };
-    get_memory_provider_api_memory_providers__memory_provider_id__get: {
+    get_memory_provider_api_memory_providers__id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                memory_provider_id: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -2554,12 +2554,12 @@ export interface operations {
             };
         };
     };
-    delete_memory_provider_api_memory_providers__memory_provider_id__delete: {
+    delete_memory_provider_api_memory_providers__id__delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                memory_provider_id: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -2587,12 +2587,12 @@ export interface operations {
             };
         };
     };
-    update_memory_provider_api_memory_providers__memory_provider_id__patch: {
+    update_memory_provider_api_memory_providers__id__patch: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                memory_provider_id: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -3022,13 +3022,13 @@ export interface operations {
             };
         };
     };
-    get_cognition_engine_api_workspaces__workspace_id__cognition_engines__cognition_engine_id__get: {
+    get_cognition_engine_api_workspaces__workspace_id__cognition_engines__id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 workspace_id: string;
-                cognition_engine_id: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -3054,13 +3054,13 @@ export interface operations {
             };
         };
     };
-    delete_cognition_engine_api_workspaces__workspace_id__cognition_engines__cognition_engine_id__delete: {
+    delete_cognition_engine_api_workspaces__workspace_id__cognition_engines__id__delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 workspace_id: string;
-                cognition_engine_id: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -3088,13 +3088,13 @@ export interface operations {
             };
         };
     };
-    update_cognition_engine_api_workspaces__workspace_id__cognition_engines__cognition_engine_id__patch: {
+    update_cognition_engine_api_workspaces__workspace_id__cognition_engines__id__patch: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 workspace_id: string;
-                cognition_engine_id: string;
+                id: string;
             };
             cookie?: never;
         };
