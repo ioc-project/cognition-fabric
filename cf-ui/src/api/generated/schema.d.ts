@@ -292,59 +292,20 @@ export interface paths {
         get?: never;
         /**
          * Cfn Heartbeat
-         * @description CFN heartbeat endpoint - updates last_seen timestamp and returns config_timestamp
+         * @description CFN heartbeat endpoint - updates last_seen timestamp and returns config_version
          *
          *     - **id**: CFN identifier
          *
          *     CFN nodes call this periodically (e.g., every 30 seconds) to indicate they are online.
-         *     Returns the current status, last_seen timestamp, and config_timestamp.
+         *     Returns the current status, last_seen timestamp, and config_version.
          *
-         *     CFN compares the returned config_timestamp with its stored value.
-         *     If timestamps differ, CFN should call GET /cognition-fabric-nodes/{id} to fetch updated config.
+         *     CFN compares the returned config_version with its stored value.
+         *     If version differs, CFN should call GET /cognition-fabric-nodes/{id} to fetch updated config.
          *
          *     Note: This endpoint requires authentication but not write access.
          *     Disabled or deleted nodes will receive 403 Forbidden.
          */
         put: operations["cfn_heartbeat_api_cognition_fabric_nodes__id__heartbeat_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/cognition-fabric-nodes/{id}/summary": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Cfn Node Summary
-         * @description Get CFN node summary with detailed workspace configuration
-         *
-         *     - **id**: CFN identifier
-         *
-         *     Returns CFN summary including:
-         *     - id, name
-         *     - config (workspaces with cognition_engines, multi_agentic_systems, and config_timestamp)
-         *     - status (online, offline)
-         *     - enabled flag
-         *     - ip_address, port
-         *     - created_at, updated_at, last_seen timestamps
-         *
-         *     The config.workspaces array contains full details of each workspace including:
-         *     - workspace id and name
-         *     - cognition_engines (list of CEs in the workspace)
-         *     - multi_agentic_systems (list of MAS in the workspace with full details)
-         *     - policies (empty array for now)
-         *
-         *     This endpoint retrieves information for both enabled and disabled CFNs.
-         *     Deleted CFNs will return 404 Not Found.
-         */
-        get: operations["get_cfn_node_summary_api_cognition_fabric_nodes__id__summary_get"];
-        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -713,7 +674,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/workspaces/{workspace_id}/policies/{policy_id}": {
+    "/api/workspaces/{workspace_id}/policies/{id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -724,21 +685,21 @@ export interface paths {
          * Get Policy
          * @description Get details of a specific policy
          */
-        get: operations["get_policy_api_workspaces__workspace_id__policies__policy_id__get"];
+        get: operations["get_policy_api_workspaces__workspace_id__policies__id__get"];
         put?: never;
         post?: never;
         /**
          * Delete Policy
          * @description Delete a policy (soft delete)
          */
-        delete: operations["delete_policy_api_workspaces__workspace_id__policies__policy_id__delete"];
+        delete: operations["delete_policy_api_workspaces__workspace_id__policies__id__delete"];
         options?: never;
         head?: never;
         /**
          * Update Policy
          * @description Update an existing policy
          */
-        patch: operations["update_policy_api_workspaces__workspace_id__policies__policy_id__patch"];
+        patch: operations["update_policy_api_workspaces__workspace_id__policies__id__patch"];
         trace?: never;
     };
     "/api/audit-events/": {
@@ -1073,7 +1034,7 @@ export interface components {
          * CognitionFabricNodeHeartbeatResponse
          * @description Schema for heartbeat response
          * @example {
-         *       "config_timestamp": "2026-01-30T12:34:56Z",
+         *       "config_version": 5,
          *       "last_seen": "2026-01-30T12:34:56Z",
          *       "status": "online"
          *     }
@@ -1088,11 +1049,10 @@ export interface components {
              */
             last_seen: string;
             /**
-             * Config Timestamp
-             * Format: date-time
-             * @description Current config timestamp for change detection
+             * Config Version
+             * @description Monotonic config version for change detection
              */
-            config_timestamp: string;
+            config_version: number;
         };
         /**
          * CognitionFabricNodeList
@@ -1306,89 +1266,6 @@ export interface components {
          * @enum {string}
          */
         CognitionFabricNodeStatus: "online" | "offline";
-        /**
-         * CognitionFabricNodeSummaryResponse
-         * @description Schema for Cognition Fabric Node summary response
-         * @example {
-         *       "config": {
-         *         "config_timestamp": "2026-03-09T21:10:03.939351Z",
-         *         "workspaces": []
-         *       },
-         *       "created_at": "2026-03-09T21:10:03.938397",
-         *       "created_by": "00000000-0000-0000-0000-000000000000",
-         *       "enabled": true,
-         *       "id": "db44357c-e7ef-4db4-a32d-dc12731d87d9",
-         *       "ip_address": "172.18.0.8",
-         *       "last_seen": "2026-03-09T22:13:23.994122",
-         *       "name": "My Cognition Fabric Node",
-         *       "port": 9002,
-         *       "status": "online",
-         *       "updated_at": "2026-03-09T22:13:23.993225"
-         *     }
-         */
-        CognitionFabricNodeSummaryResponse: {
-            /**
-             * Id
-             * @description Cognition Fabric Node identifier
-             */
-            id: string;
-            /**
-             * Name
-             * @description Cognition Fabric Node name
-             */
-            name: string;
-            /**
-             * Config
-             * @description Configuration with workspaces and config_timestamp
-             */
-            config: {
-                [key: string]: unknown;
-            };
-            /** @description Current node status */
-            status: components["schemas"]["CognitionFabricNodeStatus"];
-            /**
-             * Last Seen
-             * Format: date-time
-             * @description Last heartbeat timestamp
-             */
-            last_seen: string;
-            /**
-             * Enabled
-             * @description Whether node is enabled
-             */
-            enabled: boolean;
-            /**
-             * Ip Address
-             * @description IP address of the CFN node
-             */
-            ip_address?: string | null;
-            /**
-             * Port
-             * @description Port number of the CFN node
-             */
-            port?: number | null;
-            /**
-             * Created At
-             * Format: date-time
-             * @description Creation timestamp
-             */
-            created_at: string;
-            /**
-             * Updated At
-             * @description Last update timestamp
-             */
-            updated_at?: string | null;
-            /**
-             * Created By
-             * @description Creator user ID
-             */
-            created_by?: string | null;
-            /**
-             * Updated By
-             * @description Last updater user ID
-             */
-            updated_by?: string | null;
-        };
         /**
          * CognitionFabricNodeUpdateRequest
          * @description Schema for updating Cognition Fabric Node
@@ -1763,15 +1640,10 @@ export interface components {
          */
         PolicyCreate: {
             /**
-             * Policy Id
-             * @description Policy identifier
-             */
-            policy_id: string;
-            /**
-             * Policy Name
+             * Name
              * @description Policy name
              */
-            policy_name: string;
+            name: string;
             /**
              * Config
              * @description Policy-specific configuration
@@ -1785,12 +1657,12 @@ export interface components {
          * @description Schema for detailed policy information
          */
         PolicyDetail: {
-            /** Policy Id */
-            policy_id: string;
+            /** Id */
+            id: string;
             /** Workspace Id */
             workspace_id: string;
-            /** Policy Name */
-            policy_name: string;
+            /** Name */
+            name: string;
             /** Config */
             config: {
                 [key: string]: unknown;
@@ -1830,12 +1702,12 @@ export interface components {
          * @description Schema for policy list item
          */
         PolicyListItem: {
-            /** Policy Id */
-            policy_id: string;
+            /** Id */
+            id: string;
             /** Workspace Id */
             workspace_id: string;
-            /** Policy Name */
-            policy_name: string;
+            /** Name */
+            name: string;
             /** Config */
             config: {
                 [key: string]: unknown;
@@ -1854,10 +1726,10 @@ export interface components {
          */
         PolicyUpdate: {
             /**
-             * Policy Name
+             * Name
              * @description Policy name
              */
-            policy_name?: string | null;
+            name?: string | null;
             /**
              * Config
              * @description Policy-specific configuration
@@ -2393,37 +2265,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CognitionFabricNodeHeartbeatResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_cfn_node_summary_api_cognition_fabric_nodes__id__summary_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CognitionFabricNodeSummaryResponse"];
                 };
             };
             /** @description Validation Error */
@@ -3190,13 +3031,13 @@ export interface operations {
             };
         };
     };
-    get_policy_api_workspaces__workspace_id__policies__policy_id__get: {
+    get_policy_api_workspaces__workspace_id__policies__id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 workspace_id: string;
-                policy_id: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -3222,13 +3063,13 @@ export interface operations {
             };
         };
     };
-    delete_policy_api_workspaces__workspace_id__policies__policy_id__delete: {
+    delete_policy_api_workspaces__workspace_id__policies__id__delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 workspace_id: string;
-                policy_id: string;
+                id: string;
             };
             cookie?: never;
         };
@@ -3256,13 +3097,13 @@ export interface operations {
             };
         };
     };
-    update_policy_api_workspaces__workspace_id__policies__policy_id__patch: {
+    update_policy_api_workspaces__workspace_id__policies__id__patch: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 workspace_id: string;
-                policy_id: string;
+                id: string;
             };
             cookie?: never;
         };
