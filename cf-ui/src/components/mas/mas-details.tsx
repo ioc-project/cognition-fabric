@@ -32,16 +32,12 @@ import {MASAuditLog} from './mas-audit-log';
 import {CopyableInput} from '@/components/ui/copyable-input';
 
 const AgentFormSchema = z.object({
-  agent_id: z.string().min(1, 'Agent ID is required'),
-  agentic_memory_provider_id: z.string().optional()
-});
-
-const UpdateMASFormSchema = z.object({
-  name: z.string().min(1, 'Name is required').min(3, 'Name must be at least 3 characters'),
-  description: z.string().optional(),
-  shared_memory_provider_id: z.string().optional(),
-  agents: z.array(AgentFormSchema).optional().default([]),
-  config: z
+  agent_id: z.string().optional(),
+  name: z.string().optional(),
+  url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  agentic_memory_provider_id: z.string().optional(),
+  identity_type: z.string().optional(),
+  identity_identifiers: z
     .string()
     .optional()
     .refine(
@@ -59,6 +55,47 @@ const UpdateMASFormSchema = z.object({
       {message: 'Must be valid JSON'}
     )
 });
+
+const UpdateMASFormSchema = z
+  .object({
+    name: z.string().min(1, 'Name is required').min(3, 'Name must be at least 3 characters'),
+    description: z.string().optional(),
+    shared_memory_provider_id: z.string().optional(),
+    agents: z.array(AgentFormSchema).optional().default([]),
+    config: z
+      .string()
+      .optional()
+      .refine(
+        (val) => {
+          if (!val || val.trim() === '') {
+            return true;
+          }
+          try {
+            JSON.parse(val);
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        {message: 'Must be valid JSON'}
+      )
+  })
+  .superRefine((data, ctx) => {
+    const names: string[] = [];
+    (data.agents || []).forEach((agent, index) => {
+      const trimmed = agent.name?.trim();
+      if (trimmed) {
+        if (names.includes(trimmed)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Agent name "${trimmed}" already exists in this system`,
+            path: ['agents', index, 'name']
+          });
+        }
+        names.push(trimmed);
+      }
+    });
+  });
 
 type FormValues = z.infer<typeof UpdateMASFormSchema>;
 
@@ -91,7 +128,6 @@ export default function MASDetailsPage() {
   const userMemoryProviders = providers.map((p) => ({id: p.id, provider_name: p.name}));
 
   const sharedMemoryProviders = userMemoryProviders.filter((p) => p.provider_name === 'ioc-memory-provider');
-  const agenticMemoryProviders = userMemoryProviders.filter((p) => p.provider_name !== 'ioc-memory-provider');
 
   const form = useForm<FormValues>({
     resolver: zodResolver(UpdateMASFormSchema),
@@ -128,7 +164,11 @@ export default function MASDetailsPage() {
       const agentsArray = mas.agents
         ? mas.agents.map((agent) => ({
             agent_id: agent.agent_id,
-            agentic_memory_provider_id: agent.agentic_memory?.id || ''
+            name: agent.name || '',
+            url: agent.url || '',
+            agentic_memory_provider_id: agent.agentic_memory?.id || '',
+            identity_type: agent.identity?.type || '',
+            identity_identifiers: agent.identity?.identifiers ? JSON.stringify(agent.identity.identifiers, null, 2) : ''
           }))
         : [];
 
@@ -179,10 +219,20 @@ export default function MASDetailsPage() {
         return JSON.parse(value) as Record<string, unknown>;
       };
 
-      const agentsPayload = (values.agents || []).map((agent) => ({
-        agent_id: agent.agent_id,
-        ...(agent.agentic_memory_provider_id && {agentic_memory_provider_id: agent.agentic_memory_provider_id})
-      }));
+      const agentsPayload = (values.agents || [])
+        .filter((agent) => agent.name?.trim())
+        .map((agent) => ({
+          ...(agent.agent_id && {agent_id: agent.agent_id}),
+          name: agent.name!.trim(),
+          ...(agent.url?.trim() && {url: agent.url.trim()}),
+          ...(agent.agentic_memory_provider_id && {agentic_memory_provider_id: agent.agentic_memory_provider_id}),
+          ...(agent.identity_type?.trim() && {
+            identity: {
+              type: agent.identity_type.trim(),
+              identifiers: agent.identity_identifiers?.trim() ? JSON.parse(agent.identity_identifiers) : {}
+            }
+          })
+        }));
 
       const configPayload = parseJsonField(values.config) || {};
 
@@ -190,7 +240,7 @@ export default function MASDetailsPage() {
         name: values.name,
         description: values.description,
         ...(values.shared_memory_provider_id && {shared_memory_provider_id: values.shared_memory_provider_id}),
-        ...(agentsPayload.length > 0 && {agents: agentsPayload}),
+        agents: agentsPayload,
         ...(Object.keys(configPayload).length > 0 && {config: configPayload})
       };
 
@@ -213,11 +263,14 @@ export default function MASDetailsPage() {
 
     const cleanConfig = typeof masConfig === 'object' && masConfig !== null ? {...masConfig} : {};
 
-    // Convert agents array from API to form format
     const agentsArray = mas?.agents
       ? mas.agents.map((agent) => ({
           agent_id: agent.agent_id,
-          agentic_memory_provider_id: agent.agentic_memory?.id || ''
+          name: agent.name || '',
+          url: agent.url || '',
+          agentic_memory_provider_id: agent.agentic_memory?.id || '',
+          identity_type: agent.identity?.type || '',
+          identity_identifiers: agent.identity?.identifiers ? JSON.stringify(agent.identity.identifiers, null, 2) : ''
         }))
       : [];
 
@@ -374,33 +427,43 @@ export default function MASDetailsPage() {
                       isEditMode={isEditMode}
                       agentExpandedState={agentExpandedState}
                       onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
-                      onAddAgent={isEditMode ? () => appendAgent({agent_id: '', agentic_memory_provider_id: ''}) : undefined}
+                      onAddAgent={
+                        isEditMode
+                          ? () =>
+                              appendAgent({
+                                agent_id: '',
+                                name: '',
+                                url: '',
+                                agentic_memory_provider_id: '',
+                                identity_type: '',
+                                identity_identifiers: ''
+                              })
+                          : undefined
+                      }
                       onRemoveAgent={isEditMode ? removeAgent : undefined}
                       masAgentsData={!isEditMode && mas?.agents ? mas.agents : undefined}
-                      userMemoryProviders={agenticMemoryProviders}
+                      userMemoryProviders={userMemoryProviders}
                     />
 
-                    {mas?.config && Object.keys(mas.config).length > 0 && (
-                      <div className="space-y-6 border-t pt-6">
-                        <FormField
-                          control={form.control}
-                          name="config"
-                          render={({field}) => (
-                            <CollapsibleJsonField
-                              label="Config"
-                              value={field.value || ''}
-                              isExpanded={masConfigExpanded}
-                              onToggleExpand={() => setMasConfigExpanded(!masConfigExpanded)}
-                              isEditMode={isEditMode}
-                              field={field}
-                              placeholder={`{
+                    <div className="space-y-6 border-t pt-6">
+                      <FormField
+                        control={form.control}
+                        name="config"
+                        render={({field}) => (
+                          <CollapsibleJsonField
+                            label="Config"
+                            value={field.value || ''}
+                            isExpanded={masConfigExpanded}
+                            onToggleExpand={() => setMasConfigExpanded(!masConfigExpanded)}
+                            isEditMode={isEditMode}
+                            field={field}
+                            placeholder={`{
   "key": "value"
 }`}
-                            />
-                          )}
-                        />
-                      </div>
-                    )}
+                          />
+                        )}
+                      />
+                    </div>
 
                     {/* System Fields */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">

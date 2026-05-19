@@ -773,9 +773,21 @@ export interface components {
         AgentConfig: {
             /**
              * Agent Id
-             * @description Unique identifier for the agent
+             * @description Unique identifier for the agent (server-generated, ignored on input)
              */
-            agent_id: string;
+            agent_id?: string | null;
+            /**
+             * Name
+             * @description Human-readable agent name
+             */
+            name?: string | null;
+            /**
+             * Url
+             * @description Agent endpoint URL
+             */
+            url?: string | null;
+            /** @description Identity provider configuration */
+            identity?: components["schemas"]["AgentIdentity"] | null;
             /**
              * Agentic Memory Provider Id
              * @description Memory provider ID for agent's private memory
@@ -790,6 +802,24 @@ export interface components {
             } | null;
         };
         /**
+         * AgentIdentity
+         * @description Schema for agent identity provider configuration
+         */
+        AgentIdentity: {
+            /**
+             * Type
+             * @description Identity provider type (e.g. openclaw, claude_code, or any custom type)
+             */
+            type: string;
+            /**
+             * Identifiers
+             * @description Provider-specific identifiers (varies by type)
+             */
+            identifiers: {
+                [key: string]: string;
+            };
+        };
+        /**
          * AgentWithMemory
          * @description Schema for agent with full memory provider details (output)
          */
@@ -799,6 +829,18 @@ export interface components {
              * @description Unique identifier for the agent
              */
             agent_id: string;
+            /**
+             * Name
+             * @description Human-readable agent name
+             */
+            name?: string | null;
+            /**
+             * Url
+             * @description Agent endpoint URL
+             */
+            url?: string | null;
+            /** @description Identity provider configuration */
+            identity?: components["schemas"]["AgentIdentity"] | null;
             /** @description Full memory provider configuration for agent's private memory */
             agentic_memory?: components["schemas"]["MemoryProviderDetail"] | null;
             /**
@@ -1480,7 +1522,15 @@ export interface components {
          *           },
          *           "config": {
          *             "type": "planner"
-         *           }
+         *           },
+         *           "identity": {
+         *             "identifiers": {
+         *               "url": "main::agents::agent-1"
+         *             },
+         *             "type": "openclaw"
+         *           },
+         *           "name": "retrieval-agent",
+         *           "url": "http://localhost:8080"
          *         }
          *       ],
          *       "config": {

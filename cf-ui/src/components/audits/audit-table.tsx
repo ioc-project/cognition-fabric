@@ -143,6 +143,20 @@ export function AuditTable() {
     return map;
   }, [masList]);
 
+  const agentNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const mas of masList) {
+      if (mas.agents) {
+        for (const agent of mas.agents) {
+          if (agent.name) {
+            map[agent.agent_id] = agent.name;
+          }
+        }
+      }
+    }
+    return map;
+  }, [masList]);
+
   const availableAuditTypes = selectedResourceType ? (AUDIT_TYPES_BY_RESOURCE[selectedResourceType] ?? ALL_AUDIT_TYPES) : ALL_AUDIT_TYPES;
 
   const handleResourceTypeChange = (value: string | null) => {
@@ -250,7 +264,11 @@ export function AuditTable() {
                     <ResourceIdentifier
                       value={event.resource_identifier}
                       resolvedName={
-                        event.resource_type === 'MAS' || event.resource_type === 'MEMORY_PROVIDER' ? masNameMap[event.resource_identifier] : undefined
+                        event.resource_type === 'MAS' || event.resource_type === 'MEMORY_PROVIDER'
+                          ? masNameMap[event.resource_identifier]
+                          : event.resource_type === 'MAS-AGENT'
+                            ? agentNameMap[event.resource_identifier]
+                            : undefined
                       }
                     />
                   )
@@ -294,8 +312,12 @@ export function AuditTable() {
         event={selectedEvent}
         onClose={() => setSelectedEvent(null)}
         resolvedResourceName={
-          selectedEvent && (selectedEvent.resource_type === 'MAS' || selectedEvent.resource_type === 'MEMORY_PROVIDER')
-            ? masNameMap[selectedEvent.resource_identifier]
+          selectedEvent
+            ? selectedEvent.resource_type === 'MAS' || selectedEvent.resource_type === 'MEMORY_PROVIDER'
+              ? masNameMap[selectedEvent.resource_identifier]
+              : selectedEvent.resource_type === 'MAS-AGENT'
+                ? agentNameMap[selectedEvent.resource_identifier]
+                : undefined
             : undefined
         }
       />

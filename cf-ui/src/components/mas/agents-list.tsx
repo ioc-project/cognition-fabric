@@ -8,8 +8,12 @@ import type {Control, UseFormWatch} from 'react-hook-form';
 import type {AgentWithMemory} from '@/api/endpoints/mas';
 
 interface Agent {
-  agent_id: string;
+  agent_id?: string;
+  name?: string;
+  url?: string;
   agentic_memory_provider_id?: string;
+  identity_type?: string;
+  identity_identifiers?: string | Record<string, string>;
 }
 
 interface AgentsListProps {
@@ -40,8 +44,12 @@ export function AgentsList({
   const viewModeAgents = masAgentsData
     ? masAgentsData.map((agent) => ({
         agent_id: agent.agent_id,
+        name: agent.name || '',
+        url: agent.url || '',
         agentic_memory_provider_id: agent.agentic_memory?.id || '',
-        agentic_memory_provider_name: agent.agentic_memory?.name || ''
+        agentic_memory_provider_name: agent.agentic_memory?.name || '',
+        identity_type: agent.identity?.type || '',
+        identity_identifiers: agent.identity?.identifiers || {}
       }))
     : [];
 
@@ -69,7 +77,7 @@ export function AgentsList({
           ) : (
             agents.map((agent, index) => {
               const isExpanded = agentExpandedState[agent.id] ?? true;
-              const agentId = watch(`agents.${index}.agent_id`);
+              const agentName = watch(`agents.${index}.name`);
               const agenticMemoryProviderId = watch(`agents.${index}.agentic_memory_provider_id`);
 
               return (
@@ -77,7 +85,7 @@ export function AgentsList({
                   key={agent.id}
                   index={index}
                   agentId={agent.id}
-                  agentIdValue={agentId}
+                  agentName={agentName}
                   agenticMemoryProviderId={agenticMemoryProviderId}
                   isExpanded={isExpanded}
                   isEditMode={isEditMode}
@@ -107,7 +115,11 @@ export function AgentsList({
                 key={agent.agent_id}
                 index={index}
                 agentId={agent.agent_id}
+                agentName={agent.name}
                 agentIdValue={agent.agent_id}
+                agentUrl={agent.url}
+                identityType={agent.identity_type}
+                identityIdentifiers={agent.identity_identifiers}
                 agenticMemoryProviderId={agent.agentic_memory_provider_id}
                 agenticMemoryProviderName={agent.agentic_memory_provider_name}
                 isExpanded={true}

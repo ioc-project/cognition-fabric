@@ -16,7 +16,7 @@ interface MASAuditLogProps {
   masId: string;
   workspaceId: string;
   masName: string;
-  agents?: Array<{agent_id: string; [key: string]: any}>;
+  agents?: Array<{agent_id: string; name?: string | null; [key: string]: any}>;
 }
 
 interface AgentChange {
@@ -522,6 +522,16 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
 
   const availableAgents = useMemo(() => agents?.map((a) => a.agent_id) ?? [], [agents]);
 
+  const agentNameMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    agents?.forEach((a) => {
+      if (a.name) {
+        map[a.agent_id] = a.name;
+      }
+    });
+    return map;
+  }, [agents]);
+
   const parsedEvents = useMemo<ParsedAuditEvent[]>(() => {
     const agentIds = new Set(agents?.map((a) => a.agent_id) || []);
 
@@ -607,13 +617,13 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
               }}
             >
               <SelectTrigger className="w-[180px]">
-                <SelectValue>{selectedAgent ?? 'Agents'}</SelectValue>
+                <SelectValue>{selectedAgent ? agentNameMap[selectedAgent] || selectedAgent : 'Agents'}</SelectValue>
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">All</SelectItem>
                 {availableAgents.map((agentId) => (
                   <SelectItem key={agentId} value={agentId}>
-                    {agentId}
+                    {agentNameMap[agentId] || agentId}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -666,7 +676,11 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
                     expanded={expandedEvents.has(event.id)}
                     onToggle={() => toggleExpanded(event.id)}
                     resolvedResourceName={
-                      event.resource_type === 'MAS' ? masName : event.resource_type === 'MAS-AGENT' ? event.resource_identifier : undefined
+                      event.resource_type === 'MAS'
+                        ? masName
+                        : event.resource_type === 'MAS-AGENT'
+                          ? agentNameMap[event.resource_identifier] || event.resource_identifier
+                          : undefined
                     }
                   />
                 ))}

@@ -31,7 +31,7 @@ export function CollapsibleJsonField({
     return (
       <div className="space-y-2">
         <Label>{label}</Label>
-        <Textarea value={value || 'None configured'} disabled readOnly className="font-mono text-xs min-h-[80px]" />
+        <Textarea value={value} placeholder={'{\n  "key": "value"\n}'} disabled readOnly className="font-mono text-xs min-h-[80px]" />
       </div>
     );
   }

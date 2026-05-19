@@ -22,16 +22,11 @@ import {AgentsList} from './agents-list';
 import {CollapsibleJsonField} from './collapsible-json-field';
 
 const AgentFormSchema = z.object({
-  agent_id: z.string().min(1, 'Agent ID is required'),
-  agentic_memory_provider_id: z.string().optional()
-});
-
-const formSchema = z.object({
-  name: z.string().min(1, 'Multi-Agent System name is required').min(3, 'Name must be at least 3 characters'),
-  description: z.string().optional(),
-  shared_memory_provider_id: z.string().optional(),
-  agents: z.array(AgentFormSchema).optional().default([]),
-  config: z
+  name: z.string().optional(),
+  url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  agentic_memory_provider_id: z.string().optional(),
+  identity_type: z.string().optional(),
+  identity_identifiers: z
     .string()
     .optional()
     .refine(
@@ -46,9 +41,50 @@ const formSchema = z.object({
           return false;
         }
       },
-      {message: 'Invalid JSON format for config'}
+      {message: 'Must be valid JSON'}
     )
 });
+
+const formSchema = z
+  .object({
+    name: z.string().min(1, 'Multi-Agent System name is required').min(3, 'Name must be at least 3 characters'),
+    description: z.string().optional(),
+    shared_memory_provider_id: z.string().optional(),
+    agents: z.array(AgentFormSchema).optional().default([]),
+    config: z
+      .string()
+      .optional()
+      .refine(
+        (val) => {
+          if (!val || val.trim() === '') {
+            return true;
+          }
+          try {
+            JSON.parse(val);
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        {message: 'Invalid JSON format for config'}
+      )
+  })
+  .superRefine((data, ctx) => {
+    const names: string[] = [];
+    (data.agents || []).forEach((agent, index) => {
+      const trimmed = agent.name?.trim();
+      if (trimmed) {
+        if (names.includes(trimmed)) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: `Agent name "${trimmed}" already exists in this system`,
+            path: ['agents', index, 'name']
+          });
+        }
+        names.push(trimmed);
+      }
+    });
+  });
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -79,9 +115,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
 
   const userMemoryProviders = providers || [];
 
-  // Filter providers: shared memory only shows "ioc-memory-provider", agentic shows all except it
   const sharedMemoryProviders = userMemoryProviders.filter((p) => p.name === 'ioc-memory-provider');
-  const agenticMemoryProviders = userMemoryProviders.filter((p) => p.name !== 'ioc-memory-provider');
 
   const {
     fields: agentFields,
@@ -104,10 +138,19 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
         return JSON.parse(value) as Record<string, unknown>;
       };
 
-      const agentsPayload = (values.agents || []).map((agent) => ({
-        agent_id: agent.agent_id,
-        ...(agent.agentic_memory_provider_id && {agentic_memory_provider_id: agent.agentic_memory_provider_id})
-      }));
+      const agentsPayload = (values.agents || [])
+        .filter((agent) => agent.name?.trim())
+        .map((agent) => ({
+          name: agent.name!.trim(),
+          ...(agent.url?.trim() && {url: agent.url.trim()}),
+          ...(agent.agentic_memory_provider_id && {agentic_memory_provider_id: agent.agentic_memory_provider_id}),
+          ...(agent.identity_type?.trim() && {
+            identity: {
+              type: agent.identity_type.trim(),
+              identifiers: agent.identity_identifiers?.trim() ? JSON.parse(agent.identity_identifiers) : {}
+            }
+          })
+        }));
 
       const response = await addMAS({
         name: values.name,
@@ -225,9 +268,9 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                     isEditMode={true}
                     agentExpandedState={agentExpandedState}
                     onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
-                    onAddAgent={() => appendAgent({agent_id: '', agentic_memory_provider_id: ''})}
+                    onAddAgent={() => appendAgent({name: '', url: '', agentic_memory_provider_id: '', identity_type: '', identity_identifiers: ''})}
                     onRemoveAgent={removeAgent}
-                    userMemoryProviders={agenticMemoryProviders.map((p) => ({id: p.id, provider_name: p.name}))}
+                    userMemoryProviders={userMemoryProviders.map((p) => ({id: p.id, provider_name: p.name}))}
                   />
 
                   <div className="space-y-4 border-t pt-6">
