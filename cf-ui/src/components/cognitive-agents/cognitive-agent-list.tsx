@@ -3,21 +3,212 @@
 import {useState} from 'react';
 import {Brain} from 'lucide-react';
 import {useRouter} from 'next/navigation';
+import {mutate as globalMutate} from 'swr';
 import {Button} from '@/components/ui/button';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {ListShell} from '@/components/ui/list-shell';
 import {BasePage} from '@/components/ui/base-page';
 import {routes} from '@/constants/routes';
+import {parseError} from '@/lib/utils';
+import {toast} from 'sonner';
 import {useCognitionEngines} from '@/hooks/useCognitionEngines';
+import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {CognitiveAgentTableList} from '@/components/cognitive-agents/cognitive-agent-table-list';
 import {CognitiveAgentCardList} from '@/components/cognitive-agents/cognitive-agent-card-list';
+import {CognitionEngineDialogs} from '@/components/cognitive-agents/cognition-engine-dialogs';
+import {cognitionEngineApi, type CognitionEngineListItem} from '@/api/endpoints/cognition-engine';
+import {masApi, type MultiAgenticSystem} from '@/api/endpoints/mas';
+import {swrKeys} from '@/lib/swr-config';
+import type {ToggleStep} from '@/hooks/useCEToggleFlow';
+import type {DeleteStep} from '@/hooks/useCEDeleteFlow';
 
 export function CognitiveAgentList() {
   const router = useRouter();
+  const {defaultWorkspaceId} = useDefaultWorkspace();
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const {cognitionEngines = [], isLoading, error} = useCognitionEngines();
+  const {cognitionEngines = [], isLoading, error, mutate} = useCognitionEngines();
+
+  const [toggleTarget, setToggleTarget] = useState<CognitionEngineListItem | null>(null);
+  const [toggleStep, setToggleStep] = useState<ToggleStep>(null);
+  const [toggleAssociatedMas, setToggleAssociatedMas] = useState<MultiAgenticSystem[]>([]);
+  const [toggleDisassociatingIds, setToggleDisassociatingIds] = useState<Set<string>>(new Set());
+  const [toggleDisassociatedIds, setToggleDisassociatedIds] = useState<Set<string>>(new Set());
+  const [isTogglingEnabled, setIsTogglingEnabled] = useState(false);
+
+  const fetchToggleMas = async (ceId: string): Promise<MultiAgenticSystem[]> => {
+    if (!defaultWorkspaceId) {
+      return [];
+    }
+    try {
+      const masList = await masApi.list(defaultWorkspaceId);
+      return masList.filter((mas) => mas.cognition_engines?.some((c) => c.ce_id === ceId));
+    } catch {
+      return [];
+    }
+  };
+
+  const handleToggleEnabled = async (r: CognitionEngineListItem) => {
+    setToggleTarget(r);
+    setToggleAssociatedMas([]);
+    setToggleDisassociatedIds(new Set());
+    setToggleDisassociatingIds(new Set());
+    if (r.enabled) {
+      const mas = await fetchToggleMas(r.id);
+      setToggleAssociatedMas(mas);
+      setToggleStep(mas.length > 0 ? 'disassociate' : 'confirm');
+    } else {
+      setToggleStep('confirm');
+    }
+  };
+
+  const handleToggleDisassociate = async (mas: MultiAgenticSystem) => {
+    if (!toggleTarget) {
+      return;
+    }
+    setToggleDisassociatingIds((prev) => new Set(prev).add(mas.id));
+    try {
+      await masApi.disassociateCE(mas.workspace_id, mas.id, toggleTarget.id);
+      setToggleDisassociatedIds((prev) => new Set(prev).add(mas.id));
+      toast.success(`Disassociated from "${mas.name}"`);
+    } catch (err) {
+      toast.error(parseError(err));
+    } finally {
+      setToggleDisassociatingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(mas.id);
+        return next;
+      });
+    }
+  };
+
+  const togglePendingMas = toggleAssociatedMas.filter((m) => !toggleDisassociatedIds.has(m.id));
+
+  const handleConfirmToggle = async () => {
+    if (!toggleTarget) {
+      return;
+    }
+    setIsTogglingEnabled(true);
+    try {
+      await cognitionEngineApi.patch(toggleTarget.id, {enabled: !toggleTarget.enabled});
+      toast.success(`"${toggleTarget.name}" ${toggleTarget.enabled ? 'disabled' : 'enabled'} successfully`);
+      await mutate();
+      await globalMutate(swrKeys.cognitionEngines());
+      setToggleStep(null);
+      setToggleTarget(null);
+    } catch (err) {
+      toast.error(parseError(err));
+    } finally {
+      setIsTogglingEnabled(false);
+    }
+  };
+
+  const [deleteTarget, setDeleteTarget] = useState<CognitionEngineListItem | null>(null);
+  const [deleteStep, setDeleteStep] = useState<DeleteStep>(null);
+  const [hasDisabled, setHasDisabled] = useState(false);
+  const [associatedMas, setAssociatedMas] = useState<MultiAgenticSystem[]>([]);
+  const [disassociatingIds, setDisassociatingIds] = useState<Set<string>>(new Set());
+  const [disassociatedIds, setDisassociatedIds] = useState<Set<string>>(new Set());
+  const [isDisabling, setIsDisabling] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [disableError, setDisableError] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const fetchAssociatedMas = async (ceId: string): Promise<MultiAgenticSystem[]> => {
+    if (!defaultWorkspaceId) {
+      return [];
+    }
+    try {
+      const masList = await masApi.list(defaultWorkspaceId);
+      return masList.filter((mas) => mas.cognition_engines?.some((c) => c.ce_id === ceId));
+    } catch {
+      return [];
+    }
+  };
+
+  const openDeleteFlow = async (r: CognitionEngineListItem) => {
+    setDeleteTarget(r);
+    setHasDisabled(false);
+    setDisassociatedIds(new Set());
+    setDisassociatingIds(new Set());
+    setDisableError(null);
+    setDeleteError(null);
+
+    if (r.enabled) {
+      setDeleteStep('disable');
+      return;
+    }
+
+    const mas = await fetchAssociatedMas(r.id);
+    setAssociatedMas(mas);
+    setDeleteStep(mas.length > 0 ? 'disassociate' : 'delete');
+  };
+
+  const handleDisable = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+    setIsDisabling(true);
+    setDisableError(null);
+    try {
+      await cognitionEngineApi.patch(deleteTarget.id, {enabled: false});
+      setHasDisabled(true);
+      await mutate();
+      await globalMutate(swrKeys.cognitionEngines());
+      toast.success(`"${deleteTarget.name}" disabled successfully`);
+
+      const mas = await fetchAssociatedMas(deleteTarget.id);
+      setAssociatedMas(mas);
+      setDeleteStep(mas.length > 0 ? 'disassociate' : 'delete');
+    } catch (err) {
+      setDisableError(parseError(err));
+    } finally {
+      setIsDisabling(false);
+    }
+  };
+
+  const handleDisassociate = async (mas: MultiAgenticSystem) => {
+    if (!deleteTarget) {
+      return;
+    }
+    setDisassociatingIds((prev) => new Set(prev).add(mas.id));
+    try {
+      await masApi.disassociateCE(mas.workspace_id, mas.id, deleteTarget.id);
+      setDisassociatedIds((prev) => new Set(prev).add(mas.id));
+      toast.success(`Disassociated from "${mas.name}"`);
+    } catch (err) {
+      toast.error(parseError(err));
+    } finally {
+      setDisassociatingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(mas.id);
+        return next;
+      });
+    }
+  };
+
+  const pendingMas = associatedMas.filter((m) => !disassociatedIds.has(m.id));
+
+  const handleDelete = async () => {
+    if (!deleteTarget) {
+      return;
+    }
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await cognitionEngineApi.delete(deleteTarget.id);
+      toast.success(`"${deleteTarget.name}" deleted successfully`);
+      await mutate();
+      await globalMutate(swrKeys.cognitionEngines());
+      setDeleteStep(null);
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError(parseError(err));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <>
@@ -60,6 +251,9 @@ export function CognitiveAgentList() {
                   setSelectedId(r.id);
                   router.push(routes.cognitiveAgents.details(r.id));
                 }}
+                onOpenEdit={(r) => router.push(`${routes.cognitiveAgents.details(r.id)}?edit=true`)}
+                onOpenDelete={openDeleteFlow}
+                onToggleEnabled={handleToggleEnabled}
               />
             ) : (
               <CognitiveAgentCardList
@@ -69,11 +263,45 @@ export function CognitiveAgentList() {
                   setSelectedId(r.id);
                   router.push(routes.cognitiveAgents.details(r.id));
                 }}
+                onOpenEdit={(r) => router.push(`${routes.cognitiveAgents.details(r.id)}?edit=true`)}
+                onOpenDelete={openDeleteFlow}
+                onToggleEnabled={handleToggleEnabled}
               />
             )}
           </ConditionalSWRRenderer>
         </BasePage>
       </div>
+
+      <CognitionEngineDialogs
+        toggleCeName={toggleTarget?.name}
+        toggleCeEnabled={toggleTarget?.enabled}
+        toggleStep={toggleStep}
+        setToggleStep={setToggleStep}
+        toggleAssociatedMas={toggleAssociatedMas}
+        toggleDisassociatedIds={toggleDisassociatedIds}
+        toggleDisassociatingIds={toggleDisassociatingIds}
+        togglePendingMas={togglePendingMas}
+        onToggleDisassociate={handleToggleDisassociate}
+        onConfirmToggle={handleConfirmToggle}
+        isTogglingEnabled={isTogglingEnabled}
+        deleteCeName={deleteTarget?.name}
+        deleteStep={deleteStep}
+        setDeleteStep={setDeleteStep}
+        setDisableError={setDisableError}
+        setDeleteError={setDeleteError}
+        hasDisabled={hasDisabled}
+        associatedMas={associatedMas}
+        disassociatedIds={disassociatedIds}
+        disassociatingIds={disassociatingIds}
+        pendingMas={pendingMas}
+        onDisassociate={handleDisassociate}
+        onDisable={handleDisable}
+        onDelete={handleDelete}
+        isDisabling={isDisabling}
+        isDeleting={isDeleting}
+        disableError={disableError}
+        deleteError={deleteError}
+      />
     </>
   );
 }

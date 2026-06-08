@@ -28,10 +28,21 @@ export function CollapsibleJsonField({
   field
 }: CollapsibleJsonFieldProps) {
   if (!isEditMode) {
+    let formatted = value;
+    if (value && value.trim() !== '') {
+      try {
+        formatted = JSON.stringify(JSON.parse(value), null, 2);
+      } catch {
+        // leave as-is if not valid JSON
+      }
+    }
+
     return (
       <div className="space-y-2">
         <Label>{label}</Label>
-        <Textarea value={value} placeholder={'{\n  "key": "value"\n}'} disabled readOnly className="font-mono text-xs min-h-[80px]" />
+        <pre className="font-mono text-xs rounded-md border bg-muted/40 p-3 min-h-[80px] whitespace-pre-wrap break-all text-foreground">
+          {formatted || '{\n  "key": "value"\n}'}
+        </pre>
       </div>
     );
   }

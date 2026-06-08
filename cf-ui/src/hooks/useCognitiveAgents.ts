@@ -5,14 +5,11 @@ import {cognitionEngineApi} from '@/api/endpoints/cognition-engine';
 import type {CognitionEngineDetail, CognitionEngineListItem} from '@/api/endpoints/cognition-engine';
 import {swrKeys} from '@/lib/swr-config';
 import {parseError, sortByCreatedAtDesc} from '@/lib/utils';
-import {useDefaultWorkspace} from './useDefaultWorkspace';
 
 export function useCognitionEngines() {
-  const {defaultWorkspaceId} = useDefaultWorkspace();
-
   const {data, error, isLoading, isValidating, mutate} = useSWR<CognitionEngineListItem[]>(
-    defaultWorkspaceId ? swrKeys.cognitionEngines() : null,
-    () => cognitionEngineApi.list(defaultWorkspaceId!),
+    swrKeys.cognitionEngines(),
+    () => cognitionEngineApi.list(),
     {revalidateOnMount: true, keepPreviousData: true}
   );
 
@@ -28,11 +25,9 @@ export function useCognitionEngines() {
 }
 
 export function useCognitionEngine(cognitionEngineId: string) {
-  const {defaultWorkspaceId} = useDefaultWorkspace();
-
   const {data, error, isLoading, isValidating, mutate} = useSWR<CognitionEngineDetail>(
-    defaultWorkspaceId && cognitionEngineId ? swrKeys.cognitionEngineDetails(cognitionEngineId) : null,
-    () => cognitionEngineApi.get(defaultWorkspaceId!, cognitionEngineId),
+    cognitionEngineId ? swrKeys.cognitionEngineDetails(cognitionEngineId) : null,
+    () => cognitionEngineApi.get(cognitionEngineId),
     {revalidateOnMount: true, keepPreviousData: true}
   );
 

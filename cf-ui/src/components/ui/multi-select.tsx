@@ -2,10 +2,11 @@
 
 import * as React from 'react';
 import {DropdownMenu, DropdownMenuTrigger, DropdownMenuContent} from '@/components/ui/dropdown-menu';
-import {ChevronDown, Check} from 'lucide-react';
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
+import {ChevronDown, Check, Info} from 'lucide-react';
 import {cn} from '@/lib/utils';
 
-type Option = string | {label: string; value: string};
+type Option = string | {label: string; value: string; disabled?: boolean; hint?: string};
 
 export interface MultiSelectProps {
   value?: string[];
@@ -31,7 +32,7 @@ export function MultiSelect({
   align = 'start'
 }: MultiSelectProps) {
   const norm = React.useMemo(() => {
-    return options.map((o) => (typeof o === 'string' ? {label: o, value: o} : o));
+    return options.map((o) => (typeof o === 'string' ? {label: o, value: o, disabled: false, hint: undefined} : o));
   }, [options]);
 
   const displayText =
@@ -56,38 +57,66 @@ export function MultiSelect({
           <ChevronDown className="h-4 w-4 opacity-50 shrink-0 ml-2" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className={cn('min-w-[200px]', contentClassName)} align={align}>
-        {norm.length === 0 ? (
-          <div className="py-2 px-2 text-sm text-muted-foreground">{emptyMessage}</div>
-        ) : (
-          norm.map((option) => {
-            const isSelected = value.includes(option.value);
-            return (
-              <div
-                key={option.value}
-                className="relative flex cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground"
-                onClick={(e) => {
-                  e.preventDefault();
-                  if (!disabled && onChange) {
-                    const newValue = isSelected ? value.filter((v) => v !== option.value) : [...value, option.value];
-                    onChange(newValue);
-                  }
-                }}
-              >
-                <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
-                  {isSelected ? (
-                    <div className="h-4 w-4 rounded border border-primary bg-primary flex items-center justify-center">
-                      <Check className="h-3 w-3 text-primary-foreground" />
-                    </div>
-                  ) : (
-                    <div className="h-4 w-4 rounded border border-input soft-card" />
+      <DropdownMenuContent className={cn('min-w-[var(--radix-dropdown-menu-trigger-width)]', contentClassName)} align={align}>
+        <TooltipProvider delayDuration={200}>
+          {norm.length === 0 ? (
+            <div className="py-2 px-2 text-sm text-muted-foreground">{emptyMessage}</div>
+          ) : (
+            norm.map((option) => {
+              const isSelected = value.includes(option.value);
+              const isDisabled = option.disabled ?? false;
+              return (
+                <div
+                  key={option.value}
+                  className={cn(
+                    'relative flex select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none transition-colors',
+                    isDisabled ? 'cursor-not-allowed opacity-60' : 'cursor-default hover:bg-accent hover:text-accent-foreground'
                   )}
-                </span>
-                {option.label}
-              </div>
-            );
-          })
-        )}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (!isDisabled && !disabled && onChange) {
+                      const newValue = isSelected ? value.filter((v) => v !== option.value) : [...value, option.value];
+                      onChange(newValue);
+                    }
+                  }}
+                >
+                  <span className="absolute left-2 flex h-4 w-4 items-center justify-center">
+                    {isSelected ? (
+                      <div className="h-4 w-4 rounded border border-primary bg-primary flex items-center justify-center">
+                        <Check className="h-3 w-3 text-primary-foreground" />
+                      </div>
+                    ) : (
+                      <div className={cn('h-4 w-4 rounded border soft-card', isDisabled ? 'border-input/50' : 'border-input')} />
+                    )}
+                  </span>
+                  <span className="flex-1">{option.label}</span>
+                  {isDisabled && (
+                    <span className="ml-2 inline-flex items-center gap-1">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 leading-none">
+                        Auto Attached
+                      </span>
+                      {option.hint && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span
+                              className="inline-flex items-center text-muted-foreground hover:text-foreground cursor-default"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Info className="w-3.5 h-3.5" />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="left" className="max-w-[280px] text-xs bg-popover">
+                            {option.hint}
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </span>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </TooltipProvider>
       </DropdownMenuContent>
     </DropdownMenu>
   );

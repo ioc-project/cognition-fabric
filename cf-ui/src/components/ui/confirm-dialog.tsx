@@ -53,7 +53,7 @@ export function ConfirmDialog({
       >
         {cancelText}
       </Button>
-      <Button variant={variant === 'destructive' ? 'destructive' : 'default'} onClick={handleConfirm} disabled={loading}>
+      <Button variant={variant === 'destructive' ? 'destructive' : 'sidebar'} onClick={handleConfirm} disabled={loading}>
         {loading ? 'Processing...' : confirmText}
       </Button>
     </div>

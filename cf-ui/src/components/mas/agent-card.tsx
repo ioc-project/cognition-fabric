@@ -6,6 +6,7 @@ import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {CopyableInput} from '@/components/ui/copyable-input';
+import {ReadOnlyField} from '@/components/ui/read-only-field';
 import {Label} from '@/components/ui/label';
 import {validateJSON, formatJson} from '@/lib/utils';
 import type {Control} from 'react-hook-form';
@@ -237,34 +238,32 @@ function ViewModeFields({
 
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">Name</Label>
-        <Input value={agentName || '—'} disabled readOnly />
+        <ReadOnlyField value={agentName || '—'} />
       </div>
 
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">URL</Label>
-        <Input value={agentUrl || '—'} disabled readOnly />
+        <ReadOnlyField value={agentUrl || '—'} />
       </div>
 
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">Identity Type</Label>
-        <Input value={identityType || 'Not configured'} disabled readOnly />
+        <ReadOnlyField value={identityType || 'Not configured'} />
       </div>
 
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">Identity Identifiers</Label>
-        <Textarea
-          value={identityIdentifiers && Object.keys(identityIdentifiers).length > 0 ? JSON.stringify(identityIdentifiers, null, 2) : ''}
-          placeholder={'{\n  "url": "main::agents::retrieval-agent-1"\n}'}
-          disabled
-          readOnly
-          className="font-mono text-xs min-h-[80px]"
-        />
+        <pre className="font-mono text-xs rounded-md border bg-muted/40 p-3 min-h-[80px] whitespace-pre-wrap break-all text-foreground">
+          {identityIdentifiers && Object.keys(identityIdentifiers).length > 0
+            ? JSON.stringify(identityIdentifiers, null, 2)
+            : '{\n  "url": "main::agents::retrieval-agent-1"\n}'}
+        </pre>
       </div>
 
       {agenticMemoryProviderId && (
         <div className="space-y-1">
           <Label className="text-xs text-muted-foreground">Memory Provider</Label>
-          <Input value={agenticMemoryProviderName || agenticMemoryProviderId} disabled readOnly />
+          <ReadOnlyField value={agenticMemoryProviderName || agenticMemoryProviderId || ''} />
           <div className="pt-1">
             <Label className="text-xs text-muted-foreground">Provider ID</Label>
             <CopyableInput value={agenticMemoryProviderId} />

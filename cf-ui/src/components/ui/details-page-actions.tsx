@@ -3,6 +3,7 @@ import {Button} from '@/components/ui/button';
 
 interface DetailsPageActionsProps {
   onDelete?: () => void;
+  deleteDisabled?: boolean;
   onEdit?: () => void;
   isEditMode?: boolean;
   onSave?: () => void;
@@ -13,6 +14,7 @@ interface DetailsPageActionsProps {
 
 export function DetailsPageActions({
   onDelete,
+  deleteDisabled = false,
   onEdit,
   isEditMode = false,
   onSave,
@@ -41,7 +43,7 @@ export function DetailsPageActions({
         </Button>
       )}
       {onDelete && (
-        <Button variant="outline" size="sm" onClick={onDelete}>
+        <Button variant="outline" size="sm" onClick={onDelete} disabled={deleteDisabled}>
           {deleteLabel ? deleteLabel : <Trash2 className="h-4 w-4" />}
         </Button>
       )}

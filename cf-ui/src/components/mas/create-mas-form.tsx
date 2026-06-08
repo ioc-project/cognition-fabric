@@ -18,6 +18,8 @@ import {BasePage} from '@/components/ui/base-page';
 import {breadcrumbs} from '@/constants/routes';
 import {useMAS} from '@/hooks/useMAS';
 import {useMemoryProviders} from '@/hooks/useMemoryProviders';
+import {useCognitionEngines} from '@/hooks/useCognitionEngines';
+import {MultiSelect} from '@/components/ui/multi-select';
 import {AgentsList} from './agents-list';
 import {CollapsibleJsonField} from './collapsible-json-field';
 
@@ -50,6 +52,7 @@ const formSchema = z
     name: z.string().min(1, 'Multi-Agent System name is required').min(3, 'Name must be at least 3 characters'),
     description: z.string().optional(),
     shared_memory_provider_id: z.string().optional(),
+    cognition_engine_ids: z.array(z.string()).optional().default([]),
     agents: z.array(AgentFormSchema).optional().default([]),
     config: z
       .string()
@@ -101,6 +104,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
   const [agentExpandedState, setAgentExpandedState] = useState<Record<string, boolean>>({});
   const {addMAS} = useMAS(workspaceId);
   const {providers} = useMemoryProviders();
+  const {cognitionEngines = []} = useCognitionEngines();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -108,6 +112,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
       name: '',
       description: '',
       shared_memory_provider_id: '',
+      cognition_engine_ids: [],
       agents: [],
       config: ''
     }
@@ -156,6 +161,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
         name: values.name,
         description: values.description,
         ...(values.shared_memory_provider_id && {shared_memory_provider_id: values.shared_memory_provider_id}),
+        ...(values.cognition_engine_ids && values.cognition_engine_ids.length > 0 && {cognition_engine_ids: values.cognition_engine_ids}),
         ...(agentsPayload.length > 0 && {agents: agentsPayload}),
         ...(values.config && {config: parseJsonField(values.config)})
       });
@@ -256,6 +262,31 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                             )}
                           </SelectContent>
                         </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="cognition_engine_ids"
+                    render={({field}) => (
+                      <FormItem>
+                        <FormLabel>Cognition Engines</FormLabel>
+                        <FormControl>
+                          <MultiSelect
+                            value={field.value ?? []}
+                            options={cognitionEngines.map((ce) => ({
+                              label: ce.name,
+                              value: ce.id,
+                              disabled: ce.mas_auto_associate ?? false,
+                              hint: ce.mas_auto_associate ? 'Automatically attached to this MAS at creation.' : undefined
+                            }))}
+                            placeholder="Select cognition engines"
+                            emptyMessage="No cognition engines available"
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}

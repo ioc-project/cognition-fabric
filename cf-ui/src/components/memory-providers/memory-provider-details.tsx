@@ -24,6 +24,7 @@ import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {toast} from 'sonner';
 import {CopyableInput} from '@/components/ui/copyable-input';
+import {ReadOnlyField} from '@/components/ui/read-only-field';
 import {Eye, EyeOff} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 
@@ -280,14 +281,14 @@ export default function MemoryProviderDetailsPage() {
                       ) : (
                         <div className="space-y-2">
                           <Label>Provider Name</Label>
-                          <Input value={provider?.name || ''} disabled readOnly />
+                          <ReadOnlyField value={provider?.name || ''} />
                         </div>
                       )}
 
                       {/* Enabled — always read-only */}
                       <div className="space-y-2">
                         <Label>Enabled</Label>
-                        <Input value={provider?.enabled ? 'Yes' : 'No'} disabled readOnly />
+                        <ReadOnlyField value={provider?.enabled ? 'Yes' : 'No'} />
                       </div>
 
                       {/* Description */}
@@ -309,7 +310,7 @@ export default function MemoryProviderDetailsPage() {
                         ) : (
                           <div className="space-y-2">
                             <Label>Description</Label>
-                            <Textarea value={provider?.description || 'No description provided'} disabled readOnly rows={3} />
+                            <ReadOnlyField value={provider?.description || 'No description provided'} multiline />
                           </div>
                         )}
                       </div>
@@ -369,7 +370,7 @@ export default function MemoryProviderDetailsPage() {
                       ) : (
                         <div className="space-y-2">
                           <Label>Authentication Type</Label>
-                          <Input value={authTypeLabel((provider?.config as MemoryProviderConfig | null)?.auth?.type ?? 'none')} disabled readOnly />
+                          <ReadOnlyField value={authTypeLabel((provider?.config as MemoryProviderConfig | null)?.auth?.type ?? 'none')} />
                         </div>
                       )}
 
@@ -420,7 +421,7 @@ export default function MemoryProviderDetailsPage() {
                               <>
                                 <div className="space-y-2">
                                   <Label>Username</Label>
-                                  <Input value={creds.username ?? ''} disabled readOnly />
+                                  <ReadOnlyField value={creds.username ?? ''} />
                                 </div>
                                 <RevealInput fieldKey="password" label="Password" value={creds.password ?? ''} />
                               </>
@@ -431,7 +432,7 @@ export default function MemoryProviderDetailsPage() {
                               <>
                                 <div className="space-y-2">
                                   <Label>Header Name</Label>
-                                  <Input value={creds.header_name ?? ''} disabled readOnly />
+                                  <ReadOnlyField value={creds.header_name ?? ''} />
                                 </div>
                                 <RevealInput fieldKey="header_value" label="Header Value" value={creds.header_value ?? ''} />
                               </>

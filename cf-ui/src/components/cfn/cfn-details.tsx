@@ -21,6 +21,7 @@ import {DATE_TIME_FORMAT_OPTIONS, parseError} from '@/lib/utils';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {toast} from 'sonner';
 import {CopyableInput} from '@/components/ui/copyable-input';
+import {ReadOnlyField} from '@/components/ui/read-only-field';
 
 const UpdateCfnFormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters').optional(),
@@ -189,7 +190,7 @@ export default function CfnDetailsPage() {
                       ) : (
                         <div className="space-y-2">
                           <Label>CFN Name</Label>
-                          <Input value={cfn?.name || ''} disabled readOnly />
+                          <ReadOnlyField value={cfn?.name || ''} />
                         </div>
                       )}
 
@@ -210,7 +211,7 @@ export default function CfnDetailsPage() {
                       ) : (
                         <div className="space-y-2">
                           <Label>IP Address</Label>
-                          <Input value={cfn?.ip_address || ''} disabled readOnly />
+                          <ReadOnlyField value={cfn?.ip_address || ''} />
                         </div>
                       )}
 
@@ -231,32 +232,26 @@ export default function CfnDetailsPage() {
                       ) : (
                         <div className="space-y-2">
                           <Label>Port</Label>
-                          <Input value={cfn?.port ? String(cfn.port) : ''} disabled readOnly />
+                          <ReadOnlyField value={cfn?.port ? String(cfn.port) : ''} />
                         </div>
                       )}
 
                       <div className="space-y-2">
                         <Label>Status</Label>
-                        <Input value={cfn?.status || ''} disabled readOnly />
+                        <ReadOnlyField value={cfn?.status || ''} />
                       </div>
                       <div className="space-y-2">
                         <Label>Enabled</Label>
-                        <Input value={cfn?.enabled ? 'Yes' : 'No'} disabled readOnly />
+                        <ReadOnlyField value={cfn?.enabled ? 'Yes' : 'No'} />
                       </div>
                       <div className="space-y-2">
                         <Label>Last Seen</Label>
-                        <Input
-                          value={cfn?.last_seen ? new Date(cfn.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Never'}
-                          disabled
-                          readOnly
-                        />
+                        <ReadOnlyField value={cfn?.last_seen ? new Date(cfn.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Never'} />
                       </div>
                       <div className="space-y-2">
                         <Label>Created At</Label>
-                        <Input
+                        <ReadOnlyField
                           value={cfn?.created_at ? new Date(cfn.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'}
-                          disabled
-                          readOnly
                         />
                       </div>
                       {/* <div className="space-y-2">

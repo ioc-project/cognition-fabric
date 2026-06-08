@@ -550,6 +550,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/workspaces/{workspace_id}/multi-agentic-systems/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Query Multi Agentic Systems By Identity
+         * @description Query Multi-Agentic Systems that have agents with claude identity matching the given identifiers.
+         *
+         *     - **workspace_id**: UUID of the workspace
+         *     - **identity_identifiers**: Key-value pairs to match against agent identity_identifiers (e.g. {"xyz": "pqr"})
+         *
+         *     Returns list of MAS containing agents with identity_type 'claude' and matching identity_identifiers.
+         */
+        post: operations["query_multi_agentic_systems_by_identity_api_workspaces__workspace_id__multi_agentic_systems_query_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}": {
         parameters: {
             query?: never;
@@ -598,7 +623,47 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/workspaces/{workspace_id}/cognition-engines": {
+    "/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}/cognition-engines": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Associate CE with MAS
+         * @description Add a Cognition Engine to a Multi-Agentic System. The CE's CFN must match the workspace's CFN.
+         */
+        post: operations["associate_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}/cognition-engines/{ce_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Disassociate CE from MAS
+         * @description Remove a Cognition Engine from a Multi-Agentic System.
+         */
+        delete: operations["disassociate_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines__ce_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/cognition-engines": {
         parameters: {
             query?: never;
             header?: never;
@@ -607,22 +672,22 @@ export interface paths {
         };
         /**
          * List Cognition Engines
-         * @description Get list of all cognition engines in workspace
+         * @description List cognition engines, optionally filtered by cfn_id and/or status.
          */
-        get: operations["list_cognition_engines_api_workspaces__workspace_id__cognition_engines_get"];
+        get: operations["list_cognition_engines_api_cognition_engines_get"];
         put?: never;
         /**
-         * Create Cognition Engine
-         * @description Create a new cognition engine in workspace
+         * Register Cognition Engine
+         * @description Register or update a Cognition Engine with a CFN. Idempotent: same (cfn_id, name, version) updates the record (200) or creates it (201). Same name with a different version creates a new record.
          */
-        post: operations["create_cognition_engine_api_workspaces__workspace_id__cognition_engines_post"];
+        post: operations["register_cognition_engine_api_cognition_engines_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/workspaces/{workspace_id}/cognition-engines/{id}": {
+    "/api/cognition-engines/{ce_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -631,23 +696,43 @@ export interface paths {
         };
         /**
          * Get Cognition Engine
-         * @description Get details of a specific cognition engine
+         * @description Get details of a specific cognition engine.
          */
-        get: operations["get_cognition_engine_api_workspaces__workspace_id__cognition_engines__id__get"];
+        get: operations["get_cognition_engine_api_cognition_engines__ce_id__get"];
         put?: never;
         post?: never;
         /**
-         * Delete Cognition Engine
-         * @description Delete a cognition engine (soft delete)
+         * Deregister Cognition Engine
+         * @description Soft-delete (deregister) a cognition engine.
          */
-        delete: operations["delete_cognition_engine_api_workspaces__workspace_id__cognition_engines__id__delete"];
+        delete: operations["delete_cognition_engine_api_cognition_engines__ce_id__delete"];
         options?: never;
         head?: never;
         /**
          * Update Cognition Engine
-         * @description Update an existing cognition engine
+         * @description Partially update a Cognition Engine. Immutable fields (cfn_id, version, name, kind, subkind) cannot be updated — returns 400 if attempted.
          */
-        patch: operations["update_cognition_engine_api_workspaces__workspace_id__cognition_engines__id__patch"];
+        patch: operations["patch_cognition_engine_api_cognition_engines__ce_id__patch"];
+        trace?: never;
+    };
+    "/api/cognition-engines/{ce_id}/heartbeat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Cognition Engine Heartbeat
+         * @description Update last_seen and flip status to online. Called by the CE to signal it is alive.
+         */
+        put: operations["heartbeat_cognition_engine_api_cognition_engines__ce_id__heartbeat_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/workspaces/{workspace_id}/policies": {
@@ -964,22 +1049,19 @@ export interface components {
             totalElements: number;
         };
         /**
-         * CognitionEngineCreate
-         * @description Schema for creating a cognition engine
+         * CognitionEngineAssociateResponse
+         * @description Schema for CE-MAS association response
          */
-        CognitionEngineCreate: {
+        CognitionEngineAssociateResponse: {
+            /** Ce Id */
+            ce_id: string;
+            /** Mas Id */
+            mas_id: string;
             /**
-             * Name
-             * @description Engine name
+             * Created At
+             * Format: date-time
              */
-            name: string;
-            /**
-             * Config
-             * @description Engine-specific configuration
-             */
-            config?: {
-                [key: string]: unknown;
-            } | null;
+            created_at: string;
         };
         /**
          * CognitionEngineDetail
@@ -988,16 +1070,38 @@ export interface components {
         CognitionEngineDetail: {
             /** Id */
             id: string;
-            /** Workspace Id */
-            workspace_id: string;
+            /** Cfn Id */
+            cfn_id: string;
             /** Name */
             name: string;
+            /** Version */
+            version: string;
+            /** Kind */
+            kind: string | null;
+            /** Subkind */
+            subkind: string | null;
+            /** Url */
+            url: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Mas Auto Associate */
+            mas_auto_associate: boolean;
+            /** Capabilities */
+            capabilities: string[] | null;
+            /** Metrics */
+            metrics: string[] | null;
+            /** Status */
+            status: string;
+            /** Last Seen */
+            last_seen: string | null;
             /** Config */
             config: {
                 [key: string]: unknown;
             } | null;
-            /** Enabled */
-            enabled: boolean;
+            /** Mas Config */
+            mas_config: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Created At
              * Format: date-time
@@ -1005,44 +1109,65 @@ export interface components {
             created_at: string;
             /** Updated At */
             updated_at: string | null;
-            /** Created By */
-            created_by: string;
-            /** Updated By */
-            updated_by: string | null;
+        };
+        /**
+         * CognitionEngineHeartbeatResponse
+         * @description Schema for CE heartbeat response
+         */
+        CognitionEngineHeartbeatResponse: {
+            /** Status */
+            status: string;
+            /**
+             * Last Seen
+             * Format: date-time
+             */
+            last_seen: string;
         };
         /**
          * CognitionEngineList
          * @description Schema for cognition engine list response
          */
         CognitionEngineList: {
-            /**
-             * Engines
-             * @description List of cognition engines
-             */
-            engines: components["schemas"]["CognitionEngineListItem"][];
-            /**
-             * Total
-             * @description Total number of engines
-             */
+            /** Cognition Engines */
+            cognition_engines: components["schemas"]["CognitionEngineListItem"][];
+            /** Total */
             total: number;
         };
         /**
          * CognitionEngineListItem
-         * @description Schema for cognition engine list item
+         * @description Schema for a cognition engine in the list response
          */
         CognitionEngineListItem: {
             /** Id */
             id: string;
-            /** Workspace Id */
-            workspace_id: string;
+            /** Cfn Id */
+            cfn_id: string;
             /** Name */
             name: string;
+            /** Version */
+            version: string;
+            /** Kind */
+            kind: string | null;
+            /** Subkind */
+            subkind: string | null;
+            /** Url */
+            url: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Mas Auto Associate */
+            mas_auto_associate: boolean;
+            /** Status */
+            status: string;
+            /** Last Seen */
+            last_seen: string | null;
             /** Config */
             config: {
                 [key: string]: unknown;
             } | null;
-            /** Enabled */
-            enabled: boolean;
+            /** Mas Config */
+            mas_config: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Created At
              * Format: date-time
@@ -1050,27 +1175,187 @@ export interface components {
             created_at: string;
         };
         /**
-         * CognitionEngineUpdate
-         * @description Schema for updating a cognition engine
+         * CognitionEnginePatchRequest
+         * @description Schema for PATCH /cognition-engines/{id}.
+         *
+         *     Only the fields listed here can be updated.
+         *     Attempting to update immutable fields (cfn_id, version, name, kind, subkind)
+         *     will be rejected with 400.
          */
-        CognitionEngineUpdate: {
+        CognitionEnginePatchRequest: {
             /**
-             * Name
-             * @description Engine name
+             * Url
+             * @description URL for the CFN to reach this engine
              */
-            name?: string | null;
+            url?: string | null;
+            /**
+             * Enabled
+             * @description Enable or disable the CE
+             */
+            enabled?: boolean | null;
+            /**
+             * Mas Auto Associate
+             * @description Enable or disable auto-association to new MAS
+             */
+            mas_auto_associate?: boolean | null;
+            /**
+             * Capabilities
+             * @description Capability names
+             */
+            capabilities?: string[] | null;
+            /**
+             * Metrics
+             * @description Metric names
+             */
+            metrics?: string[] | null;
             /**
              * Config
-             * @description Engine-specific configuration
+             * @description CE-level configuration
              */
             config?: {
                 [key: string]: unknown;
             } | null;
             /**
-             * Enabled
-             * @description Whether engine is enabled
+             * Mas Config
+             * @description Factory defaults for per-MAS configuration
              */
-            enabled?: boolean | null;
+            mas_config?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Auth
+             * @description Auth credentials
+             */
+            auth?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Cfn Id
+             * @description Immutable — cannot be updated via PATCH
+             */
+            cfn_id?: string | null;
+            /**
+             * Version
+             * @description Immutable — cannot be updated via PATCH
+             */
+            version?: string | null;
+            /**
+             * Name
+             * @description Immutable — cannot be updated via PATCH
+             */
+            name?: string | null;
+            /**
+             * Kind
+             * @description Immutable — cannot be updated via PATCH
+             */
+            kind?: string | null;
+            /**
+             * Subkind
+             * @description Immutable — cannot be updated via PATCH
+             */
+            subkind?: string | null;
+        };
+        /**
+         * CognitionEngineRegisterRequest
+         * @description Schema for CE self-registration (idempotent upsert)
+         */
+        CognitionEngineRegisterRequest: {
+            /**
+             * Cfn Id
+             * @description CFN this engine is registering under
+             */
+            cfn_id: string;
+            /**
+             * Name
+             * @description Engine name
+             */
+            name: string;
+            /**
+             * Url
+             * @description URL for the CFN to reach this engine
+             */
+            url: string;
+            /**
+             * Version
+             * @description CE software version, e.g. '1.2.3'
+             */
+            version: string;
+            /**
+             * Kind
+             * @description Engine kind, e.g. 'knowledge', 'contingency'
+             */
+            kind?: string | null;
+            /**
+             * Subkind
+             * @description Engine subkind, e.g. 'distillation', 'query', 'negotiation'
+             */
+            subkind?: string | null;
+            /**
+             * Mas Auto Associate
+             * @description If true, CE is auto-associated with all MAS under the same CFN's workspaces
+             * @default false
+             */
+            mas_auto_associate: boolean;
+            /**
+             * Auth
+             * @description Auth credentials, e.g. {"type": "api_key", "credentials": {...}}
+             */
+            auth?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Capabilities
+             * @description Capability names
+             */
+            capabilities?: string[] | null;
+            /**
+             * Metrics
+             * @description Metric names the CE will publish
+             */
+            metrics?: string[] | null;
+            /**
+             * Config
+             * @description CE-level configuration
+             */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Mas Config
+             * @description Factory defaults for per-MAS configuration (e.g. schedule). Copied to each MAS on association and overridable per MAS.
+             */
+            mas_config?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * CognitionEngineResponse
+         * @description Schema for CE registration response
+         */
+        CognitionEngineResponse: {
+            /** Ce Id */
+            ce_id: string;
+            /** Cfn Id */
+            cfn_id: string;
+            /** Name */
+            name: string;
+            /** Version */
+            version: string;
+            /** Kind */
+            kind: string | null;
+            /** Subkind */
+            subkind: string | null;
+            /** Enabled */
+            enabled: boolean;
+            /** Mas Auto Associate */
+            mas_auto_associate: boolean;
+            /** Status */
+            status: string;
+            /**
+             * Created
+             * @description True if new registration, False if existing record was updated
+             */
+            created: boolean;
         };
         /**
          * CognitionFabricNodeHeartbeatResponse
@@ -1350,6 +1635,59 @@ export interface components {
             detail?: components["schemas"]["ValidationError"][];
         };
         /**
+         * MASQueryByIdentity
+         * @description Schema for querying MAS by agent identity type and/or identifiers
+         */
+        MASQueryByIdentity: {
+            /**
+             * Identity Type
+             * @description Identity provider type to filter by (e.g. 'claude', 'openclaw')
+             */
+            identity_type?: string | null;
+            /**
+             * Identity Identifiers
+             * @description Identity identifiers to match against agent identity_identifiers (e.g. {"xyz": "pqr"})
+             */
+            identity_identifiers?: {
+                [key: string]: string;
+            } | null;
+        };
+        /**
+         * MasCognitionEngineAssociateRequest
+         * @description Schema for adding a Cognition Engine to a MAS
+         */
+        MasCognitionEngineAssociateRequest: {
+            /**
+             * Ce Id
+             * @description ID of the Cognition Engine to associate with this MAS
+             */
+            ce_id: string;
+        };
+        /**
+         * MasCognitionEngineItem
+         * @description Schema for a cognition engine associated with a MAS
+         */
+        MasCognitionEngineItem: {
+            /** Ce Id */
+            ce_id: string;
+            /** Name */
+            name: string;
+            /** Kind */
+            kind: string | null;
+            /** Subkind */
+            subkind: string | null;
+            /** Url */
+            url: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Status */
+            status: string;
+            /** Mas Config */
+            mas_config: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
          * MemoryProviderAuthConfig
          * @description Authentication configuration for memory provider
          */
@@ -1575,6 +1913,8 @@ export interface components {
             config?: {
                 [key: string]: unknown;
             } | null;
+            /** Cognition Engines */
+            cognition_engines?: components["schemas"]["MasCognitionEngineItem"][] | null;
             /**
              * Created At
              * Format: date-time
@@ -1619,6 +1959,11 @@ export interface components {
             config?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Cognition Engine Ids
+             * @description CE IDs to associate with this MAS on creation. Additive — auto-attach CEs are also attached.
+             */
+            cognition_engine_ids?: string[] | null;
         };
         /**
          * MultiAgenticSystemResponse
@@ -1670,6 +2015,18 @@ export interface components {
              * @description Updated configuration object
              */
             config?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Cognition Engine Ids
+             * @description CE IDs to sync with this MAS. Attaches new ones, detaches removed ones. Omit to leave unchanged.
+             */
+            cognition_engine_ids?: string[] | null;
+            /**
+             * Cognition Engine Configs
+             * @description Per-CE mas_config overrides, keyed by ce_id. Overrides the CE factory defaults for this MAS only.
+             */
+            cognition_engine_configs?: {
                 [key: string]: unknown;
             } | null;
         };
@@ -2747,6 +3104,41 @@ export interface operations {
             };
         };
     };
+    query_multi_agentic_systems_by_identity_api_workspaces__workspace_id__multi_agentic_systems_query_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MASQueryByIdentity"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MultiAgenticSystems"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_multi_agentic_system_api_workspaces__workspace_id__multi_agentic_systems__mas_id__get: {
         parameters: {
             query?: never;
@@ -2847,13 +3239,83 @@ export interface operations {
             };
         };
     };
-    list_cognition_engines_api_workspaces__workspace_id__cognition_engines_get: {
+    associate_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines_post: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 workspace_id: string;
+                mas_id: string;
             };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MasCognitionEngineAssociateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CognitionEngineAssociateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disassociate_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines__ce_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                mas_id: string;
+                ce_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_cognition_engines_api_cognition_engines_get: {
+        parameters: {
+            query?: {
+                /** @description Filter by CFN ID */
+                cfn_id?: string | null;
+                /** @description Filter by status: 'online' or 'offline' */
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -2878,28 +3340,26 @@ export interface operations {
             };
         };
     };
-    create_cognition_engine_api_workspaces__workspace_id__cognition_engines_post: {
+    register_cognition_engine_api_cognition_engines_post: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                workspace_id: string;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CognitionEngineCreate"];
+                "application/json": components["schemas"]["CognitionEngineRegisterRequest"];
             };
         };
         responses: {
             /** @description Successful Response */
-            201: {
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CognitionEngineDetail"];
+                    "application/json": components["schemas"]["CognitionEngineResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2913,13 +3373,12 @@ export interface operations {
             };
         };
     };
-    get_cognition_engine_api_workspaces__workspace_id__cognition_engines__id__get: {
+    get_cognition_engine_api_cognition_engines__ce_id__get: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                workspace_id: string;
-                id: string;
+                ce_id: string;
             };
             cookie?: never;
         };
@@ -2945,17 +3404,49 @@ export interface operations {
             };
         };
     };
-    delete_cognition_engine_api_workspaces__workspace_id__cognition_engines__id__delete: {
+    delete_cognition_engine_api_cognition_engines__ce_id__delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                workspace_id: string;
-                id: string;
+                ce_id: string;
             };
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_cognition_engine_api_cognition_engines__ce_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ce_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CognitionEnginePatchRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -2963,9 +3454,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
+                    "application/json": components["schemas"]["CognitionEngineDetail"];
                 };
             };
             /** @description Validation Error */
@@ -2979,21 +3468,16 @@ export interface operations {
             };
         };
     };
-    update_cognition_engine_api_workspaces__workspace_id__cognition_engines__id__patch: {
+    heartbeat_cognition_engine_api_cognition_engines__ce_id__heartbeat_put: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                workspace_id: string;
-                id: string;
+                ce_id: string;
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CognitionEngineUpdate"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -3001,7 +3485,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["CognitionEngineDetail"];
+                    "application/json": components["schemas"]["CognitionEngineHeartbeatResponse"];
                 };
             };
             /** @description Validation Error */

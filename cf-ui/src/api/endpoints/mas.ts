@@ -8,6 +8,7 @@ type MultiAgenticSystemUpdate = components['schemas']['MultiAgenticSystemUpdate'
 type MultiAgenticSystems = components['schemas']['MultiAgenticSystems'];
 type AgentConfig = components['schemas']['AgentConfig'];
 type AgentWithMemory = components['schemas']['AgentWithMemory'];
+type CognitionEngineAssociateResponse = components['schemas']['CognitionEngineAssociateResponse'];
 
 export const masApi = {
   create: async (workspaceId: string, data: MultiAgenticSystemRequest): Promise<MultiAgenticSystemResponse> => {
@@ -84,6 +85,32 @@ export const masApi = {
     }
   },
 
+  associateCE: async (workspaceId: string, masId: string, ceId: string): Promise<CognitionEngineAssociateResponse> => {
+    const {data, error} = await apiClient.POST('/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}/cognition-engines', {
+      params: {
+        path: {workspace_id: workspaceId, mas_id: masId}
+      },
+      body: {ce_id: ceId}
+    });
+
+    if (error) {
+      throw error;
+    }
+    return data;
+  },
+
+  disassociateCE: async (workspaceId: string, masId: string, ceId: string): Promise<void> => {
+    const {error} = await apiClient.DELETE('/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}/cognition-engines/{ce_id}', {
+      params: {
+        path: {workspace_id: workspaceId, mas_id: masId, ce_id: ceId}
+      }
+    });
+
+    if (error) {
+      throw error;
+    }
+  },
+
   delete: async (workspaceId: string, id: string): Promise<void> => {
     const {error} = await apiClient.DELETE('/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}', {
       params: {
@@ -104,5 +131,6 @@ export type {
   MultiAgenticSystemUpdate,
   MultiAgenticSystems,
   AgentConfig,
-  AgentWithMemory
+  AgentWithMemory,
+  CognitionEngineAssociateResponse
 };
