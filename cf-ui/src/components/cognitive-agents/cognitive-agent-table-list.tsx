@@ -1,11 +1,21 @@
 'use client';
 
+import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {ResourceTable} from '@/components/ui/resource-table';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
-import {MoreVertical, Eye, Edit, Unplug, Trash2} from 'lucide-react';
+import {MoreVertical, Eye, Edit, Unplug, Trash2, ArrowUpDown, ArrowUp, ArrowDown} from 'lucide-react';
 import type {CognitionEngineListItem} from '@/api/endpoints/cognition-engine';
+
+type SortConfig = {key: string; dir: 'asc' | 'desc'} | null;
+
+function SortIcon({active, dir}: {active: boolean; dir?: 'asc' | 'desc'}) {
+  if (!active) {
+    return <ArrowUpDown className="ml-1 inline h-3 w-3 opacity-40" />;
+  }
+  return dir === 'asc' ? <ArrowUp className="ml-1 inline h-3 w-3" /> : <ArrowDown className="ml-1 inline h-3 w-3" />;
+}
 
 export interface CognitiveAgentTableListProps {
   cognitiveAgents: CognitionEngineListItem[];
@@ -14,6 +24,8 @@ export interface CognitiveAgentTableListProps {
   onOpenEdit: (r: CognitionEngineListItem) => void;
   onOpenDelete: (r: CognitionEngineListItem) => void;
   onToggleEnabled: (r: CognitionEngineListItem) => void;
+  sortConfig?: SortConfig;
+  onSort?: (key: string) => void;
 }
 
 export function CognitiveAgentTableList({
@@ -22,17 +34,30 @@ export function CognitiveAgentTableList({
   onRowClick,
   onOpenEdit,
   onOpenDelete,
-  onToggleEnabled
+  onToggleEnabled,
+  sortConfig,
+  onSort
 }: CognitiveAgentTableListProps) {
+  const sortable = (key: string, label: string) => ({
+    content: (
+      <span className="flex items-center">
+        {label}
+        <SortIcon active={sortConfig?.key === key} dir={sortConfig?.dir} />
+      </span>
+    ),
+    className: 'cursor-pointer select-none hover:text-foreground',
+    onClick: () => onSort?.(key)
+  });
+
   return (
     <ResourceTable
       items={cognitiveAgents}
       headers={[
-        {content: 'Name'},
-        {content: 'Status'},
+        sortable('name', 'Name'),
+        sortable('status', 'Status'),
         {content: 'Version'},
         {content: 'Enabled'},
-        {content: 'Created'},
+        sortable('created_at', 'Created'),
         {content: 'Actions', className: 'text-right'}
       ]}
       rowKey={(r) => r.id}
@@ -43,31 +68,11 @@ export function CognitiveAgentTableList({
           content: <span className="font-medium">{r.name}</span>
         },
         {
-          content: (
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                r.status === 'online'
-                  ? 'bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-400'
-                  : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-              }`}
-            >
-              {r.status === 'online' ? 'Online' : 'Offline'}
-            </span>
-          )
+          content: <Badge variant={r.status === 'online' ? 'success' : 'inactive'}>{r.status === 'online' ? 'Online' : 'Offline'}</Badge>
         },
         {content: <span className="font-mono text-xs">{r.version}</span>},
         {
-          content: (
-            <span
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                r.enabled
-                  ? 'bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-400'
-                  : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-              }`}
-            >
-              {r.enabled ? 'Enabled' : 'Disabled'}
-            </span>
-          )
+          content: <Badge variant={r.enabled ? 'info' : 'inactive'}>{r.enabled ? 'Enabled' : 'Disabled'}</Badge>
         },
         {content: r.created_at ? new Date(r.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'},
         {

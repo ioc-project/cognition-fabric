@@ -1,6 +1,7 @@
 'use client';
 
 import {Check} from 'lucide-react';
+import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {Modal} from '@/components/ui/modal';
 import type {CognitionEngineListItem} from '@/api/endpoints/cognition-engine';
@@ -75,24 +76,8 @@ export function MASAssociateCEModal({
                   <span className="text-sm font-medium">{ce.name}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      ce.status === 'online'
-                        ? 'bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-400'
-                        : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                    }`}
-                  >
-                    {ce.status === 'online' ? 'Online' : 'Offline'}
-                  </span>
-                  <span
-                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      ce.enabled
-                        ? 'bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-400'
-                        : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                    }`}
-                  >
-                    {ce.enabled ? 'Enabled' : 'Disabled'}
-                  </span>
+                  <Badge variant={ce.status === 'online' ? 'success' : 'inactive'}>{ce.status === 'online' ? 'Online' : 'Offline'}</Badge>
+                  <Badge variant={ce.enabled ? 'info' : 'inactive'}>{ce.enabled ? 'Enabled' : 'Disabled'}</Badge>
                 </div>
               </div>
             );

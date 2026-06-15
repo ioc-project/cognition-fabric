@@ -1,10 +1,11 @@
 'use client';
 
-import {useState} from 'react';
-import {Brain} from 'lucide-react';
+import {useMemo, useState} from 'react';
+import {Cpu} from 'lucide-react';
 import {useRouter} from 'next/navigation';
 import {mutate as globalMutate} from 'swr';
 import {Button} from '@/components/ui/button';
+import {SearchInput} from '@/components/ui/search-input';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {ListShell} from '@/components/ui/list-shell';
 import {BasePage} from '@/components/ui/base-page';
@@ -22,13 +23,44 @@ import {swrKeys} from '@/lib/swr-config';
 import type {ToggleStep} from '@/hooks/useCEToggleFlow';
 import type {DeleteStep} from '@/hooks/useCEDeleteFlow';
 
+type SortConfig = {key: string; dir: 'asc' | 'desc'} | null;
+
 export function CognitiveAgentList() {
   const router = useRouter();
   const {defaultWorkspaceId} = useDefaultWorkspace();
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortConfig, setSortConfig] = useState<SortConfig>(null);
 
   const {cognitionEngines = [], isLoading, error, mutate} = useCognitionEngines();
+
+  function toggleSort(key: string) {
+    setSortConfig((prev) => (prev?.key === key ? (prev.dir === 'asc' ? {key, dir: 'desc'} : null) : {key, dir: 'asc'}));
+  }
+
+  const displayedCEs = useMemo(() => {
+    let items: CognitionEngineListItem[] = [...cognitionEngines];
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      items = items.filter((r) => r.name.toLowerCase().includes(q));
+    }
+    if (sortConfig) {
+      const {key, dir} = sortConfig;
+      items.sort((a, b) => {
+        let cmp = 0;
+        if (key === 'name' || key === 'status') {
+          cmp = ((a[key as keyof CognitionEngineListItem] as string) ?? '').localeCompare((b[key as keyof CognitionEngineListItem] as string) ?? '');
+        } else {
+          const av = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const bv = b.created_at ? new Date(b.created_at).getTime() : 0;
+          cmp = av - bv;
+        }
+        return dir === 'asc' ? cmp : -cmp;
+      });
+    }
+    return items;
+  }, [cognitionEngines, searchQuery, sortConfig]);
 
   const [toggleTarget, setToggleTarget] = useState<CognitionEngineListItem | null>(null);
   const [toggleStep, setToggleStep] = useState<ToggleStep>(null);
@@ -235,7 +267,7 @@ export function CognitiveAgentList() {
               <div className="flex items-center justify-center min-h-[50vh]">
                 <ListShell
                   empty={{
-                    icon: Brain,
+                    icon: Cpu,
                     title: 'No Cognition Engines yet.',
                     description: 'Cognition engines will appear here once they are created.'
                   }}
@@ -243,31 +275,36 @@ export function CognitiveAgentList() {
               </div>
             }
           >
-            {viewMode === 'table' ? (
-              <CognitiveAgentTableList
-                cognitiveAgents={cognitionEngines}
-                selectedId={selectedId}
-                onRowClick={(r) => {
-                  setSelectedId(r.id);
-                  router.push(routes.cognitiveAgents.details(r.id));
-                }}
-                onOpenEdit={(r) => router.push(`${routes.cognitiveAgents.details(r.id)}?edit=true`)}
-                onOpenDelete={openDeleteFlow}
-                onToggleEnabled={handleToggleEnabled}
-              />
-            ) : (
-              <CognitiveAgentCardList
-                cognitiveAgents={cognitionEngines}
-                selectedId={selectedId}
-                onCardClick={(r) => {
-                  setSelectedId(r.id);
-                  router.push(routes.cognitiveAgents.details(r.id));
-                }}
-                onOpenEdit={(r) => router.push(`${routes.cognitiveAgents.details(r.id)}?edit=true`)}
-                onOpenDelete={openDeleteFlow}
-                onToggleEnabled={handleToggleEnabled}
-              />
-            )}
+            <div className="space-y-3">
+              <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search…" className="max-w-xs" />
+              {viewMode === 'table' ? (
+                <CognitiveAgentTableList
+                  cognitiveAgents={displayedCEs}
+                  selectedId={selectedId}
+                  onRowClick={(r) => {
+                    setSelectedId(r.id);
+                    router.push(routes.cognitiveAgents.details(r.id));
+                  }}
+                  onOpenEdit={(r) => router.push(`${routes.cognitiveAgents.details(r.id)}?edit=true`)}
+                  onOpenDelete={openDeleteFlow}
+                  onToggleEnabled={handleToggleEnabled}
+                  sortConfig={sortConfig}
+                  onSort={toggleSort}
+                />
+              ) : (
+                <CognitiveAgentCardList
+                  cognitiveAgents={displayedCEs}
+                  selectedId={selectedId}
+                  onCardClick={(r) => {
+                    setSelectedId(r.id);
+                    router.push(routes.cognitiveAgents.details(r.id));
+                  }}
+                  onOpenEdit={(r) => router.push(`${routes.cognitiveAgents.details(r.id)}?edit=true`)}
+                  onOpenDelete={openDeleteFlow}
+                  onToggleEnabled={handleToggleEnabled}
+                />
+              )}
+            </div>
           </ConditionalSWRRenderer>
         </BasePage>
       </div>

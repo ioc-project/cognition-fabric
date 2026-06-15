@@ -20,7 +20,7 @@ import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {useMemoryProviders} from '@/hooks/useMemoryProviders';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {toast} from 'sonner';
-import {Network} from 'lucide-react';
+import {Network, BarChart3} from 'lucide-react';
 import {useCognitionEngines} from '@/hooks/useCognitionEngines';
 import {MASAuditLog} from './mas-audit-log';
 import {MASFormFields} from './mas-form-fields';
@@ -220,6 +220,10 @@ export default function MASDetailsPage() {
         callToAction={
           mas && (
             <div className="flex items-center gap-2">
+              <Button variant="sidebar" size="sm" onClick={() => router.push(routes.mas.metrics(masId!))} className="gap-2">
+                <BarChart3 className="w-4 h-4" />
+                Metrics
+              </Button>
               <Button variant="sidebar" size="sm" onClick={() => router.push(routes.mas.knowledgeGraph(masId!))} className="gap-2">
                 <Network className="w-4 h-4" />
                 Knowledge Graph

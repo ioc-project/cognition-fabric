@@ -1,7 +1,7 @@
 'use client';
 
 import React, {useEffect, useMemo} from 'react';
-import {Boxes, Brain, Network, Database, ScrollText, type LucideIcon} from 'lucide-react';
+import {BrainCircuit, CircuitBoard, ClipboardList, HardDrive, Workflow, type LucideIcon} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments, useRouter} from 'next/navigation';
 import {routes} from '@/constants/routes';
@@ -27,35 +27,35 @@ export function Sidebar() {
       {
         id: 'cfn',
         href: routes.cfn.list,
-        icon: Network,
+        icon: CircuitBoard,
         label: 'Cognition Fabric Nodes',
         isActive: () => segments[0] === 'cfn'
       },
       {
         id: 'memory-providers',
         href: routes.memoryProviders.list,
-        icon: Database,
+        icon: HardDrive,
         label: 'Memory Providers',
         isActive: () => segments[0] === 'memory-providers'
       },
       {
         id: 'mas',
         href: routes.mas.list,
-        icon: Boxes,
+        icon: Workflow,
         label: 'Multi-Agentic Systems',
         isActive: () => segments[0] === 'mas'
       },
       {
         id: 'cognitive-agents',
         href: routes.cognitiveAgents.list,
-        icon: Brain,
+        icon: BrainCircuit,
         label: 'Cognition Engines',
         isActive: () => segments[0] === 'cognitive-agents'
       },
       {
         id: 'audits',
         href: routes.audits,
-        icon: ScrollText,
+        icon: ClipboardList,
         label: 'Audits',
         isActive: () => segments[0] === 'audits'
       }
@@ -67,15 +67,15 @@ export function Sidebar() {
     return (
       <Link
         href={href}
-        className={`group flex items-center justify-between gap-2 px-2 py-1.5 rounded-md transition-colors focus-visible:outline-none ${
+        className={`group flex items-center justify-between gap-3 py-3 px-3 rounded-md transition-colors focus-visible:outline-none border-l-2 ${
           active
-            ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))]'
-            : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))]'
+            ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))] border-[hsl(var(--sidebar-active-border))]'
+            : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))] border-transparent'
         }`}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
           <Icon
-            className={`w-5 h-5 transition-colors ${
+            className={`w-5 h-5 transition-colors flex-shrink-0 ${
               active ? 'text-[hsl(var(--sidebar-icon-active))]' : 'text-[hsl(var(--sidebar-icon))] group-hover:text-[hsl(var(--sidebar-icon-active))]'
             }`}
           />
@@ -88,7 +88,7 @@ export function Sidebar() {
   return (
     <div className="w-72 bg-[hsl(var(--navbar-background))] border-r border-[hsl(var(--sidebar-border))] flex flex-col">
       <nav className="flex-1 p-4 pt-6">
-        <ul className="space-y-1">
+        <ul className="space-y-2">
           {navItems.map((item) => (
             <li key={item.id}>
               <NavItem href={item.href} icon={item.icon} label={item.label} active={item.isActive()} />

@@ -5,8 +5,17 @@ import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger
 import {ResourceTable} from '@/components/ui/resource-table';
 import {TruncatedText} from '@/components/ui/truncated-text';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
-import {MoreVertical, Trash2, Eye, Edit} from 'lucide-react';
+import {MoreVertical, Trash2, Eye, Edit, ArrowUpDown, ArrowUp, ArrowDown} from 'lucide-react';
 import type {MultiAgenticSystem} from '@/api/endpoints/mas';
+
+type SortConfig = {key: string; dir: 'asc' | 'desc'} | null;
+
+function SortIcon({active, dir}: {active: boolean; dir?: 'asc' | 'desc'}) {
+  if (!active) {
+    return <ArrowUpDown className="ml-1 inline h-3 w-3 opacity-40" />;
+  }
+  return dir === 'asc' ? <ArrowUp className="ml-1 inline h-3 w-3" /> : <ArrowDown className="ml-1 inline h-3 w-3" />;
+}
 
 export interface MASTableListProps {
   masList: MultiAgenticSystem[];
@@ -15,17 +24,39 @@ export interface MASTableListProps {
   onRowClick: (m: MultiAgenticSystem) => void;
   onOpenDelete: (payload: {id: string; name: string}) => void;
   onOpenEdit: (m: MultiAgenticSystem) => void;
+  sortConfig?: SortConfig;
+  onSort?: (key: string) => void;
 }
 
-export function MASTableList({masList, workspaceId: _workspaceId, selectedId, onRowClick, onOpenDelete, onOpenEdit}: MASTableListProps) {
+export function MASTableList({
+  masList,
+  workspaceId: _workspaceId,
+  selectedId,
+  onRowClick,
+  onOpenDelete,
+  onOpenEdit,
+  sortConfig,
+  onSort
+}: MASTableListProps) {
+  const sortable = (key: string, label: string) => ({
+    content: (
+      <span className="flex items-center">
+        {label}
+        <SortIcon active={sortConfig?.key === key} dir={sortConfig?.dir} />
+      </span>
+    ),
+    className: 'cursor-pointer select-none hover:text-foreground',
+    onClick: () => onSort?.(key)
+  });
+
   return (
     <ResourceTable
       items={masList}
       headers={[
-        {content: 'Name'},
+        sortable('name', 'Name'),
         {content: 'Description'},
-        {content: 'Created'},
-        {content: 'Last Updated'},
+        sortable('created_at', 'Created'),
+        sortable('updated_at', 'Last Updated'),
         {content: 'Actions', className: 'text-right'}
       ]}
       rowKey={(mas) => mas.id}

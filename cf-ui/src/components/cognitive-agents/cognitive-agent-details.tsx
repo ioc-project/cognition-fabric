@@ -5,6 +5,7 @@ import {useParams, useRouter, useSearchParams} from 'next/navigation';
 import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {mutate as globalMutate} from 'swr';
+import {Badge} from '@/components/ui/badge';
 import {BasePage} from '@/components/ui/base-page';
 import {Card, CardContent} from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
@@ -136,16 +137,8 @@ export default function CognitiveAgentDetailsPage() {
         customDescription={
           ce && (
             <div className="flex items-center gap-2">
-              <span
-                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${ce.status === 'online' ? 'bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'}`}
-              >
-                {ce.status === 'online' ? 'Online' : 'Offline'}
-              </span>
-              <span
-                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${ce.enabled ? 'bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'}`}
-              >
-                {ce.enabled ? 'Enabled' : 'Disabled'}
-              </span>
+              <Badge variant={ce.status === 'online' ? 'success' : 'inactive'}>{ce.status === 'online' ? 'Online' : 'Offline'}</Badge>
+              <Badge variant={ce.enabled ? 'info' : 'inactive'}>{ce.enabled ? 'Enabled' : 'Disabled'}</Badge>
             </div>
           )
         }

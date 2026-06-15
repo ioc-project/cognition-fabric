@@ -29,7 +29,8 @@ export const routes = {
     list: '/mas',
     create: '/mas/create',
     details: (masId: string) => `/mas/${masId}`,
-    knowledgeGraph: (masId: string) => `/mas/${masId}/knowledge-graph`
+    knowledgeGraph: (masId: string) => `/mas/${masId}/knowledge-graph`,
+    metrics: (masId: string) => `/mas/${masId}/metrics`
   },
 
   cognitiveAgents: {
@@ -209,5 +210,10 @@ export const breadcrumbs = {
   auditsList: (): BreadcrumbItem[] => [
     {link: routes.home, text: 'Home'},
     {link: '', text: 'Audits', active: true}
+  ],
+
+  masMetrics: (masName: string): BreadcrumbItem[] => [
+    {link: routes.mas.list, text: 'Multi-Agentic Systems'},
+    {link: '', text: masName, active: true}
   ]
 } as const;

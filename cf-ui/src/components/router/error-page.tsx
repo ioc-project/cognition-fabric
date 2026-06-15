@@ -23,7 +23,7 @@ export const ErrorPage = ({error, className, showRefreshButton = true, info = tr
   }
 
   return (
-    <div className={`text-center py-20 ${className} mt-4 mx-2 container`}>
+    <div className={`flex flex-col items-center justify-center text-center py-20 w-full ${className ?? ''}`}>
       <div>
         <div className="p-3 inline-flex items-center align-center rounded-full">
           {info ? <Info className="w-14 h-14" /> : <AlertCircle className="w-14 h-14 text-destructive" />}

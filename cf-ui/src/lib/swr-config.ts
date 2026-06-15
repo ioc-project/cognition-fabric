@@ -25,7 +25,10 @@ export const swrKeys = {
 
   workspaceInvitations: (workspaceId: string) => ['workspace-invitations', workspaceId] as const,
   workspaceMembers: (workspaceId: string) => ['workspace-members', workspaceId] as const,
-  myPendingInvitations: () => ['my-pending-invitations'] as const
+  myPendingInvitations: () => ['my-pending-invitations'] as const,
+
+  masMetrics: (workspaceId: string, masId: string, filters: Record<string, string>) =>
+    ['mas-metrics', workspaceId, masId, JSON.stringify(filters)] as const
 };
 
 import {fetchAPI} from '@/api/client';

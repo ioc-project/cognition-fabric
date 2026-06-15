@@ -24,7 +24,8 @@ function getAuditTypeLabel(auditType: string): string {
     SHARED_MEMORY_OPERATION: 'Shared Memory Operation',
     MEMORY_OPERATION: 'Memory Operation',
     AGENT_MEMORY_OPERATION: 'Agent Memory Operation',
-    SEMANTIC_NEGOTIATION: 'Semantic Negotiation'
+    SEMANTIC_NEGOTIATION_DECIDE: 'Semantic Negotiation Decide',
+    SEMANTIC_NEGOTIATION_START: 'Semantic Negotiation Start'
   };
   return labels[auditType] || auditType.replace(/_/g, ' ');
 }
@@ -38,7 +39,8 @@ function getAuditTypeBadgeVariant(auditType: string): 'default' | 'secondary' | 
     SHARED_MEMORY_OPERATION: 'secondary',
     MEMORY_OPERATION: 'secondary',
     AGENT_MEMORY_OPERATION: 'secondary',
-    SEMANTIC_NEGOTIATION: 'secondary'
+    SEMANTIC_NEGOTIATION_DECIDE: 'secondary',
+    SEMANTIC_NEGOTIATION_START: 'secondary'
   };
   return variants[auditType] || 'outline';
 }
@@ -121,18 +123,7 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
               <Badge variant={getAuditTypeBadgeVariant(event.audit_type)}>{getAuditTypeLabel(event.audit_type)}</Badge>
               <Badge variant="outline">{getResourceTypeLabel(event.resource_type)}</Badge>
               {info?.status && (
-                <span
-                  className={cn(
-                    'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-                    info.status === 'SUCCESS'
-                      ? 'bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-400'
-                      : info.status === 'FAILED'
-                        ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                        : 'bg-muted text-muted-foreground'
-                  )}
-                >
-                  {info.status}
-                </span>
+                <Badge variant={info.status === 'SUCCESS' ? 'success' : info.status === 'FAILED' ? 'destructive' : 'inactive'}>{info.status}</Badge>
               )}
               {info?.http_status && (
                 <Badge variant={info.http_status >= 200 && info.http_status < 300 ? 'default' : 'destructive'}>HTTP {info.http_status}</Badge>

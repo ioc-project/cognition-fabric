@@ -1,5 +1,6 @@
 'use client';
 
+import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
@@ -29,11 +30,7 @@ export function MemoryProviderCardList({providers, selectedId, onCardClick, onOp
             <div className="flex-1 mr-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-foreground">{provider.name}</span>
-                <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${provider.enabled ? 'bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-400' : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'}`}
-                >
-                  {provider.enabled ? 'Enabled' : 'Disabled'}
-                </span>
+                <Badge variant={provider.enabled ? 'success' : 'inactive'}>{provider.enabled ? 'Enabled' : 'Disabled'}</Badge>
               </div>
               {provider.description && <div className="text-xs text-muted-foreground mt-1">{provider.description}</div>}
             </div>

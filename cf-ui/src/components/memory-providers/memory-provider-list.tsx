@@ -1,10 +1,11 @@
 'use client';
 
-import {useState} from 'react';
+import {useMemo, useState} from 'react';
 import {Database, Plus} from 'lucide-react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
+import {SearchInput} from '@/components/ui/search-input';
 import {ListShell} from '@/components/ui/list-shell';
 import {BasePage} from '@/components/ui/base-page';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
@@ -18,6 +19,8 @@ import {toast} from 'sonner';
 import {routes} from '@/constants/routes';
 import type {MemoryProvider} from '@/api/types/memory-provider';
 
+type SortConfig = {key: string; dir: 'asc' | 'desc'} | null;
+
 export function MemoryProviderList() {
   const router = useRouter();
   const {providers = [], isLoading: loading, error: swrError, deleteProvider} = useMemoryProviders();
@@ -25,6 +28,35 @@ export function MemoryProviderList() {
   const deleteDialog = useConfirmDialog<{id: string; name: string}>();
   const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortConfig, setSortConfig] = useState<SortConfig>(null);
+
+  function toggleSort(key: string) {
+    setSortConfig((prev) => (prev?.key === key ? (prev.dir === 'asc' ? {key, dir: 'desc'} : null) : {key, dir: 'asc'}));
+  }
+
+  const displayedProviders = useMemo(() => {
+    let items: MemoryProvider[] = [...providers];
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      items = items.filter((p) => p.name.toLowerCase().includes(q));
+    }
+    if (sortConfig) {
+      const {key, dir} = sortConfig;
+      items.sort((a, b) => {
+        let cmp = 0;
+        if (key === 'name') {
+          cmp = a.name.localeCompare(b.name);
+        } else {
+          const av = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const bv = b.created_at ? new Date(b.created_at).getTime() : 0;
+          cmp = av - bv;
+        }
+        return dir === 'asc' ? cmp : -cmp;
+      });
+    }
+    return items;
+  }, [providers, searchQuery, sortConfig]);
 
   const handleDelete = async () => {
     await deleteDialog.confirm(async (data) => {
@@ -80,29 +112,34 @@ export function MemoryProviderList() {
               </div>
             }
           >
-            {viewMode === 'table' ? (
-              <MemoryProviderTableList
-                providers={providers}
-                selectedId={selectedId}
-                onRowClick={(provider: MemoryProvider) => {
-                  setSelectedId(provider.id);
-                  router.push(routes.memoryProviders.details(provider.id));
-                }}
-                onOpenDelete={(payload: {id: string; name: string}) => deleteDialog.open(payload)}
-                onOpenEdit={(provider: MemoryProvider) => router.push(`${routes.memoryProviders.details(provider.id)}?edit=true`)}
-              />
-            ) : (
-              <MemoryProviderCardList
-                providers={providers}
-                selectedId={selectedId}
-                onCardClick={(provider: MemoryProvider) => {
-                  setSelectedId(provider.id);
-                  router.push(routes.memoryProviders.details(provider.id));
-                }}
-                onOpenDelete={(payload: {id: string; name: string}) => deleteDialog.open(payload)}
-                onOpenEdit={(provider: MemoryProvider) => router.push(`${routes.memoryProviders.details(provider.id)}?edit=true`)}
-              />
-            )}
+            <div className="space-y-3">
+              <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search…" className="max-w-xs" />
+              {viewMode === 'table' ? (
+                <MemoryProviderTableList
+                  providers={displayedProviders}
+                  selectedId={selectedId}
+                  onRowClick={(provider: MemoryProvider) => {
+                    setSelectedId(provider.id);
+                    router.push(routes.memoryProviders.details(provider.id));
+                  }}
+                  onOpenDelete={(payload: {id: string; name: string}) => deleteDialog.open(payload)}
+                  onOpenEdit={(provider: MemoryProvider) => router.push(`${routes.memoryProviders.details(provider.id)}?edit=true`)}
+                  sortConfig={sortConfig}
+                  onSort={toggleSort}
+                />
+              ) : (
+                <MemoryProviderCardList
+                  providers={displayedProviders}
+                  selectedId={selectedId}
+                  onCardClick={(provider: MemoryProvider) => {
+                    setSelectedId(provider.id);
+                    router.push(routes.memoryProviders.details(provider.id));
+                  }}
+                  onOpenDelete={(payload: {id: string; name: string}) => deleteDialog.open(payload)}
+                  onOpenEdit={(provider: MemoryProvider) => router.push(`${routes.memoryProviders.details(provider.id)}?edit=true`)}
+                />
+              )}
+            </div>
           </ConditionalSWRRenderer>
         </BasePage>
       </div>

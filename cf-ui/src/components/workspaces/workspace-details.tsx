@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import {Boxes, Trash2, Pencil} from 'lucide-react';
+import {BrainCircuit, Trash2, Pencil} from 'lucide-react';
 import {useMemo, useState} from 'react';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
@@ -115,7 +115,7 @@ export function WorkspaceDetails() {
           customEmptyComponent={
             <div className="px-8 pt-16 max-w-4xl mx-auto">
               <EmptyState
-                icon={Boxes}
+                icon={BrainCircuit}
                 title="Workspace not found"
                 description="The requested workspace could not be found."
                 actionLabel="Back to Workspaces"
@@ -156,7 +156,7 @@ export function WorkspaceDetails() {
           ) : masList.length === 0 ? (
             <div className="p-6 border rounded-lg bg-card soft-card">
               <EmptyState
-                icon={Boxes}
+                icon={BrainCircuit}
                 title="No Multi‑Agentic Systems found."
                 description="Create a multi-agent system to get started."
                 actionLabel="Create Multi‑Agent Systems"

@@ -34,7 +34,7 @@ export const BasePage: React.FC<React.PropsWithChildren<BasePageProps>> = ({
   );
 
   return (
-    <div className="flex flex-col flex-1 gap-6 min-h-0">
+    <div className="flex flex-col flex-1 gap-6">
       {useBreadcrumbs && breadcrumbs && breadcrumbs.length > 0 && (
         <nav className="breadcrumb-nav" aria-label="Breadcrumb">
           <ol className="inline-flex items-center">
@@ -93,7 +93,7 @@ export const BasePage: React.FC<React.PropsWithChildren<BasePageProps>> = ({
           </nav>
         )}
       </div>
-      <div className="flex flex-col flex-1 gap-6 mt-6 min-h-0">{children}</div>
+      <div className="flex flex-col flex-1 min-h-0 gap-6 mt-6">{children}</div>
     </div>
   );
 };

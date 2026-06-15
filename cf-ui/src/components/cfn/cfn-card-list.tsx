@@ -1,5 +1,6 @@
 'use client';
 
+import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
@@ -28,17 +29,7 @@ export function CfnCardList({cfns, selectedId, onCardClick, onOpenEdit}: CfnCard
             <div className="flex-1 mr-4">
               <div className="text-sm font-medium text-foreground">{cfn.name}</div>
               <div className="text-xs text-muted-foreground mt-1">
-                <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    cfn.status === 'online'
-                      ? 'bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-400'
-                      : cfn.status === 'offline'
-                        ? 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
-                  }`}
-                >
-                  {cfn.status}
-                </span>
+                <Badge variant={cfn.status === 'online' ? 'success' : cfn.status === 'offline' ? 'inactive' : 'destructive'}>{cfn.status}</Badge>
               </div>
             </div>
             <DropdownMenu>

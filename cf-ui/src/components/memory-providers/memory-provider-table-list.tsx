@@ -1,12 +1,22 @@
 'use client';
 
+import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {ResourceTable} from '@/components/ui/resource-table';
 import {TruncatedText} from '@/components/ui/truncated-text';
 import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
-import {MoreVertical, Trash2, Edit, Eye} from 'lucide-react';
+import {MoreVertical, Trash2, Edit, Eye, ArrowUpDown, ArrowUp, ArrowDown} from 'lucide-react';
 import type {MemoryProvider} from '@/api/types/memory-provider';
+
+type SortConfig = {key: string; dir: 'asc' | 'desc'} | null;
+
+function SortIcon({active, dir}: {active: boolean; dir?: 'asc' | 'desc'}) {
+  if (!active) {
+    return <ArrowUpDown className="ml-1 inline h-3 w-3 opacity-40" />;
+  }
+  return dir === 'asc' ? <ArrowUp className="ml-1 inline h-3 w-3" /> : <ArrowDown className="ml-1 inline h-3 w-3" />;
+}
 
 export interface MemoryProviderTableListProps {
   providers: MemoryProvider[];
@@ -14,17 +24,38 @@ export interface MemoryProviderTableListProps {
   onRowClick: (provider: MemoryProvider) => void;
   onOpenDelete: (payload: {id: string; name: string}) => void;
   onOpenEdit: (provider: MemoryProvider) => void;
+  sortConfig?: SortConfig;
+  onSort?: (key: string) => void;
 }
 
-export function MemoryProviderTableList({providers, selectedId, onRowClick, onOpenDelete, onOpenEdit}: MemoryProviderTableListProps) {
+export function MemoryProviderTableList({
+  providers,
+  selectedId,
+  onRowClick,
+  onOpenDelete,
+  onOpenEdit,
+  sortConfig,
+  onSort
+}: MemoryProviderTableListProps) {
+  const sortable = (key: string, label: string) => ({
+    content: (
+      <span className="flex items-center">
+        {label}
+        <SortIcon active={sortConfig?.key === key} dir={sortConfig?.dir} />
+      </span>
+    ),
+    className: 'cursor-pointer select-none hover:text-foreground',
+    onClick: () => onSort?.(key)
+  });
+
   return (
     <ResourceTable
       items={providers}
       headers={[
-        {content: 'Name'},
+        sortable('name', 'Name'),
         {content: 'Description'},
         {content: 'Status'},
-        {content: 'Created'},
+        sortable('created_at', 'Created'),
         {content: 'Actions', className: 'text-right'}
       ]}
       rowKey={(provider) => provider.id}
@@ -43,11 +74,7 @@ export function MemoryProviderTableList({providers, selectedId, onRowClick, onOp
           className: 'text-muted-foreground'
         },
         {
-          content: (
-            <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-400">
-              {provider.enabled ? 'Enabled' : 'Disabled'}
-            </span>
-          )
+          content: <Badge variant={provider.enabled ? 'success' : 'inactive'}>{provider.enabled ? 'Enabled' : 'Disabled'}</Badge>
         },
         {
           content: provider.created_at ? new Date(provider.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'

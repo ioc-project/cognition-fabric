@@ -11,6 +11,7 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/c
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
 import {ResourceTable} from '@/components/ui/resource-table';
 import {Pagination} from '@/components/ui/pagination';
+import {SearchInput} from '@/components/ui/search-input';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {AuditDetailPanel} from './audit-detail-panel';
 import type {AuditEvent} from '@/api/endpoints/audit';
@@ -27,7 +28,7 @@ function ResourceIdentifier({value, resolvedName}: {value: string; resolvedName?
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <code className="text-xs font-mono cursor-help">{resolvedName}</code>
+            <span className="font-medium cursor-help">{resolvedName}</span>
           </TooltipTrigger>
           <TooltipContent>
             <p className="font-mono text-xs">{value}</p>
@@ -37,14 +38,14 @@ function ResourceIdentifier({value, resolvedName}: {value: string; resolvedName?
     );
   }
   if (!isOpaque(value)) {
-    return <code className="text-xs font-mono">{value}</code>;
+    return <span className="font-medium">{value}</span>;
   }
   const truncated = UUID_RE.test(value) ? `${value.slice(0, 8)}…${value.slice(-4)}` : value;
   return (
     <TooltipProvider>
       <Tooltip>
         <TooltipTrigger asChild>
-          <code className="text-xs font-mono text-muted-foreground cursor-help">{truncated}</code>
+          <span className="font-medium text-muted-foreground cursor-help">{truncated}</span>
         </TooltipTrigger>
         <TooltipContent>
           <p className="font-mono text-xs">{value}</p>
@@ -62,7 +63,8 @@ const AUDIT_TYPES_BY_RESOURCE: Record<string, {value: string; label: string}[]> 
   'MAS-AGENT': [{value: 'AGENT_MEMORY_OPERATION', label: 'Agent Memory Operation'}],
   COGNITION_ENGINE: [
     {value: 'KNOWLEDGE_QUERY', label: 'Knowledge Query'},
-    {value: 'SEMANTIC_NEGOTIATION', label: 'Semantic Negotiation'}
+    {value: 'SEMANTIC_NEGOTIATION_DECIDE', label: 'Semantic Negotiation Decide'},
+    {value: 'SEMANTIC_NEGOTIATION_START', label: 'Semantic Negotiation Start'}
   ],
   MEMORY_PROVIDER: [{value: 'KNOWLEDGE_INGESTION', label: 'Knowledge Ingestion'}]
 };
@@ -72,7 +74,8 @@ const ALL_AUDIT_TYPES = [
   {value: 'KNOWLEDGE_INGESTION', label: 'Knowledge Ingestion'},
   {value: 'AGENT_MEMORY_OPERATION', label: 'Agent Memory Operation'},
   {value: 'KNOWLEDGE_QUERY', label: 'Knowledge Query'},
-  {value: 'SEMANTIC_NEGOTIATION', label: 'Semantic Negotiation'}
+  {value: 'SEMANTIC_NEGOTIATION_DECIDE', label: 'Semantic Negotiation Decide'},
+  {value: 'SEMANTIC_NEGOTIATION_START', label: 'Semantic Negotiation Start'}
 ];
 
 function getAuditTypeLabel(auditType: string): string {
@@ -86,7 +89,8 @@ function getAuditTypeLabel(auditType: string): string {
     SHARED_MEMORY_OPERATION: 'Shared Memory Operation',
     MEMORY_OPERATION: 'Memory Operation',
     AGENT_MEMORY_OPERATION: 'Agent Memory Operation',
-    SEMANTIC_NEGOTIATION: 'Semantic Negotiation'
+    SEMANTIC_NEGOTIATION_DECIDE: 'Semantic Negotiation Decide',
+    SEMANTIC_NEGOTIATION_START: 'Semantic Negotiation Start'
   };
   return labels[auditType] || auditType.replace(/_/g, ' ');
 }
@@ -102,7 +106,8 @@ function getAuditTypeBadgeVariant(auditType: string): 'default' | 'secondary' | 
     SHARED_MEMORY_OPERATION: 'secondary',
     MEMORY_OPERATION: 'secondary',
     AGENT_MEMORY_OPERATION: 'secondary',
-    SEMANTIC_NEGOTIATION: 'secondary'
+    SEMANTIC_NEGOTIATION_DECIDE: 'secondary',
+    SEMANTIC_NEGOTIATION_START: 'secondary'
   };
   return variants[auditType] || 'outline';
 }
@@ -132,6 +137,10 @@ export function AuditTable() {
   const [selectedAuditType, setSelectedAuditType] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<AuditEvent | null>(null);
   const [page, setPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const auditSelectItemClassName =
+    'rounded-md text-foreground data-[highlighted]:bg-[hsl(var(--sidebar-hover))] data-[highlighted]:text-foreground dark:data-[highlighted]:bg-[hsl(var(--sidebar-active))] data-[state=checked]:bg-[hsl(var(--sidebar-active))] data-[state=checked]:text-[hsl(var(--sidebar-text-active))] data-[state=checked]:font-medium';
 
   const {defaultWorkspaceId} = useDefaultWorkspace();
   const {masList} = useMAS(defaultWorkspaceId ?? '');
@@ -179,6 +188,22 @@ export function AuditTable() {
 
   const hasActiveFilters = !!(selectedResourceType || selectedAuditType);
 
+  const filteredEvents = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return auditEvents;
+    }
+    const q = searchQuery.toLowerCase();
+    return auditEvents.filter((e) => {
+      const resolved =
+        e.resource_type === 'MAS' || e.resource_type === 'MEMORY_PROVIDER'
+          ? masNameMap[e.resource_identifier]
+          : e.resource_type === 'MAS-AGENT'
+            ? agentNameMap[e.resource_identifier]
+            : undefined;
+      return (resolved ?? e.resource_identifier).toLowerCase().includes(q);
+    });
+  }, [auditEvents, searchQuery, masNameMap, agentNameMap]);
+
   const headers = [
     {content: 'Resource Name', className: 'w-48'},
     {content: 'Resource Type', className: 'w-52'},
@@ -187,19 +212,29 @@ export function AuditTable() {
   ];
 
   return (
-    <div className="flex flex-col gap-8 flex-1 min-h-0">
+    <div className="flex flex-col gap-4">
       {/* Filter bar */}
       <div className="flex items-center gap-3 flex-wrap">
         <Select value={selectedResourceType || 'ALL'} onValueChange={(v) => handleResourceTypeChange(v === 'ALL' ? null : v)}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger surface="page" className="w-[200px]">
             <SelectValue>{selectedResourceType ? getResourceTypeLabel(selectedResourceType) : 'All resources'}</SelectValue>
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All</SelectItem>
-            <SelectItem value="MAS">Multi-Agentic System</SelectItem>
-            <SelectItem value="MAS-AGENT">MAS Agent</SelectItem>
-            <SelectItem value="COGNITION_ENGINE">Cognition Engine</SelectItem>
-            <SelectItem value="MEMORY_PROVIDER">Memory Provider</SelectItem>
+          <SelectContent surface="page">
+            <SelectItem value="ALL" className={auditSelectItemClassName}>
+              All
+            </SelectItem>
+            <SelectItem value="MAS" className={auditSelectItemClassName}>
+              Multi-Agentic System
+            </SelectItem>
+            <SelectItem value="MAS-AGENT" className={auditSelectItemClassName}>
+              MAS Agent
+            </SelectItem>
+            <SelectItem value="COGNITION_ENGINE" className={auditSelectItemClassName}>
+              Cognition Engine
+            </SelectItem>
+            <SelectItem value="MEMORY_PROVIDER" className={auditSelectItemClassName}>
+              Memory Provider
+            </SelectItem>
           </SelectContent>
         </Select>
 
@@ -210,13 +245,15 @@ export function AuditTable() {
             setPage(0);
           }}
         >
-          <SelectTrigger className="w-[240px]">
+          <SelectTrigger surface="page" className="w-[240px]">
             <SelectValue>{selectedAuditType ? getAuditTypeLabel(selectedAuditType) : 'All events'}</SelectValue>
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ALL">All</SelectItem>
+          <SelectContent surface="page">
+            <SelectItem value="ALL" className={auditSelectItemClassName}>
+              All
+            </SelectItem>
             {availableAuditTypes.map((t) => (
-              <SelectItem key={t.value} value={t.value}>
+              <SelectItem key={t.value} value={t.value} className={auditSelectItemClassName}>
                 {t.label}
               </SelectItem>
             ))}
@@ -236,77 +273,76 @@ export function AuditTable() {
             Clear filters
           </Button>
         )}
+        <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search…" className="w-[220px]" />
       </div>
 
       {/* Table */}
-      <div className="flex-1 min-h-0 rounded-md border border-border bg-card flex flex-col overflow-hidden">
-        <ConditionalSWRRenderer
-          data={auditEvents}
-          error={error}
-          itemName="audit events"
-          customIsLoading={isLoading && auditEvents.length === 0}
-          emptyListStateProps={{
-            title: 'No audit events found',
-            description: hasActiveFilters ? 'Try adjusting your filters.' : 'No audit events have been recorded yet.'
-          }}
-          classNameContainer="flex-1 justify-center"
-        >
-          <div className="overflow-auto h-full">
-            <ResourceTable
-              items={auditEvents}
-              headers={headers}
-              rowKey={(event) => String(event.id)}
-              isSelected={(event) => selectedEvent !== null && event.id === selectedEvent.id}
-              onRowClick={(event) => setSelectedEvent(event)}
-              renderRow={(event) => [
-                {
-                  content: (
-                    <ResourceIdentifier
-                      value={event.resource_identifier}
-                      resolvedName={
-                        event.resource_type === 'MAS' || event.resource_type === 'MEMORY_PROVIDER'
-                          ? masNameMap[event.resource_identifier]
-                          : event.resource_type === 'MAS-AGENT'
-                            ? agentNameMap[event.resource_identifier]
-                            : undefined
-                      }
-                    />
-                  )
-                },
-                {
-                  content: (
-                    <Badge variant="outline" className="text-xs font-normal">
-                      {getResourceTypeLabel(event.resource_type)}
-                    </Badge>
-                  )
-                },
-                {
-                  content: (
-                    <Badge variant={getAuditTypeBadgeVariant(event.audit_type)} className="text-xs">
-                      {getAuditTypeLabel(event.audit_type)}
-                    </Badge>
-                  )
-                },
-                {
-                  content: (
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Clock className="w-3 h-3 shrink-0" />
-                      {formatDateTime(event.created_on)}
-                    </div>
-                  )
-                }
-              ]}
-            />
-          </div>
-        </ConditionalSWRRenderer>
-      </div>
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between pb-2">
-          <span className="text-xs text-muted-foreground">{totalElements} total</span>
-          <Pagination currentPage={page + 1} totalPages={totalPages} onPageChange={(p) => setPage(p - 1)} />
+      <ConditionalSWRRenderer
+        data={auditEvents}
+        error={error}
+        itemName="audit events"
+        customIsLoading={isLoading && auditEvents.length === 0}
+        emptyListStateProps={{
+          title: 'No audit events found',
+          description: hasActiveFilters ? 'Try adjusting your filters.' : 'No audit events have been recorded yet.'
+        }}
+      >
+        <div>
+          <ResourceTable
+            items={filteredEvents}
+            headers={headers}
+            rowKey={(event) => String(event.id)}
+            isSelected={(event) => selectedEvent !== null && event.id === selectedEvent.id}
+            onRowClick={(event) => setSelectedEvent(event)}
+            renderRow={(event) => [
+              {
+                content: (
+                  <ResourceIdentifier
+                    value={event.resource_identifier}
+                    resolvedName={
+                      event.resource_type === 'MAS' || event.resource_type === 'MEMORY_PROVIDER'
+                        ? masNameMap[event.resource_identifier]
+                        : event.resource_type === 'MAS-AGENT'
+                          ? agentNameMap[event.resource_identifier]
+                          : undefined
+                    }
+                  />
+                )
+              },
+              {
+                content: (
+                  <Badge variant="outline" className="text-xs font-normal">
+                    {getResourceTypeLabel(event.resource_type)}
+                  </Badge>
+                )
+              },
+              {
+                content: (
+                  <Badge variant={getAuditTypeBadgeVariant(event.audit_type)} className="text-xs">
+                    {getAuditTypeLabel(event.audit_type)}
+                  </Badge>
+                )
+              },
+              {
+                content: (
+                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Clock className="w-3 h-3 shrink-0" />
+                    {formatDateTime(event.created_on)}
+                  </div>
+                )
+              }
+            ]}
+          />
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-border pt-8 pb-3">
+              <span className="text-sm text-muted-foreground">
+                {page * 20 + 1} – {Math.min((page + 1) * 20, totalElements)} of {totalElements} rows
+              </span>
+              <Pagination currentPage={page + 1} totalPages={totalPages} onPageChange={(p) => setPage(p - 1)} />
+            </div>
+          )}
         </div>
-      )}
+      </ConditionalSWRRenderer>
 
       <AuditDetailPanel
         event={selectedEvent}

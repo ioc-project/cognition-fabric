@@ -1,5 +1,6 @@
 'use client';
 
+import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
@@ -37,15 +38,7 @@ export function CognitiveAgentCardList({
             <div className="flex-1 mr-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-foreground">{r.name}</span>
-                <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    r.status === 'online'
-                      ? 'bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                  }`}
-                >
-                  {r.status === 'online' ? 'Online' : 'Offline'}
-                </span>
+                <Badge variant={r.status === 'online' ? 'success' : 'inactive'}>{r.status === 'online' ? 'Online' : 'Offline'}</Badge>
               </div>
             </div>
             <DropdownMenu>
@@ -113,15 +106,7 @@ export function CognitiveAgentCardList({
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium text-muted-foreground">Enabled</span>
-              <span
-                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold w-fit ${
-                  r.enabled
-                    ? 'bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-400'
-                    : 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
-                }`}
-              >
-                {r.enabled ? 'Enabled' : 'Disabled'}
-              </span>
+              <Badge variant={r.enabled ? 'info' : 'inactive'}>{r.enabled ? 'Enabled' : 'Disabled'}</Badge>
             </div>
           </div>
 

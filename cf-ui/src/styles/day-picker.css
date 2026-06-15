@@ -8,10 +8,11 @@
   --rdp-range_start-date-background-color: hsl(var(--sidebar-active));
   --rdp-range_end-color: hsl(var(--sidebar-text-active));
   --rdp-range_end-date-background-color: hsl(var(--sidebar-active));
-  --rdp-range_middle-background-color: hsl(var(--sidebar-hover));
+  --rdp-range_middle-background-color: hsl(var(--sidebar-active));
   --rdp-range_middle-color: hsl(var(--sidebar-text-active));
   --rdp-today-color: hsl(var(--sidebar-text-active));
   --rdp-selected-border: 2px solid hsl(var(--sidebar-active-border));
+  --rdp-cell-size: 40px;
 }
 
 .mds-day-picker .rdp-button_previous,
@@ -23,11 +24,72 @@
   fill: hsl(var(--sidebar-text-active));
 }
 
+/* Nuke grid lines and backgrounds */
+.mds-day-picker .rdp-cell {
+  border: none !important;
+  background-color: transparent !important;
+}
+
+.mds-day-picker .rdp-day {
+  border: none !important;
+  background-color: transparent !important;
+}
+
+.mds-day-picker .rdp-day_button {
+  background-color: transparent !important;
+  border: none !important;
+}
+
 .mds-day-picker .rdp-range_start .rdp-day_button,
 .mds-day-picker .rdp-range_end .rdp-day_button {
   background-color: hsl(var(--sidebar-active)) !important;
   color: hsl(var(--sidebar-text-active)) !important;
   border: 2px solid hsl(var(--sidebar-active-border)) !important;
+  border-radius: 4px !important;
+}
+
+/* Force range cells to NOT have background color override */
+.mds-day-picker [style*='--rdp-range_start-date-background-color'],
+.mds-day-picker [style*='--rdp-range_end-date-background-color'] {
+  background-color: transparent !important;
+}
+
+.mds-day-picker .rdp-range_start,
+.mds-day-picker .rdp-range_end {
+  background: hsl(var(--sidebar-active)) !important;
+}
+
+.mds-day-picker .rdp-range_middle .rdp-day_button {
+  background-color: hsl(var(--sidebar-active)) !important;
+  color: hsl(var(--sidebar-text-active)) !important;
+  border-left: none !important;
+  border-right: none !important;
+  border-top: none !important;
+  border-radius: 0 !important;
+}
+
+/* Today: always use the same white emphasis in all states */
+.mds-day-picker .rdp-today {
+  color: hsl(var(--sidebar-text-active)) !important;
+}
+
+.mds-day-picker .rdp-today .rdp-day_button {
+  color: inherit !important;
+  font-weight: 700 !important;
+  border-bottom: 3px solid hsl(var(--sidebar-text-active)) !important;
+  letter-spacing: 0.01em !important;
+}
+
+/* Brute force: target all cell backgrounds for range dates */
+.mds-day-picker .rdp-range_start,
+.mds-day-picker .rdp-range_middle,
+.mds-day-picker .rdp-range_end {
+  background: hsl(var(--sidebar-active)) !important;
+}
+
+.mds-day-picker .rdp-range_start::before,
+.mds-day-picker .rdp-range_end::before {
+  background: hsl(var(--sidebar-active)) !important;
 }
 
 .mds-day-picker .rdp-selected {
