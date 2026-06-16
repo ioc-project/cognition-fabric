@@ -855,8 +855,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Query MAS token usage metrics
-         * @description Returns LLM token usage metrics (prompt tokens, completion tokens, total tokens, latency, cost) for a Multi-Agentic System across all attached Cognition Engines. Optionally filter by CE, agent, or metric name.
+         * Query MAS metrics
+         * @description Returns metrics for a Multi-Agentic System across all attached Cognition Engines. Optionally filter by CE, agent, or metric name.
          */
         get: operations["fetch_mas_metrics_api_workspaces__workspaceId__multi_agentic_systems__masId__metrics_get"];
         put?: never;
@@ -1307,7 +1307,7 @@ export interface components {
             kind?: string | null;
             /**
              * Subkind
-             * @description Engine subkind, e.g. 'distillation', 'query', 'negotiation'
+             * @description Engine subkind, e.g. 'distillation', 'query', 'alignment'
              */
             subkind?: string | null;
             /**
@@ -3696,7 +3696,7 @@ export interface operations {
                 pageSize?: number;
                 /** @description Filter by resource type (e.g. MAS, MAS-AGENT, COGNITION_ENGINE, POLICY_ENFORCER, MEMORY_PROVIDER, WORKFLOW, TASK) */
                 resource_type?: string | null;
-                /** @description Filter by audit type (e.g. RESOURCE_CREATED, RESOURCE_UPDATED, RESOURCE_DELETED, RESOURCE_PURGED, RESOURCE_PRUNED, KNOWLEDGE_INGESTION, KNOWLEDGE_QUERY, MEMORY_OPERATION, SHARED_MEMORY_OPERATION, AGENT_MEMORY_OPERATION, SEMANTIC_NEGOTIATION) */
+                /** @description Filter by audit type (e.g. RESOURCE_CREATED, RESOURCE_UPDATED, RESOURCE_DELETED, RESOURCE_PURGED, RESOURCE_PRUNED, KNOWLEDGE_INGESTION, KNOWLEDGE_QUERY, MEMORY_OPERATION, SHARED_MEMORY_OPERATION, AGENT_MEMORY_OPERATION, SEMANTIC_ALIGNMENT_START, SEMANTIC_ALIGNMENT_DECIDE) */
                 audit_type?: string | null;
             };
             header?: never;

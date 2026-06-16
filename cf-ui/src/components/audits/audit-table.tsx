@@ -63,8 +63,8 @@ const AUDIT_TYPES_BY_RESOURCE: Record<string, {value: string; label: string}[]> 
   'MAS-AGENT': [{value: 'AGENT_MEMORY_OPERATION', label: 'Agent Memory Operation'}],
   COGNITION_ENGINE: [
     {value: 'KNOWLEDGE_QUERY', label: 'Knowledge Query'},
-    {value: 'SEMANTIC_NEGOTIATION_DECIDE', label: 'Semantic Negotiation Decide'},
-    {value: 'SEMANTIC_NEGOTIATION_START', label: 'Semantic Negotiation Start'}
+    {value: 'SEMANTIC_ALIGNMENT_DECIDE', label: 'Semantic Alignment Decide'},
+    {value: 'SEMANTIC_ALIGNMENT_START', label: 'Semantic Alignment Start'}
   ],
   MEMORY_PROVIDER: [{value: 'KNOWLEDGE_INGESTION', label: 'Knowledge Ingestion'}]
 };
@@ -74,8 +74,8 @@ const ALL_AUDIT_TYPES = [
   {value: 'KNOWLEDGE_INGESTION', label: 'Knowledge Ingestion'},
   {value: 'AGENT_MEMORY_OPERATION', label: 'Agent Memory Operation'},
   {value: 'KNOWLEDGE_QUERY', label: 'Knowledge Query'},
-  {value: 'SEMANTIC_NEGOTIATION_DECIDE', label: 'Semantic Negotiation Decide'},
-  {value: 'SEMANTIC_NEGOTIATION_START', label: 'Semantic Negotiation Start'}
+  {value: 'SEMANTIC_ALIGNMENT_DECIDE', label: 'Semantic Alignment Decide'},
+  {value: 'SEMANTIC_ALIGNMENT_START', label: 'Semantic Alignment Start'}
 ];
 
 function getAuditTypeLabel(auditType: string): string {
@@ -89,8 +89,8 @@ function getAuditTypeLabel(auditType: string): string {
     SHARED_MEMORY_OPERATION: 'Shared Memory Operation',
     MEMORY_OPERATION: 'Memory Operation',
     AGENT_MEMORY_OPERATION: 'Agent Memory Operation',
-    SEMANTIC_NEGOTIATION_DECIDE: 'Semantic Negotiation Decide',
-    SEMANTIC_NEGOTIATION_START: 'Semantic Negotiation Start'
+    SEMANTIC_ALIGNMENT_DECIDE: 'Semantic Alignment Decide',
+    SEMANTIC_ALIGNMENT_START: 'Semantic Alignment Start'
   };
   return labels[auditType] || auditType.replace(/_/g, ' ');
 }
@@ -106,8 +106,8 @@ function getAuditTypeBadgeVariant(auditType: string): 'default' | 'secondary' | 
     SHARED_MEMORY_OPERATION: 'secondary',
     MEMORY_OPERATION: 'secondary',
     AGENT_MEMORY_OPERATION: 'secondary',
-    SEMANTIC_NEGOTIATION_DECIDE: 'secondary',
-    SEMANTIC_NEGOTIATION_START: 'secondary'
+    SEMANTIC_ALIGNMENT_DECIDE: 'secondary',
+    SEMANTIC_ALIGNMENT_START: 'secondary'
   };
   return variants[auditType] || 'outline';
 }

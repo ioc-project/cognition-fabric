@@ -655,7 +655,7 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
       )}
 
       {/* Stat cards */}
-      {isLoading && !hasData ? (
+      {(isLoading || data === undefined) && !hasData ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
@@ -702,7 +702,7 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
         </div>
       )}
 
-      {!isLoading && !is413 && error && (
+      {data !== undefined && !isLoading && !is413 && error && (
         <div className="p-6 border rounded-lg bg-card soft-card flex items-center justify-center flex-1 min-h-[300px]">
           <EmptyState
             variant="inset"
@@ -715,7 +715,7 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
         </div>
       )}
 
-      {!isLoading && !error && !hasData && !is413 && (
+      {data !== undefined && !isLoading && !error && !hasData && !is413 && (
         <div className="p-6 border rounded-lg bg-card soft-card flex items-center justify-center flex-1 min-h-[300px]">
           <EmptyState
             variant="inset"
@@ -787,7 +787,7 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
       )}
 
       {/* Loading skeleton — charts */}
-      {isLoading && !hasData && (
+      {(isLoading || data === undefined) && !hasData && (
         <div className="grid gap-4 flex-1 min-h-0 md:grid-cols-2 auto-rows-fr">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i} className="flex flex-col min-h-[220px]">

@@ -24,8 +24,8 @@ function getAuditTypeLabel(auditType: string): string {
     SHARED_MEMORY_OPERATION: 'Shared Memory Operation',
     MEMORY_OPERATION: 'Memory Operation',
     AGENT_MEMORY_OPERATION: 'Agent Memory Operation',
-    SEMANTIC_NEGOTIATION_DECIDE: 'Semantic Negotiation Decide',
-    SEMANTIC_NEGOTIATION_START: 'Semantic Negotiation Start'
+    SEMANTIC_ALIGNMENT_DECIDE: 'Semantic Alignment Decide',
+    SEMANTIC_ALIGNMENT_START: 'Semantic Alignment Start'
   };
   return labels[auditType] || auditType.replace(/_/g, ' ');
 }
@@ -39,8 +39,8 @@ function getAuditTypeBadgeVariant(auditType: string): 'default' | 'secondary' | 
     SHARED_MEMORY_OPERATION: 'secondary',
     MEMORY_OPERATION: 'secondary',
     AGENT_MEMORY_OPERATION: 'secondary',
-    SEMANTIC_NEGOTIATION_DECIDE: 'secondary',
-    SEMANTIC_NEGOTIATION_START: 'secondary'
+    SEMANTIC_ALIGNMENT_DECIDE: 'secondary',
+    SEMANTIC_ALIGNMENT_START: 'secondary'
   };
   return variants[auditType] || 'outline';
 }
