@@ -113,7 +113,6 @@ function buildLineData(
   const timeMap = new Map<string, Record<string, number>>();
   const shiftMs = rangeHours * 3_600_000;
 
-  // Current period
   for (const ce of response.ces) {
     for (const s of ce.series) {
       if (metricFilter && s.metric_name !== metricFilter) {
@@ -136,7 +135,6 @@ function buildLineData(
     }
   }
 
-  // Previous period — timestamps shifted forward by one period duration
   if (prevResponse) {
     for (const ce of prevResponse.ces) {
       for (const s of ce.series) {
@@ -166,7 +164,6 @@ function buildLineData(
     .sort(([a], [b]) => new Date(a).getTime() - new Date(b).getTime())
     .map(([ts, vals]) => ({_ts: ts, _label: formatTimeLabel(ts, rangeHours), ...vals}));
 
-  // Prev series render first (behind current)
   const series = Array.from(seriesMap.values()).sort((a, b) => (a.isPrev ? -1 : 1) - (b.isPrev ? -1 : 1));
   return {data, series};
 }
@@ -184,7 +181,6 @@ function buildBarData(
   const bucketMap = new Map<string, Record<string, number>>();
   const shiftMs = rangeHours * 3_600_000;
 
-  // Current period
   for (const ce of response.ces) {
     for (const s of ce.series) {
       if (metricFilter && s.metric_name !== metricFilter) {
@@ -208,7 +204,6 @@ function buildBarData(
     }
   }
 
-  // Previous period — buckets shifted forward by one period
   if (prevResponse) {
     for (const ce of prevResponse.ces) {
       for (const s of ce.series) {
@@ -250,9 +245,10 @@ interface Props {
   serviceFilter?: string;
   /** When provided, overlays this data as dashed/dimmed previous-period lines. */
   prevResponse?: MASMetricsResponse;
+  syncId?: string;
 }
 
-export function MASMetricsChart({response, rangeHours, metricFilter, serviceFilter, prevResponse}: Props) {
+export function MASMetricsChart({response, rangeHours, metricFilter, serviceFilter, prevResponse, syncId}: Props) {
   const isHistogram = rangeHours > 7 * 24;
   const height = 'h-full';
 
@@ -296,7 +292,7 @@ export function MASMetricsChart({response, rangeHours, metricFilter, serviceFilt
   if (isHistogram) {
     return (
       <ChartContainer config={chartConfig} className={height}>
-        <BarChart data={data} margin={{top: 4, right: 16, left: 0, bottom: 4}}>
+        <BarChart data={data} syncId={syncId} margin={{top: 4, right: 16, left: 0, bottom: 4}}>
           <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" strokeOpacity={0.1} />
           <XAxis dataKey="_label" {...commonAxisProps} />
           <YAxis tickFormatter={formatValue} {...commonAxisProps} width={48} />
@@ -325,7 +321,7 @@ export function MASMetricsChart({response, rangeHours, metricFilter, serviceFilt
 
   return (
     <ChartContainer config={chartConfig} className={height}>
-      <LineChart data={data} margin={{top: 4, right: 16, left: 0, bottom: 4}}>
+      <LineChart data={data} syncId={syncId} margin={{top: 4, right: 16, left: 0, bottom: 4}}>
         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" strokeOpacity={0.1} />
         <XAxis dataKey="_label" {...commonAxisProps} interval="preserveStartEnd" />
         <YAxis tickFormatter={formatValue} {...commonAxisProps} width={48} />

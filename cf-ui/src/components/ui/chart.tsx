@@ -40,8 +40,23 @@ interface ChartContainerProps extends React.HTMLAttributes<HTMLDivElement> {
 }
 
 function ChartContainer({config, children, className, ...props}: ChartContainerProps) {
-  const [mounted, setMounted] = React.useState(false);
-  React.useEffect(() => setMounted(true), []);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [dims, setDims] = React.useState<{w: number; h: number} | null>(null);
+
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) {
+      return;
+    }
+    const ro = new ResizeObserver(([entry]) => {
+      const {width, height} = entry.contentRect;
+      if (width > 0 && height > 0) {
+        setDims({w: width, h: height});
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const style = Object.fromEntries(
     Object.entries(config).map(([key, value]) => [`--color-${key}`, value.color ?? 'currentColor'])
@@ -49,9 +64,9 @@ function ChartContainer({config, children, className, ...props}: ChartContainerP
 
   return (
     <ChartContext.Provider value={{config}}>
-      <div className={cn('w-full', className)} style={style} {...props}>
-        {mounted && (
-          <ResponsiveContainer width="100%" height="100%" minHeight={120}>
+      <div ref={containerRef} className={cn('w-full', className)} style={{minHeight: 120, ...style}} {...props}>
+        {dims && (
+          <ResponsiveContainer width={dims.w} height={dims.h}>
             {children}
           </ResponsiveContainer>
         )}
@@ -60,11 +75,7 @@ function ChartContainer({config, children, className, ...props}: ChartContainerP
   );
 }
 
-// ─── ChartTooltip ─────────────────────────────────────────────────────────────
-
 const ChartTooltip = Tooltip;
-
-// ─── ChartTooltipContent ──────────────────────────────────────────────────────
 
 interface ChartTooltipContentProps {
   active?: boolean;
@@ -138,8 +149,6 @@ function ChartTooltipContent({
     </div>
   );
 }
-
-// ─── ChartLegendContent ────────────────────────────────────────────────────────
 
 interface ChartLegendContentProps extends React.HTMLAttributes<HTMLDivElement> {
   payload?: Array<{value: string; color?: string; dataKey?: string}>;

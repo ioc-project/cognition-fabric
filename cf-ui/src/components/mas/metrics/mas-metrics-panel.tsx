@@ -454,9 +454,7 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
 
   return (
     <div className="flex flex-col flex-1 min-h-0 gap-5">
-      {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2 shrink-0">
-        {/* Unified time picker */}
         <DropdownMenu open={timePickerOpen} onOpenChange={handlePickerOpenChange}>
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-1.5 h-8 px-3 text-sm border rounded-md bg-background hover:bg-muted/60 transition-colors font-medium">
@@ -466,7 +464,6 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="p-3 w-auto" align="start">
-            {/* Preset pills */}
             <div className="flex items-center gap-1 mb-3">
               {TIME_PRESETS.map((p) => (
                 <button
@@ -481,7 +478,6 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
                 </button>
               ))}
             </div>
-            {/* Calendar for custom range */}
             <div className="border-t pt-3" onPointerDown={(e) => e.stopPropagation()}>
               <DayPicker
                 mode="range"
@@ -500,10 +496,8 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Separator */}
         <div className="w-px h-5 bg-border" />
 
-        {/* Service filter — built from live response */}
         {services.length > 0 && (
           <Select value={selectedService || 'all'} onValueChange={(v) => handleFilterChange('service', v)}>
             <SelectTrigger surface="field" className="h-8 text-sm w-[200px]">
@@ -520,7 +514,6 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
           </Select>
         )}
 
-        {/* CE filter */}
         {cognitionEngines.length > 0 && (
           <Select value={selectedCE || 'all'} onValueChange={(v) => handleFilterChange('ce_id', v)}>
             <SelectTrigger surface="field" className="h-8 text-sm w-[190px]">
@@ -537,7 +530,6 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
           </Select>
         )}
 
-        {/* Agent filter */}
         {agents.length > 0 && (
           <Select value={selectedAgent || 'all'} onValueChange={(v) => handleFilterChange('agent_id', v)}>
             <SelectTrigger surface="field" className="h-8 text-sm w-[160px]">
@@ -560,11 +552,9 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
           </button>
         )}
 
-        {/* Compare toggle + view toggle — only when there is data */}
         {(hasData || isLoading) && (
           <TooltipProvider delayDuration={200}>
             <div className="ml-auto flex items-center gap-2">
-              {/* Compare button */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <button
@@ -618,7 +608,6 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
                 </Tooltip>
               </div>
 
-              {/* Export */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button
@@ -646,7 +635,6 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
         )}
       </div>
 
-      {/* Compare: no previous data notice */}
       {showComparison && !hasPrevData && (
         <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-muted/50 text-xs text-muted-foreground shrink-0">
           <Layers className="w-3.5 h-3.5 shrink-0" />
@@ -654,7 +642,6 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
         </div>
       )}
 
-      {/* Stat cards */}
       {(isLoading || data === undefined) && !hasData ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 shrink-0">
           {[1, 2, 3, 4].map((i) => (
@@ -677,7 +664,6 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
         </div>
       ) : null}
 
-      {/* Error / empty states */}
       {is413 && (
         <div className="flex items-start gap-4 p-4 rounded-lg border border-amber-200 bg-amber-50/60 dark:border-amber-900/40 dark:bg-amber-950/20 shrink-0">
           <AlertTriangle className="w-5 h-5 text-amber-500 mt-0.5 shrink-0" />
@@ -732,11 +718,9 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
         </div>
       )}
 
-      {/* Charts */}
       {hasData && metricNames.length > 0 && (
         <div ref={chartAreaRef} style={{display: 'contents'}}>
           {currentView === 'grid' ? (
-            /* Grid: one card per metric */
             <div className={cn('grid gap-4 flex-1 min-h-0', metricNames.length > 1 ? 'md:grid-cols-2 auto-rows-fr' : 'grid-cols-1')}>
               {metricNames.map((metricName) => (
                 <Card key={metricName} className="flex flex-col min-h-[220px] overflow-hidden">
@@ -757,13 +741,13 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
                       metricFilter={metricName}
                       serviceFilter={selectedService || undefined}
                       prevResponse={showComparison ? (prevData ?? undefined) : undefined}
+                      syncId={masId}
                     />
                   </CardContent>
                 </Card>
               ))}
             </div>
           ) : (
-            /* Single consolidated chart */
             <Card className="flex flex-col flex-1 min-h-[300px] overflow-hidden">
               <CardHeader className="pb-2 pt-4 px-5 shrink-0">
                 <div className="flex items-center justify-between gap-3">
@@ -786,7 +770,6 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
         </div>
       )}
 
-      {/* Loading skeleton — charts */}
       {(isLoading || data === undefined) && !hasData && (
         <div className="grid gap-4 flex-1 min-h-0 md:grid-cols-2 auto-rows-fr">
           {[1, 2, 3, 4].map((i) => (
