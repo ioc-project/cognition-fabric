@@ -298,98 +298,53 @@ export default function MASDetailsPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground">Agents</span>
-                {isEditMode && agentFields.length > 0 && (
-                  <Button
-                    type="button"
-                    variant="sidebar"
-                    size="sm"
-                    className="gap-2"
-                    onClick={() => appendAgent({agent_id: '', name: '', url: '', agentic_memory_provider_id: '', identity_type: '', identity_identifiers: ''})}
-                  >
-                    <Plus className="w-4 h-4" />
-                    Add Agent
-                  </Button>
-                )}
-              </div>
-
               <div className="flex gap-4 items-start">
                 <div className="flex-1 min-w-0 space-y-4">
 
-                  <AgentsList
-                    agents={agentFields}
-                    control={form.control}
-                    watch={form.watch}
-                    isEditMode={isEditMode}
-                    agentExpandedState={agentExpandedState}
-                    onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
-                    onAddAgent={
-                      isEditMode
-                        ? () =>
-                            appendAgent({
-                              agent_id: '',
-                              name: '',
-                              url: '',
-                              agentic_memory_provider_id: '',
-                              identity_type: '',
-                              identity_identifiers: ''
-                            })
-                        : undefined
-                    }
-                    onRemoveAgent={isEditMode ? removeAgent : undefined}
-                    masAgentsData={!isEditMode && mas?.agents ? mas.agents : undefined}
-                    userMemoryProviders={userMemoryProviders}
-                  />
-
                   <div className="bg-card border border-border rounded overflow-hidden">
-                    <div
-                      className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted cursor-pointer"
-                      onClick={() => setMasConfigExpanded(!masConfigExpanded)}
-                    >
+                    <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-foreground">Config</span>
-                        {isEditMode &&
-                          (() => {
-                            const cv = form.watch('config') ?? '';
-                            return cv.trim() !== '' ? (
-                              <span
-                                className={`text-xs px-1.5 py-0.5 rounded ${validateJSON(cv) ? 'text-green-600 bg-green-50 border border-green-200' : 'text-red-600 bg-red-50 border border-red-200'}`}
-                              >
-                                {validateJSON(cv) ? 'Valid JSON' : 'Invalid JSON'}
-                              </span>
-                            ) : null;
-                          })()}
-                      </div>
-                      {masConfigExpanded ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
-                    </div>
-                    {masConfigExpanded && (
-                      <div className="p-4">
-                        {isEditMode ? (
-                          <FormField
-                            control={form.control}
-                            name="config"
-                            render={({field}) => (
-                              <FormItem>
-                                <FormControl>
-                                  <Textarea
-                                    placeholder={`{\n  "key": "value"\n}`}
-                                    className="font-mono text-sm min-h-[150px] resize-y"
-                                    {...field}
-                                    onBlur={() => field.onChange(formatJson(field.value || ''))}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        ) : (
-                          <pre className="font-mono text-sm text-muted-foreground bg-muted border border-border rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
-                            {mas?.config && Object.keys(mas.config).length > 0 ? JSON.stringify(mas.config, null, 2) : '{\n  "key": "value"\n}'}
-                          </pre>
+                        <Bot size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                        <span className="text-sm font-medium text-foreground">Agents</span>
+                        {(isEditMode ? agentFields.length : (mas?.agents?.length ?? 0)) > 0 && (
+                          <span className="px-1.5 py-0.5 rounded bg-[hsl(var(--sidebar-icon-active)/0.08)] text-[hsl(var(--sidebar-icon-active))] border border-[hsl(var(--sidebar-icon-active)/0.25)] text-xs">
+                            {isEditMode ? agentFields.length : (mas?.agents?.length ?? 0)}
+                          </span>
                         )}
                       </div>
-                    )}
+                      {isEditMode && agentFields.length > 0 && (
+                        <Button type="button" variant="sidebar" size="sm" className="gap-2" onClick={() => appendAgent({agent_id: '', name: '', url: '', agentic_memory_provider_id: '', identity_type: '', identity_identifiers: ''})}>
+                          <Plus className="w-4 h-4" />
+                          Add Agent
+                        </Button>
+                      )}
+                    </div>
+                    <div className="p-4">
+                      <AgentsList
+                        agents={agentFields}
+                        control={form.control}
+                        watch={form.watch}
+                        isEditMode={isEditMode}
+                        agentExpandedState={agentExpandedState}
+                        onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
+                        onAddAgent={
+                          isEditMode
+                            ? () =>
+                                appendAgent({
+                                  agent_id: '',
+                                  name: '',
+                                  url: '',
+                                  agentic_memory_provider_id: '',
+                                  identity_type: '',
+                                  identity_identifiers: ''
+                                })
+                            : undefined
+                        }
+                        onRemoveAgent={isEditMode ? removeAgent : undefined}
+                        masAgentsData={!isEditMode && mas?.agents ? mas.agents : undefined}
+                        userMemoryProviders={userMemoryProviders}
+                      />
+                    </div>
                   </div>
 
                   <div className="bg-card border border-border rounded overflow-hidden">
@@ -429,7 +384,7 @@ export default function MASDetailsPage() {
                               <td className="px-4 py-3 font-mono text-sm text-muted-foreground">{ce.subkind || '-'}</td>
                               <td className="px-4 py-3">
                                 {ce.enabled ? (
-                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs border bg-[hsl(var(--sidebar-icon-active)/0.08)] text-[hsl(var(--sidebar-icon-active))] border-[hsl(var(--sidebar-icon-active)/0.25)]">Enabled</span>
+                                  <Badge variant="info">Enabled</Badge>
                                 ) : (
                                   <Badge variant="inactive">Disabled</Badge>
                                 )}
@@ -574,9 +529,9 @@ export default function MASDetailsPage() {
                           <div className={fieldClass}>
                             <span className={labelClass}>Status</span>
                             {mas.shared_memory.enabled ? (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs border bg-[hsl(var(--sidebar-icon-active)/0.08)] text-[hsl(var(--sidebar-icon-active))] border-[hsl(var(--sidebar-icon-active)/0.25)]">Enabled</span>
+                              <Badge variant="info" className="w-fit">Enabled</Badge>
                             ) : (
-                              <Badge variant="inactive">Disabled</Badge>
+                              <Badge variant="inactive" className="w-fit">Disabled</Badge>
                             )}
                           </div>
                           {mas.shared_memory.description && (
@@ -590,6 +545,56 @@ export default function MASDetailsPage() {
                         <span className={valueClass}>None configured</span>
                       )}
                     </div>
+                  </div>
+
+                  <div className="bg-card border border-border rounded overflow-hidden">
+                    <div
+                      className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted cursor-pointer"
+                      onClick={() => setMasConfigExpanded(!masConfigExpanded)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-foreground">Config</span>
+                        {isEditMode &&
+                          (() => {
+                            const cv = form.watch('config') ?? '';
+                            return cv.trim() !== '' ? (
+                              <span
+                                className={`text-xs px-1.5 py-0.5 rounded ${validateJSON(cv) ? 'text-green-600 bg-green-50 border border-green-200' : 'text-red-600 bg-red-50 border border-red-200'}`}
+                              >
+                                {validateJSON(cv) ? 'Valid JSON' : 'Invalid JSON'}
+                              </span>
+                            ) : null;
+                          })()}
+                      </div>
+                      {masConfigExpanded ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
+                    </div>
+                    {masConfigExpanded && (
+                      <div className="p-4">
+                        {isEditMode ? (
+                          <FormField
+                            control={form.control}
+                            name="config"
+                            render={({field}) => (
+                              <FormItem>
+                                <FormControl>
+                                  <Textarea
+                                    placeholder={`{\n  "key": "value"\n}`}
+                                    className="font-mono text-sm min-h-[150px] resize-y"
+                                    {...field}
+                                    onBlur={() => field.onChange(formatJson(field.value || ''))}
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        ) : (
+                          <pre className="font-mono text-sm text-muted-foreground bg-muted border border-border rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
+                            {mas?.config && Object.keys(mas.config).length > 0 ? JSON.stringify(mas.config, null, 2) : '{\n  "key": "value"\n}'}
+                          </pre>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

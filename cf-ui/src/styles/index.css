@@ -62,6 +62,10 @@
   --rdp-accent-color-dark: hsl(var(--sidebar-active-border));
   --rdp-range-color: hsl(var(--sidebar-hover));
   --rdp-accent-text-color: hsl(var(--sidebar-text-active));
+
+  --badge-info-text: 210 80% 42%;
+  --badge-info-bg: 210 80% 95%;
+  --badge-info-border: 210 80% 80%;
 }
 
 .dark {
@@ -120,6 +124,10 @@
   --rdp-accent-color-dark: hsl(var(--sidebar-active));
   --rdp-range-color: hsl(var(--sidebar-hover));
   --rdp-accent-text-color: hsl(var(--sidebar-text-active));
+
+  --badge-info-text: 210 80% 65%;
+  --badge-info-bg: 210 50% 17%;
+  --badge-info-border: 210 50% 32%;
 }
 
 * {

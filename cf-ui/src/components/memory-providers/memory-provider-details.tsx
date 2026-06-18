@@ -24,6 +24,7 @@ import {toast} from 'sonner';
 import {CopyableInput} from '@/components/ui/copyable-input';
 import {ChevronDown, ChevronUp, Eye, EyeOff} from 'lucide-react';
 import {Button} from '@/components/ui/button';
+import {Badge} from '@/components/ui/badge';
 import {dtLabel, dtValue, dtRow, dtSectionHeader} from '@/lib/detail-typography';
 
 const UpdateMemoryProviderFormSchema = z.object({
@@ -310,9 +311,9 @@ export default function MemoryProviderDetailsPage() {
                 <div className={rowClass}>
                   <span className={labelClass}>Enabled</span>
                   {provider?.enabled ? (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs border bg-[hsl(var(--sidebar-icon-active)/0.08)] text-[hsl(var(--sidebar-icon-active))] border-[hsl(var(--sidebar-icon-active)/0.25)] w-fit">Enabled</span>
+                    <Badge variant="info" className="w-fit">Enabled</Badge>
                   ) : (
-                    <span className={valueClass}>Disabled</span>
+                    <Badge variant="inactive" className="w-fit">Disabled</Badge>
                   )}
                 </div>
 

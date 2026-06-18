@@ -255,7 +255,7 @@ export default function CognitiveAgentDetailsPage() {
                       )}
                     />
                   ) : (
-                    <Badge variant={ce?.mas_auto_associate ? 'info' : 'inactive'}>{ce?.mas_auto_associate ? 'Enabled' : 'Disabled'}</Badge>
+                    <Badge variant={ce?.mas_auto_associate ? 'info' : 'inactive'} className="w-fit">{ce?.mas_auto_associate ? 'Enabled' : 'Disabled'}</Badge>
                   )}
                 </div>
                 {isEditMode && (

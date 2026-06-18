@@ -112,10 +112,10 @@ export function AgentsList({
                 identityIdentifiers={agent.identity_identifiers}
                 agenticMemoryProviderId={agent.agentic_memory_provider_id}
                 agenticMemoryProviderName={agent.agentic_memory_provider_name}
-                isExpanded={true}
+                isExpanded={agentExpandedState[agent.agent_id] ?? true}
                 isEditMode={false}
                 control={control}
-                onToggleExpand={() => {}}
+                onToggleExpand={() => onToggleExpand(agent.agent_id)}
                 userMemoryProviders={userMemoryProviders}
               />
             ))
