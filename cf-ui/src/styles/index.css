@@ -2,7 +2,7 @@
 @import './tokens.css';
 
 :root {
-  --background: 222 68% 96%;
+  --background: 216 29% 97%;
   --foreground: 222.2 84% 4.9%;
   --card: 0 0% 100%;
   --card-foreground: 222.2 84% 4.9%;
@@ -33,9 +33,9 @@
   --sidebar-icon-active: 210 80% 48%;
   --sidebar-active-border: 210 80% 48%;
 
-  --navbar-background: 216 100% 97%;
+  --navbar-background: 216 29% 97%;
   --navbar-border: 222 58% 91%;
-  --main-background: 216 100% 97%;
+  --main-background: 216 29% 97%;
   --main-border: 220 50% 99%;
 
   --surface-weak: 216 60% 98%;
@@ -260,7 +260,7 @@ body {
   line-height: 20px;
   letter-spacing: 0.25px;
   font-weight: 400;
-  color: rgb(0, 20, 43);
+  color: hsl(var(--foreground));
   text-decoration: none;
   pointer-events: auto;
 }
@@ -279,7 +279,7 @@ body {
   line-height: 20px;
   letter-spacing: 0.25px;
   font-weight: 600;
-  color: rgb(0, 20, 43);
+  color: hsl(var(--foreground));
 }
 
 .dark .breadcrumb-active {
@@ -296,7 +296,7 @@ body {
   flex-shrink: 0;
   transition: fill 200ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
   font-size: 1.25rem;
-  color: rgb(0, 20, 43);
+  color: hsl(var(--muted-foreground));
 }
 
 .dark .breadcrumb-separator {

@@ -594,7 +594,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent
           className={cn(
-            'max-w-3xl h-screen max-h-screen overflow-hidden p-0 gap-0 flex flex-col',
+            'max-w-3xl h-screen max-h-screen overflow-hidden p-0 gap-0 flex flex-col bg-card',
             'fixed right-0 top-0 bottom-0 translate-x-0 translate-y-0 left-auto rounded-none',
             'data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right'
           )}

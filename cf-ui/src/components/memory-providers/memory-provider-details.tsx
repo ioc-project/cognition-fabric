@@ -10,23 +10,21 @@ import {swrKeys} from '@/lib/swr-config';
 import {memoryProviderApi} from '@/api/endpoints';
 import type {MemoryProvider, UpdateMemoryProviderRequest, MemoryProviderConfig, AuthType} from '@/api/types/memory-provider';
 import {BasePage} from '@/components/ui/base-page';
-import {Card, CardContent} from '@/components/ui/card';
 import {Input} from '@/components/ui/input';
-import {Label} from '@/components/ui/label';
 import {Textarea} from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
+import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/ui/form';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes} from '@/constants/routes';
-import {parseError} from '@/lib/utils';
+import {parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {toast} from 'sonner';
 import {CopyableInput} from '@/components/ui/copyable-input';
-import {ReadOnlyField} from '@/components/ui/read-only-field';
-import {Eye, EyeOff} from 'lucide-react';
+import {ChevronDown, ChevronUp, Eye, EyeOff} from 'lucide-react';
 import {Button} from '@/components/ui/button';
+import {dtLabel, dtValue, dtRow, dtSectionHeader} from '@/lib/detail-typography';
 
 const UpdateMemoryProviderFormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters'),
@@ -67,6 +65,7 @@ export default function MemoryProviderDetailsPage() {
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [authExpanded, setAuthExpanded] = useState(true);
   const [revealedFields, setRevealedFields] = useState<Set<string>>(new Set());
   const toggleReveal = useCallback((field: string) => {
     setRevealedFields((prev) => {
@@ -219,6 +218,10 @@ export default function MemoryProviderDetailsPage() {
     return labels[type] ?? type;
   };
 
+  const labelClass = dtLabel;
+  const valueClass = dtValue;
+  const rowClass = dtRow;
+
   return (
     <>
       <BasePage
@@ -251,300 +254,290 @@ export default function MemoryProviderDetailsPage() {
             title: 'No Memory Provider details found'
           }}
         >
-          <div className="flex justify-center py-4">
-            <Card variant="list" className="w-full max-w-4xl">
-              <CardContent className="p-8">
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6" autoComplete="off">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Provider ID — always read-only */}
-                      <div className="space-y-2">
-                        <Label className="detail-label">Provider ID</Label>
-                        <CopyableInput value={provider?.id || ''} />
-                      </div>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4 mx-8" autoComplete="off">
+              {/* Details card */}
+              <div className="bg-card border border-border rounded p-4">
+                <div className={`${dtSectionHeader} mb-3`}>Details</div>
 
-                      {/* Provider Name */}
+                {/* ID */}
+                <div className={rowClass}>
+                  <span className={labelClass}>ID</span>
+                  <div className="min-w-0">
+                    <CopyableInput value={provider?.id || ''} />
+                  </div>
+                </div>
+
+                {/* Name */}
+                <div className={rowClass}>
+                  <span className={labelClass}>Name</span>
+                  {isEditMode ? (
+                    <FormField
+                      control={form.control}
+                      name="name"
+                      render={({field}) => (
+                        <FormItem className="space-y-1">
+                          <FormControl><Input {...field} maxLength={100} autoComplete="off" className="h-7 text-xs" /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ) : (
+                    <span className={valueClass}>{provider?.name || '-'}</span>
+                  )}
+                </div>
+
+                {/* Description */}
+                <div className={rowClass}>
+                  <span className={labelClass}>Description</span>
+                  {isEditMode ? (
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({field}) => (
+                        <FormItem className="space-y-1">
+                          <FormControl><Textarea {...field} rows={2} placeholder="Optional description" className="text-xs resize-none" /></FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ) : (
+                    <span className={valueClass}>{provider?.description || '-'}</span>
+                  )}
+                </div>
+
+                {/* Enabled */}
+                <div className={rowClass}>
+                  <span className={labelClass}>Enabled</span>
+                  {provider?.enabled ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs border bg-[hsl(var(--sidebar-icon-active)/0.08)] text-[hsl(var(--sidebar-icon-active))] border-[hsl(var(--sidebar-icon-active)/0.25)] w-fit">Enabled</span>
+                  ) : (
+                    <span className={valueClass}>Disabled</span>
+                  )}
+                </div>
+
+                {/* Created At */}
+                <div className={rowClass}>
+                  <span className={labelClass}>Created At</span>
+                  <span className={valueClass}>
+                    {provider?.created_at ? new Date(provider.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : '—'}
+                  </span>
+                </div>
+
+                {/* Updated At */}
+                <div className={rowClass}>
+                  <span className={labelClass}>Updated At</span>
+                  <span className={valueClass}>
+                    {provider?.updated_at ? new Date(provider.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : '—'}
+                  </span>
+                </div>
+
+                {/* Created By */}
+                <div className={rowClass}>
+                  <span className={labelClass}>Created By</span>
+                  <span className={valueClass}>{provider?.created_by || '-'}</span>
+                </div>
+
+                {/* Updated By */}
+                <div className={rowClass}>
+                  <span className={labelClass}>Updated By</span>
+                  <span className={valueClass}>{provider?.updated_by || '-'}</span>
+                </div>
+              </div>
+
+              {/* Config card — collapsible */}
+              <div className="bg-card border border-border rounded overflow-hidden">
+                <button
+                  type="button"
+                  className="w-full flex items-center justify-between px-4 py-3 bg-muted hover:bg-muted/80 transition-colors border-b border-border"
+                  onClick={() => setAuthExpanded((v) => !v)}
+                >
+                  <span className={dtSectionHeader}>Config</span>
+                  {authExpanded ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
+                </button>
+
+                {authExpanded && (
+                  <div className="p-4">
+                    {/* URL */}
+                    <div className={rowClass}>
+                      <span className={labelClass}>URL</span>
                       {isEditMode ? (
                         <FormField
                           control={form.control}
-                          name="name"
+                          name="url"
                           render={({field}) => (
-                            <FormItem>
-                              <FormLabel>Provider Name</FormLabel>
-                              <FormControl>
-                                <Input {...field} maxLength={100} autoComplete="off" />
-                              </FormControl>
+                            <FormItem className="space-y-1">
+                              <FormControl><Input {...field} placeholder="http://localhost:8765" autoComplete="off" className="h-7 text-xs font-mono" /></FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
                       ) : (
-                        <div className="space-y-2">
-                          <Label className="detail-label">Provider Name</Label>
-                          <ReadOnlyField value={provider?.name || ''} />
+                        <div className="min-w-0">
+                          <CopyableInput value={(provider?.config as MemoryProviderConfig | null)?.url || ''} />
                         </div>
-                      )}
-
-                      {/* Enabled — always read-only */}
-                      <div className="space-y-2">
-                        <Label className="detail-label">Enabled</Label>
-                        <ReadOnlyField value={provider?.enabled ? 'Yes' : 'No'} />
-                      </div>
-
-                      {/* Description */}
-                      <div className="md:col-span-2">
-                        {isEditMode ? (
-                          <FormField
-                            control={form.control}
-                            name="description"
-                            render={({field}) => (
-                              <FormItem>
-                                <FormLabel>Description</FormLabel>
-                                <FormControl>
-                                  <Textarea {...field} rows={3} placeholder="Optional description" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        ) : (
-                          <div className="space-y-2">
-                            <Label className="detail-label">Description</Label>
-                            <ReadOnlyField value={provider?.description || 'No description provided'} multiline />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Provider URL */}
-                      <div className="md:col-span-2">
-                        {isEditMode ? (
-                          <FormField
-                            control={form.control}
-                            name="url"
-                            render={({field}) => (
-                              <FormItem>
-                                <FormLabel>Provider URL</FormLabel>
-                                <FormControl>
-                                  <Input {...field} placeholder="http://localhost:8765" autoComplete="off" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        ) : (
-                          <div className="space-y-2">
-                            <Label className="detail-label">Provider URL</Label>
-                            <CopyableInput value={(provider?.config as MemoryProviderConfig | null)?.url || ''} />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Authentication Type */}
-                      {isEditMode ? (
-                        <div className="md:col-span-2">
-                          <FormField
-                            control={form.control}
-                            name="authType"
-                            render={({field}) => (
-                              <FormItem>
-                                <FormLabel>Authentication Type</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                  <FormControl>
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select authentication type" />
-                                    </SelectTrigger>
-                                  </FormControl>
-                                  <SelectContent>
-                                    <SelectItem value="none">None</SelectItem>
-                                    <SelectItem value="token">API Key</SelectItem>
-                                    <SelectItem value="bearer">Bearer Token</SelectItem>
-                                    <SelectItem value="basic">Basic Auth</SelectItem>
-                                    <SelectItem value="custom">Custom Header</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      ) : (
-                        <div className="space-y-2">
-                          <Label className="detail-label">Authentication Type</Label>
-                          <ReadOnlyField value={authTypeLabel((provider?.config as MemoryProviderConfig | null)?.auth?.type ?? 'none')} />
-                        </div>
-                      )}
-
-                      {/* Conditional credential fields — view mode */}
-                      {!isEditMode &&
-                        (() => {
-                          const config = provider?.config as MemoryProviderConfig | null;
-                          const creds = config?.auth?.credentials;
-                          const type = config?.auth?.type;
-                          if (!creds || !type || type === 'none') {
-                            return null;
-                          }
-
-                          const RevealInput = ({fieldKey, label, value}: {fieldKey: string; label: string; value: string}) => (
-                            <div className="space-y-2">
-                              <Label className="detail-label">{label}</Label>
-                              <div className="relative">
-                                <Input value={value} type={revealedFields.has(fieldKey) ? 'text' : 'password'} disabled readOnly className="pr-10" />
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  size="icon"
-                                  className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground"
-                                  onClick={() => toggleReveal(fieldKey)}
-                                >
-                                  {revealedFields.has(fieldKey) ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                </Button>
-                              </div>
-                            </div>
-                          );
-
-                          if (type === 'token') {
-                            return (
-                              <div className="md:col-span-2">
-                                <RevealInput fieldKey="api_key" label="API Key" value={creds.api_key ?? ''} />
-                              </div>
-                            );
-                          }
-                          if (type === 'bearer') {
-                            return (
-                              <div className="md:col-span-2">
-                                <RevealInput fieldKey="access_token" label="Access Token" value={creds.access_token ?? ''} />
-                              </div>
-                            );
-                          }
-                          if (type === 'basic') {
-                            return (
-                              <>
-                                <div className="space-y-2">
-                                  <Label className="detail-label">Username</Label>
-                                  <ReadOnlyField value={creds.username ?? ''} />
-                                </div>
-                                <RevealInput fieldKey="password" label="Password" value={creds.password ?? ''} />
-                              </>
-                            );
-                          }
-                          if (type === 'custom') {
-                            return (
-                              <>
-                                <div className="space-y-2">
-                                  <Label className="detail-label">Header Name</Label>
-                                  <ReadOnlyField value={creds.header_name ?? ''} />
-                                </div>
-                                <RevealInput fieldKey="header_value" label="Header Value" value={creds.header_value ?? ''} />
-                              </>
-                            );
-                          }
-                          return null;
-                        })()}
-
-                      {/* Conditional credential fields — edit mode */}
-                      {isEditMode && authType === 'token' && (
-                        <div className="md:col-span-2">
-                          <FormField
-                            control={form.control}
-                            name="token"
-                            render={({field}) => (
-                              <FormItem>
-                                <FormLabel>API Key</FormLabel>
-                                <FormControl>
-                                  <Input type="password" placeholder="Enter API key" autoComplete="new-password" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      )}
-
-                      {isEditMode && authType === 'bearer' && (
-                        <div className="md:col-span-2">
-                          <FormField
-                            control={form.control}
-                            name="access_token"
-                            render={({field}) => (
-                              <FormItem>
-                                <FormLabel>Access Token</FormLabel>
-                                <FormControl>
-                                  <Input type="password" placeholder="Enter access token" autoComplete="new-password" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </div>
-                      )}
-
-                      {isEditMode && authType === 'basic' && (
-                        <>
-                          <FormField
-                            control={form.control}
-                            name="username"
-                            render={({field}) => (
-                              <FormItem>
-                                <FormLabel>Username</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="Enter username" autoComplete="off" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="password"
-                            render={({field}) => (
-                              <FormItem>
-                                <FormLabel>Password</FormLabel>
-                                <FormControl>
-                                  <Input type="password" placeholder="Enter password" autoComplete="new-password" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </>
-                      )}
-
-                      {isEditMode && authType === 'custom' && (
-                        <>
-                          <FormField
-                            control={form.control}
-                            name="header_name"
-                            render={({field}) => (
-                              <FormItem>
-                                <FormLabel>Header Name</FormLabel>
-                                <FormControl>
-                                  <Input placeholder="X-API-Key" autoComplete="off" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                          <FormField
-                            control={form.control}
-                            name="header_value"
-                            render={({field}) => (
-                              <FormItem>
-                                <FormLabel>Header Value</FormLabel>
-                                <FormControl>
-                                  <Input type="password" placeholder="Enter header value" autoComplete="new-password" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        </>
                       )}
                     </div>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
-          </div>
+
+                    {/* Auth Type */}
+                    <div className={rowClass}>
+                      <span className={labelClass}>Auth Type</span>
+                      {isEditMode ? (
+                        <FormField
+                          control={form.control}
+                          name="authType"
+                          render={({field}) => (
+                            <FormItem className="space-y-1">
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger className="h-7 text-xs">
+                                    <SelectValue placeholder="Select type" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="none">None</SelectItem>
+                                  <SelectItem value="token">API Key</SelectItem>
+                                  <SelectItem value="bearer">Bearer Token</SelectItem>
+                                  <SelectItem value="basic">Basic Auth</SelectItem>
+                                  <SelectItem value="custom">Custom Header</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <span className={valueClass}>
+                          {authTypeLabel((provider?.config as MemoryProviderConfig | null)?.auth?.type ?? 'none')}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Credential fields — view mode */}
+                    {!isEditMode && (() => {
+                      const config = provider?.config as MemoryProviderConfig | null;
+                      const creds = config?.auth?.credentials;
+                      const type = config?.auth?.type;
+                      if (!creds || !type || type === 'none') return (
+                        <div className={rowClass}>
+                          <span className={labelClass}>Credentials</span>
+                          <span className={valueClass}>—</span>
+                        </div>
+                      );
+
+                      const RevealRow = ({fieldKey, label, value}: {fieldKey: string; label: string; value: string}) => (
+                        <div className={rowClass}>
+                          <span className={labelClass}>{label}</span>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`${valueClass} truncate`}>
+                              {revealedFields.has(fieldKey) ? value : '••••••••••••'}
+                            </span>
+                            <button
+                              type="button"
+                              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                              onClick={() => toggleReveal(fieldKey)}
+                            >
+                              {revealedFields.has(fieldKey) ? <EyeOff size={13} /> : <Eye size={13} />}
+                            </button>
+                          </div>
+                        </div>
+                      );
+
+                      if (type === 'token') return <RevealRow fieldKey="api_key" label="API Key" value={creds.api_key ?? ''} />;
+                      if (type === 'bearer') return <RevealRow fieldKey="access_token" label="Access Token" value={creds.access_token ?? ''} />;
+                      if (type === 'basic') return (
+                        <>
+                          <div className={rowClass}>
+                            <span className={labelClass}>Username</span>
+                            <span className={valueClass}>{creds.username ?? '—'}</span>
+                          </div>
+                          <RevealRow fieldKey="password" label="Password" value={creds.password ?? ''} />
+                        </>
+                      );
+                      if (type === 'custom') return (
+                        <>
+                          <div className={rowClass}>
+                            <span className={labelClass}>Header Name</span>
+                            <span className={valueClass}>{creds.header_name ?? '—'}</span>
+                          </div>
+                          <RevealRow fieldKey="header_value" label="Header Value" value={creds.header_value ?? ''} />
+                        </>
+                      );
+                      return null;
+                    })()}
+
+                    {/* Credential fields — edit mode */}
+                    {isEditMode && authType === 'token' && (
+                      <div className="grid grid-cols-[160px_1fr] items-start gap-3 py-2.5 border-b border-border last:border-0">
+                        <span className={labelClass}>API Key</span>
+                        <FormField control={form.control} name="token" render={({field}) => (
+                          <FormItem className="space-y-1">
+                            <FormControl><Input type="password" placeholder="Enter API key" autoComplete="new-password" {...field} className="h-7 text-xs" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                    )}
+                    {isEditMode && authType === 'bearer' && (
+                      <div className="grid grid-cols-[160px_1fr] items-start gap-3 py-2.5 border-b border-border last:border-0">
+                        <span className={labelClass}>Access Token</span>
+                        <FormField control={form.control} name="access_token" render={({field}) => (
+                          <FormItem className="space-y-1">
+                            <FormControl><Input type="password" placeholder="Enter access token" autoComplete="new-password" {...field} className="h-7 text-xs" /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )} />
+                      </div>
+                    )}
+                    {isEditMode && authType === 'basic' && (
+                      <>
+                        <div className={rowClass}>
+                          <span className={labelClass}>Username</span>
+                          <FormField control={form.control} name="username" render={({field}) => (
+                            <FormItem className="space-y-1">
+                              <FormControl><Input placeholder="Enter username" autoComplete="off" {...field} className="h-7 text-xs" /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                        </div>
+                        <div className={rowClass}>
+                          <span className={labelClass}>Password</span>
+                          <FormField control={form.control} name="password" render={({field}) => (
+                            <FormItem className="space-y-1">
+                              <FormControl><Input type="password" placeholder="Enter password" autoComplete="new-password" {...field} className="h-7 text-xs" /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                        </div>
+                      </>
+                    )}
+                    {isEditMode && authType === 'custom' && (
+                      <>
+                        <div className={rowClass}>
+                          <span className={labelClass}>Header Name</span>
+                          <FormField control={form.control} name="header_name" render={({field}) => (
+                            <FormItem className="space-y-1">
+                              <FormControl><Input placeholder="X-API-Key" autoComplete="off" {...field} className="h-7 text-xs" /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                        </div>
+                        <div className={rowClass}>
+                          <span className={labelClass}>Header Value</span>
+                          <FormField control={form.control} name="header_value" render={({field}) => (
+                            <FormItem className="space-y-1">
+                              <FormControl><Input type="password" placeholder="Enter header value" autoComplete="new-password" {...field} className="h-7 text-xs" /></FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )} />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </form>
+          </Form>
         </ConditionalSWRRenderer>
       </BasePage>
       <ConfirmDialog

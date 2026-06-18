@@ -40,7 +40,7 @@ export function CollapsibleJsonField({
     return (
       <div className="space-y-2">
         <Label>{label}</Label>
-        <pre className="font-mono text-[11px] text-slate-600 bg-slate-50 border border-slate-200 rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
+        <pre className="font-mono text-sm text-muted-foreground bg-muted border border-border rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
           {formatted || '{\n  "key": "value"\n}'}
         </pre>
       </div>

@@ -7,6 +7,7 @@ import {Textarea} from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {CopyableInput} from '@/components/ui/copyable-input';
 import {validateJSON, formatJson} from '@/lib/utils';
+import {dtLabel, dtValue, dtRow} from '@/lib/detail-typography';
 import type {Control} from 'react-hook-form';
 
 interface AgentCardProps {
@@ -47,12 +48,12 @@ export function AgentCard({
   const headerLabel = agentName || agentIdValue || `Agent ${index + 1}`;
 
   return (
-    <div className="bg-white border border-slate-200 rounded overflow-hidden">
+    <div className="bg-card border border-border rounded overflow-hidden">
       {/* Header */}
       <div
         role="button"
         tabIndex={0}
-        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+        className="w-full flex items-center justify-between px-4 py-3 bg-muted hover:bg-muted/80 transition-colors cursor-pointer"
         onClick={onToggleExpand}
         onKeyDown={(e) => e.key === 'Enter' && onToggleExpand()}
       >
@@ -62,9 +63,9 @@ export function AgentCard({
             <Bot size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
           </div>
           <div className="text-left">
-            <div className="text-[13px] text-slate-800 font-medium">{headerLabel}</div>
+            <div className="text-sm text-foreground font-medium">{headerLabel}</div>
             {agentIdValue && (
-              <div className="font-mono text-[10px] text-slate-400 truncate max-w-[200px]">{agentIdValue}</div>
+              <div className="font-mono text-xs text-muted-foreground truncate max-w-[200px]">{agentIdValue}</div>
             )}
           </div>
         </div>
@@ -74,7 +75,7 @@ export function AgentCard({
 {isEditMode && onRemove && (
             <button
               type="button"
-              className="h-5 w-5 inline-flex items-center justify-center rounded bg-white hover:bg-red-50 border border-slate-200 text-slate-400 hover:text-red-500 transition-colors"
+              className="h-5 w-5 inline-flex items-center justify-center rounded bg-card hover:bg-red-50 border border-border text-muted-foreground hover:text-red-500 transition-colors"
               onClick={(e) => {
                 e.stopPropagation();
                 onRemove();
@@ -84,16 +85,16 @@ export function AgentCard({
             </button>
           )}
           {isExpanded ? (
-            <ChevronUp size={13} className="text-slate-400" />
+            <ChevronUp size={13} className="text-muted-foreground" />
           ) : (
-            <ChevronDown size={13} className="text-slate-400" />
+            <ChevronDown size={13} className="text-muted-foreground" />
           )}
         </div>
       </div>
 
       {/* Expanded body */}
       {isExpanded && (
-        <div className="px-4 pb-4 border-t border-slate-200 bg-white">
+        <div className="px-4 pb-4 border-t border-border bg-card">
           {isEditMode ? (
             <EditModeFields index={index} control={control} userMemoryProviders={userMemoryProviders} />
           ) : (
@@ -243,9 +244,9 @@ function ViewModeFields({
   agenticMemoryProviderId?: string;
   agenticMemoryProviderName?: string;
 }) {
-  const rowClass = 'grid grid-cols-[140px_1fr] items-start gap-3 py-2.5 border-b border-slate-200 last:border-0';
-  const labelClass = 'font-mono text-xs tracking-widest uppercase text-slate-400 pt-0.5';
-  const valueClass = 'font-mono text-sm text-slate-700';
+  const rowClass = dtRow;
+  const labelClass = dtLabel;
+  const valueClass = dtValue;
 
   return (
     <div>
@@ -258,22 +259,22 @@ function ViewModeFields({
 
       <div className={rowClass}>
         <span className={labelClass}>Name</span>
-        <span className={valueClass}>{agentName || '—'}</span>
+        <span className={valueClass}>{agentName || '-'}</span>
       </div>
 
       <div className={rowClass}>
         <span className={labelClass}>URL</span>
-        <span className={valueClass}>{agentUrl || '—'}</span>
+        <span className={valueClass}>{agentUrl || '-'}</span>
       </div>
 
       <div className={rowClass}>
         <span className={labelClass}>Identity Type</span>
-        <span className={valueClass}>{identityType || '—'}</span>
+        <span className={valueClass}>{identityType || '-'}</span>
       </div>
 
       <div className={rowClass}>
         <span className={labelClass}>Identifiers</span>
-        <pre className="font-mono text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
+        <pre className="font-mono text-sm text-muted-foreground bg-muted border border-border rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
           {identityIdentifiers && Object.keys(identityIdentifiers).length > 0
             ? JSON.stringify(identityIdentifiers, null, 2)
             : '{\n  "url": "main::agents::retrieval-agent-1"\n}'}
