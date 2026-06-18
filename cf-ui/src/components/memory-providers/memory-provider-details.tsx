@@ -259,7 +259,7 @@ export default function MemoryProviderDetailsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Provider ID — always read-only */}
                       <div className="space-y-2">
-                        <Label>Provider ID</Label>
+                        <Label className="detail-label">Provider ID</Label>
                         <CopyableInput value={provider?.id || ''} />
                       </div>
 
@@ -280,14 +280,14 @@ export default function MemoryProviderDetailsPage() {
                         />
                       ) : (
                         <div className="space-y-2">
-                          <Label>Provider Name</Label>
+                          <Label className="detail-label">Provider Name</Label>
                           <ReadOnlyField value={provider?.name || ''} />
                         </div>
                       )}
 
                       {/* Enabled — always read-only */}
                       <div className="space-y-2">
-                        <Label>Enabled</Label>
+                        <Label className="detail-label">Enabled</Label>
                         <ReadOnlyField value={provider?.enabled ? 'Yes' : 'No'} />
                       </div>
 
@@ -309,7 +309,7 @@ export default function MemoryProviderDetailsPage() {
                           />
                         ) : (
                           <div className="space-y-2">
-                            <Label>Description</Label>
+                            <Label className="detail-label">Description</Label>
                             <ReadOnlyField value={provider?.description || 'No description provided'} multiline />
                           </div>
                         )}
@@ -333,7 +333,7 @@ export default function MemoryProviderDetailsPage() {
                           />
                         ) : (
                           <div className="space-y-2">
-                            <Label>Provider URL</Label>
+                            <Label className="detail-label">Provider URL</Label>
                             <CopyableInput value={(provider?.config as MemoryProviderConfig | null)?.url || ''} />
                           </div>
                         )}
@@ -369,7 +369,7 @@ export default function MemoryProviderDetailsPage() {
                         </div>
                       ) : (
                         <div className="space-y-2">
-                          <Label>Authentication Type</Label>
+                          <Label className="detail-label">Authentication Type</Label>
                           <ReadOnlyField value={authTypeLabel((provider?.config as MemoryProviderConfig | null)?.auth?.type ?? 'none')} />
                         </div>
                       )}
@@ -386,7 +386,7 @@ export default function MemoryProviderDetailsPage() {
 
                           const RevealInput = ({fieldKey, label, value}: {fieldKey: string; label: string; value: string}) => (
                             <div className="space-y-2">
-                              <Label>{label}</Label>
+                              <Label className="detail-label">{label}</Label>
                               <div className="relative">
                                 <Input value={value} type={revealedFields.has(fieldKey) ? 'text' : 'password'} disabled readOnly className="pr-10" />
                                 <Button
@@ -420,7 +420,7 @@ export default function MemoryProviderDetailsPage() {
                             return (
                               <>
                                 <div className="space-y-2">
-                                  <Label>Username</Label>
+                                  <Label className="detail-label">Username</Label>
                                   <ReadOnlyField value={creds.username ?? ''} />
                                 </div>
                                 <RevealInput fieldKey="password" label="Password" value={creds.password ?? ''} />
@@ -431,7 +431,7 @@ export default function MemoryProviderDetailsPage() {
                             return (
                               <>
                                 <div className="space-y-2">
-                                  <Label>Header Name</Label>
+                                  <Label className="detail-label">Header Name</Label>
                                   <ReadOnlyField value={creds.header_name ?? ''} />
                                 </div>
                                 <RevealInput fieldKey="header_value" label="Header Value" value={creds.header_value ?? ''} />

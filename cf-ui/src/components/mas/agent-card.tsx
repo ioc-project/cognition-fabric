@@ -1,13 +1,11 @@
 'use client';
 
-import {ChevronDown, ChevronUp, X} from 'lucide-react';
+import {ChevronDown, ChevronUp, X, Bot} from 'lucide-react';
 import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {CopyableInput} from '@/components/ui/copyable-input';
-import {ReadOnlyField} from '@/components/ui/read-only-field';
-import {Label} from '@/components/ui/label';
 import {validateJSON, formatJson} from '@/lib/utils';
 import type {Control} from 'react-hook-form';
 
@@ -49,35 +47,53 @@ export function AgentCard({
   const headerLabel = agentName || agentIdValue || `Agent ${index + 1}`;
 
   return (
-    <div className="rounded-lg border border-border p-4 space-y-4 bg-card">
-      <div className="flex items-center justify-between">
-        <div className={isEditMode ? 'cursor-pointer' : ''} onClick={isEditMode ? onToggleExpand : undefined}>
-          <FormLabel className="mb-0">{headerLabel}</FormLabel>
-        </div>
-        {isEditMode && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="h-5 w-5 p-0 text-xs leading-none inline-flex items-center justify-center rounded bg-background hover:bg-muted border border-border"
-              onClick={onToggleExpand}
-            >
-              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            </button>
-            {onRemove && (
-              <button
-                type="button"
-                className="h-5 w-5 p-0 text-xs leading-none inline-flex items-center justify-center rounded bg-background hover:bg-muted border border-border"
-                onClick={onRemove}
-              >
-                <X className="w-3 h-3" />
-              </button>
+    <div className="bg-white border border-slate-200 rounded overflow-hidden">
+      {/* Header */}
+      <div
+        role="button"
+        tabIndex={0}
+        className="w-full flex items-center justify-between px-4 py-3 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+        onClick={onToggleExpand}
+        onKeyDown={(e) => e.key === 'Enter' && onToggleExpand()}
+      >
+        {/* Left: icon + name + id */}
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-7 rounded bg-[hsl(var(--sidebar-icon-active)/0.1)] flex items-center justify-center">
+            <Bot size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+          </div>
+          <div className="text-left">
+            <div className="text-[13px] text-slate-800 font-medium">{headerLabel}</div>
+            {agentIdValue && (
+              <div className="font-mono text-[10px] text-slate-400 truncate max-w-[200px]">{agentIdValue}</div>
             )}
           </div>
-        )}
+        </div>
+
+        {/* Right: badge + remove + chevron */}
+        <div className="flex items-center gap-3">
+{isEditMode && onRemove && (
+            <button
+              type="button"
+              className="h-5 w-5 inline-flex items-center justify-center rounded bg-white hover:bg-red-50 border border-slate-200 text-slate-400 hover:text-red-500 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
+            >
+              <X size={11} />
+            </button>
+          )}
+          {isExpanded ? (
+            <ChevronUp size={13} className="text-slate-400" />
+          ) : (
+            <ChevronDown size={13} className="text-slate-400" />
+          )}
+        </div>
       </div>
 
+      {/* Expanded body */}
       {isExpanded && (
-        <>
+        <div className="px-4 pb-4 border-t border-slate-200 bg-white">
           {isEditMode ? (
             <EditModeFields index={index} control={control} userMemoryProviders={userMemoryProviders} />
           ) : (
@@ -91,7 +107,7 @@ export function AgentCard({
               agenticMemoryProviderName={agenticMemoryProviderName}
             />
           )}
-        </>
+        </div>
       )}
     </div>
   );
@@ -107,7 +123,7 @@ function EditModeFields({
   userMemoryProviders: Array<{id: string; provider_name: string}>;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pt-4">
       <FormField
         control={control}
         name={`agents.${index}.name`}
@@ -227,33 +243,37 @@ function ViewModeFields({
   agenticMemoryProviderId?: string;
   agenticMemoryProviderName?: string;
 }) {
+  const rowClass = 'grid grid-cols-[140px_1fr] items-start gap-3 py-2.5 border-b border-slate-200 last:border-0';
+  const labelClass = 'font-mono text-xs tracking-widest uppercase text-slate-400 pt-0.5';
+  const valueClass = 'font-mono text-sm text-slate-700';
+
   return (
-    <div className="space-y-3">
+    <div>
       {agentIdValue && (
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Agent ID</Label>
+        <div className={rowClass}>
+          <span className={labelClass}>Agent ID</span>
           <CopyableInput value={agentIdValue} />
         </div>
       )}
 
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Name</Label>
-        <ReadOnlyField value={agentName || '—'} />
+      <div className={rowClass}>
+        <span className={labelClass}>Name</span>
+        <span className={valueClass}>{agentName || '—'}</span>
       </div>
 
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">URL</Label>
-        <ReadOnlyField value={agentUrl || '—'} />
+      <div className={rowClass}>
+        <span className={labelClass}>URL</span>
+        <span className={valueClass}>{agentUrl || '—'}</span>
       </div>
 
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Identity Type</Label>
-        <ReadOnlyField value={identityType || 'Not configured'} />
+      <div className={rowClass}>
+        <span className={labelClass}>Identity Type</span>
+        <span className={valueClass}>{identityType || '—'}</span>
       </div>
 
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Identity Identifiers</Label>
-        <pre className="font-mono text-xs rounded-md border bg-muted/40 p-3 min-h-[80px] whitespace-pre-wrap break-all text-foreground">
+      <div className={rowClass}>
+        <span className={labelClass}>Identifiers</span>
+        <pre className="font-mono text-sm text-slate-600 bg-slate-50 border border-slate-200 rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
           {identityIdentifiers && Object.keys(identityIdentifiers).length > 0
             ? JSON.stringify(identityIdentifiers, null, 2)
             : '{\n  "url": "main::agents::retrieval-agent-1"\n}'}
@@ -261,11 +281,10 @@ function ViewModeFields({
       </div>
 
       {agenticMemoryProviderId && (
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Memory Provider</Label>
-          <ReadOnlyField value={agenticMemoryProviderName || agenticMemoryProviderId || ''} />
-          <div className="pt-1">
-            <Label className="text-xs text-muted-foreground">Provider ID</Label>
+        <div className={rowClass}>
+          <span className={labelClass}>Memory Provider</span>
+          <div className="space-y-1">
+            <span className={valueClass}>{agenticMemoryProviderName || agenticMemoryProviderId}</span>
             <CopyableInput value={agenticMemoryProviderId} />
           </div>
         </div>

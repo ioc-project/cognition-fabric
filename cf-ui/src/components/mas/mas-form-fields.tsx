@@ -84,13 +84,13 @@ export function MASFormFields({
             />
           ) : (
             <div className="space-y-2">
-              <Label>Name</Label>
+              <Label className="detail-label">Name</Label>
               <ReadOnlyField value={mas?.name || ''} />
             </div>
           )}
 
           <div className="space-y-2">
-            <Label>ID</Label>
+            <Label className="detail-label">ID</Label>
             <CopyableInput value={mas?.id || ''} />
           </div>
 
@@ -110,13 +110,13 @@ export function MASFormFields({
             />
           ) : (
             <div className="space-y-2 md:col-span-2">
-              <Label>Description</Label>
+              <Label className="detail-label">Description</Label>
               <ReadOnlyField value={mas?.description || ''} />
             </div>
           )}
 
           <div className="space-y-2">
-            <Label>Shared Memory Provider</Label>
+            <Label className="detail-label">Shared Memory Provider</Label>
             {isEditMode ? (
               <FormField
                 control={form.control}
@@ -149,7 +149,7 @@ export function MASFormFields({
               <div className="space-y-2">
                 <ReadOnlyField value={mas?.shared_memory?.name || 'None'} />
                 <div>
-                  <Label className="text-xs text-muted-foreground">Provider ID</Label>
+                  <Label className="detail-label">Provider ID</Label>
                   <CopyableInput value={mas.shared_memory.id} />
                 </div>
               </div>
@@ -197,7 +197,7 @@ export function MASFormFields({
         {/* System Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
           <div className="space-y-2">
-            <Label>Workspace ID</Label>
+            <Label className="detail-label">Workspace ID</Label>
             <CopyableInput value={mas?.workspace_id || ''} />
           </div>
 
@@ -240,7 +240,7 @@ export function MASFormFields({
                     {mas.cognition_engines.map((ce) => {
                       const isExpanded = expandedCEs[ce.ce_id] ?? false;
                       return (
-                        <div key={ce.ce_id} className="rounded-lg border border-border bg-card p-4 space-y-4">
+                        <div key={ce.ce_id} className="rounded-lg border border-border soft-card p-4 space-y-4">
                           <div className="flex items-center justify-between">
                             <div
                               className="flex items-center gap-2 flex-1 cursor-pointer"
@@ -276,30 +276,30 @@ export function MASFormFields({
                             <div className="pt-3 border-t space-y-3">
                               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div className="space-y-1">
-                                  <Label className="text-xs text-muted-foreground">CE ID</Label>
+                                  <Label className="detail-label">CE ID</Label>
                                   <CopyableInput value={ce.ce_id} />
                                 </div>
                                 <div className="space-y-1">
-                                  <Label className="text-xs text-muted-foreground">URL</Label>
+                                  <Label className="detail-label">URL</Label>
                                   <ReadOnlyField value={ce.url || '—'} className="font-mono text-xs" />
                                 </div>
                                 {ce.kind && (
                                   <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Kind</Label>
+                                    <Label className="detail-label">Kind</Label>
                                     <ReadOnlyField value={ce.kind} />
                                   </div>
                                 )}
                                 {ce.subkind && (
                                   <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Subkind</Label>
+                                    <Label className="detail-label">Subkind</Label>
                                     <ReadOnlyField value={ce.subkind} />
                                   </div>
                                 )}
                               </div>
                               {ce.mas_config && Object.keys(ce.mas_config).length > 0 && (
                                 <div className="space-y-1">
-                                  <Label className="text-xs text-muted-foreground">MAS Config</Label>
-                                  <pre className="rounded-md border bg-muted/40 p-3 text-xs font-mono whitespace-pre-wrap break-all text-foreground">
+                                  <Label className="detail-label">MAS Config</Label>
+                                  <pre className="font-mono text-[11px] text-slate-600 bg-slate-50 border border-slate-200 rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
                                     {JSON.stringify(ce.mas_config, null, 2)}
                                   </pre>
                                 </div>

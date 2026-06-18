@@ -169,7 +169,7 @@ export default function CfnDetailsPage() {
                   <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label>CFN ID</Label>
+                        <Label className="detail-label">CFN ID</Label>
                         <CopyableInput value={cfn?.id || ''} />
                       </div>
 
@@ -189,7 +189,7 @@ export default function CfnDetailsPage() {
                         />
                       ) : (
                         <div className="space-y-2">
-                          <Label>CFN Name</Label>
+                          <Label className="detail-label">CFN Name</Label>
                           <ReadOnlyField value={cfn?.name || ''} />
                         </div>
                       )}
@@ -210,7 +210,7 @@ export default function CfnDetailsPage() {
                         />
                       ) : (
                         <div className="space-y-2">
-                          <Label>IP Address</Label>
+                          <Label className="detail-label">IP Address</Label>
                           <ReadOnlyField value={cfn?.ip_address || ''} />
                         </div>
                       )}
@@ -231,25 +231,25 @@ export default function CfnDetailsPage() {
                         />
                       ) : (
                         <div className="space-y-2">
-                          <Label>Port</Label>
+                          <Label className="detail-label">Port</Label>
                           <ReadOnlyField value={cfn?.port ? String(cfn.port) : ''} />
                         </div>
                       )}
 
                       <div className="space-y-2">
-                        <Label>Status</Label>
+                        <Label className="detail-label">Status</Label>
                         <ReadOnlyField value={cfn?.status || ''} />
                       </div>
                       <div className="space-y-2">
-                        <Label>Enabled</Label>
+                        <Label className="detail-label">Enabled</Label>
                         <ReadOnlyField value={cfn?.enabled ? 'Yes' : 'No'} />
                       </div>
                       <div className="space-y-2">
-                        <Label>Last Seen</Label>
+                        <Label className="detail-label">Last Seen</Label>
                         <ReadOnlyField value={cfn?.last_seen ? new Date(cfn.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Never'} />
                       </div>
                       <div className="space-y-2">
-                        <Label>Created At</Label>
+                        <Label className="detail-label">Created At</Label>
                         <ReadOnlyField
                           value={cfn?.created_at ? new Date(cfn.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'}
                         />
@@ -286,7 +286,7 @@ export default function CfnDetailsPage() {
                                       <div key={workspace.workspace_id || index}>
                                         {workspace.multi_agentic_systems && workspace.multi_agentic_systems.length > 0 && (
                                           <div>
-                                            <Label className="text-sm font-medium mb-3 block">
+                                            <Label className="detail-label mb-3 block">
                                               {workspace.multi_agentic_systems.length} Multi-Agentic System
                                               {workspace.multi_agentic_systems.length !== 1 ? 's' : ''}
                                             </Label>
@@ -294,7 +294,7 @@ export default function CfnDetailsPage() {
                                               {workspace.multi_agentic_systems.map((mas: any, masIndex: number) => {
                                                 const isMASExpanded = expandedMAS[mas.id] ?? false;
                                                 return (
-                                                  <div key={mas.id || masIndex} className="rounded-md border bg-card p-3 space-y-3">
+                                                  <div key={mas.id || masIndex} className="rounded-md border soft-card p-3 space-y-3">
                                                     <div className="flex items-start justify-between">
                                                       <div className="flex-1 cursor-pointer" onClick={() => toggleMAS(mas.id)}>
                                                         <div className="font-medium text-sm">{mas.name}</div>
@@ -315,8 +315,8 @@ export default function CfnDetailsPage() {
                                                       <div className="pt-3 border-t space-y-3">
                                                         {/* Shared Memory */}
                                                         {mas.shared_memory && (
-                                                          <div className="bg-muted/30 rounded p-3 border border-border">
-                                                            <Label className="text-xs font-semibold mb-2 block">Shared Memory</Label>
+                                                          <div className="soft-card rounded p-3 border border-border">
+                                                            <Label className="detail-label mb-2 block">Shared Memory</Label>
                                                             <div className="space-y-1 text-xs">
                                                               <div>
                                                                 <span className="text-muted-foreground">Provider:</span>{' '}
@@ -340,12 +340,12 @@ export default function CfnDetailsPage() {
 
                                                         {mas.agents && mas.agents.length > 0 && (
                                                           <div>
-                                                            <Label className="text-xs font-semibold mb-2 block">
+                                                            <Label className="detail-label mb-2 block">
                                                               {mas.agents.length} Agent{mas.agents.length !== 1 ? 's' : ''}
                                                             </Label>
                                                             <div className="space-y-2">
                                                               {mas.agents.map((agent: any, agentIndex: number) => (
-                                                                <div key={agentIndex} className="bg-muted/30 rounded p-3 border border-border">
+                                                                <div key={agentIndex} className="soft-card rounded p-3 border border-border">
                                                                   <div className="font-medium text-xs mb-2">{agent.agent_id}</div>
                                                                   {agent.agentic_memory && (
                                                                     <div className="text-xs space-y-1">

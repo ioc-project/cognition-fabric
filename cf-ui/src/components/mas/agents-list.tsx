@@ -1,8 +1,6 @@
 'use client';
 
-import {Plus, Users} from 'lucide-react';
-import {FormLabel} from '@/components/ui/form';
-import {Button} from '@/components/ui/button';
+import {Bot, Users} from 'lucide-react';
 import {AgentCard} from './agent-card';
 import type {Control, UseFormWatch} from 'react-hook-form';
 import type {AgentWithMemory} from '@/api/endpoints/mas';
@@ -54,90 +52,80 @@ export function AgentsList({
     : [];
 
   const displayAgents = isEditMode ? agents : viewModeAgents;
-  const hasAgents = displayAgents.length > 0;
+  const agentCount = displayAgents.length;
 
   return (
-    <div className="space-y-4 border-t pt-6">
-      <FormLabel>Agents</FormLabel>
-      {isEditMode ? (
-        <>
-          {!hasAgents ? (
-            <div className="border-2 border-dashed rounded-lg p-8 text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-muted rounded-full mb-3">
-                <Users className="w-6 h-6 text-muted-foreground" />
-              </div>
-              <p className="text-sm text-muted-foreground mb-4">No agents added yet</p>
-              {onAddAgent && (
-                <Button type="button" variant="sidebar" size="sm" className="gap-2" onClick={onAddAgent}>
-                  <Plus className="w-4 h-4" />
-                  Add Your First Agent
-                </Button>
-              )}
-            </div>
-          ) : (
-            agents.map((agent, index) => {
-              const isExpanded = agentExpandedState[agent.id] ?? true;
-              const agentName = watch(`agents.${index}.name`);
-              const agenticMemoryProviderId = watch(`agents.${index}.agentic_memory_provider_id`);
+    <div className="bg-white border border-slate-200 rounded overflow-hidden">
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div className="flex items-center gap-2">
+          <Bot size={14} className="text-[hsl(var(--sidebar-icon-active))]" />
+          <span className="text-sm font-medium text-slate-700">Agents</span>
+          {agentCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded bg-[hsl(var(--sidebar-icon-active)/0.08)] text-[hsl(var(--sidebar-icon-active))] border border-[hsl(var(--sidebar-icon-active)/0.25)] text-[10px] font-mono">
+              {agentCount}
+            </span>
+          )}
+        </div>
+        {isEditMode && onAddAgent && (
+          <button type="button" onClick={onAddAgent} className="text-[11px] text-blue-600 hover:text-blue-700 transition-colors">
+            + Add Agent
+          </button>
+        )}
+      </div>
 
-              return (
+      {/* Content */}
+      {agentCount === 0 ? (
+        <div className="p-8 text-center">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-muted rounded-full mb-3">
+            <Users className="w-6 h-6 text-muted-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground">{isEditMode ? 'No agents added yet' : 'No agents configured'}</p>
+        </div>
+      ) : (
+        <div className="p-4 space-y-3">
+          {isEditMode
+            ? agents.map((agent, index) => {
+                const isExpanded = agentExpandedState[agent.id] ?? true;
+                const agentName = watch(`agents.${index}.name`);
+                const agenticMemoryProviderId = watch(`agents.${index}.agentic_memory_provider_id`);
+                return (
+                  <AgentCard
+                    key={agent.id}
+                    index={index}
+                    agentId={agent.id}
+                    agentName={agentName}
+                    agentIdValue={agent.agent_id}
+                    agenticMemoryProviderId={agenticMemoryProviderId}
+                    isExpanded={isExpanded}
+                    isEditMode={isEditMode}
+                    control={control}
+                    onToggleExpand={() => onToggleExpand(agent.id)}
+                    onRemove={onRemoveAgent ? () => onRemoveAgent(index) : undefined}
+                    userMemoryProviders={userMemoryProviders}
+                  />
+                );
+              })
+            : viewModeAgents.map((agent, index) => (
                 <AgentCard
-                  key={agent.id}
+                  key={agent.agent_id}
                   index={index}
-                  agentId={agent.id}
-                  agentName={agentName}
-                  agenticMemoryProviderId={agenticMemoryProviderId}
-                  isExpanded={isExpanded}
-                  isEditMode={isEditMode}
+                  agentId={agent.agent_id}
+                  agentName={agent.name}
+                  agentIdValue={agent.agent_id}
+                  agentUrl={agent.url}
+                  identityType={agent.identity_type}
+                  identityIdentifiers={agent.identity_identifiers}
+                  agenticMemoryProviderId={agent.agentic_memory_provider_id}
+                  agenticMemoryProviderName={agent.agentic_memory_provider_name}
+                  isExpanded={agentExpandedState[agent.agent_id] ?? true}
+                  isEditMode={false}
                   control={control}
-                  onToggleExpand={() => onToggleExpand(agent.id)}
-                  onRemove={onRemoveAgent ? () => onRemoveAgent(index) : undefined}
+                  onToggleExpand={() => onToggleExpand(agent.agent_id)}
                   userMemoryProviders={userMemoryProviders}
                 />
-              );
-            })
-          )}
-
-          {hasAgents && onAddAgent && (
-            <div className="flex justify-end">
-              <Button type="button" variant="sidebar" size="sm" className="gap-2" onClick={onAddAgent}>
-                <Plus className="w-4 h-4" />
-                Add Agent
-              </Button>
-            </div>
-          )}
-        </>
-      ) : (
-        <>
-          {hasAgents ? (
-            viewModeAgents.map((agent, index) => (
-              <AgentCard
-                key={agent.agent_id}
-                index={index}
-                agentId={agent.agent_id}
-                agentName={agent.name}
-                agentIdValue={agent.agent_id}
-                agentUrl={agent.url}
-                identityType={agent.identity_type}
-                identityIdentifiers={agent.identity_identifiers}
-                agenticMemoryProviderId={agent.agentic_memory_provider_id}
-                agenticMemoryProviderName={agent.agentic_memory_provider_name}
-                isExpanded={true}
-                isEditMode={false}
-                control={control}
-                onToggleExpand={() => {}}
-                userMemoryProviders={userMemoryProviders}
-              />
-            ))
-          ) : (
-            <div className="border-2 border-dashed rounded-lg p-8 text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 bg-muted rounded-full mb-3">
-                <Users className="w-6 h-6 text-muted-foreground" />
-              </div>
-              <p className="text-sm text-muted-foreground">No agents configured</p>
-            </div>
-          )}
-        </>
+              ))}
+        </div>
       )}
     </div>
   );

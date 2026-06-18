@@ -60,31 +60,31 @@ export function CognitionEngineFormFields({
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label>Name</Label>
+            <Label className="detail-label">Name</Label>
             <ReadOnlyField value={ce?.name || ''} />
           </div>
           <div className="space-y-2">
-            <Label>ID</Label>
+            <Label className="detail-label">ID</Label>
             <CopyableInput value={ce?.id || ''} />
           </div>
           <div className="space-y-2">
-            <Label>CFN ID</Label>
+            <Label className="detail-label">CFN ID</Label>
             <CopyableInput value={ce?.cfn_id || ''} />
           </div>
           <div className="space-y-2">
-            <Label>Version</Label>
+            <Label className="detail-label">Version</Label>
             <ReadOnlyField value={ce?.version || ''} className="font-mono" />
           </div>
           <div className="space-y-2">
-            <Label>Kind</Label>
+            <Label className="detail-label">Kind</Label>
             <ReadOnlyField value={ce?.kind || '—'} />
           </div>
           <div className="space-y-2">
-            <Label>Subkind</Label>
+            <Label className="detail-label">Subkind</Label>
             <ReadOnlyField value={ce?.subkind || '—'} />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label>URL</Label>
+            <Label className="detail-label">URL</Label>
             {isEditMode ? (
               <FormField
                 control={form.control}
@@ -131,7 +131,7 @@ export function CognitionEngineFormFields({
             </div>
           )}
           <div className="space-y-2">
-            <Label>MAS Auto Associate</Label>
+            <Label className="detail-label">MAS Auto Associate</Label>
             {isEditMode ? (
               <FormField
                 control={form.control}
@@ -159,7 +159,7 @@ export function CognitionEngineFormFields({
           </div>
           {ce?.last_seen && (
             <div className="space-y-2">
-              <Label>Last Seen</Label>
+              <Label className="detail-label">Last Seen</Label>
               <ReadOnlyField value={new Date(ce.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)} />
             </div>
           )}
@@ -201,7 +201,7 @@ export function CognitionEngineFormFields({
         {(isEditMode || (ce?.metrics && ce.metrics.length > 0) || (ce?.capabilities && ce.capabilities.length > 0)) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
             <div className="space-y-2">
-              <Label>Metrics</Label>
+              <Label className="detail-label">Metrics</Label>
               {isEditMode ? (
                 <FormField
                   control={form.control}
@@ -216,13 +216,13 @@ export function CognitionEngineFormFields({
                   )}
                 />
               ) : (
-                <pre className="font-mono text-xs rounded-md border bg-muted/40 p-3 min-h-[100px] whitespace-pre-wrap break-all text-foreground">
+                <pre className="font-mono text-[11px] text-slate-600 bg-slate-50 border border-slate-200 rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
                   {ce?.metrics ? ce.metrics.join('\n') : '—'}
                 </pre>
               )}
             </div>
             <div className="space-y-2">
-              <Label>Capabilities</Label>
+              <Label className="detail-label">Capabilities</Label>
               {isEditMode ? (
                 <FormField
                   control={form.control}
@@ -237,7 +237,7 @@ export function CognitionEngineFormFields({
                   )}
                 />
               ) : (
-                <pre className="font-mono text-xs rounded-md border bg-muted/40 p-3 min-h-[100px] whitespace-pre-wrap break-all text-foreground">
+                <pre className="font-mono text-[11px] text-slate-600 bg-slate-50 border border-slate-200 rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
                   {ce?.capabilities ? ce.capabilities.join('\n') : '—'}
                 </pre>
               )}
@@ -247,12 +247,12 @@ export function CognitionEngineFormFields({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
           <div className="space-y-2">
-            <Label>Created At</Label>
+            <Label className="detail-label">Created At</Label>
             <Input value={ce?.created_at ? new Date(ce.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'} disabled readOnly />
           </div>
           {ce?.updated_at && (
             <div className="space-y-2">
-              <Label>Updated At</Label>
+              <Label className="detail-label">Updated At</Label>
               <Input value={new Date(ce.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)} disabled readOnly />
             </div>
           )}
