@@ -210,14 +210,12 @@ export function MASFormFields({
           />
         </div>
 
-        {/* System Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
           <div className="space-y-2">
             <Label>Workspace ID</Label>
             <CopyableInput value={mas?.workspace_id || ''} />
           </div>
 
-          {/* Associated Cognition Engines */}
           <div className="md:col-span-2 space-y-3">
             <div className="flex items-center justify-between cursor-pointer" onClick={() => setCesSectionExpanded((prev) => !prev)}>
               <div className="flex items-center gap-2">

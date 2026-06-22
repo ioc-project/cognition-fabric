@@ -26,12 +26,14 @@ import {useMemoryProviders} from '@/hooks/useMemoryProviders';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {toast} from 'sonner';
 import {Network, BarChart3, Bot, BrainCircuit, HardDrive, ChevronDown, ChevronUp, Unlink, Plus} from 'lucide-react';
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
+import {StatCard} from '@/components/ui/stat-card';
 import {useCognitionEngines} from '@/hooks/useCognitionEngines';
 import {MASAuditLog} from './mas-audit-log';
 import {MASAssociateCEModal} from './mas-associate-ce-modal';
 import {AgentsList} from './agents-list';
 import {UpdateMASFormSchema, type FormValues} from './mas-form-schema';
-import {dtLabel, dtValue, dtField} from '@/lib/detail-typography';
+import {dtLabel, dtSectionHeader, dtMetaLabel, dtMetaValue} from '@/lib/detail-typography';
 
 export default function MASDetailsPage() {
   const router = useRouter();
@@ -219,9 +221,9 @@ export default function MASDetailsPage() {
   const ces = mas?.cognition_engines || [];
   const enabledCEs = ces.filter((c) => c.enabled).length;
 
-  const fieldClass = dtField;
   const labelClass = dtLabel;
-  const valueClass = dtValue;
+  const metadataLabelClass = dtMetaLabel;
+  const metadataValueClass = dtMetaValue;
 
   return (
     <>
@@ -264,339 +266,291 @@ export default function MASDetailsPage() {
         >
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-card border border-border rounded p-4 flex items-start gap-3">
-                  <div className="mt-0.5 p-2 rounded bg-[hsl(var(--sidebar-icon-active)/0.1)]">
-                    <Bot size={14} className="text-[hsl(var(--sidebar-icon-active))]" />
+              <div className="grid grid-cols-3 gap-8">
+                <StatCard icon={<Bot size={14} className="text-[hsl(var(--sidebar-icon-active))]" />} label="Agents" value={totalAgents} />
+                <StatCard
+                  icon={<HardDrive size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
+                  label="Shared Memory Provider"
+                  value={mas?.shared_memory?.name || 'None'}
+                />
+                <StatCard
+                  icon={<BrainCircuit size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
+                  label="Cognition Engines"
+                  value={ces.length}
+                  sublabel={`${enabledCEs} enabled${ces.length - enabledCEs > 0 ? `, ${ces.length - enabledCEs} disabled` : ''}`}
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="grid grid-cols-4 gap-8">
+                  <div className="bg-card border border-border rounded-lg py-10 px-5">
+                    <span className={labelClass}>Name</span>
+                    {isEditMode ? (
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({field}) => (
+                          <FormItem className="space-y-1 mt-2">
+                            <FormControl>
+                              <Input {...field} className="h-8 text-sm" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <p className="text-2xl font-semibold text-foreground mt-2">{mas?.name || '-'}</p>
+                    )}
                   </div>
-                  <div className="flex flex-col">
-                    <span className={labelClass}>Agents</span>
-                    <span className="text-2xl font-medium text-foreground tracking-tight leading-tight mt-0.5">{totalAgents}</span>
+
+                  <div className="bg-card border border-border rounded-lg py-10 px-5 min-w-0">
+                    <span className={labelClass}>ID</span>
+                    <div className="mt-2">
+                      <CopyableInput value={mas?.id || ''} />
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-border rounded-lg py-10 px-5 min-w-0">
+                    <span className={labelClass}>Workspace ID</span>
+                    <div className="mt-2">
+                      <CopyableInput value={mas?.workspace_id || ''} />
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-border rounded-lg py-10 px-5">
+                    <span className={labelClass}>Shared Memory</span>
+                    {isEditMode ? (
+                      <FormField
+                        control={form.control}
+                        name="shared_memory_provider_id"
+                        render={({field}) => (
+                          <FormItem className="space-y-1 mt-2">
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-8 text-sm">
+                                  <SelectValue placeholder="Select provider" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {sharedMemoryProviders.length === 0 ? (
+                                  <div className="py-2 px-2 text-sm text-muted-foreground">No providers available</div>
+                                ) : (
+                                  sharedMemoryProviders.map((provider) => (
+                                    <SelectItem key={provider.id} value={provider.id}>
+                                      {provider.provider_name}
+                                    </SelectItem>
+                                  ))
+                                )}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <p className="text-2xl font-semibold text-foreground mt-2">{mas?.shared_memory?.name || 'None'}</p>
+                    )}
                   </div>
                 </div>
 
-                <div className="bg-card border border-border rounded p-4 flex items-start gap-3">
-                  <div className="mt-0.5 p-2 rounded bg-[hsl(var(--sidebar-icon-active)/0.1)]">
-                    <HardDrive size={14} className="text-[hsl(var(--sidebar-icon-active))]" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className={labelClass}>Shared Memory Provider</span>
-                    <span className="text-base font-medium text-foreground leading-tight mt-0.5 truncate">{mas?.shared_memory?.name || 'None'}</span>
-                    {mas?.shared_memory?.id && <span className="font-mono text-xs text-muted-foreground mt-0.5 truncate">{mas.shared_memory.id}</span>}
-                  </div>
+                <div className="bg-card border border-border rounded-lg py-6 px-5">
+                  <span className={labelClass}>Description</span>
+                  {isEditMode ? (
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({field}) => (
+                        <FormItem className="space-y-1 mt-2">
+                          <FormControl>
+                            <Input {...field} className="h-8 text-sm" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ) : (
+                    <p className="text-sm text-foreground mt-2">{mas?.description || '-'}</p>
+                  )}
                 </div>
 
-                <div className="bg-card border border-border rounded p-4 flex items-start gap-3">
-                  <div className="mt-0.5 p-2 rounded bg-[hsl(var(--sidebar-icon-active)/0.1)]">
-                    <BrainCircuit size={14} className="text-[hsl(var(--sidebar-icon-active))]" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className={labelClass}>Cognition Engines</span>
-                    <span className="text-2xl font-medium text-foreground tracking-tight leading-tight mt-0.5">{ces.length}</span>
-                    <span className="text-xs text-muted-foreground mt-0.5">{enabledCEs} enabled{ces.length - enabledCEs > 0 ? `, ${ces.length - enabledCEs} disabled` : ''}</span>
-                  </div>
+                <div className="grid grid-cols-2 gap-x-8 px-1 pt-1">
+                  {mas?.created_at && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className={metadataLabelClass}>Created</span>
+                      <span className={metadataValueClass}>{new Date(mas.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
+                    </div>
+                  )}
+                  {mas?.updated_at && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className={metadataLabelClass}>Last Modified</span>
+                      <span className={metadataValueClass}>{new Date(mas.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="flex gap-4 items-start">
-                <div className="flex-1 min-w-0 space-y-4">
-
-                  <div className="bg-card border border-border rounded overflow-hidden">
-                    <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted">
-                      <div className="flex items-center gap-2">
-                        <Bot size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
-                        <span className="text-sm font-medium text-foreground">Agents</span>
-                        {(isEditMode ? agentFields.length : (mas?.agents?.length ?? 0)) > 0 && (
-                          <span className="px-1.5 py-0.5 rounded bg-[hsl(var(--sidebar-icon-active)/0.08)] text-[hsl(var(--sidebar-icon-active))] border border-[hsl(var(--sidebar-icon-active)/0.25)] text-xs">
-                            {isEditMode ? agentFields.length : (mas?.agents?.length ?? 0)}
-                          </span>
-                        )}
-                      </div>
-                      {isEditMode && agentFields.length > 0 && (
-                        <Button type="button" variant="sidebar" size="sm" className="gap-2" onClick={() => appendAgent({agent_id: '', name: '', url: '', agentic_memory_provider_id: '', identity_type: '', identity_identifiers: ''})}>
-                          <Plus className="w-4 h-4" />
-                          Add Agent
-                        </Button>
-                      )}
-                    </div>
-                    <div className="p-4">
-                      <AgentsList
-                        agents={agentFields}
-                        control={form.control}
-                        watch={form.watch}
-                        isEditMode={isEditMode}
-                        agentExpandedState={agentExpandedState}
-                        onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
-                        onAddAgent={
-                          isEditMode
-                            ? () =>
-                                appendAgent({
-                                  agent_id: '',
-                                  name: '',
-                                  url: '',
-                                  agentic_memory_provider_id: '',
-                                  identity_type: '',
-                                  identity_identifiers: ''
-                                })
-                            : undefined
-                        }
-                        onRemoveAgent={isEditMode ? removeAgent : undefined}
-                        masAgentsData={!isEditMode && mas?.agents ? mas.agents : undefined}
-                        userMemoryProviders={userMemoryProviders}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border rounded overflow-hidden">
-                    <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted">
-                      <div className="flex items-center gap-2">
-                        <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
-                        <span className="text-sm font-medium text-foreground">Associated Cognition Engines</span>
-                        {ces.length > 0 && (
-                          <span className="px-1.5 py-0.5 rounded bg-[hsl(var(--sidebar-icon-active)/0.08)] text-[hsl(var(--sidebar-icon-active))] border border-[hsl(var(--sidebar-icon-active)/0.25)] text-xs">
-                            {ces.length}
-                          </span>
-                        )}
-                      </div>
-                      {availableCEs.length > 0 && (
-                        <Button type="button" variant="sidebar" size="sm" onClick={() => setAssociateModalOpen(true)}>
-                          + Associate
-                        </Button>
-                      )}
-                    </div>
-
-                    {ces.length > 0 ? (
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b border-border bg-muted">
-                            <th className={`${labelClass} text-left px-4 py-2.5`}>Name</th>
-                            <th className={`${labelClass} text-left px-4 py-2.5`}>Type</th>
-                            <th className={`${labelClass} text-left px-4 py-2.5`}>Subkind</th>
-                            <th className={`${labelClass} text-left px-4 py-2.5`}>Enabled</th>
-                            <th className="px-4 py-2.5"></th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                          {ces.map((ce) => (
-                            <tr key={ce.ce_id} className="hover:bg-muted transition-colors group bg-card">
-                              <td className="px-4 py-3 text-foreground text-sm">{ce.name}</td>
-                              <td className="px-4 py-3 font-mono text-sm text-muted-foreground">{ce.kind || '-'}</td>
-                              <td className="px-4 py-3 font-mono text-sm text-muted-foreground">{ce.subkind || '-'}</td>
-                              <td className="px-4 py-3">
-                                {ce.enabled ? (
-                                  <Badge variant="info">Enabled</Badge>
-                                ) : (
-                                  <Badge variant="inactive">Disabled</Badge>
-                                )}
-                              </td>
-                              <td className="px-4 py-3">
-                                <button
-                                  type="button"
-                                  disabled={disassociatingId === ce.ce_id}
-                                  onClick={() => handleDisassociateCE(ce.ce_id, ce.name)}
-                                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-red-600 border border-border hover:border-red-200 hover:bg-red-50 px-2 py-1 rounded transition-colors disabled:opacity-50"
-                                >
-                                  <Unlink className="w-3 h-3" />
-                                  {disassociatingId === ce.ce_id ? 'Removing...' : 'Disassociate'}
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    ) : (
-                      <p className="px-4 py-4 text-sm text-muted-foreground">No Cognition Engines associated yet.</p>
+              <div className="bg-card border border-border rounded overflow-hidden">
+                <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted">
+                  <div className="flex items-center gap-2">
+                    <Bot size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                    <span className={dtSectionHeader}>Agents</span>
+                    {(isEditMode ? agentFields.length : (mas?.agents?.length ?? 0)) > 0 && (
+                      <Badge variant="accent" className="rounded px-1.5">
+                        {isEditMode ? agentFields.length : (mas?.agents?.length ?? 0)}
+                      </Badge>
                     )}
                   </div>
-                </div>
-
-                <div className="w-[38rem] shrink-0 space-y-4">
-                  <div className="bg-card border border-border rounded overflow-hidden">
-                    <div className="px-4 py-3 border-b border-border bg-muted">
-                      <span className="text-sm font-medium text-foreground">System Details</span>
-                    </div>
-                    <div className="px-4 py-4 space-y-3">
-                      <div className={fieldClass}>
-                        <span className={labelClass}>Name</span>
-                        {isEditMode ? (
-                          <FormField
-                            control={form.control}
-                            name="name"
-                            render={({field}) => (
-                              <FormItem className="space-y-1">
-                                <FormControl>
-                                  <Input {...field} className="h-8 text-sm" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        ) : (
-                          <span className={valueClass}>{mas?.name || '-'}</span>
-                        )}
-                      </div>
-
-                      <div className={`${fieldClass} min-w-0`}>
-                        <span className={labelClass}>ID</span>
-                        <CopyableInput value={mas?.id || ''} />
-                      </div>
-
-                      <div className={`${fieldClass} min-w-0`}>
-                        <span className={labelClass}>Workspace ID</span>
-                        <CopyableInput value={mas?.workspace_id || ''} />
-                      </div>
-
-                      <div className={fieldClass}>
-                        <span className={labelClass}>Created</span>
-                        <span className={valueClass}>
-                          {mas?.created_at ? new Date(mas.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : '-'}
-                        </span>
-                      </div>
-
-                      <div className={fieldClass}>
-                        <span className={labelClass}>Last Modified</span>
-                        <span className={valueClass}>
-                          {mas?.updated_at ? new Date(mas.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : '-'}
-                        </span>
-                      </div>
-
-                      <div className={fieldClass}>
-                        <span className={labelClass}>Description</span>
-                        {isEditMode ? (
-                          <FormField
-                            control={form.control}
-                            name="description"
-                            render={({field}) => (
-                              <FormItem className="space-y-1">
-                                <FormControl>
-                                  <Input {...field} className="h-8 text-sm" />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        ) : (
-                          <span className={valueClass}>{mas?.description || '-'}</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border rounded overflow-hidden">
-                    <div className="px-4 py-3 border-b border-border bg-muted">
-                      <span className="text-sm font-medium text-foreground">Shared Memory Provider</span>
-                    </div>
-                    <div className="px-4 py-4">
-                      {isEditMode ? (
-                        <FormField
-                          control={form.control}
-                          name="shared_memory_provider_id"
-                          render={({field}) => (
-                            <FormItem className="space-y-1">
-                              <span className={labelClass}>Provider</span>
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger className="h-8 text-sm">
-                                    <SelectValue placeholder="Select provider" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {sharedMemoryProviders.length === 0 ? (
-                                    <div className="py-2 px-2 text-sm text-muted-foreground">No providers available</div>
-                                  ) : (
-                                    sharedMemoryProviders.map((provider) => (
-                                      <SelectItem key={provider.id} value={provider.id}>
-                                        {provider.provider_name}
-                                      </SelectItem>
-                                    ))
-                                  )}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ) : mas?.shared_memory?.id ? (
-                        <div className="space-y-3">
-                          <div className={fieldClass}>
-                            <span className={labelClass}>Name</span>
-                            <span className={valueClass}>{mas.shared_memory.name || '-'}</span>
-                          </div>
-                          <div className={`${fieldClass} min-w-0`}>
-                            <span className={labelClass}>Provider ID</span>
-                            <CopyableInput value={mas.shared_memory.id} />
-                          </div>
-                          <div className={fieldClass}>
-                            <span className={labelClass}>Status</span>
-                            {mas.shared_memory.enabled ? (
-                              <Badge variant="info" className="w-fit">Enabled</Badge>
-                            ) : (
-                              <Badge variant="inactive" className="w-fit">Disabled</Badge>
-                            )}
-                          </div>
-                          {mas.shared_memory.description && (
-                            <div className={fieldClass}>
-                              <span className={labelClass}>Description</span>
-                              <span className={valueClass}>{mas.shared_memory.description}</span>
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <span className={valueClass}>None configured</span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border rounded overflow-hidden">
-                    <div
-                      className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted cursor-pointer"
-                      onClick={() => setMasConfigExpanded(!masConfigExpanded)}
+                  {isEditMode && agentFields.length > 0 && (
+                    <Button
+                      type="button"
+                      variant="sidebar"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() =>
+                        appendAgent({agent_id: '', name: '', url: '', agentic_memory_provider_id: '', identity_type: '', identity_identifiers: ''})
+                      }
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-foreground">Config</span>
-                        {isEditMode &&
-                          (() => {
-                            const cv = form.watch('config') ?? '';
-                            return cv.trim() !== '' ? (
-                              <span
-                                className={`text-xs px-1.5 py-0.5 rounded ${validateJSON(cv) ? 'text-green-600 bg-green-50 border border-green-200' : 'text-red-600 bg-red-50 border border-red-200'}`}
-                              >
-                                {validateJSON(cv) ? 'Valid JSON' : 'Invalid JSON'}
-                              </span>
-                            ) : null;
-                          })()}
-                      </div>
-                      {masConfigExpanded ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
-                    </div>
-                    {masConfigExpanded && (
-                      <div className="p-4">
-                        {isEditMode ? (
-                          <FormField
-                            control={form.control}
-                            name="config"
-                            render={({field}) => (
-                              <FormItem>
-                                <FormControl>
-                                  <Textarea
-                                    placeholder={`{\n  "key": "value"\n}`}
-                                    className="font-mono text-sm min-h-[150px] resize-y"
-                                    {...field}
-                                    onBlur={() => field.onChange(formatJson(field.value || ''))}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
-                        ) : (
-                          <pre className="font-mono text-sm text-muted-foreground bg-muted border border-border rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
-                            {mas?.config && Object.keys(mas.config).length > 0 ? JSON.stringify(mas.config, null, 2) : '{\n  "key": "value"\n}'}
-                          </pre>
+                      <Plus className="w-4 h-4" />
+                      Add Agent
+                    </Button>
+                  )}
+                </div>
+                <div className="p-4">
+                  <AgentsList
+                    agents={agentFields}
+                    control={form.control}
+                    watch={form.watch}
+                    isEditMode={isEditMode}
+                    agentExpandedState={agentExpandedState}
+                    onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
+                    onAddAgent={
+                      isEditMode
+                        ? () =>
+                            appendAgent({
+                              agent_id: '',
+                              name: '',
+                              url: '',
+                              agentic_memory_provider_id: '',
+                              identity_type: '',
+                              identity_identifiers: ''
+                            })
+                        : undefined
+                    }
+                    onRemoveAgent={isEditMode ? removeAgent : undefined}
+                    masAgentsData={!isEditMode && mas?.agents ? mas.agents : undefined}
+                    userMemoryProviders={userMemoryProviders}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded overflow-hidden">
+                <div
+                  className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted cursor-pointer"
+                  onClick={() => setMasConfigExpanded(!masConfigExpanded)}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className={dtSectionHeader}>Config</span>
+                    {isEditMode &&
+                      (() => {
+                        const cv = form.watch('config') ?? '';
+                        return cv.trim() !== '' ? (
+                          <span
+                            className={`text-xs px-1.5 py-0.5 rounded ${validateJSON(cv) ? 'text-green-600 bg-green-50 border border-green-200' : 'text-red-600 bg-red-50 border border-red-200'}`}
+                          >
+                            {validateJSON(cv) ? 'Valid JSON' : 'Invalid JSON'}
+                          </span>
+                        ) : null;
+                      })()}
+                  </div>
+                  {masConfigExpanded ? (
+                    <ChevronUp size={13} className="text-muted-foreground" />
+                  ) : (
+                    <ChevronDown size={13} className="text-muted-foreground" />
+                  )}
+                </div>
+                {masConfigExpanded && (
+                  <div className="p-4">
+                    {isEditMode ? (
+                      <FormField
+                        control={form.control}
+                        name="config"
+                        render={({field}) => (
+                          <FormItem>
+                            <FormControl>
+                              <Textarea
+                                placeholder={`{\n  "key": "value"\n}`}
+                                className="font-mono text-sm min-h-[150px] resize-y"
+                                {...field}
+                                onBlur={() => field.onChange(formatJson(field.value || ''))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
                         )}
-                      </div>
+                      />
+                    ) : (
+                      <pre className="font-mono text-sm text-muted-foreground bg-muted border border-border rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
+                        {mas?.config && Object.keys(mas.config).length > 0 ? JSON.stringify(mas.config, null, 2) : '{\n  "key": "value"\n}'}
+                      </pre>
                     )}
                   </div>
+                )}
+              </div>
+
+              <div className="bg-card border border-border rounded overflow-hidden">
+                <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted">
+                  <div className="flex items-center gap-2">
+                    <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                    <span className={dtSectionHeader}>Associated Cognition Engines</span>
+                    {ces.length > 0 && (
+                      <Badge variant="accent" className="rounded px-1.5">
+                        {ces.length}
+                      </Badge>
+                    )}
+                  </div>
+                  {availableCEs.length > 0 && (
+                    <Button type="button" variant="sidebar" size="sm" onClick={() => setAssociateModalOpen(true)}>
+                      + Associate
+                    </Button>
+                  )}
                 </div>
+
+                {ces.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Subkind</TableHead>
+                        <TableHead>Enabled</TableHead>
+                        <TableHead />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {ces.map((ce) => (
+                        <TableRow key={ce.ce_id}>
+                          <TableCell>{ce.name}</TableCell>
+                          <TableCell className="font-mono text-muted-foreground">{ce.kind || '-'}</TableCell>
+                          <TableCell className="font-mono text-muted-foreground">{ce.subkind || '-'}</TableCell>
+                          <TableCell>{ce.enabled ? <Badge variant="info">Enabled</Badge> : <Badge variant="inactive">Disabled</Badge>}</TableCell>
+                          <TableCell>
+                            <button
+                              type="button"
+                              disabled={disassociatingId === ce.ce_id}
+                              onClick={() => handleDisassociateCE(ce.ce_id, ce.name)}
+                              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-red-600 border border-border hover:border-red-200 hover:bg-red-50 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                            >
+                              <Unlink className="w-3 h-3" />
+                              {disassociatingId === ce.ce_id ? 'Removing...' : 'Disassociate'}
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="px-4 py-4 text-sm text-muted-foreground">No Cognition Engines associated yet.</p>
+                )}
               </div>
             </form>
           </Form>

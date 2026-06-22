@@ -22,10 +22,10 @@ import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {toast} from 'sonner';
 import {CopyableInput} from '@/components/ui/copyable-input';
-import {ChevronDown, ChevronUp, Eye, EyeOff} from 'lucide-react';
-import {Button} from '@/components/ui/button';
+import {ChevronDown, ChevronUp, Eye, EyeOff, KeyRound, Globe} from 'lucide-react';
 import {Badge} from '@/components/ui/badge';
-import {dtLabel, dtValue, dtRow, dtSectionHeader} from '@/lib/detail-typography';
+import {StatCard} from '@/components/ui/stat-card';
+import {dtLabel, dtValue, dtRow, dtSectionHeader, dtMetaLabel, dtMetaValue} from '@/lib/detail-typography';
 
 const UpdateMemoryProviderFormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters'),
@@ -211,7 +211,7 @@ export default function MemoryProviderDetailsPage() {
   const authTypeLabel = (type: string) => {
     const labels: Record<string, string> = {
       none: 'None',
-      token: 'API Key',
+      token: 'Token (API Key)',
       bearer: 'Bearer Token',
       basic: 'Basic Auth',
       custom: 'Custom Header'
@@ -219,15 +219,27 @@ export default function MemoryProviderDetailsPage() {
     return labels[type] ?? type;
   };
 
+  const fieldClass = dtRow;
   const labelClass = dtLabel;
   const valueClass = dtValue;
-  const rowClass = dtRow;
+  const metadataLabelClass = dtMetaLabel;
+  const metadataValueClass = dtMetaValue;
+
+  const providerConfig = provider?.config as MemoryProviderConfig | null;
+  const providerAuthType = providerConfig?.auth?.type ?? 'none';
 
   return (
     <>
       <BasePage
         title={provider?.name || 'Memory Provider Details'}
         description="View and manage memory provider details"
+        customDescription={
+          provider && (
+            <div className="flex items-center gap-2">
+              <Badge variant={provider.enabled ? 'info' : 'inactive'}>{provider.enabled ? 'Enabled' : 'Disabled'}</Badge>
+            </div>
+          )
+        }
         useBreadcrumbs
         breadcrumbs={crumbs}
         callToAction={
@@ -248,105 +260,101 @@ export default function MemoryProviderDetailsPage() {
           error={error}
           itemName="Memory Provider details"
           customIsLoading={isLoading}
-          errorListStateProps={{
-            title: 'Failed to load Memory Provider details'
-          }}
-          emptyListStateProps={{
-            title: 'No Memory Provider details found'
-          }}
+          errorListStateProps={{title: 'Failed to load Memory Provider details'}}
+          emptyListStateProps={{title: 'No Memory Provider details found'}}
         >
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4 mx-8" autoComplete="off">
-              {/* Details card */}
-              <div className="bg-card border border-border rounded p-4">
-                <div className={`${dtSectionHeader} mb-3`}>Details</div>
+            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4" autoComplete="off">
 
-                {/* ID */}
-                <div className={rowClass}>
-                  <span className={labelClass}>ID</span>
-                  <div className="min-w-0">
-                    <CopyableInput value={provider?.id || ''} />
+              <div className="grid grid-cols-2 gap-8">
+                <StatCard
+                  icon={<Globe size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
+                  label="Provider URL"
+                  value={providerConfig?.url || '-'}
+                />
+                <StatCard
+                  icon={<KeyRound size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
+                  label="Auth Type"
+                  value={authTypeLabel(providerAuthType)}
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="bg-card border border-border rounded-lg py-10 px-5">
+                    <span className={labelClass}>Name</span>
+                    {isEditMode ? (
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({field}) => (
+                          <FormItem className="space-y-1 mt-2">
+                            <FormControl>
+                              <Input {...field} maxLength={100} autoComplete="off" className="h-8 text-sm" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <p className="text-2xl font-semibold text-foreground mt-2">{provider?.name || '-'}</p>
+                    )}
+                  </div>
+
+                  <div className="bg-card border border-border rounded-lg py-10 px-5 min-w-0">
+                    <span className={labelClass}>ID</span>
+                    <div className="mt-2"><CopyableInput value={provider?.id || ''} /></div>
                   </div>
                 </div>
 
-                {/* Name */}
-                <div className={rowClass}>
-                  <span className={labelClass}>Name</span>
-                  {isEditMode ? (
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({field}) => (
-                        <FormItem className="space-y-1">
-                          <FormControl><Input {...field} maxLength={100} autoComplete="off" className="h-7 text-xs" /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ) : (
-                    <span className={valueClass}>{provider?.name || '-'}</span>
-                  )}
-                </div>
-
-                {/* Description */}
-                <div className={rowClass}>
+                <div className="bg-card border border-border rounded-lg py-6 px-5">
                   <span className={labelClass}>Description</span>
                   {isEditMode ? (
                     <FormField
                       control={form.control}
                       name="description"
                       render={({field}) => (
-                        <FormItem className="space-y-1">
-                          <FormControl><Textarea {...field} rows={2} placeholder="Optional description" className="text-xs resize-none" /></FormControl>
+                        <FormItem className="space-y-1 mt-2">
+                          <FormControl>
+                            <Textarea {...field} rows={2} placeholder="Optional description" className="text-sm resize-none" />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
                   ) : (
-                    <span className={valueClass}>{provider?.description || '-'}</span>
+                    <p className="text-sm text-foreground mt-2">{provider?.description || '-'}</p>
                   )}
                 </div>
 
-                {/* Enabled */}
-                <div className={rowClass}>
-                  <span className={labelClass}>Enabled</span>
-                  {provider?.enabled ? (
-                    <Badge variant="info" className="w-fit">Enabled</Badge>
-                  ) : (
-                    <Badge variant="inactive" className="w-fit">Disabled</Badge>
+                <div className="grid grid-cols-4 gap-x-8 px-1 pt-1">
+                  {provider?.created_at && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className={metadataLabelClass}>Created</span>
+                      <span className={metadataValueClass}>{new Date(provider.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
+                    </div>
                   )}
-                </div>
-
-                {/* Created At */}
-                <div className={rowClass}>
-                  <span className={labelClass}>Created At</span>
-                  <span className={valueClass}>
-                    {provider?.created_at ? new Date(provider.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : '—'}
-                  </span>
-                </div>
-
-                {/* Updated At */}
-                <div className={rowClass}>
-                  <span className={labelClass}>Updated At</span>
-                  <span className={valueClass}>
-                    {provider?.updated_at ? new Date(provider.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : '—'}
-                  </span>
-                </div>
-
-                {/* Created By */}
-                <div className={rowClass}>
-                  <span className={labelClass}>Created By</span>
-                  <span className={valueClass}>{provider?.created_by || '-'}</span>
-                </div>
-
-                {/* Updated By */}
-                <div className={rowClass}>
-                  <span className={labelClass}>Updated By</span>
-                  <span className={valueClass}>{provider?.updated_by || '-'}</span>
+                  {provider?.updated_at && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className={metadataLabelClass}>Last Modified</span>
+                      <span className={metadataValueClass}>{new Date(provider.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
+                    </div>
+                  )}
+                  {provider?.created_by && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className={metadataLabelClass}>Created By</span>
+                      <span className={metadataValueClass}>{provider.created_by}</span>
+                    </div>
+                  )}
+                  {provider?.updated_by && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className={metadataLabelClass}>Last Modified By</span>
+                      <span className={metadataValueClass}>{provider.updated_by}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Config card — collapsible */}
               <div className="bg-card border border-border rounded overflow-hidden">
                 <button
                   type="button"
@@ -354,34 +362,36 @@ export default function MemoryProviderDetailsPage() {
                   onClick={() => setAuthExpanded((v) => !v)}
                 >
                   <span className={dtSectionHeader}>Config</span>
-                  {authExpanded ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
+                  {authExpanded ? (
+                    <ChevronUp size={13} className="text-muted-foreground" />
+                  ) : (
+                    <ChevronDown size={13} className="text-muted-foreground" />
+                  )}
                 </button>
 
                 {authExpanded && (
-                  <div className="p-4">
-                    {/* URL */}
-                    <div className={rowClass}>
-                      <span className={labelClass}>URL</span>
+                  <div className="px-4">
+                    <div className={fieldClass}>
+                      <span className={labelClass}>Provider URL</span>
                       {isEditMode ? (
                         <FormField
                           control={form.control}
                           name="url"
                           render={({field}) => (
                             <FormItem className="space-y-1">
-                              <FormControl><Input {...field} placeholder="http://localhost:8765" autoComplete="off" className="h-7 text-xs font-mono" /></FormControl>
+                              <FormControl>
+                                <Input {...field} placeholder="http://localhost:8765" autoComplete="off" className="h-8 text-sm font-mono" />
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
                       ) : (
-                        <div className="min-w-0">
-                          <CopyableInput value={(provider?.config as MemoryProviderConfig | null)?.url || ''} />
-                        </div>
+                        <CopyableInput value={(provider?.config as MemoryProviderConfig | null)?.url || ''} />
                       )}
                     </div>
 
-                    {/* Auth Type */}
-                    <div className={rowClass}>
+                    <div className={fieldClass}>
                       <span className={labelClass}>Auth Type</span>
                       {isEditMode ? (
                         <FormField
@@ -391,13 +401,13 @@ export default function MemoryProviderDetailsPage() {
                             <FormItem className="space-y-1">
                               <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
-                                  <SelectTrigger className="h-7 text-xs">
+                                  <SelectTrigger className="h-8 text-sm">
                                     <SelectValue placeholder="Select type" />
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
                                   <SelectItem value="none">None</SelectItem>
-                                  <SelectItem value="token">API Key</SelectItem>
+                                  <SelectItem value="token">Token (API Key)</SelectItem>
                                   <SelectItem value="bearer">Bearer Token</SelectItem>
                                   <SelectItem value="basic">Basic Auth</SelectItem>
                                   <SelectItem value="custom">Custom Header</SelectItem>
@@ -408,129 +418,157 @@ export default function MemoryProviderDetailsPage() {
                           )}
                         />
                       ) : (
-                        <span className={valueClass}>
-                          {authTypeLabel((provider?.config as MemoryProviderConfig | null)?.auth?.type ?? 'none')}
-                        </span>
+                        <span className={valueClass}>{authTypeLabel((provider?.config as MemoryProviderConfig | null)?.auth?.type ?? 'none')}</span>
                       )}
                     </div>
 
-                    {/* Credential fields — view mode */}
-                    {!isEditMode && (() => {
-                      const config = provider?.config as MemoryProviderConfig | null;
-                      const creds = config?.auth?.credentials;
-                      const type = config?.auth?.type;
-                      if (!creds || !type || type === 'none') return (
-                        <div className={rowClass}>
-                          <span className={labelClass}>Credentials</span>
-                          <span className={valueClass}>—</span>
-                        </div>
-                      );
+                    {!isEditMode &&
+                      (() => {
+                        const config = provider?.config as MemoryProviderConfig | null;
+                        const creds = config?.auth?.credentials;
+                        const type = config?.auth?.type;
+                        if (!creds || !type || type === 'none') return null;
 
-                      const RevealRow = ({fieldKey, label, value}: {fieldKey: string; label: string; value: string}) => (
-                        <div className={rowClass}>
-                          <span className={labelClass}>{label}</span>
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span className={`${valueClass} truncate`}>
-                              {revealedFields.has(fieldKey) ? value : '••••••••••••'}
-                            </span>
-                            <button
-                              type="button"
-                              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
-                              onClick={() => toggleReveal(fieldKey)}
-                            >
-                              {revealedFields.has(fieldKey) ? <EyeOff size={13} /> : <Eye size={13} />}
-                            </button>
+                        const RevealField = ({fieldKey, label, value}: {fieldKey: string; label: string; value: string}) => (
+                          <div className={fieldClass}>
+                            <span className={labelClass}>{label}</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`${valueClass} font-mono truncate`}>{revealedFields.has(fieldKey) ? value : '••••••••••••'}</span>
+                              <button
+                                type="button"
+                                className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+                                onClick={() => toggleReveal(fieldKey)}
+                              >
+                                {revealedFields.has(fieldKey) ? <EyeOff size={13} /> : <Eye size={13} />}
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      );
+                        );
 
-                      if (type === 'token') return <RevealRow fieldKey="api_key" label="API Key" value={creds.api_key ?? ''} />;
-                      if (type === 'bearer') return <RevealRow fieldKey="access_token" label="Access Token" value={creds.access_token ?? ''} />;
-                      if (type === 'basic') return (
-                        <>
-                          <div className={rowClass}>
-                            <span className={labelClass}>Username</span>
-                            <span className={valueClass}>{creds.username ?? '—'}</span>
-                          </div>
-                          <RevealRow fieldKey="password" label="Password" value={creds.password ?? ''} />
-                        </>
-                      );
-                      if (type === 'custom') return (
-                        <>
-                          <div className={rowClass}>
-                            <span className={labelClass}>Header Name</span>
-                            <span className={valueClass}>{creds.header_name ?? '—'}</span>
-                          </div>
-                          <RevealRow fieldKey="header_value" label="Header Value" value={creds.header_value ?? ''} />
-                        </>
-                      );
-                      return null;
-                    })()}
+                        if (type === 'token') return <RevealField fieldKey="api_key" label="API Key" value={creds.api_key ?? ''} />;
+                        if (type === 'bearer') return <RevealField fieldKey="access_token" label="Access Token" value={creds.access_token ?? ''} />;
+                        if (type === 'basic')
+                          return (
+                            <>
+                              <div className={fieldClass}>
+                                <span className={labelClass}>Username</span>
+                                <span className={valueClass}>{creds.username ?? '—'}</span>
+                              </div>
+                              <RevealField fieldKey="password" label="Password" value={creds.password ?? ''} />
+                            </>
+                          );
+                        if (type === 'custom')
+                          return (
+                            <>
+                              <div className={fieldClass}>
+                                <span className={labelClass}>Header Name</span>
+                                <span className={valueClass}>{creds.header_name ?? '—'}</span>
+                              </div>
+                              <RevealField fieldKey="header_value" label="Header Value" value={creds.header_value ?? ''} />
+                            </>
+                          );
+                        return null;
+                      })()}
 
-                    {/* Credential fields — edit mode */}
                     {isEditMode && authType === 'token' && (
-                      <div className="grid grid-cols-[160px_1fr] items-start gap-3 py-2.5 border-b border-border last:border-0">
+                      <div className={fieldClass}>
                         <span className={labelClass}>API Key</span>
-                        <FormField control={form.control} name="token" render={({field}) => (
-                          <FormItem className="space-y-1">
-                            <FormControl><Input type="password" placeholder="Enter API key" autoComplete="new-password" {...field} className="h-7 text-xs" /></FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
+                        <FormField
+                          control={form.control}
+                          name="token"
+                          render={({field}) => (
+                            <FormItem className="space-y-1">
+                              <FormControl>
+                                <Input type="password" placeholder="Enter API key" autoComplete="new-password" {...field} className="h-8 text-sm" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     )}
                     {isEditMode && authType === 'bearer' && (
-                      <div className="grid grid-cols-[160px_1fr] items-start gap-3 py-2.5 border-b border-border last:border-0">
+                      <div className={fieldClass}>
                         <span className={labelClass}>Access Token</span>
-                        <FormField control={form.control} name="access_token" render={({field}) => (
-                          <FormItem className="space-y-1">
-                            <FormControl><Input type="password" placeholder="Enter access token" autoComplete="new-password" {...field} className="h-7 text-xs" /></FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )} />
+                        <FormField
+                          control={form.control}
+                          name="access_token"
+                          render={({field}) => (
+                            <FormItem className="space-y-1">
+                              <FormControl>
+                                <Input type="password" placeholder="Enter access token" autoComplete="new-password" {...field} className="h-8 text-sm" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                       </div>
                     )}
                     {isEditMode && authType === 'basic' && (
                       <>
-                        <div className={rowClass}>
+                        <div className={fieldClass}>
                           <span className={labelClass}>Username</span>
-                          <FormField control={form.control} name="username" render={({field}) => (
-                            <FormItem className="space-y-1">
-                              <FormControl><Input placeholder="Enter username" autoComplete="off" {...field} className="h-7 text-xs" /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
+                          <FormField
+                            control={form.control}
+                            name="username"
+                            render={({field}) => (
+                              <FormItem className="space-y-1">
+                                <FormControl>
+                                  <Input placeholder="Enter username" autoComplete="off" {...field} className="h-8 text-sm" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         </div>
-                        <div className={rowClass}>
+                        <div className={fieldClass}>
                           <span className={labelClass}>Password</span>
-                          <FormField control={form.control} name="password" render={({field}) => (
-                            <FormItem className="space-y-1">
-                              <FormControl><Input type="password" placeholder="Enter password" autoComplete="new-password" {...field} className="h-7 text-xs" /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
+                          <FormField
+                            control={form.control}
+                            name="password"
+                            render={({field}) => (
+                              <FormItem className="space-y-1">
+                                <FormControl>
+                                  <Input type="password" placeholder="Enter password" autoComplete="new-password" {...field} className="h-8 text-sm" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         </div>
                       </>
                     )}
                     {isEditMode && authType === 'custom' && (
                       <>
-                        <div className={rowClass}>
+                        <div className={fieldClass}>
                           <span className={labelClass}>Header Name</span>
-                          <FormField control={form.control} name="header_name" render={({field}) => (
-                            <FormItem className="space-y-1">
-                              <FormControl><Input placeholder="X-API-Key" autoComplete="off" {...field} className="h-7 text-xs" /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
+                          <FormField
+                            control={form.control}
+                            name="header_name"
+                            render={({field}) => (
+                              <FormItem className="space-y-1">
+                                <FormControl>
+                                  <Input placeholder="X-API-Key" autoComplete="off" {...field} className="h-8 text-sm" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         </div>
-                        <div className={rowClass}>
+                        <div className={fieldClass}>
                           <span className={labelClass}>Header Value</span>
-                          <FormField control={form.control} name="header_value" render={({field}) => (
-                            <FormItem className="space-y-1">
-                              <FormControl><Input type="password" placeholder="Enter header value" autoComplete="new-password" {...field} className="h-7 text-xs" /></FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )} />
+                          <FormField
+                            control={form.control}
+                            name="header_value"
+                            render={({field}) => (
+                              <FormItem className="space-y-1">
+                                <FormControl>
+                                  <Input type="password" placeholder="Enter header value" autoComplete="new-password" {...field} className="h-8 text-sm" />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         </div>
                       </>
                     )}

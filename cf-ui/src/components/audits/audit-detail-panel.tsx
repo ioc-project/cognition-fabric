@@ -118,7 +118,6 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
 
         {event && (
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-            {/* Key badges */}
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant={getAuditTypeBadgeVariant(event.audit_type)}>{getAuditTypeLabel(event.audit_type)}</Badge>
               <Badge variant="outline">{getResourceTypeLabel(event.resource_type)}</Badge>
@@ -130,7 +129,6 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
               )}
             </div>
 
-            {/* Core fields */}
             <div className="space-y-4 p-4 rounded-lg border border-border bg-muted/20">
               <DetailRow label="Event ID">
                 <CopyableCode value={String(event.id)} />
@@ -197,7 +195,6 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
               </DetailRow>
             </div>
 
-            {/* Audit Information */}
             {info && (
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Audit Information</h3>
@@ -258,7 +255,6 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
               </div>
             )}
 
-            {/* Extra information */}
             {event.audit_extra_information && (
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-foreground">Extra Information</h3>

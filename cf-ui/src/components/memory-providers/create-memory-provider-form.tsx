@@ -197,7 +197,6 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
             <CardContent className="p-8">
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6" autoComplete="off">
-                  {/* Hidden fields to prevent browser autofill */}
                   <input type="text" name="fakeusernameremembered" style={{position: 'absolute', top: '-9999px'}} tabIndex={-1} autoComplete="off" />
                   <input
                     type="password"
@@ -283,7 +282,6 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
                     )}
                   />
 
-                  {/* Token Authentication */}
                   {authType === 'token' && (
                     <FormField
                       control={form.control}
@@ -300,7 +298,6 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
                     />
                   )}
 
-                  {/* Bearer Token Authentication */}
                   {authType === 'bearer' && (
                     <FormField
                       control={form.control}
@@ -317,7 +314,6 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
                     />
                   )}
 
-                  {/* Basic Auth */}
                   {authType === 'basic' && (
                     <>
                       <FormField
@@ -349,7 +345,6 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
                     </>
                   )}
 
-                  {/* Custom Header Authentication */}
                   {authType === 'custom' && (
                     <>
                       <FormField

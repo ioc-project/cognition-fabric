@@ -21,13 +21,16 @@ import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {useCEToggleFlow} from '@/hooks/useCEToggleFlow';
 import {useCEDeleteFlow} from '@/hooks/useCEDeleteFlow';
 import {cognitionEngineApi} from '@/api/endpoints/cognition-engine';
+import {cfnApi} from '@/api/endpoints';
 import {swrKeys} from '@/lib/swr-config';
+import useSWR from 'swr';
 import {CognitionEngineDialogs} from '@/components/cognitive-agents/cognition-engine-dialogs';
 import {UpdateCEFormSchema, type FormValues} from '@/components/cognitive-agents/cognition-engine-form-fields';
 import {toast} from 'sonner';
 import {Badge} from '@/components/ui/badge';
-import {ChevronDown, ChevronUp} from 'lucide-react';
-import {dtLabel, dtValue, dtRow, dtSectionHeader} from '@/lib/detail-typography';
+import {StatCard} from '@/components/ui/stat-card';
+import {ChevronDown, ChevronUp, Cpu, Tag, Network} from 'lucide-react';
+import {dtLabel, dtValue, dtRow, dtSectionHeader, dtMetaLabel, dtMetaValue} from '@/lib/detail-typography';
 
 export default function CognitiveAgentDetailsPage() {
   const router = useRouter();
@@ -39,6 +42,7 @@ export default function CognitiveAgentDetailsPage() {
   const cognitiveAgentId = Array.isArray(rawCognitiveAgentId) ? rawCognitiveAgentId[0] : rawCognitiveAgentId;
 
   const {cognitionEngine: ce, error, isLoading, mutate} = useCognitionEngine(cognitiveAgentId as string);
+  const {data: cfn} = useSWR(ce?.cfn_id ? swrKeys.cfnDetails(ce.cfn_id) : null, () => cfnApi.get(ce!.cfn_id));
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [configExpanded, setConfigExpanded] = useState(true);
@@ -139,9 +143,10 @@ export default function CognitiveAgentDetailsPage() {
     }
   };
 
-  const rowClass = dtRow;
   const labelClass = dtLabel;
   const valueClass = dtValue;
+  const metadataLabelClass = dtMetaLabel;
+  const metadataValueClass = dtMetaValue;
 
   const configEntries = ce?.config && Object.keys(ce.config).length > 0 ? Object.entries(ce.config) : [];
   const masConfigEntries = ce?.mas_config && Object.keys(ce.mas_config).length > 0 ? Object.entries(ce.mas_config) : [];
@@ -150,6 +155,7 @@ export default function CognitiveAgentDetailsPage() {
     <>
       <BasePage
         title={ce?.name || 'Cognition Engine'}
+        description="View details about your Cognition Engine"
         customDescription={
           ce && (
             <div className="flex items-center gap-2">
@@ -190,172 +196,202 @@ export default function CognitiveAgentDetailsPage() {
           emptyListStateProps={{title: 'No details found'}}
         >
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4 mx-8">
+            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
 
-              {/* DETAILS card */}
-              <div className="bg-card border border-border rounded p-4">
-                <div className={`${dtSectionHeader} mb-3`}>Details</div>
+              <div className="grid grid-cols-3 gap-8">
+                <StatCard
+                  icon={<Cpu size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
+                  label="Kind"
+                  value={ce?.kind || '-'}
+                  sublabel={ce?.subkind || undefined}
+                />
+                <StatCard
+                  icon={<Tag size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
+                  label="Version"
+                  value={ce?.version || '-'}
+                />
+                <StatCard
+                  icon={<Network size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
+                  label="MAS Auto Associate"
+                  value={ce?.mas_auto_associate ? 'Enabled' : 'Disabled'}
+                />
+              </div>
 
-                <div className={rowClass}>
-                  <span className={labelClass}>Name</span>
-                  <span className={valueClass}>{ce?.name || '-'}</span>
-                </div>
-                <div className={rowClass}>
-                  <span className={labelClass}>Version</span>
-                  <span className={valueClass}>{ce?.version || '-'}</span>
-                </div>
-                <div className={rowClass}>
-                  <span className={labelClass}>Kind</span>
-                  <span className={valueClass}>{ce?.kind || '-'}</span>
-                </div>
-                <div className={rowClass}>
-                  <span className={labelClass}>Subkind</span>
-                  <span className={valueClass}>{ce?.subkind || '-'}</span>
-                </div>
-                <div className={rowClass}>
-                  <span className={labelClass}>URL</span>
-                  {isEditMode ? (
-                    <FormField
-                      control={form.control}
-                      name="url"
-                      render={({field}) => (
-                        <FormItem className="space-y-1">
-                          <FormControl><Input {...field} className="h-7 text-xs font-mono" /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ) : (
-                    <span className={valueClass}>{ce?.url || '-'}</span>
-                  )}
-                </div>
-                <div className={rowClass}>
-                  <span className={labelClass}>CFN ID</span>
-                  <div className="min-w-0"><CopyableInput value={ce?.cfn_id || ''} /></div>
-                </div>
-                <div className={rowClass}>
-                  <span className={labelClass}>MAS Auto Associate</span>
-                  {isEditMode ? (
-                    <FormField
-                      control={form.control}
-                      name="mas_auto_associate"
-                      render={({field}) => (
-                        <FormItem className="space-y-1">
-                          <Select onValueChange={field.onChange} value={field.value}>
+              <div className="space-y-3">
+                <div className="grid grid-cols-4 gap-8">
+                  <div className="bg-card border border-border rounded-lg py-10 px-5">
+                    <span className={labelClass}>Name</span>
+                    <p className="text-2xl font-semibold text-foreground mt-2">{ce?.name || '-'}</p>
+                  </div>
+
+                  <div className="bg-card border border-border rounded-lg py-10 px-5 min-w-0">
+                    <span className={labelClass}>ID</span>
+                    <div className="mt-2"><CopyableInput value={ce?.id || ''} /></div>
+                  </div>
+
+                  <div className="bg-card border border-border rounded-lg py-10 px-5 min-w-0">
+                    <span className={labelClass}>CFN</span>
+                    {cfn?.name && <p className="text-2xl font-semibold text-foreground mt-2">{cfn.name}</p>}
+                    <div className="mt-2"><CopyableInput value={ce?.cfn_id || ''} /></div>
+                  </div>
+
+                  <div className="bg-card border border-border rounded-lg py-10 px-5">
+                    <span className={labelClass}>URL</span>
+                    {isEditMode ? (
+                      <FormField
+                        control={form.control}
+                        name="url"
+                        render={({field}) => (
+                          <FormItem className="space-y-1 mt-2">
                             <FormControl>
-                              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
+                              <Input {...field} className="h-8 text-sm font-mono" />
                             </FormControl>
-                            <SelectContent>
-                              <SelectItem value="true">Enabled</SelectItem>
-                              <SelectItem value="false">Disabled</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ) : (
-                    <Badge variant={ce?.mas_auto_associate ? 'info' : 'inactive'} className="w-fit">{ce?.mas_auto_associate ? 'Enabled' : 'Disabled'}</Badge>
-                  )}
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <p className="text-2xl font-semibold text-foreground font-mono mt-2">{ce?.url || '-'}</p>
+                    )}
+                  </div>
                 </div>
+
                 {isEditMode && (
-                  <div className={rowClass}>
-                    <span className={labelClass}>Enabled</span>
-                    <FormField
-                      control={form.control}
-                      name="enabled"
-                      render={({field}) => (
-                        <FormItem className="space-y-1">
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger className="h-7 text-xs"><SelectValue /></SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="true">Enabled</SelectItem>
-                              <SelectItem value="false">Disabled</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                  <div className="grid grid-cols-4 gap-8">
+                    <div className="bg-card border border-border rounded-lg py-10 px-5">
+                      <span className={labelClass}>MAS Auto Associate</span>
+                      <FormField
+                        control={form.control}
+                        name="mas_auto_associate"
+                        render={({field}) => (
+                          <FormItem className="space-y-1 mt-2">
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="true">Enabled</SelectItem>
+                                <SelectItem value="false">Disabled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="bg-card border border-border rounded-lg py-10 px-5">
+                      <span className={labelClass}>Enabled</span>
+                      <FormField
+                        control={form.control}
+                        name="enabled"
+                        render={({field}) => (
+                          <FormItem className="space-y-1 mt-2">
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="true">Enabled</SelectItem>
+                                <SelectItem value="false">Disabled</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
                   </div>
                 )}
-                {ce?.last_seen && (
-                  <div className={rowClass}>
-                    <span className={labelClass}>Last Seen</span>
-                    <span className={valueClass}>{new Date(ce.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
-                  </div>
-                )}
-                <div className={rowClass}>
-                  <span className={labelClass}>Created At</span>
-                  <span className={valueClass}>{ce?.created_at ? new Date(ce.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : '—'}</span>
-                </div>
-                <div className={rowClass}>
-                  <span className={labelClass}>Updated At</span>
-                  <span className={valueClass}>{ce?.updated_at ? new Date(ce.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : '—'}</span>
+
+                <div className="grid grid-cols-3 gap-x-8 px-1 pt-1">
+                  {ce?.created_at && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className={metadataLabelClass}>Created</span>
+                      <span className={metadataValueClass}>{new Date(ce.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
+                    </div>
+                  )}
+                  {ce?.updated_at && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className={metadataLabelClass}>Last Modified</span>
+                      <span className={metadataValueClass}>{new Date(ce.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
+                    </div>
+                  )}
+                  {ce?.last_seen && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className={metadataLabelClass}>Last Seen</span>
+                      <span className={metadataValueClass}>{new Date(ce.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* CAPABILITIES + METRICS */}
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-card border border-border rounded p-4">
-                  <div className={`${dtSectionHeader} mb-3`}>Capabilities</div>
-                  {isEditMode ? (
-                    <FormField
-                      control={form.control}
-                      name="capabilities"
-                      render={({field}) => (
-                        <FormItem>
-                          <FormControl>
-                            <Textarea {...field} placeholder="one capability per line" className="font-mono text-xs min-h-[80px] resize-none" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ) : (
-                    <div className="flex flex-wrap gap-1.5">
-                      {ce?.capabilities && ce.capabilities.length > 0
-                        ? ce.capabilities.map((cap) => (
-                            <span key={cap} className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5">
-                              {cap}
-                            </span>
-                          ))
-                        : <span className={valueClass}>—</span>}
-                    </div>
-                  )}
+                <div className="bg-card border border-border rounded overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border bg-muted">
+                    <span className={dtSectionHeader}>Capabilities</span>
+                  </div>
+                  <div className="p-4">
+                    {isEditMode ? (
+                      <FormField
+                        control={form.control}
+                        name="capabilities"
+                        render={({field}) => (
+                          <FormItem>
+                            <FormControl>
+                              <Textarea {...field} placeholder="one capability per line" className="font-mono text-xs min-h-[80px] resize-none" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {ce?.capabilities && ce.capabilities.length > 0
+                          ? ce.capabilities.map((cap) => (
+                              <span key={cap} className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5">
+                                {cap}
+                              </span>
+                            ))
+                          : <span className={valueClass}>—</span>}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="bg-card border border-border rounded p-4">
-                  <div className={`${dtSectionHeader} mb-3`}>Metrics</div>
-                  {isEditMode ? (
-                    <FormField
-                      control={form.control}
-                      name="metrics"
-                      render={({field}) => (
-                        <FormItem>
-                          <FormControl>
-                            <Textarea {...field} placeholder="one metric per line" className="font-mono text-xs min-h-[80px] resize-none" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ) : (
-                    <div className="flex flex-wrap gap-1.5">
-                      {ce?.metrics && ce.metrics.length > 0
-                        ? ce.metrics.map((metric) => (
-                            <span key={metric} className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5">
-                              {metric}
-                            </span>
-                          ))
-                        : <span className={valueClass}>—</span>}
-                    </div>
-                  )}
+
+                <div className="bg-card border border-border rounded overflow-hidden">
+                  <div className="px-4 py-3 border-b border-border bg-muted">
+                    <span className={dtSectionHeader}>Metrics</span>
+                  </div>
+                  <div className="p-4">
+                    {isEditMode ? (
+                      <FormField
+                        control={form.control}
+                        name="metrics"
+                        render={({field}) => (
+                          <FormItem>
+                            <FormControl>
+                              <Textarea {...field} placeholder="one metric per line" className="font-mono text-xs min-h-[80px] resize-none" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {ce?.metrics && ce.metrics.length > 0
+                          ? ce.metrics.map((metric) => (
+                              <span key={metric} className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5">
+                                {metric}
+                              </span>
+                            ))
+                          : <span className={valueClass}>—</span>}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* CONFIG collapsible */}
               <div className="bg-card border border-border rounded overflow-hidden">
                 <button
                   type="button"
@@ -396,8 +432,8 @@ export default function CognitiveAgentDetailsPage() {
                     ) : configEntries.length === 0 ? (
                       <span className={valueClass}>—</span>
                     ) : (
-                      configEntries.map(([key, value], i) => (
-                        <div key={key} className={`grid grid-cols-[180px_1fr] items-start gap-3 py-2.5 ${i < configEntries.length - 1 ? 'border-b border-border' : ''}`}>
+                      configEntries.map(([key, value]) => (
+                        <div key={key} className={dtRow}>
                           <span className={labelClass}>{key}</span>
                           <span className={valueClass}>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
                         </div>
@@ -407,7 +443,6 @@ export default function CognitiveAgentDetailsPage() {
                 )}
               </div>
 
-              {/* MAS CONFIG collapsible */}
               <div className="bg-card border border-border rounded overflow-hidden">
                 <button
                   type="button"
@@ -448,8 +483,8 @@ export default function CognitiveAgentDetailsPage() {
                     ) : masConfigEntries.length === 0 ? (
                       <span className={valueClass}>—</span>
                     ) : (
-                      masConfigEntries.map(([key, value], i) => (
-                        <div key={key} className={`grid grid-cols-[180px_1fr] items-start gap-3 py-2.5 ${i < masConfigEntries.length - 1 ? 'border-b border-border' : ''}`}>
+                      masConfigEntries.map(([key, value]) => (
+                        <div key={key} className={dtRow}>
                           <span className={labelClass}>{key}</span>
                           <span className={valueClass}>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
                         </div>

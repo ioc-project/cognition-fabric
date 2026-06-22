@@ -220,7 +220,6 @@ function AuditEventCard({
   return (
     <div className="group p-4 bg-muted/30 rounded-lg border border-border hover:border-primary/50 transition-colors mb-3 last:mb-0">
       <div className="space-y-3">
-        {/* Header Row */}
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap">
             <Badge variant={getAuditTypeBadgeVariant(event.audit_type)} className="flex items-center gap-1">
@@ -344,7 +343,6 @@ function AuditEventCard({
           </div>
         </div>
 
-        {/* Expanded Details */}
         {expanded && event.audit_information && (
           <div className="mt-3 space-y-3">
             {event.audit_information?.http_status && (
@@ -356,7 +354,6 @@ function AuditEventCard({
               </div>
             )}
 
-            {/* Request Details */}
             {event.audit_information?.request && (
               <div className="p-3 bg-background rounded-lg border border-border">
                 <div className="text-muted-foreground mb-2 font-sans font-semibold text-xs">Request:</div>
@@ -381,7 +378,6 @@ function AuditEventCard({
               </div>
             )}
 
-            {/* Response Details */}
             {event.audit_information?.response && (
               <div className="p-3 bg-background rounded-lg border border-border">
                 <div className="text-muted-foreground mb-2 font-sans font-semibold text-xs">Response:</div>
@@ -406,7 +402,6 @@ function AuditEventCard({
               </div>
             )}
 
-            {/* Fallback: Show full audit_information if no request/response structure */}
             {!event.audit_information?.request && !event.audit_information?.response && (
               <div className="p-3 bg-background rounded-lg border border-border text-xs font-mono overflow-auto max-h-96">
                 <div className="text-muted-foreground mb-2 font-sans">Audit Information:</div>

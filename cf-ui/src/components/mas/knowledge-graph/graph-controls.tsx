@@ -15,7 +15,6 @@ interface GraphControlsProps {
 export function GraphControls({onZoomIn, onZoomOut, onFit, typeLegend, hiddenNodeIds, onRestoreHidden}: GraphControlsProps) {
   return (
     <>
-      {/* Type legend */}
       {typeLegend.length > 0 && (
         <div
           className="absolute top-4 left-4 z-30 rounded-lg border shadow-sm px-3 py-2 flex flex-col gap-1.5"
@@ -30,7 +29,6 @@ export function GraphControls({onZoomIn, onZoomOut, onFit, typeLegend, hiddenNod
         </div>
       )}
 
-      {/* Restore hidden nodes */}
       {hiddenNodeIds.size > 0 && (
         <div className="absolute bottom-6 left-6 z-30">
           <Button variant="outline" size="sm" className="bg-background shadow-sm text-xs gap-1.5" onClick={onRestoreHidden}>
@@ -40,7 +38,6 @@ export function GraphControls({onZoomIn, onZoomOut, onFit, typeLegend, hiddenNod
         </div>
       )}
 
-      {/* Zoom controls */}
       <div className="absolute bottom-6 right-6 z-30 flex flex-col gap-1.5">
         <Button variant="outline" size="icon" className="h-8 w-8 bg-background shadow-sm" onClick={onZoomIn}>
           <ZoomIn className="w-4 h-4" />

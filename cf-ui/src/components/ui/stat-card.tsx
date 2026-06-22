@@ -1,29 +1,38 @@
+import React from 'react';
 import {TrendingDown, TrendingUp, Zap} from 'lucide-react';
-import {Card, CardContent, CardDescription, CardHeader} from '@/components/ui/card';
 import {cn} from '@/lib/utils';
 
 interface StatCardProps {
   label: string;
   value: number | string;
+  /** Optional icon displayed to the left of the content */
+  icon?: React.ReactNode;
+  /** Secondary line shown below the value */
+  sublabel?: string;
   /** Percentage change vs previous period. null = no previous data. */
   trend?: number | null;
   /** E.g. "prev day", "prev week" — shown as a tooltip-style label */
   trendLabel?: string;
+  className?: string;
 }
 
-export function StatCard({label, value, trend, trendLabel}: StatCardProps) {
+export function StatCard({label, value, icon, sublabel, trend, trendLabel, className}: StatCardProps) {
   const hasTrend = trend !== null && trend !== undefined;
   const isUp = hasTrend && trend! > 0;
   const isDown = hasTrend && trend! < 0;
   const isFlat = hasTrend && trend === 0;
 
   return (
-    <Card className="border-neutral-200 dark:border-neutral-800 shadow-sm bg-gradient-to-br from-background to-background/95">
-      <CardHeader className="pb-2.5 pt-5 px-5">
-        <CardDescription className="text-xs uppercase tracking-widest font-medium text-muted-foreground/70">{label}</CardDescription>
-      </CardHeader>
-      <CardContent className="px-5 pb-5">
-        <div className={cn('text-3xl font-semibold tracking-tight', isUp && 'text-emerald-600 dark:text-emerald-400')}>{value}</div>
+    <div className={cn('bg-card border border-border rounded-lg py-10 px-5 flex items-start gap-3', className)}>
+      {icon && (
+        <div className="mt-0.5 p-2 rounded bg-[hsl(var(--sidebar-icon-active)/0.1)] shrink-0">
+          {icon}
+        </div>
+      )}
+      <div className="flex flex-col">
+        <span className="text-sm text-muted-foreground">{label}</span>
+        <div className={cn('text-lg font-bold text-foreground mt-1', isUp && 'text-emerald-600 dark:text-emerald-400')}>{value}</div>
+        {sublabel && <span className="text-sm text-muted-foreground mt-0.5">{sublabel}</span>}
         {hasTrend && (
           <div className="flex items-center gap-2 mt-2.5">
             <span
@@ -40,7 +49,7 @@ export function StatCard({label, value, trend, trendLabel}: StatCardProps) {
             {trendLabel && <span className="text-xs text-muted-foreground/60">{trendLabel}</span>}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

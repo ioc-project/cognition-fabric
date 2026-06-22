@@ -49,7 +49,6 @@ export function AgentCard({
 
   return (
     <div className="bg-card border border-border rounded overflow-hidden">
-      {/* Header */}
       <div
         role="button"
         tabIndex={0}
@@ -57,7 +56,6 @@ export function AgentCard({
         onClick={onToggleExpand}
         onKeyDown={(e) => e.key === 'Enter' && onToggleExpand()}
       >
-        {/* Left: icon + name + id */}
         <div className="flex items-center gap-3">
           <div className="w-7 h-7 rounded bg-[hsl(var(--sidebar-icon-active)/0.1)] flex items-center justify-center">
             <Bot size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
@@ -70,7 +68,6 @@ export function AgentCard({
           </div>
         </div>
 
-        {/* Right: badge + remove + chevron */}
         <div className="flex items-center gap-3">
 {isEditMode && onRemove && (
             <button
@@ -92,7 +89,6 @@ export function AgentCard({
         </div>
       </div>
 
-      {/* Expanded body */}
       {isExpanded && (
         <div className="px-4 pb-4 border-t border-border bg-card">
           {isEditMode ? (

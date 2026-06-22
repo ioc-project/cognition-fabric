@@ -12,6 +12,7 @@ import {ReadOnlyField} from '@/components/ui/read-only-field';
 import {CollapsibleJsonField} from '@/components/mas/collapsible-json-field';
 import {DATE_TIME_FORMAT_OPTIONS, validateJSON} from '@/lib/utils';
 import type {CognitionEngineDetail} from '@/api/endpoints/cognition-engine';
+import {dtCompactLabel} from '@/lib/detail-typography';
 
 export const UpdateCEFormSchema = z.object({
   url: z.string().url('Must be a valid URL').or(z.literal('')),
@@ -60,31 +61,31 @@ export function CognitionEngineFormFields({
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label className="detail-label">Name</Label>
+            <Label className={dtCompactLabel}>Name</Label>
             <ReadOnlyField value={ce?.name || ''} />
           </div>
           <div className="space-y-2">
-            <Label className="detail-label">ID</Label>
+            <Label className={dtCompactLabel}>ID</Label>
             <CopyableInput value={ce?.id || ''} />
           </div>
           <div className="space-y-2">
-            <Label className="detail-label">CFN ID</Label>
+            <Label className={dtCompactLabel}>CFN ID</Label>
             <CopyableInput value={ce?.cfn_id || ''} />
           </div>
           <div className="space-y-2">
-            <Label className="detail-label">Version</Label>
+            <Label className={dtCompactLabel}>Version</Label>
             <ReadOnlyField value={ce?.version || ''} className="font-mono" />
           </div>
           <div className="space-y-2">
-            <Label className="detail-label">Kind</Label>
+            <Label className={dtCompactLabel}>Kind</Label>
             <ReadOnlyField value={ce?.kind || '-'} />
           </div>
           <div className="space-y-2">
-            <Label className="detail-label">Subkind</Label>
+            <Label className={dtCompactLabel}>Subkind</Label>
             <ReadOnlyField value={ce?.subkind || '-'} />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label className="detail-label">URL</Label>
+            <Label className={dtCompactLabel}>URL</Label>
             {isEditMode ? (
               <FormField
                 control={form.control}
@@ -131,7 +132,7 @@ export function CognitionEngineFormFields({
             </div>
           )}
           <div className="space-y-2">
-            <Label className="detail-label">MAS Auto Associate</Label>
+            <Label className={dtCompactLabel}>MAS Auto Associate</Label>
             {isEditMode ? (
               <FormField
                 control={form.control}
@@ -159,7 +160,7 @@ export function CognitionEngineFormFields({
           </div>
           {ce?.last_seen && (
             <div className="space-y-2">
-              <Label className="detail-label">Last Seen</Label>
+              <Label className={dtCompactLabel}>Last Seen</Label>
               <ReadOnlyField value={new Date(ce.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)} />
             </div>
           )}
@@ -201,7 +202,7 @@ export function CognitionEngineFormFields({
         {(isEditMode || (ce?.metrics && ce.metrics.length > 0) || (ce?.capabilities && ce.capabilities.length > 0)) && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
             <div className="space-y-2">
-              <Label className="detail-label">Metrics</Label>
+              <Label className={dtCompactLabel}>Metrics</Label>
               {isEditMode ? (
                 <FormField
                   control={form.control}
@@ -222,7 +223,7 @@ export function CognitionEngineFormFields({
               )}
             </div>
             <div className="space-y-2">
-              <Label className="detail-label">Capabilities</Label>
+              <Label className={dtCompactLabel}>Capabilities</Label>
               {isEditMode ? (
                 <FormField
                   control={form.control}
@@ -247,12 +248,12 @@ export function CognitionEngineFormFields({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
           <div className="space-y-2">
-            <Label className="detail-label">Created At</Label>
+            <Label className={dtCompactLabel}>Created At</Label>
             <Input value={ce?.created_at ? new Date(ce.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'} disabled readOnly />
           </div>
           {ce?.updated_at && (
             <div className="space-y-2">
-              <Label className="detail-label">Updated At</Label>
+              <Label className={dtCompactLabel}>Updated At</Label>
               <Input value={new Date(ce.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)} disabled readOnly />
             </div>
           )}

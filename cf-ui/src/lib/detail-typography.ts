@@ -6,7 +6,10 @@
  */
 
 /** Field label */
-export const dtLabel = 'text-xs font-medium text-muted-foreground';
+export const dtLabel = 'text-sm text-muted-foreground';
+
+/** Compact field label (legacy detail-label visual style) */
+export const dtCompactLabel = 'detail-label';
 
 /** Standard body value — for field values in detail rows */
 export const dtValue = 'text-sm text-foreground';
@@ -19,3 +22,9 @@ export const dtRow = 'grid grid-cols-[180px_1fr] items-start gap-3 py-2.5 border
 
 /** Stacked label+value pair (used in sidebar detail panels) */
 export const dtField = 'flex flex-col gap-1';
+
+/** Compact metadata label (created/updated timestamps) */
+export const dtMetaLabel = 'text-xs text-muted-foreground';
+
+/** Compact metadata value (created/updated timestamps) */
+export const dtMetaValue = 'text-xs text-foreground';
