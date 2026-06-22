@@ -25,7 +25,7 @@ import {CopyableInput} from '@/components/ui/copyable-input';
 import {ChevronDown, ChevronUp, Eye, EyeOff, KeyRound, Globe} from 'lucide-react';
 import {Badge} from '@/components/ui/badge';
 import {StatCard} from '@/components/ui/stat-card';
-import {dtLabel, dtValue, dtRow, dtSectionHeader, dtMetaLabel, dtMetaValue} from '@/lib/detail-typography';
+import {dtLabel, dtValue, dtRow, dtSectionHeader, dtMetaLabel, dtMetaValue, dtPanelHeaderInteractive} from '@/lib/detail-typography';
 
 const UpdateMemoryProviderFormSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be at most 100 characters'),
@@ -264,7 +264,7 @@ export default function MemoryProviderDetailsPage() {
           emptyListStateProps={{title: 'No Memory Provider details found'}}
         >
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4" autoComplete="off">
+            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6" autoComplete="off">
 
               <div className="grid grid-cols-2 gap-8">
                 <StatCard
@@ -356,9 +356,8 @@ export default function MemoryProviderDetailsPage() {
               </div>
 
               <div className="bg-card border border-border rounded overflow-hidden">
-                <button
-                  type="button"
-                  className="w-full flex items-center justify-between px-4 py-3 bg-muted hover:bg-muted/80 transition-colors border-b border-border"
+                <div
+                  className={dtPanelHeaderInteractive}
                   onClick={() => setAuthExpanded((v) => !v)}
                 >
                   <span className={dtSectionHeader}>Config</span>
@@ -367,7 +366,7 @@ export default function MemoryProviderDetailsPage() {
                   ) : (
                     <ChevronDown size={13} className="text-muted-foreground" />
                   )}
-                </button>
+                </div>
 
                 {authExpanded && (
                   <div className="px-4">

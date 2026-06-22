@@ -10,7 +10,7 @@ const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableE
 Table.displayName = 'Table';
 
 const TableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(({className, ...props}, ref) => (
-  <thead ref={ref} className={cn('[&_tr]:border-b', className)} {...props} />
+  <thead ref={ref} className={cn('bg-background [&_tr]:border-b [&_tr]:border-border [&_th]:text-xs [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground', className)} {...props} />
 ));
 TableHeader.displayName = 'TableHeader';
 
@@ -32,7 +32,7 @@ TableRow.displayName = 'TableRow';
 const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<HTMLTableCellElement>>(({className, ...props}, ref) => (
   <th
     ref={ref}
-    className={cn('h-9 px-4 text-left align-middle font-medium text-muted-foreground bg-background [&:has([role=checkbox])]:pr-0', className)}
+    className={cn('h-9 px-4 text-left align-middle text-xs font-semibold text-muted-foreground uppercase tracking-wide bg-[hsl(var(--border)/0.5)] [&:has([role=checkbox])]:pr-0', className)}
     {...props}
   />
 ));

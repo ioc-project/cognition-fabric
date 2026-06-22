@@ -22,7 +22,7 @@ import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {toast} from 'sonner';
 import {CopyableInput} from '@/components/ui/copyable-input';
 import {StatCard} from '@/components/ui/stat-card';
-import {dtLabel, dtSectionHeader, dtMetaLabel, dtMetaValue} from '@/lib/detail-typography';
+import {dtLabel, dtSectionHeader, dtMetaLabel, dtMetaValue, dtPanelHeaderInteractive} from '@/lib/detail-typography';
 
 interface CfnCE {
   id: string;
@@ -185,7 +185,7 @@ export default function CfnDetailsPage() {
         emptyListStateProps={{title: 'No CFN details found'}}
       >
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
             <div className="grid grid-cols-4 gap-8">
               <StatCard
                 icon={<BrainCircuit size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
@@ -307,10 +307,7 @@ export default function CfnDetailsPage() {
             </div>
 
             <div className="bg-card border border-border rounded overflow-hidden">
-              <div
-                className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted cursor-pointer"
-                onClick={() => setCeExpanded((v) => !v)}
-              >
+              <div className={dtPanelHeaderInteractive} onClick={() => setCeExpanded((v) => !v)}>
                 <div className="flex items-center gap-2">
                   <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
                   <span className={dtSectionHeader}>Cognition Engines</span>
@@ -353,10 +350,7 @@ export default function CfnDetailsPage() {
             </div>
 
             <div className="bg-card border border-border rounded overflow-hidden">
-              <div
-                className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted cursor-pointer"
-                onClick={() => setMasExpanded((v) => !v)}
-              >
+              <div className={dtPanelHeaderInteractive} onClick={() => setMasExpanded((v) => !v)}>
                 <div className="flex items-center gap-2">
                   <Workflow size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
                   <span className={dtSectionHeader}>Multi-Agentic Systems</span>
@@ -399,10 +393,7 @@ export default function CfnDetailsPage() {
             </div>
 
             <div className="bg-card border border-border rounded overflow-hidden">
-              <div
-                className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted cursor-pointer"
-                onClick={() => setMpExpanded((v) => !v)}
-              >
+              <div className={dtPanelHeaderInteractive} onClick={() => setMpExpanded((v) => !v)}>
                 <div className="flex items-center gap-2">
                   <HardDrive size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
                   <span className={dtSectionHeader}>Memory Providers</span>

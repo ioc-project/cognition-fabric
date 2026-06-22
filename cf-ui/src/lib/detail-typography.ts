@@ -28,3 +28,9 @@ export const dtMetaLabel = 'text-xs text-muted-foreground';
 
 /** Compact metadata value (created/updated timestamps) */
 export const dtMetaValue = 'text-xs text-foreground';
+
+/** Detail panel/card header row surface */
+export const dtPanelHeader = 'px-4 py-3 border-b border-border flex items-center justify-between bg-[hsl(var(--border)/0.5)]';
+
+/** Interactive detail panel/card header row surface */
+export const dtPanelHeaderInteractive = `${dtPanelHeader} cursor-pointer hover:brightness-95`;

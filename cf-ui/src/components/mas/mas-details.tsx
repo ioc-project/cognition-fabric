@@ -33,7 +33,7 @@ import {MASAuditLog} from './mas-audit-log';
 import {MASAssociateCEModal} from './mas-associate-ce-modal';
 import {AgentsList} from './agents-list';
 import {UpdateMASFormSchema, type FormValues} from './mas-form-schema';
-import {dtLabel, dtSectionHeader, dtMetaLabel, dtMetaValue} from '@/lib/detail-typography';
+import {dtLabel, dtSectionHeader, dtMetaLabel, dtMetaValue, dtPanelHeader, dtPanelHeaderInteractive} from '@/lib/detail-typography';
 
 export default function MASDetailsPage() {
   const router = useRouter();
@@ -265,7 +265,7 @@ export default function MASDetailsPage() {
           emptyListStateProps={{title: 'No MAS details found'}}
         >
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
               <div className="grid grid-cols-3 gap-8">
                 <StatCard icon={<Bot size={14} className="text-[hsl(var(--sidebar-icon-active))]" />} label="Agents" value={totalAgents} />
                 <StatCard
@@ -390,7 +390,7 @@ export default function MASDetailsPage() {
               </div>
 
               <div className="bg-card border border-border rounded overflow-hidden">
-                <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted">
+                <div className={dtPanelHeader}>
                   <div className="flex items-center gap-2">
                     <Bot size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
                     <span className={dtSectionHeader}>Agents</span>
@@ -445,7 +445,7 @@ export default function MASDetailsPage() {
 
               <div className="bg-card border border-border rounded overflow-hidden">
                 <div
-                  className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted cursor-pointer"
+                  className={dtPanelHeaderInteractive}
                   onClick={() => setMasConfigExpanded(!masConfigExpanded)}
                 >
                   <div className="flex items-center gap-2">
@@ -498,7 +498,7 @@ export default function MASDetailsPage() {
               </div>
 
               <div className="bg-card border border-border rounded overflow-hidden">
-                <div className="px-4 py-3 border-b border-border flex items-center justify-between bg-muted">
+                <div className={dtPanelHeader}>
                   <div className="flex items-center gap-2">
                     <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
                     <span className={dtSectionHeader}>Associated Cognition Engines</span>

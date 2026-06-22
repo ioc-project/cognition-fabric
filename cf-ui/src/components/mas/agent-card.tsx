@@ -52,7 +52,7 @@ export function AgentCard({
       <div
         role="button"
         tabIndex={0}
-        className="w-full flex items-center justify-between px-4 py-3 bg-muted hover:bg-muted/80 transition-colors cursor-pointer"
+        className="w-full flex items-center justify-between px-4 py-3 bg-[hsl(var(--border)/0.5)] hover:brightness-95 transition-all cursor-pointer"
         onClick={onToggleExpand}
         onKeyDown={(e) => e.key === 'Enter' && onToggleExpand()}
       >

@@ -30,7 +30,7 @@ import {toast} from 'sonner';
 import {Badge} from '@/components/ui/badge';
 import {StatCard} from '@/components/ui/stat-card';
 import {ChevronDown, ChevronUp, Cpu, Tag, Network} from 'lucide-react';
-import {dtLabel, dtValue, dtRow, dtSectionHeader, dtMetaLabel, dtMetaValue} from '@/lib/detail-typography';
+import {dtLabel, dtValue, dtRow, dtSectionHeader, dtMetaLabel, dtMetaValue, dtPanelHeader, dtPanelHeaderInteractive} from '@/lib/detail-typography';
 
 export default function CognitiveAgentDetailsPage() {
   const router = useRouter();
@@ -196,7 +196,7 @@ export default function CognitiveAgentDetailsPage() {
           emptyListStateProps={{title: 'No details found'}}
         >
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
 
               <div className="grid grid-cols-3 gap-8">
                 <StatCard
@@ -328,7 +328,7 @@ export default function CognitiveAgentDetailsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-card border border-border rounded overflow-hidden">
-                  <div className="px-4 py-3 border-b border-border bg-muted">
+                  <div className={dtPanelHeader}>
                     <span className={dtSectionHeader}>Capabilities</span>
                   </div>
                   <div className="p-4">
@@ -360,7 +360,7 @@ export default function CognitiveAgentDetailsPage() {
                 </div>
 
                 <div className="bg-card border border-border rounded overflow-hidden">
-                  <div className="px-4 py-3 border-b border-border bg-muted">
+                  <div className={dtPanelHeader}>
                     <span className={dtSectionHeader}>Metrics</span>
                   </div>
                   <div className="p-4">
@@ -393,9 +393,8 @@ export default function CognitiveAgentDetailsPage() {
               </div>
 
               <div className="bg-card border border-border rounded overflow-hidden">
-                <button
-                  type="button"
-                  className="w-full flex items-center justify-between px-4 py-3 bg-muted hover:bg-muted/80 transition-colors border-b border-border"
+                <div
+                  className={dtPanelHeaderInteractive}
                   onClick={() => setConfigExpanded((v) => !v)}
                 >
                   <div className="flex items-center gap-2">
@@ -407,7 +406,7 @@ export default function CognitiveAgentDetailsPage() {
                     )}
                   </div>
                   {configExpanded ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
-                </button>
+                </div>
 
                 {configExpanded && (
                   <div className="p-4">
@@ -444,9 +443,8 @@ export default function CognitiveAgentDetailsPage() {
               </div>
 
               <div className="bg-card border border-border rounded overflow-hidden">
-                <button
-                  type="button"
-                  className="w-full flex items-center justify-between px-4 py-3 bg-muted hover:bg-muted/80 transition-colors border-b border-border"
+                <div
+                  className={dtPanelHeaderInteractive}
                   onClick={() => setMasConfigExpanded((v) => !v)}
                 >
                   <div className="flex items-center gap-2">
@@ -458,7 +456,7 @@ export default function CognitiveAgentDetailsPage() {
                     )}
                   </div>
                   {masConfigExpanded ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
-                </button>
+                </div>
 
                 {masConfigExpanded && (
                   <div className="p-4">
