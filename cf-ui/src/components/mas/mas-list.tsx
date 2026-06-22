@@ -1,7 +1,7 @@
 'use client';
 
 import {useMemo, useState} from 'react';
-import {Plus, BrainCircuit} from 'lucide-react';
+import {Plus, Workflow} from 'lucide-react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
@@ -108,7 +108,7 @@ export function MASList({workspaceId}: MASListProps) {
               <div className="flex items-center justify-center min-h-[50vh]">
                 <ListShell
                   empty={{
-                    icon: BrainCircuit,
+                    icon: Workflow,
                     title: 'No Multi-Agentic Systems exist in this workspace.',
                     description: 'Create one to get started.',
                     actionLabel: 'Create Multi-Agentic System',
