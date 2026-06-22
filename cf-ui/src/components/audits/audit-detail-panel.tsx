@@ -200,7 +200,7 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
                 <h3 className="text-sm font-semibold text-foreground">Audit Information</h3>
 
                 {info.request && (
-                  <div className="p-3 bg-background rounded-lg border border-border">
+                  <div className="p-3 bg-card rounded-lg border border-border">
                     <div className="text-xs text-muted-foreground font-semibold mb-2">Request</div>
                     <div className="space-y-2">
                       {info.request.http_method && info.request.http_url && (
@@ -224,7 +224,7 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
                 )}
 
                 {info.response && (
-                  <div className="p-3 bg-background rounded-lg border border-border">
+                  <div className="p-3 bg-card rounded-lg border border-border">
                     <div className="text-xs text-muted-foreground font-semibold mb-2">Response</div>
                     <pre className="text-[10px] font-mono bg-muted p-2 rounded overflow-auto max-h-60 whitespace-pre-wrap break-words">
                       {(() => {
@@ -246,7 +246,7 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
                 )}
 
                 {!info.request && !info.response && (
-                  <div className="p-3 bg-background rounded-lg border border-border">
+                  <div className="p-3 bg-card rounded-lg border border-border">
                     <pre className="text-[10px] font-mono bg-muted p-2 rounded overflow-auto max-h-96 whitespace-pre-wrap">
                       {JSON.stringify(info, null, 2)}
                     </pre>

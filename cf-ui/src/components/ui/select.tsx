@@ -73,7 +73,7 @@ const SelectContent = React.forwardRef<React.ElementRef<typeof SelectPrimitive.C
           'relative z-50 max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-md border p-1 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-select-content-transform-origin]',
           surface === 'page'
             ? 'bg-[hsl(var(--main-background))] text-foreground border-[hsl(var(--navbar-border))] shadow-[var(--select-content-shadow)]'
-            : 'soft-card text-popover-foreground shadow-md',
+            : 'bg-card text-popover-foreground shadow-md',
           position === 'popper' &&
             'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',
           className

@@ -42,7 +42,7 @@
   --soft-card-bg: var(--surface-weak);
 
   --input-text-dark: 213 16% 16%;
-  --input-bg-light: 221 67% 99%;
+  --input-bg-light: 0 0% 100%;
   --input-border-light: 222 68% 90%;
   --input-border-focus: 212 100% 34%;
   --input-placeholder: 210 6% 49%;
@@ -416,7 +416,8 @@ input[type='number'],
 input[type='tel'],
 input[type='url'],
 button[role='combobox'],
-select {
+select,
+textarea {
   height: 36px;
   padding: 4px 12px;
   border-radius: 4px;
@@ -501,7 +502,8 @@ input[type='url']::selection {
 .dark input[type='tel'],
 .dark input[type='url'],
 .dark button[role='combobox'],
-.dark select {
+.dark select,
+.dark textarea {
   border-color: hsl(var(--input));
   background-color: hsl(var(--soft-card-bg));
   color: hsl(var(--foreground));
