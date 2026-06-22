@@ -25,10 +25,7 @@ export const ResourceTableHeader = React.forwardRef<HTMLTableSectionElement, Rea
   ({className, ...props}, ref) => (
     <BaseHeader
       ref={ref}
-      className={cn(
-        'bg-muted/60 [&_tr]:border-b [&_tr]:border-border [&_th]:text-xs [&_th]:font-semibold [&_th]:uppercase [&_th]:tracking-wide [&_th]:text-muted-foreground sticky top-0 z-10',
-        className
-      )}
+      className={cn('sticky top-0 z-10', className)}
       {...props}
     />
   )

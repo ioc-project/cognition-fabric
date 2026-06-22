@@ -2,10 +2,6 @@ import {NextAuthOptions} from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import {authApi} from '@/api/endpoints/auth';
 
-if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV !== 'production') {
-  console.warn('NEXTAUTH_SECRET is not set. Using a temporary secret for build.');
-}
-
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({

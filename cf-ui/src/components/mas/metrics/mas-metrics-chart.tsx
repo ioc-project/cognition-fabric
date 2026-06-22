@@ -8,7 +8,16 @@ import {ChartContainer, ChartTooltip, ChartTooltipContent} from '@/components/ui
 import type {ChartConfig} from '@/components/ui/chart';
 import type {MASMetricsResponse} from '@/api/endpoints/mas-metrics';
 
-const CHART_COLORS = ['#6366f1', '#22d3ee', '#f59e0b', '#ec4899', '#10b981', '#f97316', '#8b5cf6', '#14b8a6'];
+const CHART_COLORS = [
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-3)',
+  'var(--chart-4)',
+  'var(--chart-5)',
+  'var(--chart-6)',
+  'var(--chart-7)',
+  'var(--chart-8)'
+];
 
 function WideCursor({x = 0, y = 0, width = 0, height = 0}: {x?: number; y?: number; width?: number; height?: number}) {
   const pad = 20;

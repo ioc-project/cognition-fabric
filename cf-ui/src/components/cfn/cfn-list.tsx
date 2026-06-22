@@ -93,7 +93,7 @@ export function CfnList() {
               </div>
             }
           >
-            <div className="space-y-3">
+            <div className="space-y-6">
               <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search…" className="max-w-xs" />
               {viewMode === 'table' ? (
                 <CfnTableList

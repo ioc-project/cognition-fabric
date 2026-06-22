@@ -70,11 +70,11 @@ export function MemoryProviderTableList({
           )
         },
         {
-          content: provider.description ? <TruncatedText text={provider.description} maxLength={50} className="text-muted-foreground" /> : '-',
-          className: 'text-muted-foreground'
+          content: provider.description ? <TruncatedText text={provider.description} maxLength={50} /> : '-',
+          className: ''
         },
         {
-          content: <Badge variant={provider.enabled ? 'success' : 'inactive'}>{provider.enabled ? 'Enabled' : 'Disabled'}</Badge>
+          content: <Badge variant={provider.enabled ? 'info' : 'inactive'}>{provider.enabled ? 'Enabled' : 'Disabled'}</Badge>
         },
         {
           content: provider.created_at ? new Date(provider.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'

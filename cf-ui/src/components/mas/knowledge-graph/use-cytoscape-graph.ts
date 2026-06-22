@@ -95,9 +95,10 @@ export function useCytoscapeGraph({data, isDark, searchQuery, masId}: UseCytosca
     }
 
     try {
-      const edgeColor = isDark ? '#94a3b8' : '#64748b';
-      const edgeLabelBg = isDark ? '#1e293b' : '#f8fafc';
-      const selectedNodeBorder = isDark ? '#818cf8' : '#1e1b4b';
+      const style = getComputedStyle(document.documentElement);
+      const edgeColor = style.getPropertyValue('--graph-edge-color').trim();
+      const edgeLabelBg = style.getPropertyValue('--graph-edge-label-bg').trim();
+      const selectedNodeBorder = style.getPropertyValue('--graph-selected-node-border').trim();
 
       const elements = buildElements(data as Record<string, unknown>);
       const nodeCount = elements.filter((el) => !el.data.source).length;

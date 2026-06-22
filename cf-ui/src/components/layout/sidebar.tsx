@@ -67,20 +67,19 @@ export function Sidebar() {
     return (
       <Link
         href={href}
-        className={`group flex items-center justify-between gap-3 py-3 px-3 rounded-md transition-colors focus-visible:outline-none border-l-2 ${
+        className={`group flex items-center pl-3 h-9 gap-3 rounded-lg transition-colors focus-visible:outline-none ${
           active
-            ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))] border-[hsl(var(--sidebar-active-border))]'
-            : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))] border-transparent'
+            ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))]'
+            : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))]'
         }`}
       >
-        <div className="flex items-center gap-3">
-          <Icon
-            className={`w-5 h-5 transition-colors flex-shrink-0 ${
-              active ? 'text-[hsl(var(--sidebar-icon-active))]' : 'text-[hsl(var(--sidebar-icon))] group-hover:text-[hsl(var(--sidebar-icon-active))]'
-            }`}
-          />
-          <span className="sidebar-text">{label}</span>
-        </div>
+        <Icon
+          strokeWidth={1.33}
+          className={`w-4 h-4 transition-colors flex-shrink-0 ${
+            active ? 'text-[hsl(var(--sidebar-icon-active))]' : 'text-[hsl(var(--sidebar-icon))] group-hover:text-[hsl(var(--sidebar-icon-active))]'
+          }`}
+        />
+        <span className="sidebar-text">{label}</span>
       </Link>
     );
   });
