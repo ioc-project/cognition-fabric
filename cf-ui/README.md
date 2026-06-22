@@ -1,6 +1,6 @@
 # ioc-cfn-mgmt-plane-ui
 
-Cognition Fabric Node Management UI Service
+Cognition Fabric Node Management UI Service.
 
 ## Tech Stack
 
