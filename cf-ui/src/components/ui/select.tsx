@@ -26,7 +26,7 @@ const SelectTrigger = React.forwardRef<React.ElementRef<typeof SelectPrimitive.T
         'flex h-10 w-full items-center justify-between rounded-md border-2 px-3 py-2 text-sm text-foreground ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
         surface === 'page'
           ? 'border-[hsl(var(--navbar-border))] !bg-[hsl(var(--main-background))] focus:border-[hsl(var(--sidebar-active-border))] dark:focus:border-ring'
-          : 'border-[#d5dff7] dark:border-border soft-card focus:border-[#0051af] dark:focus:border-ring',
+          : 'border-[hsl(var(--input-border-light))] dark:border-border soft-card focus:border-[hsl(var(--input-border-focus))] dark:focus:border-ring',
         className
       )}
       {...props}

@@ -417,8 +417,8 @@ function AuditEventCard({
 
 function getResourceTypeLabel(resourceType: string): string {
   const labels: Record<string, string> = {
-    MAS: 'Multi-agentic system',
-    'MAS-AGENT': 'Multi-agentic system agent',
+    MAS: 'Multi-Agentic System',
+    'MAS-AGENT': 'Multi-Agentic System agent',
     MEMORY_PROVIDER: 'Memory Provider'
   };
   return labels[resourceType] || resourceType;

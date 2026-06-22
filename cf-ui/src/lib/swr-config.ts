@@ -17,7 +17,7 @@ export const swrKeys = {
   cognitionEngines: () => ['cognition-engines'] as const,
   cognitionEngineDetails: (cognitionEngineId: string) => ['cognition-engine-details', cognitionEngineId] as const,
 
-  cfn: () => ['cfn-list'] as const,
+  cfn: (workspaceId?: string) => (workspaceId ? (['cfn-list', workspaceId] as const) : (['cfn-list'] as const)),
   cfnDetails: (cfnId: string) => ['cfn-details', cfnId] as const,
 
   memoryProviders: () => ['memory-providers'] as const,

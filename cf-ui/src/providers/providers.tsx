@@ -21,8 +21,7 @@ export function Providers({children}: {children: React.ReactNode}) {
         }
         setConfigLoaded(true);
       })
-      .catch((error) => {
-        console.error('[Providers] Failed to load runtime config:', error);
+      .catch(() => {
         setConfigLoaded(true);
       });
   }, []);

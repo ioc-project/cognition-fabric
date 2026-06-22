@@ -66,6 +66,8 @@
   --badge-info-text: 210 80% 42%;
   --badge-info-bg: 210 80% 95%;
   --badge-info-border: 210 80% 80%;
+
+  --card-shadow: 0 4px 4px rgba(0, 0, 0, 0.1);
 }
 
 .dark {
@@ -128,6 +130,8 @@
   --badge-info-text: 210 80% 65%;
   --badge-info-bg: 210 50% 17%;
   --badge-info-border: 210 50% 32%;
+
+  --card-shadow: 0 4px 4px rgba(0, 0, 0, 0.35);
 }
 
 * {

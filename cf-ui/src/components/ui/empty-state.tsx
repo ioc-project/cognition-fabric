@@ -16,7 +16,7 @@ export function EmptyState({icon: Icon, title, description, actionLabel, onActio
   const containerClassName =
     variant === 'inset'
       ? 'flex flex-col items-center p-10 py-12 gap-6 rounded-lg min-h-[300px]'
-      : 'flex flex-col items-center p-10 py-12 gap-6 bg-card soft-card shadow-[0px_4px_4px_rgba(0,0,0,0.1)] dark:shadow-[0px_4px_4px_rgba(0,0,0,0.35)] rounded-lg min-h-[340px] mx-auto max-w-2xl';
+      : 'flex flex-col items-center p-10 py-12 gap-6 bg-card soft-card shadow-[var(--card-shadow)] rounded-lg min-h-[340px] mx-auto max-w-2xl';
 
   const content = (
     <div className={containerClassName}>

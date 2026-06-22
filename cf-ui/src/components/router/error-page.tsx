@@ -18,7 +18,6 @@ export const ErrorPage = ({error, className, showRefreshButton = true, info = tr
   } else if (typeof error === 'string') {
     errorMessage = error;
   } else {
-    console.error(error);
     errorMessage = 'Unknown error';
   }
 

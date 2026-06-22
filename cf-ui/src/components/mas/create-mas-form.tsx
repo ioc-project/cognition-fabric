@@ -49,7 +49,7 @@ const AgentFormSchema = z.object({
 
 const formSchema = z
   .object({
-    name: z.string().min(1, 'Multi-Agent System name is required').min(3, 'Name must be at least 3 characters'),
+    name: z.string().min(1, 'Multi-Agentic System name is required').min(3, 'Name must be at least 3 characters'),
     description: z.string().optional(),
     shared_memory_provider_id: z.string().optional(),
     cognition_engine_ids: z.array(z.string()).optional().default([]),
@@ -166,13 +166,13 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
         ...(values.config && {config: parseJsonField(values.config)})
       });
 
-      toast.success(`Multi-Agent System "${response.name}" created successfully`);
+      toast.success(`Multi-Agentic System "${response.name}" created successfully`);
 
       router.push(routes.mas.list);
     } catch (err) {
       const errorMessage = parseError(err);
       setError(errorMessage);
-      toast.error(`Failed to create Multi-Agent System: ${errorMessage}`);
+      toast.error(`Failed to create Multi-Agentic System: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -217,7 +217,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                       <FormItem>
                         <FormLabel required>Name</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter Multi-Agent System name" {...field} />
+                          <Input placeholder="Enter Multi-Agentic System name" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -335,7 +335,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                       </Button>
                     )}
                     <Button type="submit" variant="sidebar" disabled={isLoading}>
-                      {isLoading ? 'Creating...' : 'Create Multi-Agent System'}
+                      {isLoading ? 'Creating...' : 'Create Multi-Agentic System'}
                     </Button>
                   </div>
                 </form>

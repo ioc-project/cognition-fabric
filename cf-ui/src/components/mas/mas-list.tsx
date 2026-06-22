@@ -68,7 +68,7 @@ export function MASList({workspaceId}: MASListProps) {
     await deleteDialog.confirm(async (data) => {
       try {
         await deleteMAS(data.id);
-        toast.success(`Multi-Agent System "${data.name}" deleted successfully`);
+        toast.success(`Multi-Agentic System "${data.name}" deleted successfully`);
       } catch (err) {
         const errorMessage = parseError(err);
         setDeleteError(errorMessage);
@@ -111,7 +111,7 @@ export function MASList({workspaceId}: MASListProps) {
                     icon: BrainCircuit,
                     title: 'No Multi-Agentic Systems exist in this workspace.',
                     description: 'Create one to get started.',
-                    actionLabel: 'Create Multi-Agent System',
+                    actionLabel: 'Create Multi-Agentic System',
                     href: routes.mas.create
                   }}
                 />
@@ -161,7 +161,7 @@ export function MASList({workspaceId}: MASListProps) {
           }
         }}
         onConfirm={handleDeleteMAS}
-        title={`Delete ${deleteDialog.data?.name || 'Multi-Agent System'}`}
+        title={`Delete ${deleteDialog.data?.name || 'Multi-Agentic System'}`}
         description={deleteError ?? `Delete "${deleteDialog.data?.name}"? This action is permanent and cannot be undone.`}
         confirmText="Delete"
         loading={deleteDialog.isLoading}
