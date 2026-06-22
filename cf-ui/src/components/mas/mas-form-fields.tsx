@@ -167,7 +167,9 @@ export function MASFormFields({
               variant="sidebar"
               size="sm"
               className="gap-2"
-              onClick={() => appendAgent({agent_id: '', name: '', url: '', agentic_memory_provider_id: '', identity_type: '', identity_identifiers: ''})}
+              onClick={() =>
+                appendAgent({agent_id: '', name: '', url: '', agentic_memory_provider_id: '', identity_type: '', identity_identifiers: ''})
+              }
             >
               <Plus className="w-4 h-4" />
               Add Agent

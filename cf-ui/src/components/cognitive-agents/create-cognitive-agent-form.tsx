@@ -106,7 +106,13 @@ export function CreateCognitiveAgentForm({workspaceId: _workspaceId}: CreateCogn
                         <FormItem>
                           <FormLabel>Description</FormLabel>
                           <FormControl>
-                            <Textarea placeholder="Describe what this agent does..." className="resize-none" rows={4} {...field} value={field.value || ''} />
+                            <Textarea
+                              placeholder="Describe what this agent does..."
+                              className="resize-none"
+                              rows={4}
+                              {...field}
+                              value={field.value || ''}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

@@ -22,13 +22,7 @@ export {
 };
 
 export const ResourceTableHeader = React.forwardRef<HTMLTableSectionElement, React.HTMLAttributes<HTMLTableSectionElement>>(
-  ({className, ...props}, ref) => (
-    <BaseHeader
-      ref={ref}
-      className={cn('sticky top-0 z-10', className)}
-      {...props}
-    />
-  )
+  ({className, ...props}, ref) => <BaseHeader ref={ref} className={cn('sticky top-0 z-10', className)} {...props} />
 );
 ResourceTableHeader.displayName = 'ResourceTableHeader';
 

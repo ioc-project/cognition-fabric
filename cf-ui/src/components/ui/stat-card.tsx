@@ -24,11 +24,7 @@ export function StatCard({label, value, icon, sublabel, trend, trendLabel, class
 
   return (
     <div className={cn('bg-card border border-border rounded-lg py-10 px-5 flex items-start gap-3', className)}>
-      {icon && (
-        <div className="mt-0.5 p-2 rounded bg-[hsl(var(--sidebar-icon-active)/0.1)] shrink-0">
-          {icon}
-        </div>
-      )}
+      {icon && <div className="mt-0.5 p-2 rounded bg-[hsl(var(--sidebar-icon-active)/0.1)] shrink-0">{icon}</div>}
       <div className="flex flex-col">
         <span className="text-sm text-muted-foreground">{label}</span>
         <div className={cn('text-lg font-bold text-foreground mt-1', isUp && 'text-emerald-600 dark:text-emerald-400')}>{value}</div>

@@ -444,10 +444,7 @@ export default function MASDetailsPage() {
               </div>
 
               <div className="bg-card border border-border rounded overflow-hidden">
-                <div
-                  className={dtPanelHeaderInteractive}
-                  onClick={() => setMasConfigExpanded(!masConfigExpanded)}
-                >
+                <div className={dtPanelHeaderInteractive} onClick={() => setMasConfigExpanded(!masConfigExpanded)}>
                   <div className="flex items-center gap-2">
                     <span className={dtSectionHeader}>Config</span>
                     {isEditMode &&

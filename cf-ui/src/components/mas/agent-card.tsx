@@ -62,14 +62,12 @@ export function AgentCard({
           </div>
           <div className="text-left">
             <div className="text-sm text-foreground font-medium">{headerLabel}</div>
-            {agentIdValue && (
-              <div className="font-mono text-xs text-muted-foreground truncate max-w-[200px]">{agentIdValue}</div>
-            )}
+            {agentIdValue && <div className="font-mono text-xs text-muted-foreground truncate max-w-[200px]">{agentIdValue}</div>}
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-{isEditMode && onRemove && (
+          {isEditMode && onRemove && (
             <button
               type="button"
               className="h-5 w-5 inline-flex items-center justify-center rounded bg-card hover:bg-red-50 border border-border text-muted-foreground hover:text-red-500 transition-colors"
@@ -81,11 +79,7 @@ export function AgentCard({
               <X size={11} />
             </button>
           )}
-          {isExpanded ? (
-            <ChevronUp size={13} className="text-muted-foreground" />
-          ) : (
-            <ChevronDown size={13} className="text-muted-foreground" />
-          )}
+          {isExpanded ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
         </div>
       </div>
 

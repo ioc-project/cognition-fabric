@@ -25,21 +25,35 @@ const TableFooter = React.forwardRef<HTMLTableSectionElement, React.HTMLAttribut
 TableFooter.displayName = 'TableFooter';
 
 const TableRow = React.forwardRef<HTMLTableRowElement, React.HTMLAttributes<HTMLTableRowElement>>(({className, ...props}, ref) => (
-  <tr ref={ref} className={cn('border-b border-[hsl(var(--table-row-border))] transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted', className)} {...props} />
+  <tr
+    ref={ref}
+    className={cn('border-b border-[hsl(var(--table-row-border))] transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted', className)}
+    {...props}
+  />
 ));
 TableRow.displayName = 'TableRow';
 
 const TableHead = React.forwardRef<HTMLTableCellElement, React.ThHTMLAttributes<HTMLTableCellElement>>(({className, ...props}, ref) => (
   <th
     ref={ref}
-    className={cn('h-[40.5px] px-6 text-left align-middle text-xs font-bold uppercase tracking-[0.6px] text-[hsl(var(--table-head-foreground))] bg-[hsl(var(--table-header-bg))] [&:has([role=checkbox])]:pr-0', className)}
+    className={cn(
+      'h-[40.5px] px-6 text-left align-middle text-xs font-bold uppercase tracking-[0.6px] text-[hsl(var(--table-head-foreground))] bg-[hsl(var(--table-header-bg))] [&:has([role=checkbox])]:pr-0',
+      className
+    )}
     {...props}
   />
 ));
 TableHead.displayName = 'TableHead';
 
 const TableCell = React.forwardRef<HTMLTableCellElement, React.TdHTMLAttributes<HTMLTableCellElement>>(({className, ...props}, ref) => (
-  <td ref={ref} className={cn('h-[59px] px-6 align-middle text-sm font-normal leading-5 tracking-[-0.15px] text-[hsl(var(--table-cell-secondary))] [&:has([role=checkbox])]:pr-0', className)} {...props} />
+  <td
+    ref={ref}
+    className={cn(
+      'h-[59px] px-6 align-middle text-sm font-normal leading-5 tracking-[-0.15px] text-[hsl(var(--table-cell-secondary))] [&:has([role=checkbox])]:pr-0',
+      className
+    )}
+    {...props}
+  />
 ));
 TableCell.displayName = 'TableCell';
 

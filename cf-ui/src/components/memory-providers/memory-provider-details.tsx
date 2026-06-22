@@ -265,7 +265,6 @@ export default function MemoryProviderDetailsPage() {
         >
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6" autoComplete="off">
-
               <div className="grid grid-cols-2 gap-8">
                 <StatCard
                   icon={<Globe size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
@@ -303,7 +302,9 @@ export default function MemoryProviderDetailsPage() {
 
                   <div className="bg-card border border-border rounded-lg py-10 px-5 min-w-0">
                     <span className={labelClass}>ID</span>
-                    <div className="mt-2"><CopyableInput value={provider?.id || ''} /></div>
+                    <div className="mt-2">
+                      <CopyableInput value={provider?.id || ''} />
+                    </div>
                   </div>
                 </div>
 
@@ -356,10 +357,7 @@ export default function MemoryProviderDetailsPage() {
               </div>
 
               <div className="bg-card border border-border rounded overflow-hidden">
-                <div
-                  className={dtPanelHeaderInteractive}
-                  onClick={() => setAuthExpanded((v) => !v)}
-                >
+                <div className={dtPanelHeaderInteractive} onClick={() => setAuthExpanded((v) => !v)}>
                   <span className={dtSectionHeader}>Config</span>
                   {authExpanded ? (
                     <ChevronUp size={13} className="text-muted-foreground" />
@@ -426,7 +424,9 @@ export default function MemoryProviderDetailsPage() {
                         const config = provider?.config as MemoryProviderConfig | null;
                         const creds = config?.auth?.credentials;
                         const type = config?.auth?.type;
-                        if (!creds || !type || type === 'none') return null;
+                        if (!creds || !type || type === 'none') {
+                          return null;
+                        }
 
                         const RevealField = ({fieldKey, label, value}: {fieldKey: string; label: string; value: string}) => (
                           <div className={fieldClass}>
@@ -444,9 +444,13 @@ export default function MemoryProviderDetailsPage() {
                           </div>
                         );
 
-                        if (type === 'token') return <RevealField fieldKey="api_key" label="API Key" value={creds.api_key ?? ''} />;
-                        if (type === 'bearer') return <RevealField fieldKey="access_token" label="Access Token" value={creds.access_token ?? ''} />;
-                        if (type === 'basic')
+                        if (type === 'token') {
+                          return <RevealField fieldKey="api_key" label="API Key" value={creds.api_key ?? ''} />;
+                        }
+                        if (type === 'bearer') {
+                          return <RevealField fieldKey="access_token" label="Access Token" value={creds.access_token ?? ''} />;
+                        }
+                        if (type === 'basic') {
                           return (
                             <>
                               <div className={fieldClass}>
@@ -456,7 +460,8 @@ export default function MemoryProviderDetailsPage() {
                               <RevealField fieldKey="password" label="Password" value={creds.password ?? ''} />
                             </>
                           );
-                        if (type === 'custom')
+                        }
+                        if (type === 'custom') {
                           return (
                             <>
                               <div className={fieldClass}>
@@ -466,6 +471,7 @@ export default function MemoryProviderDetailsPage() {
                               <RevealField fieldKey="header_value" label="Header Value" value={creds.header_value ?? ''} />
                             </>
                           );
+                        }
                         return null;
                       })()}
 
@@ -495,7 +501,13 @@ export default function MemoryProviderDetailsPage() {
                           render={({field}) => (
                             <FormItem className="space-y-1">
                               <FormControl>
-                                <Input type="password" placeholder="Enter access token" autoComplete="new-password" {...field} className="h-8 text-sm" />
+                                <Input
+                                  type="password"
+                                  placeholder="Enter access token"
+                                  autoComplete="new-password"
+                                  {...field}
+                                  className="h-8 text-sm"
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -528,7 +540,13 @@ export default function MemoryProviderDetailsPage() {
                             render={({field}) => (
                               <FormItem className="space-y-1">
                                 <FormControl>
-                                  <Input type="password" placeholder="Enter password" autoComplete="new-password" {...field} className="h-8 text-sm" />
+                                  <Input
+                                    type="password"
+                                    placeholder="Enter password"
+                                    autoComplete="new-password"
+                                    {...field}
+                                    className="h-8 text-sm"
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -562,7 +580,13 @@ export default function MemoryProviderDetailsPage() {
                             render={({field}) => (
                               <FormItem className="space-y-1">
                                 <FormControl>
-                                  <Input type="password" placeholder="Enter header value" autoComplete="new-password" {...field} className="h-8 text-sm" />
+                                  <Input
+                                    type="password"
+                                    placeholder="Enter header value"
+                                    autoComplete="new-password"
+                                    {...field}
+                                    className="h-8 text-sm"
+                                  />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>

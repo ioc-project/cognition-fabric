@@ -196,7 +196,13 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col items-start gap-6 w-full max-w-[1100px]" autoComplete="off">
             <input type="text" name="fakeusernameremembered" style={{position: 'absolute', top: '-9999px'}} tabIndex={-1} autoComplete="off" />
-            <input type="password" name="fakepasswordremembered" style={{position: 'absolute', top: '-9999px'}} tabIndex={-1} autoComplete="new-password" />
+            <input
+              type="password"
+              name="fakepasswordremembered"
+              style={{position: 'absolute', top: '-9999px'}}
+              tabIndex={-1}
+              autoComplete="new-password"
+            />
 
             {error && (
               <div className="w-full p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md">

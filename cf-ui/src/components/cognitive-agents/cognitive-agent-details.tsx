@@ -197,7 +197,6 @@ export default function CognitiveAgentDetailsPage() {
         >
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
-
               <div className="grid grid-cols-3 gap-8">
                 <StatCard
                   icon={<Cpu size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
@@ -205,11 +204,7 @@ export default function CognitiveAgentDetailsPage() {
                   value={ce?.kind || '-'}
                   sublabel={ce?.subkind || undefined}
                 />
-                <StatCard
-                  icon={<Tag size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
-                  label="Version"
-                  value={ce?.version || '-'}
-                />
+                <StatCard icon={<Tag size={14} className="text-[hsl(var(--sidebar-icon-active))]" />} label="Version" value={ce?.version || '-'} />
                 <StatCard
                   icon={<Network size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
                   label="MAS Auto Associate"
@@ -226,13 +221,17 @@ export default function CognitiveAgentDetailsPage() {
 
                   <div className="bg-card border border-border rounded-lg py-10 px-5 min-w-0">
                     <span className={labelClass}>ID</span>
-                    <div className="mt-2"><CopyableInput value={ce?.id || ''} /></div>
+                    <div className="mt-2">
+                      <CopyableInput value={ce?.id || ''} />
+                    </div>
                   </div>
 
                   <div className="bg-card border border-border rounded-lg py-10 px-5 min-w-0">
                     <span className={labelClass}>CFN</span>
                     {cfn?.name && <p className="text-2xl font-semibold text-foreground mt-2">{cfn.name}</p>}
-                    <div className="mt-2"><CopyableInput value={ce?.cfn_id || ''} /></div>
+                    <div className="mt-2">
+                      <CopyableInput value={ce?.cfn_id || ''} />
+                    </div>
                   </div>
 
                   <div className="bg-card border border-border rounded-lg py-10 px-5">
@@ -267,7 +266,9 @@ export default function CognitiveAgentDetailsPage() {
                           <FormItem className="space-y-1 mt-2">
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
-                                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                                <SelectTrigger className="h-8 text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="true">Enabled</SelectItem>
@@ -289,7 +290,9 @@ export default function CognitiveAgentDetailsPage() {
                           <FormItem className="space-y-1 mt-2">
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
-                                <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
+                                <SelectTrigger className="h-8 text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="true">Enabled</SelectItem>
@@ -347,13 +350,15 @@ export default function CognitiveAgentDetailsPage() {
                       />
                     ) : (
                       <div className="flex flex-wrap gap-1.5">
-                        {ce?.capabilities && ce.capabilities.length > 0
-                          ? ce.capabilities.map((cap) => (
-                              <span key={cap} className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5">
-                                {cap}
-                              </span>
-                            ))
-                          : <span className={valueClass}>—</span>}
+                        {ce?.capabilities && ce.capabilities.length > 0 ? (
+                          ce.capabilities.map((cap) => (
+                            <span key={cap} className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5">
+                              {cap}
+                            </span>
+                          ))
+                        ) : (
+                          <span className={valueClass}>—</span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -379,13 +384,15 @@ export default function CognitiveAgentDetailsPage() {
                       />
                     ) : (
                       <div className="flex flex-wrap gap-1.5">
-                        {ce?.metrics && ce.metrics.length > 0
-                          ? ce.metrics.map((metric) => (
-                              <span key={metric} className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5">
-                                {metric}
-                              </span>
-                            ))
-                          : <span className={valueClass}>—</span>}
+                        {ce?.metrics && ce.metrics.length > 0 ? (
+                          ce.metrics.map((metric) => (
+                            <span key={metric} className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5">
+                              {metric}
+                            </span>
+                          ))
+                        ) : (
+                          <span className={valueClass}>—</span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -393,19 +400,22 @@ export default function CognitiveAgentDetailsPage() {
               </div>
 
               <div className="bg-card border border-border rounded overflow-hidden">
-                <div
-                  className={dtPanelHeaderInteractive}
-                  onClick={() => setConfigExpanded((v) => !v)}
-                >
+                <div className={dtPanelHeaderInteractive} onClick={() => setConfigExpanded((v) => !v)}>
                   <div className="flex items-center gap-2">
                     <span className={dtSectionHeader}>Config</span>
                     {isEditMode && configWatch && configWatch.trim() !== '' && (
-                      <span className={`text-xs px-2 py-0.5 rounded ${validateJSON(configWatch) ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded ${validateJSON(configWatch) ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}
+                      >
                         {validateJSON(configWatch) ? 'Valid JSON' : 'Invalid JSON'}
                       </span>
                     )}
                   </div>
-                  {configExpanded ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
+                  {configExpanded ? (
+                    <ChevronUp size={13} className="text-muted-foreground" />
+                  ) : (
+                    <ChevronDown size={13} className="text-muted-foreground" />
+                  )}
                 </div>
 
                 {configExpanded && (
@@ -443,19 +453,22 @@ export default function CognitiveAgentDetailsPage() {
               </div>
 
               <div className="bg-card border border-border rounded overflow-hidden">
-                <div
-                  className={dtPanelHeaderInteractive}
-                  onClick={() => setMasConfigExpanded((v) => !v)}
-                >
+                <div className={dtPanelHeaderInteractive} onClick={() => setMasConfigExpanded((v) => !v)}>
                   <div className="flex items-center gap-2">
                     <span className={dtSectionHeader}>MAS Config</span>
                     {isEditMode && masConfigWatch && masConfigWatch.trim() !== '' && (
-                      <span className={`text-xs px-2 py-0.5 rounded ${validateJSON(masConfigWatch) ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded ${validateJSON(masConfigWatch) ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}
+                      >
                         {validateJSON(masConfigWatch) ? 'Valid JSON' : 'Invalid JSON'}
                       </span>
                     )}
                   </div>
-                  {masConfigExpanded ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
+                  {masConfigExpanded ? (
+                    <ChevronUp size={13} className="text-muted-foreground" />
+                  ) : (
+                    <ChevronDown size={13} className="text-muted-foreground" />
+                  )}
                 </div>
 
                 {masConfigExpanded && (
@@ -491,7 +504,6 @@ export default function CognitiveAgentDetailsPage() {
                   </div>
                 )}
               </div>
-
             </form>
           </Form>
         </ConditionalSWRRenderer>
