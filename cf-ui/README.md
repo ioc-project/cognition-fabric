@@ -1,4 +1,4 @@
-# ioc-cfn-mgmt-plane-ui
+# Internet of Cognition (IOC) - Cognition Fabric Node (CFN) Management UI
 
 Cognition Fabric Node Management UI Service.
 
@@ -67,3 +67,7 @@ Use these below to login:
 npm run build
 npm start
 ```
+
+## License
+
+This project is licensed under the Apache License 2.0 - see the [LICENSE.md](LICENSE.md) file for details.
