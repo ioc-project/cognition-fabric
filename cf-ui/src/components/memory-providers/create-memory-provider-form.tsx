@@ -210,7 +210,6 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
               </div>
             )}
 
-            {/* Basic Information */}
             <Card className="w-full">
               <CardContent className="pt-8 px-8 pb-1">
                 <div className="flex flex-col gap-4 mb-6">
@@ -247,7 +246,6 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
               </CardContent>
             </Card>
 
-            {/* Connection */}
             <Card className="w-full">
               <CardContent className="pt-8 px-8 pb-1">
                 <div className="flex flex-col gap-4 mb-6">
@@ -269,7 +267,6 @@ export function CreateMemoryProviderForm({onCancel}: CreateMemoryProviderFormPro
               </CardContent>
             </Card>
 
-            {/* Authentication */}
             <Card className="w-full">
               <CardContent className="pt-8 px-8 pb-1">
                 <div className="flex flex-col gap-4 mb-6">

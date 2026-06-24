@@ -80,7 +80,6 @@ export function CreateCognitiveAgentForm({workspaceId: _workspaceId}: CreateCogn
               </div>
             )}
 
-            {/* Basic Information */}
             <Card className="w-full">
               <CardContent className="pt-8 px-8 pb-1">
                 <div className="flex flex-col gap-4 mb-6">

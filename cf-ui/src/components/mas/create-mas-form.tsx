@@ -209,7 +209,6 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
               </div>
             )}
 
-            {/* Basic Information */}
             <Card className="w-full">
               <CardContent className="pt-8 px-8 pb-1">
                 <div className="flex flex-col gap-4 mb-6">
@@ -246,7 +245,6 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
               </CardContent>
             </Card>
 
-            {/* Memory Configuration */}
             <Card className="w-full">
               <CardContent className="pt-8 px-8 pb-1">
                 <div className="flex flex-col gap-4 mb-6">
@@ -283,7 +281,6 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
               </CardContent>
             </Card>
 
-            {/* Cognition Engines */}
             <Card className="w-full">
               <CardContent className="pt-8 px-8 pb-1">
                 <div className="flex flex-col gap-4 mb-6">
@@ -316,7 +313,6 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
               </CardContent>
             </Card>
 
-            {/* Agents */}
             <Card className="w-full">
               <CardContent className="pt-8 px-8 pb-1">
                 <div className="flex flex-col gap-4 mb-6">
@@ -336,7 +332,6 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
               </CardContent>
             </Card>
 
-            {/* Advanced Configuration */}
             <Card className="w-full">
               <CardContent className="pt-8 px-8 pb-1">
                 <div className="flex flex-col gap-4 mb-6">
