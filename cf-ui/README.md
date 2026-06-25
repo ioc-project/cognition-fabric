@@ -70,4 +70,8 @@ npm start
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE.md](LICENSE.md) file for details.
+Distributed under the Apache License 2.0. See [LICENSE.md](LICENSE.md) for more information.
+
+## Third-Party Notices
+
+This project uses third-party open source components. See [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES) for copyright and license information.

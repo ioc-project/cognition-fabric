@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 import type {components} from '../generated/schema';
 
 export type Cfn = components['schemas']['CognitionFabricNodeResponse'];

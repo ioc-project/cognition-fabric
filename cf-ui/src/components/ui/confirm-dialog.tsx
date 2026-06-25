@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 import {AlertTriangle} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {Modal} from '@/components/ui/modal';
