@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 FROM alpine:3.21.0 AS build
 
 # Use Docker secrets to securely pass ARTIFACTORY_PASSWORD

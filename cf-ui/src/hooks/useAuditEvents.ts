@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
 import {auditApi, type AuditEventFilters, type AuditEventListResponse} from '@/api/endpoints/audit';

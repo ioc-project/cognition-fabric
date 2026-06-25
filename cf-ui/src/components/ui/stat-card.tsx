@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 import {TrendingDown, TrendingUp, Zap} from 'lucide-react';
 import {Card, CardContent, CardDescription, CardHeader} from '@/components/ui/card';
 import {cn} from '@/lib/utils';
