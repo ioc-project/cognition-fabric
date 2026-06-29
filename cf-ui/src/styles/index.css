@@ -32,6 +32,7 @@
   --sidebar-icon: 214 9% 38%;
   --sidebar-icon-active: 219 100% 55%;
   --sidebar-active-border: 219 100% 55%;
+  --indicator-active: 219 100% 55%;
 
   --navbar-background: 216 29% 97%;
   --navbar-border: 222 58% 91%;
@@ -127,6 +128,7 @@
   --sidebar-icon: 0 0% 100%;
   --sidebar-icon-active: 0 0% 100%;
   --sidebar-active-border: 0 0% 100%;
+  --indicator-active: 219 100% 55%;
 
   --navbar-background: 222.2 84% 4.9%;
   --navbar-border: 217.2 32.6% 20%;

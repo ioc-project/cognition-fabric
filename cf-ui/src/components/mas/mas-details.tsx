@@ -15,29 +15,33 @@ import type {MultiAgenticSystem, MultiAgenticSystemUpdate} from '@/api/endpoints
 import {Button} from '@/components/ui/button';
 import {BasePage} from '@/components/ui/base-page';
 import {Input} from '@/components/ui/input';
-import {Textarea} from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/ui/form';
-import {CopyableInput} from '@/components/ui/copyable-input';
 import {Badge} from '@/components/ui/badge';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes} from '@/constants/routes';
-import {parseError, DATE_TIME_FORMAT_OPTIONS, validateJSON, formatJson} from '@/lib/utils';
+import {cn, parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {useMemoryProviders} from '@/hooks/useMemoryProviders';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {toast} from 'sonner';
-import {Network, BarChart3, Bot, BrainCircuit, HardDrive, ChevronDown, ChevronUp, Unlink, Plus} from 'lucide-react';
+import {Network, BarChart3, Bot, BrainCircuit, Unlink, Plus, MoreHorizontal} from 'lucide-react';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
-import {StatCard} from '@/components/ui/stat-card';
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {useCognitionEngines} from '@/hooks/useCognitionEngines';
 import {MASAuditLog} from './mas-audit-log';
 import {MASAssociateCEModal} from './mas-associate-ce-modal';
 import {AgentsList} from './agents-list';
 import {UpdateMASFormSchema, type FormValues} from './mas-form-schema';
-import {dtLabel, dtSectionHeader, dtMetaLabel, dtMetaValue, dtPanelHeader, dtPanelHeaderInteractive} from '@/lib/detail-typography';
+import {dtSectionHeader, dtPanelHeader} from '@/lib/detail-typography';
+import {DetailTabs} from '@/components/ui/detail-tabs';
+import {InlineId} from '@/components/ui/inline-id';
+import {StatusDot} from '@/components/ui/status-dot';
+import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
+import {MetaCard} from '@/components/ui/meta-card';
+import {CollapsibleJsonField} from './collapsible-json-field';
 
 export default function MASDetailsPage() {
   const router = useRouter();
@@ -51,7 +55,8 @@ export default function MASDetailsPage() {
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [masConfigExpanded, setMasConfigExpanded] = useState(true);
+  const [activeTab, setActiveTab] = useState<'overview' | 'agents' | 'cognition-engines'>('overview');
+
   const [associateModalOpen, setAssociateModalOpen] = useState(false);
   const [selectedCEIds, setSelectedCEIds] = useState<string[]>([]);
   const [isAssociating, setIsAssociating] = useState(false);
@@ -220,20 +225,36 @@ export default function MASDetailsPage() {
     router.replace(routes.mas.details(masId!));
   };
 
-  const agents = mas?.agents || [];
-  const totalAgents = agents.length;
   const ces = mas?.cognition_engines || [];
   const enabledCEs = ces.filter((c) => c.enabled).length;
-
-  const labelClass = dtLabel;
-  const metadataLabelClass = dtMetaLabel;
-  const metadataValueClass = dtMetaValue;
 
   return (
     <>
       <BasePage
         title={mas?.name || 'MAS Details'}
-        description="View details about your multi-agentic system"
+        customDescription={
+          mas ? (
+            <div className="flex items-center gap-3 flex-wrap">
+              <InlineId label="ID" value={mas.id} />
+              <span className="text-muted-foreground/30 text-xs select-none">·</span>
+              <InlineId label="Workspace" value={mas.workspace_id} />
+            </div>
+          ) : undefined
+        }
+        customInfo={
+          <DetailTabs
+            activeTab={activeTab}
+            onTabChange={(id) => {
+              if (id === 'cognition-engines' && isEditMode) handleCancelEdit();
+              setActiveTab(id as typeof activeTab);
+            }}
+            tabs={[
+              {id: 'overview', label: 'Overview'},
+              {id: 'agents', label: 'Agents', count: agentFields.length || undefined},
+              {id: 'cognition-engines', label: 'Cognition Engines', count: ces.length || undefined}
+            ]}
+          />
+        }
         useBreadcrumbs
         breadcrumbs={crumbs}
         callToAction={
@@ -248,14 +269,19 @@ export default function MASDetailsPage() {
                 Knowledge Graph
               </Button>
               <MASAuditLog masId={masId!} workspaceId={workspaceId!} masName={mas.name} agents={mas.agents || undefined} />
-              <DetailsPageActions
-                onDelete={() => deleteDialog.open({id: mas.id, name: mas.name})}
-                onEdit={() => setIsEditMode(true)}
-                isEditMode={isEditMode}
-                onSave={form.handleSubmit(handleSave)}
-                onCancelEdit={handleCancelEdit}
-                isSaving={form.formState.isSubmitting}
-              />
+              {activeTab !== 'cognition-engines' && (
+                <>
+                  <div className="w-px h-5 bg-border mx-1 shrink-0" />
+                  <DetailsPageActions
+                    onDelete={() => deleteDialog.open({id: mas.id, name: mas.name})}
+                    onEdit={() => setIsEditMode(true)}
+                    isEditMode={isEditMode}
+                    onSave={form.handleSubmit(handleSave)}
+                    onCancelEdit={handleCancelEdit}
+                    isSaving={form.formState.isSubmitting}
+                  />
+                </>
+              )}
             </div>
           )
         }
@@ -269,290 +295,266 @@ export default function MASDetailsPage() {
           emptyListStateProps={{title: 'No MAS details found'}}
         >
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
-              <div className="grid grid-cols-3 gap-8">
-                <StatCard icon={<Bot size={14} className="text-[hsl(var(--sidebar-icon-active))]" />} label="Agents" value={totalAgents} />
-                <StatCard
-                  icon={<HardDrive size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
-                  label="Shared Memory Provider"
-                  value={mas?.shared_memory?.name || 'None'}
-                />
-                <StatCard
-                  icon={<BrainCircuit size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
-                  label="Cognition Engines"
-                  value={ces.length}
-                  sublabel={`${enabledCEs} enabled${ces.length - enabledCEs > 0 ? `, ${ces.length - enabledCEs} disabled` : ''}`}
-                />
-              </div>
+            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
 
-              <div className="space-y-3">
-                <div className="grid grid-cols-4 gap-8">
-                  <div className="bg-card border border-border rounded-lg py-10 px-5">
-                    <span className={labelClass}>Name</span>
-                    {isEditMode ? (
-                      <FormField
-                        control={form.control}
-                        name="name"
-                        render={({field}) => (
-                          <FormItem className="space-y-1 mt-2">
-                            <FormControl>
-                              <Input {...field} className="h-8 text-sm" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    ) : (
-                      <p className="text-2xl font-semibold text-foreground mt-2">{mas?.name || '-'}</p>
-                    )}
-                  </div>
-
-                  <div className="bg-card border border-border rounded-lg py-10 px-5 min-w-0">
-                    <span className={labelClass}>ID</span>
-                    <div className="mt-2">
-                      <CopyableInput value={mas?.id || ''} />
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border rounded-lg py-10 px-5 min-w-0">
-                    <span className={labelClass}>Workspace ID</span>
-                    <div className="mt-2">
-                      <CopyableInput value={mas?.workspace_id || ''} />
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border rounded-lg py-10 px-5">
-                    <span className={labelClass}>Shared Memory</span>
-                    {isEditMode ? (
-                      <FormField
-                        control={form.control}
-                        name="shared_memory_provider_id"
-                        render={({field}) => (
-                          <FormItem className="space-y-1 mt-2">
-                            <Select onValueChange={field.onChange} value={field.value}>
+              {/* Overview tab */}
+              {activeTab === 'overview' && (
+                <div className="space-y-4">
+                  <InfoPanel>
+                    <InfoRow label="Name">
+                      {isEditMode ? (
+                        <FormField
+                          control={form.control}
+                          name="name"
+                          render={({field}) => (
+                            <FormItem className="flex-1 space-y-1">
                               <FormControl>
-                                <SelectTrigger className="h-8 text-sm">
-                                  <SelectValue placeholder="Select provider" />
-                                </SelectTrigger>
+                                <Input {...field} className="h-8 text-sm" />
                               </FormControl>
-                              <SelectContent>
-                                {sharedMemoryProviders.length === 0 ? (
-                                  <div className="py-2 px-2 text-sm text-muted-foreground">No providers available</div>
-                                ) : (
-                                  sharedMemoryProviders.map((provider) => (
-                                    <SelectItem key={provider.id} value={provider.id}>
-                                      {provider.provider_name}
-                                    </SelectItem>
-                                  ))
-                                )}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    ) : (
-                      <p className="text-2xl font-semibold text-foreground mt-2">{mas?.shared_memory?.name || 'None'}</p>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <span className="text-sm text-foreground">{mas?.name || '—'}</span>
+                      )}
+                    </InfoRow>
+                    <InfoRow label="Description">
+                      {isEditMode ? (
+                        <FormField
+                          control={form.control}
+                          name="description"
+                          render={({field}) => (
+                            <FormItem className="flex-1 space-y-1">
+                              <FormControl>
+                                <Input {...field} className="h-8 text-sm" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <span className="text-sm text-foreground">{mas?.description || '—'}</span>
+                      )}
+                    </InfoRow>
+                    <InfoRow label="Shared Memory">
+                      {isEditMode ? (
+                        <FormField
+                          control={form.control}
+                          name="shared_memory_provider_id"
+                          render={({field}) => (
+                            <FormItem className="flex-1 space-y-1">
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger className="h-8 text-sm">
+                                    <SelectValue placeholder="Select provider" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {sharedMemoryProviders.length === 0 ? (
+                                    <div className="py-2 px-2 text-sm text-muted-foreground">No providers available</div>
+                                  ) : (
+                                    sharedMemoryProviders.map((provider) => (
+                                      <SelectItem key={provider.id} value={provider.id}>
+                                        {provider.provider_name}
+                                      </SelectItem>
+                                    ))
+                                  )}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <span className="text-sm text-foreground">{mas?.shared_memory?.name || '—'}</span>
+                      )}
+                    </InfoRow>
+                  </InfoPanel>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {mas?.created_at && (
+                      <MetaCard label="Created" mono>{new Date(mas.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
+                    )}
+                    {mas?.updated_at && (
+                      <MetaCard label="Last Modified" mono>{new Date(mas.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
                     )}
                   </div>
-                </div>
 
-                <div className="bg-card border border-border rounded-lg py-6 px-5">
-                  <span className={labelClass}>Description</span>
                   {isEditMode ? (
                     <FormField
                       control={form.control}
-                      name="description"
+                      name="config"
                       render={({field}) => (
-                        <FormItem className="space-y-1 mt-2">
-                          <FormControl>
-                            <Input {...field} className="h-8 text-sm" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
+                        <CollapsibleJsonField
+                          label="Config"
+                          value={field.value ?? ''}
+                          isEditMode={true}
+                          field={field}
+                          placeholder={`{\n  "key": "value"\n}`}
+                        />
                       )}
                     />
                   ) : (
-                    <p className="text-sm text-foreground mt-2">{mas?.description || '-'}</p>
+                    <CollapsibleJsonField
+                      label="Config"
+                      value={mas?.config && Object.keys(mas.config).length > 0 ? JSON.stringify(mas.config, null, 2) : ''}
+                      isEditMode={false}
+                    />
                   )}
                 </div>
+              )}
 
-                <div className="grid grid-cols-2 gap-x-8 px-1 pt-1">
-                  {mas?.created_at && (
-                    <div className="flex flex-col gap-0.5">
-                      <span className={metadataLabelClass}>Created</span>
-                      <span className={metadataValueClass}>{new Date(mas.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
+              {/* Agents tab */}
+              {activeTab === 'agents' && (
+                <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                  <div className={dtPanelHeader}>
+                    <div className="flex items-center gap-2">
+                      <Bot size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                      <span className={dtSectionHeader}>Agents</span>
+                      {agentFields.length > 0 && (
+                        <Badge variant="accent" className="rounded px-1.5">
+                          {agentFields.length}
+                        </Badge>
+                      )}
                     </div>
-                  )}
-                  {mas?.updated_at && (
-                    <div className="flex flex-col gap-0.5">
-                      <span className={metadataLabelClass}>Last Modified</span>
-                      <span className={metadataValueClass}>{new Date(mas.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="bg-card border border-border rounded overflow-hidden">
-                <div className={dtPanelHeader}>
-                  <div className="flex items-center gap-2">
-                    <Bot size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
-                    <span className={dtSectionHeader}>Agents</span>
-                    {(isEditMode ? agentFields.length : (mas?.agents?.length ?? 0)) > 0 && (
-                      <Badge variant="accent" className="rounded px-1.5">
-                        {isEditMode ? agentFields.length : (mas?.agents?.length ?? 0)}
-                      </Badge>
+                    {isEditMode && (
+                      <Button
+                        type="button"
+                        variant="sidebar"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() =>
+                          appendAgent({agent_id: '', name: '', url: '', agentic_memory_provider_id: '', identity_type: '', identity_identifiers: ''})
+                        }
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add Agent
+                      </Button>
                     )}
                   </div>
-                  {isEditMode && agentFields.length > 0 && (
-                    <Button
-                      type="button"
-                      variant="sidebar"
-                      size="sm"
-                      className="gap-2"
-                      onClick={() =>
-                        appendAgent({agent_id: '', name: '', url: '', agentic_memory_provider_id: '', identity_type: '', identity_identifiers: ''})
-                      }
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add Agent
-                    </Button>
-                  )}
-                </div>
-                <div className="p-4">
-                  <AgentsList
-                    agents={agentFields}
-                    control={form.control}
-                    watch={form.watch}
-                    isEditMode={isEditMode}
-                    agentExpandedState={agentExpandedState}
-                    onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
-                    onAddAgent={
-                      isEditMode
-                        ? () =>
-                            appendAgent({
-                              agent_id: '',
-                              name: '',
-                              url: '',
-                              agentic_memory_provider_id: '',
-                              identity_type: '',
-                              identity_identifiers: ''
-                            })
-                        : undefined
-                    }
-                    onRemoveAgent={isEditMode ? removeAgent : undefined}
-                    masAgentsData={!isEditMode && mas?.agents ? mas.agents : undefined}
-                    userMemoryProviders={userMemoryProviders}
-                  />
-                </div>
-              </div>
-
-              <div className="bg-card border border-border rounded overflow-hidden">
-                <div className={dtPanelHeaderInteractive} onClick={() => setMasConfigExpanded(!masConfigExpanded)}>
-                  <div className="flex items-center gap-2">
-                    <span className={dtSectionHeader}>Config</span>
-                    {isEditMode &&
-                      (() => {
-                        const cv = form.watch('config') ?? '';
-                        return cv.trim() !== '' ? (
-                          <span
-                            className={`text-xs px-1.5 py-0.5 rounded ${validateJSON(cv) ? 'text-green-600 bg-green-50 border border-green-200' : 'text-red-600 bg-red-50 border border-red-200'}`}
-                          >
-                            {validateJSON(cv) ? 'Valid JSON' : 'Invalid JSON'}
-                          </span>
-                        ) : null;
-                      })()}
-                  </div>
-                  {masConfigExpanded ? (
-                    <ChevronUp size={13} className="text-muted-foreground" />
-                  ) : (
-                    <ChevronDown size={13} className="text-muted-foreground" />
-                  )}
-                </div>
-                {masConfigExpanded && (
                   <div className="p-4">
-                    {isEditMode ? (
-                      <FormField
-                        control={form.control}
-                        name="config"
-                        render={({field}) => (
-                          <FormItem>
-                            <FormControl>
-                              <Textarea
-                                placeholder={`{\n  "key": "value"\n}`}
-                                className="font-mono text-sm min-h-[150px] resize-y"
-                                {...field}
-                                onBlur={() => field.onChange(formatJson(field.value || ''))}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    ) : (
-                      <pre className="font-mono text-sm text-muted-foreground bg-muted border border-border rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
-                        {mas?.config && Object.keys(mas.config).length > 0 ? JSON.stringify(mas.config, null, 2) : '{\n  "key": "value"\n}'}
-                      </pre>
-                    )}
+                    <AgentsList
+                      agents={agentFields}
+                      control={form.control}
+                      watch={form.watch}
+                      isEditMode={isEditMode}
+                      agentExpandedState={agentExpandedState}
+                      onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
+                      onAddAgent={
+                        isEditMode
+                          ? () =>
+                              appendAgent({
+                                agent_id: '',
+                                name: '',
+                                url: '',
+                                agentic_memory_provider_id: '',
+                                identity_type: '',
+                                identity_identifiers: ''
+                              })
+                          : undefined
+                      }
+                      onRemoveAgent={isEditMode ? removeAgent : undefined}
+                      masAgentsData={!isEditMode && mas?.agents ? mas.agents : undefined}
+                      userMemoryProviders={userMemoryProviders}
+                    />
                   </div>
-                )}
-              </div>
+                </div>
+              )}
 
-              <div className="bg-card border border-border rounded overflow-hidden">
-                <div className={dtPanelHeader}>
-                  <div className="flex items-center gap-2">
-                    <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
-                    <span className={dtSectionHeader}>Associated Cognition Engines</span>
-                    {ces.length > 0 && (
-                      <Badge variant="accent" className="rounded px-1.5">
-                        {ces.length}
-                      </Badge>
+              {/* Cognition Engines tab */}
+              {activeTab === 'cognition-engines' && (
+                <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                  <div className={dtPanelHeader}>
+                    <div className="flex items-center gap-2">
+                      <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                      <span className={dtSectionHeader}>Associated Cognition Engines</span>
+                      {ces.length > 0 && (
+                        <Badge variant="accent" className="rounded px-1.5">
+                          {ces.length}
+                        </Badge>
+                      )}
+                      {ces.length > 0 && ces.length - enabledCEs > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          {enabledCEs} enabled, {ces.length - enabledCEs} disabled
+                        </span>
+                      )}
+                    </div>
+                    {availableCEs.length > 0 && (
+                      <Button type="button" variant="sidebar" size="sm" onClick={() => setAssociateModalOpen(true)}>
+                        + Associate
+                      </Button>
                     )}
                   </div>
-                  {availableCEs.length > 0 && (
-                    <Button type="button" variant="sidebar" size="sm" onClick={() => setAssociateModalOpen(true)}>
-                      + Associate
-                    </Button>
+                  {ces.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Subkind</TableHead>
+                          <TableHead>Enabled</TableHead>
+                          <TableHead />
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {ces.map((ce) => (
+                          <TableRow key={ce.ce_id}>
+                            <TableCell className="font-medium">{ce.name}</TableCell>
+                            <TableCell>
+                              {ce.kind ? (
+                                <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                  {ce.kind}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {ce.subkind ? (
+                                <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                  {ce.subkind}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <StatusDot variant="state" active={ce.enabled} />
+                            </TableCell>
+                            <TableCell className="w-10">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="p-1 rounded hover:bg-muted transition-colors"
+                                    disabled={disassociatingId === ce.ce_id}
+                                  >
+                                    <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                                  </button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem
+                                    className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950 gap-2"
+                                    onClick={() => handleDisassociateCE(ce.ce_id, ce.name)}
+                                    disabled={disassociatingId === ce.ce_id}
+                                  >
+                                    <Unlink className="w-4 h-4" />
+                                    {disassociatingId === ce.ce_id ? 'Removing...' : 'Disassociate'}
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="px-4 py-4 text-sm text-muted-foreground">No Cognition Engines associated yet.</p>
                   )}
                 </div>
+              )}
 
-                {ces.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Type</TableHead>
-                        <TableHead>Subkind</TableHead>
-                        <TableHead>Enabled</TableHead>
-                        <TableHead />
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {ces.map((ce) => (
-                        <TableRow key={ce.ce_id}>
-                          <TableCell>{ce.name}</TableCell>
-                          <TableCell className="font-mono text-muted-foreground">{ce.kind || '-'}</TableCell>
-                          <TableCell className="font-mono text-muted-foreground">{ce.subkind || '-'}</TableCell>
-                          <TableCell>{ce.enabled ? <Badge variant="info">Enabled</Badge> : <Badge variant="inactive">Disabled</Badge>}</TableCell>
-                          <TableCell>
-                            <button
-                              type="button"
-                              disabled={disassociatingId === ce.ce_id}
-                              onClick={() => handleDisassociateCE(ce.ce_id, ce.name)}
-                              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-red-600 border border-border hover:border-red-200 hover:bg-red-50 px-2 py-1 rounded transition-colors disabled:opacity-50"
-                            >
-                              <Unlink className="w-3 h-3" />
-                              {disassociatingId === ce.ce_id ? 'Removing...' : 'Disassociate'}
-                            </button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <p className="px-4 py-4 text-sm text-muted-foreground">No Cognition Engines associated yet.</p>
-                )}
-              </div>
             </form>
           </Form>
         </ConditionalSWRRenderer>

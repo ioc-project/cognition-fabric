@@ -40,14 +40,15 @@ export function DetailsPageActions({
   }
 
   return (
-    <div className="flex gap-2">
+    <div className="flex items-center gap-2">
       {onEdit && (
         <Button variant="sidebar" size="sm" onClick={onEdit}>
           Edit
         </Button>
       )}
+      {onEdit && onDelete && <div className="w-px h-5 bg-border shrink-0" />}
       {onDelete && (
-        <Button variant="outline" size="sm" onClick={onDelete} disabled={deleteDisabled}>
+        <Button variant="outline-destructive" size="sm" onClick={onDelete} disabled={deleteDisabled}>
           {deleteLabel ? deleteLabel : <Trash2 className="h-4 w-4" />}
         </Button>
       )}

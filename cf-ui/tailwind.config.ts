@@ -67,7 +67,8 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)'
       },
       fontFamily: {
-        cisco: ['CiscoSans', 'Inter', 'sans-serif']
+        cisco: ['CiscoSans', 'Inter', 'sans-serif'],
+        mono: ['var(--font-jetbrains-mono)', 'ui-monospace', 'SFMono-Regular', 'monospace']
       }
     }
   },

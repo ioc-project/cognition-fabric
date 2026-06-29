@@ -4,17 +4,20 @@
 
 'use client';
 
+import {useState} from 'react';
 import {ChevronDown, ChevronUp} from 'lucide-react';
 import {FormControl, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Textarea} from '@/components/ui/textarea';
-import {Label} from '@/components/ui/label';
-import {validateJSON, formatJson} from '@/lib/utils';
+import {validateJSON, formatJson, cn} from '@/lib/utils';
+import {SyntaxJson} from '@/components/ui/syntax-json';
+import {dtPanelHeaderInteractive, dtSectionHeader} from '@/lib/detail-typography';
 
 interface CollapsibleJsonFieldProps {
   label: string;
   value: string;
-  isExpanded: boolean;
-  onToggleExpand: () => void;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
+  defaultExpanded?: boolean;
   onChange?: (value: string) => void;
   placeholder?: string;
   isEditMode: boolean;
@@ -24,13 +27,19 @@ interface CollapsibleJsonFieldProps {
 export function CollapsibleJsonField({
   label,
   value,
-  isExpanded,
+  isExpanded: controlledExpanded,
   onToggleExpand,
+  defaultExpanded = true,
   onChange: _onChange,
   placeholder,
   isEditMode,
   field
 }: CollapsibleJsonFieldProps) {
+  const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
+  const isControlled = controlledExpanded !== undefined;
+  const isExpanded = isControlled ? controlledExpanded! : internalExpanded;
+  const handleToggle = isControlled ? onToggleExpand! : () => setInternalExpanded((v) => !v);
+
   if (!isEditMode) {
     let formatted = value;
     if (value && value.trim() !== '') {
@@ -42,18 +51,23 @@ export function CollapsibleJsonField({
     }
 
     return (
-      <div className="space-y-2">
-        <Label>{label}</Label>
-        <pre className="font-mono text-sm text-muted-foreground bg-muted border border-border rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
-          {formatted || '{\n  "key": "value"\n}'}
-        </pre>
+      <div className="rounded-lg border border-border overflow-hidden bg-card shadow-sm">
+        <button type="button" className={cn('w-full', dtPanelHeaderInteractive)} onClick={handleToggle}>
+          <span className={dtSectionHeader}>{label}</span>
+          <ChevronDown size={14} className={cn('text-muted-foreground transition-transform', !isExpanded && '-rotate-90')} />
+        </button>
+        {isExpanded && (
+          <div className="border-t border-border bg-muted">
+            <SyntaxJson code={formatted || '{\n  "key": "value"\n}'} />
+          </div>
+        )}
       </div>
     );
   }
 
   return (
     <FormItem>
-      <div className="flex items-center justify-between cursor-pointer" onClick={onToggleExpand}>
+      <div className="flex items-center justify-between cursor-pointer" onClick={handleToggle}>
         <div className="flex items-center gap-2">
           <FormLabel>{label}</FormLabel>
           {field?.value && field.value.trim() !== '' && (
