@@ -30,11 +30,7 @@ interface EditWorkspaceDialogProps {
 }
 
 export function EditWorkspaceDialog({workspace, open, onOpenChange}: EditWorkspaceDialogProps) {
-  const {data: cfnData, error: cfnError} = useSWR(swrKeys.cfn(), () => cfnApi.list());
-
-  if (cfnError) {
-    console.warn('Failed to load CFN list:', cfnError);
-  }
+  const {data: cfnData} = useSWR(swrKeys.cfn(), () => cfnApi.list());
 
   const availableCfns = cfnData?.nodes?.filter((cfn: any) => cfn.enabled) || [];
 
@@ -55,7 +51,7 @@ export function EditWorkspaceDialog({workspace, open, onOpenChange}: EditWorkspa
 
     await swrMutate(swrKeys.workspaces());
     await swrMutate(swrKeys.workspace(workspace.id));
-    await swrMutate(['cfn-list', workspace.id]);
+    await swrMutate(swrKeys.cfn(workspace.id));
     await swrMutate(swrKeys.mas(workspace.id));
     await swrMutate(swrKeys.cognitionEngines());
 

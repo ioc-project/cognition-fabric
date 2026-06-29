@@ -11,20 +11,13 @@ import {FormModal} from '@/components/ui/form-modal';
 import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {workspaceApi, cfnApi} from '@/api/endpoints';
-// import {userApi, invitationApi} from '@/api/endpoints';
 import useSWR from 'swr';
-// import {MultiSelect} from '@/components/ui/multi-select';
-// import {useSession} from 'next-auth/react';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-// import {X} from 'lucide-react';
-// import {Button} from '@/components/ui/button';
 import {toast} from 'sonner';
 
 const formSchema = z.object({
   name: z.string().min(1, 'Workspace name is required').min(3, 'Workspace name must be at least 3 characters'),
   cfn_id: z.string().min(1, 'CFN selection is required'),
-  // users: z.array(z.string()).optional(),
-  // userRoles: z.record(z.enum(['admin', 'viewer', 'guest'])).optional(),
   config: z.string().optional()
 });
 
@@ -37,19 +30,8 @@ interface CreateWorkspaceDialogProps {
 }
 
 export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWorkspaceDialogProps) {
-  // const {data: session} = useSession();
-  // const {data: usersData, error: usersError} = useSWR('all-users', () => userApi.list());
-  const {data: cfnData, error: cfnError} = useSWR(swrKeys.cfn(), () => cfnApi.list());
+  const {data: cfnData} = useSWR(swrKeys.cfn(), () => cfnApi.list());
 
-  // if (usersError) {
-  //   console.warn('Failed to load users list:', usersError);
-  // }
-  if (cfnError) {
-    console.warn('Failed to load CFN list:', cfnError);
-  }
-
-  // const currentUserId = session?.user?.id;
-  // const availableUsers = usersData?.users?.filter((u: any) => u.id !== currentUserId && u.username !== 'admin') || [];
   const availableCfns = cfnData?.nodes?.filter((cfn: any) => cfn.enabled) || [];
 
   const handleSubmit = async (values: FormValues) => {
@@ -67,28 +49,6 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
       cfn_id: values.cfn_id,
       ...(config ? {config} : {})
     });
-
-    // if (values.users && values.users.length > 0) {
-    //   const invitationPromises = values.users.map((userId) => {
-    //     const user = availableUsers.find((u: any) => u.id === userId);
-    //     if (!user) {
-    //       return Promise.resolve();
-    //     }
-
-    //     const role = values.userRoles?.[userId] || 'viewer';
-    //     return invitationApi
-    //       .create(response.id, {
-    //         invitee_username: user.username,
-    //         role
-    //       })
-    //       .catch((err) => {
-    //         console.warn(`Failed to invite ${user.username}:`, err);
-    //         return null;
-    //       });
-    //   });
-
-    //   await Promise.allSettled(invitationPromises);
-    // }
 
     toast.success(`Workspace "${values.name}" created successfully`);
 
@@ -162,98 +122,6 @@ export function CreateWorkspaceDialog({open, onOpenChange, onSuccess}: CreateWor
               </FormItem>
             )}
           />
-          {/* <FormField
-            control={form.control}
-            name="users"
-            render={({field}) => (
-              <FormItem>
-                <div className="space-y-2">
-                  <FormLabel>Add Members</FormLabel>
-                  <FormControl>
-                    <MultiSelect
-                      placeholder="Select members to add"
-                      emptyMessage="No members available"
-                      options={availableUsers.map((u: any) => ({
-                        label: u.username,
-                        value: u.id
-                      }))}
-                      value={Array.isArray(field.value) ? field.value : []}
-                      onChange={(newValue) => {
-                        field.onChange(newValue);
-                        const currentRoles = form.getValues('userRoles') || {};
-                        const updatedRoles = {...currentRoles};
-                        newValue.forEach((userId: string) => {
-                          if (!updatedRoles[userId]) {
-                            updatedRoles[userId] = 'viewer';
-                          }
-                        });
-                        form.setValue('userRoles', updatedRoles);
-                      }}
-                      disabled={!usersData}
-                    />
-                  </FormControl>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {(form.watch('users') || []).length > 0 && (
-            <div className="space-y-2">
-              <FormLabel>Assign Roles</FormLabel>
-              <div className="space-y-2">
-                {(form.watch('users') || []).map((userId: string) => {
-                  const user = availableUsers.find((u: any) => u.id === userId);
-                  if (!user) {
-                    return null;
-                  }
-
-                  return (
-                    <div key={userId} className="flex items-center justify-between gap-3 p-2 rounded-md bg-background border">
-                      <span className="text-sm font-medium truncate flex-1">{user.username}</span>
-                      <FormField
-                        control={form.control}
-                        name={`userRoles.${userId}` as any}
-                        render={({field}) => (
-                          <Select
-                            value={field.value || 'viewer'}
-                            onValueChange={(value) => {
-                              const currentRoles = form.getValues('userRoles') || {};
-                              form.setValue('userRoles', {...currentRoles, [userId]: value as 'admin' | 'viewer'});
-                            }}
-                          >
-                            <SelectTrigger className="w-[120px] h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="admin">Admin</SelectItem>
-                              <SelectItem value="viewer">Viewer</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => {
-                          const currentUsers = form.getValues('users') || [];
-                          const currentRoles = form.getValues('userRoles') || {};
-                          const newUsers = currentUsers.filter((id: string) => id !== userId);
-                          const {[userId]: _, ...newRoles} = currentRoles;
-                          form.setValue('users', newUsers);
-                          form.setValue('userRoles', newRoles);
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )} */}
 
           <FormField
             control={form.control}

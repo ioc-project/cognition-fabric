@@ -77,7 +77,6 @@ export function CognitionEngineDialogs({
 }: CognitionEngineDialogsProps) {
   return (
     <>
-      {/* Toggle — Disassociate MAS first */}
       <Modal
         open={toggleStep === 'disassociate'}
         onOpenChange={(open) => {
@@ -124,7 +123,6 @@ export function CognitionEngineDialogs({
         </div>
       </Modal>
 
-      {/* Toggle — Confirm disable/enable */}
       <ConfirmDialog
         open={toggleStep === 'confirm'}
         onOpenChange={(open) => {
@@ -144,7 +142,6 @@ export function CognitionEngineDialogs({
         variant={toggleCeEnabled ? 'destructive' : 'default'}
       />
 
-      {/* Step 1 — Disable */}
       <ConfirmDialog
         open={deleteStep === 'disable'}
         onOpenChange={(open) => {
@@ -164,7 +161,6 @@ export function CognitionEngineDialogs({
         variant="destructive"
       />
 
-      {/* Step 2 — Disassociate from MAS */}
       <Modal
         open={deleteStep === 'disassociate'}
         onOpenChange={(open) => {
@@ -211,7 +207,6 @@ export function CognitionEngineDialogs({
         </div>
       </Modal>
 
-      {/* Step 3 — Confirm delete */}
       <ConfirmDialog
         open={deleteStep === 'delete'}
         onOpenChange={(open) => {

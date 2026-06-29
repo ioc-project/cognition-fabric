@@ -122,7 +122,6 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
 
         {event && (
           <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-            {/* Key badges */}
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant={getAuditTypeBadgeVariant(event.audit_type)}>{getAuditTypeLabel(event.audit_type)}</Badge>
               <Badge variant="outline">{getResourceTypeLabel(event.resource_type)}</Badge>
@@ -134,7 +133,6 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
               )}
             </div>
 
-            {/* Core fields */}
             <div className="space-y-4 p-4 rounded-lg border border-border bg-muted/20">
               <DetailRow label="Event ID">
                 <CopyableCode value={String(event.id)} />
@@ -201,13 +199,12 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
               </DetailRow>
             </div>
 
-            {/* Audit Information */}
             {info && (
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-foreground">Audit Information</h3>
 
                 {info.request && (
-                  <div className="p-3 bg-background rounded-lg border border-border">
+                  <div className="p-3 bg-card rounded-lg border border-border">
                     <div className="text-xs text-muted-foreground font-semibold mb-2">Request</div>
                     <div className="space-y-2">
                       {info.request.http_method && info.request.http_url && (
@@ -231,7 +228,7 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
                 )}
 
                 {info.response && (
-                  <div className="p-3 bg-background rounded-lg border border-border">
+                  <div className="p-3 bg-card rounded-lg border border-border">
                     <div className="text-xs text-muted-foreground font-semibold mb-2">Response</div>
                     <pre className="text-[10px] font-mono bg-muted p-2 rounded overflow-auto max-h-60 whitespace-pre-wrap break-words">
                       {(() => {
@@ -253,7 +250,7 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
                 )}
 
                 {!info.request && !info.response && (
-                  <div className="p-3 bg-background rounded-lg border border-border">
+                  <div className="p-3 bg-card rounded-lg border border-border">
                     <pre className="text-[10px] font-mono bg-muted p-2 rounded overflow-auto max-h-96 whitespace-pre-wrap">
                       {JSON.stringify(info, null, 2)}
                     </pre>
@@ -262,7 +259,6 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
               </div>
             )}
 
-            {/* Extra information */}
             {event.audit_extra_information && (
               <div className="space-y-2">
                 <h3 className="text-sm font-semibold text-foreground">Extra Information</h3>

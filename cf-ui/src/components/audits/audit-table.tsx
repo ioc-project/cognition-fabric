@@ -217,7 +217,6 @@ export function AuditTable() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Filter bar */}
       <div className="flex items-center gap-3 flex-wrap">
         <Select value={selectedResourceType || 'ALL'} onValueChange={(v) => handleResourceTypeChange(v === 'ALL' ? null : v)}>
           <SelectTrigger surface="page" className="w-[200px]">
@@ -280,7 +279,6 @@ export function AuditTable() {
         <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search…" className="w-[220px]" />
       </div>
 
-      {/* Table */}
       <ConditionalSWRRenderer
         data={auditEvents}
         error={error}

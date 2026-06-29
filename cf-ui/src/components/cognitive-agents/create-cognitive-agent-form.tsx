@@ -18,6 +18,7 @@ import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
 import {routes, breadcrumbs} from '@/constants/routes';
 import {toast} from 'sonner';
+import {FormSectionHeader} from '@/components/ui/form-section-header';
 
 const createCognitiveAgentSchema = z.object({
   cognitive_agent_name: z.string().min(1, 'Name is required').min(3, 'Name must be at least 3 characters'),
@@ -75,65 +76,66 @@ export function CreateCognitiveAgentForm({workspaceId: _workspaceId}: CreateCogn
         useBreadcrumbs
         breadcrumbs={breadcrumbs.cognitiveAgentCreate()}
       >
-        {' '}
-        <div className="flex justify-center">
-          <Card className="w-full max-w-4xl">
-            <CardContent className="p-8">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  {_error && (
-                    <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md">
-                      {_error}
-                    </div>
-                  )}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col items-start gap-6 w-full max-w-[1100px]">
+            {_error && (
+              <div className="w-full p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md">
+                {_error}
+              </div>
+            )}
 
-                  <FormField
-                    control={form.control}
-                    name="cognitive_agent_name"
-                    render={({field}) => (
-                      <FormItem>
-                        <FormLabel required>Agent Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="My Cognition Engine" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="description"
-                    render={({field}) => (
-                      <FormItem>
-                        <FormLabel>Description</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Describe what this agent does..."
-                            className="resize-none"
-                            rows={4}
-                            {...field}
-                            value={field.value || ''}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <div className="flex w-full items-center justify-between pt-4">
-                    <Button asChild type="button" variant="outline" disabled={_isLoading}>
-                      <Link href={routes.cognitiveAgents.list}>Cancel</Link>
-                    </Button>
-                    <Button type="submit" variant="sidebar" disabled={_isLoading}>
-                      {_isLoading ? 'Creating...' : 'Create Cognition Engine'}
-                    </Button>
+            <Card className="w-full">
+              <CardContent className="pt-8 px-8 pb-1">
+                <div className="flex flex-col gap-4 mb-6">
+                  <FormSectionHeader title="Basic Information" description="Define the core properties of this cognition engine" />
+                  <div className="flex flex-col gap-6">
+                    <FormField
+                      control={form.control}
+                      name="cognitive_agent_name"
+                      render={({field}) => (
+                        <FormItem>
+                          <FormLabel required>Agent Name</FormLabel>
+                          <FormControl>
+                            <Input placeholder="My Cognition Engine" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({field}) => (
+                        <FormItem>
+                          <FormLabel>Description</FormLabel>
+                          <FormControl>
+                            <Textarea
+                              placeholder="Describe what this agent does..."
+                              className="resize-none"
+                              rows={4}
+                              {...field}
+                              value={field.value || ''}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
                   </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex items-center gap-3 pt-4 border-t w-full">
+              <Button asChild type="button" variant="outline" disabled={_isLoading}>
+                <Link href={routes.cognitiveAgents.list}>Cancel</Link>
+              </Button>
+              <Button type="submit" variant="sidebar" disabled={_isLoading}>
+                {_isLoading ? 'Creating...' : 'Create Cognition Engine'}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </BasePage>
     </div>
   );

@@ -163,6 +163,24 @@ export function MASFormFields({
           </div>
         </div>
 
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-medium">Agents</Label>
+          {isEditMode && agentFields.length > 0 && (
+            <Button
+              type="button"
+              variant="sidebar"
+              size="sm"
+              className="gap-2"
+              onClick={() =>
+                appendAgent({agent_id: '', name: '', url: '', agentic_memory_provider_id: '', identity_type: '', identity_identifiers: ''})
+              }
+            >
+              <Plus className="w-4 h-4" />
+              Add Agent
+            </Button>
+          )}
+        </div>
+
         <AgentsList
           agents={agentFields}
           control={form.control}
@@ -198,14 +216,12 @@ export function MASFormFields({
           />
         </div>
 
-        {/* System Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
           <div className="space-y-2">
             <Label>Workspace ID</Label>
             <CopyableInput value={mas?.workspace_id || ''} />
           </div>
 
-          {/* Associated Cognition Engines */}
           <div className="md:col-span-2 space-y-3">
             <div className="flex items-center justify-between cursor-pointer" onClick={() => setCesSectionExpanded((prev) => !prev)}>
               <div className="flex items-center gap-2">

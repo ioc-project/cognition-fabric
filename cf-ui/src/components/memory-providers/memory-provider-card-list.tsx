@@ -34,7 +34,7 @@ export function MemoryProviderCardList({providers, selectedId, onCardClick, onOp
             <div className="flex-1 mr-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-foreground">{provider.name}</span>
-                <Badge variant={provider.enabled ? 'success' : 'inactive'}>{provider.enabled ? 'Enabled' : 'Disabled'}</Badge>
+                <Badge variant={provider.enabled ? 'info' : 'inactive'}>{provider.enabled ? 'Enabled' : 'Disabled'}</Badge>
               </div>
               {provider.description && <div className="text-xs text-muted-foreground mt-1">{provider.description}</div>}
             </div>

@@ -6,22 +6,15 @@
 
 import {User, LogOut, Sun, Moon} from 'lucide-react';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator} from '@/components/ui/dropdown-menu';
-// import {Badge} from '@/components/ui/badge';
 import {useThemeStore} from '@/store';
 import {signOut, useSession} from 'next-auth/react';
 import Image from 'next/image';
 import {useCallback} from 'react';
-// import {useRouter} from 'next/navigation';
-// import {routes} from '@/constants/routes';
-// import {useMyPendingInvitations} from '@/hooks/useInvitations';
 import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
-// import WorkspaceSwitcher from '@/components/workspaces/workspace-switcher';
 
 export function NavBar() {
-  // const router = useRouter();
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
-  // const {pendingCount} = useMyPendingInvitations();
   const {data: session} = useSession();
   const {userRole} = useCurrentWorkspace();
 
@@ -34,10 +27,6 @@ export function NavBar() {
   const handleLogout = async () => {
     await signOut({callbackUrl: '/login'});
   };
-
-  // const handleInvitationsClick = () => {
-  //   router.push(routes.invitations);
-  // };
 
   return (
     <div className="h-[52px] bg-[hsl(var(--navbar-background))] border-b border-[hsl(var(--navbar-border))] flex items-center justify-between px-4 gap-2 relative z-[100]">
@@ -55,18 +44,6 @@ export function NavBar() {
       </div>
 
       <div className="flex items-center gap-2">
-        {/* <button onClick={handleInvitationsClick} className="p-2 hover:bg-accent rounded-lg transition-colors relative" title="Workspace Invitations">
-          <Mail className="w-5 h-5 text-muted-foreground" />
-          {pendingCount > 0 && (
-            <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 h-5 min-w-5 flex items-center justify-center px-1 text-xs bg-red-600 text-white border-0"
-            >
-              {pendingCount}
-            </Badge>
-          )}
-        </button> */}
-
         <button
           onClick={toggleTheme}
           className="p-2 hover:bg-accent rounded-lg transition-colors"

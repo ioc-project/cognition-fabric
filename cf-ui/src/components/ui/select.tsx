@@ -30,7 +30,7 @@ const SelectTrigger = React.forwardRef<React.ElementRef<typeof SelectPrimitive.T
         'flex h-10 w-full items-center justify-between rounded-md border-2 px-3 py-2 text-sm text-foreground ring-offset-background data-[placeholder]:text-muted-foreground focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
         surface === 'page'
           ? 'border-[hsl(var(--navbar-border))] !bg-[hsl(var(--main-background))] focus:border-[hsl(var(--sidebar-active-border))] dark:focus:border-ring'
-          : 'border-[#d5dff7] dark:border-border soft-card focus:border-[#0051af] dark:focus:border-ring',
+          : 'border-[hsl(var(--input-border-light))] dark:border-border soft-card focus:border-[hsl(var(--input-border-focus))] dark:focus:border-ring',
         className
       )}
       {...props}
@@ -76,8 +76,8 @@ const SelectContent = React.forwardRef<React.ElementRef<typeof SelectPrimitive.C
         className={cn(
           'relative z-50 max-h-[--radix-select-content-available-height] min-w-[8rem] overflow-y-auto overflow-x-hidden rounded-md border p-1 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-[--radix-select-content-transform-origin]',
           surface === 'page'
-            ? 'bg-[hsl(var(--main-background))] text-foreground border-[hsl(var(--navbar-border))] shadow-[0_10px_30px_rgba(15,23,42,0.10)] dark:shadow-[0_12px_32px_rgba(0,0,0,0.45)]'
-            : 'soft-card text-popover-foreground shadow-md',
+            ? 'bg-[hsl(var(--main-background))] text-foreground border-[hsl(var(--navbar-border))] shadow-[var(--select-content-shadow)]'
+            : 'bg-card text-popover-foreground shadow-md',
           position === 'popper' &&
             'data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1',
           className

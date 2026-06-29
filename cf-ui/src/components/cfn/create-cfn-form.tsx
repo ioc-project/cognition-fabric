@@ -19,6 +19,7 @@ import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
 import {BasePage} from '@/components/ui/base-page';
 import {useCfn} from '@/hooks/useCfn';
+import {FormSectionHeader} from '@/components/ui/form-section-header';
 
 const formSchema = z.object({
   name: z.string().min(1, 'CFN Name is required').min(3, 'CFN Name must be at least 3 characters'),
@@ -95,17 +96,18 @@ export function CreateCfnForm({onCancel}: CreateCfnFormProps) {
         useBreadcrumbs
         breadcrumbs={breadcrumbs.createCfn()}
       >
-        <div className="flex justify-center">
-          <Card className="w-full max-w-4xl">
-            <CardContent className="p-8">
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-                  {error && (
-                    <div className="p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md">
-                      {error}
-                    </div>
-                  )}
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col items-start gap-6 w-full max-w-[1100px]">
+            {error && (
+              <div className="w-full p-3 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md">
+                {error}
+              </div>
+            )}
 
+            <Card className="w-full">
+              <CardContent className="pt-8 px-8 pb-1">
+                <div className="flex flex-col gap-4 mb-6">
+                  <FormSectionHeader title="Basic Information" description="Define the name for this Cognition Fabric Node" />
                   <FormField
                     control={form.control}
                     name="name"
@@ -119,7 +121,14 @@ export function CreateCfnForm({onCancel}: CreateCfnFormProps) {
                       </FormItem>
                     )}
                   />
+                </div>
+              </CardContent>
+            </Card>
 
+            <Card className="w-full">
+              <CardContent className="pt-8 px-8 pb-1">
+                <div className="flex flex-col gap-4 mb-6">
+                  <FormSectionHeader title="Connection" description="Specify the network address for this node" />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <FormField
                       control={form.control}
@@ -134,7 +143,6 @@ export function CreateCfnForm({onCancel}: CreateCfnFormProps) {
                         </FormItem>
                       )}
                     />
-
                     <FormField
                       control={form.control}
                       name="port"
@@ -149,26 +157,26 @@ export function CreateCfnForm({onCancel}: CreateCfnFormProps) {
                       )}
                     />
                   </div>
+                </div>
+              </CardContent>
+            </Card>
 
-                  <div className="flex w-full items-center justify-between pt-4">
-                    {onCancel ? (
-                      <Button type="button" variant="outline" onClick={handleCancel} disabled={isLoading}>
-                        Cancel
-                      </Button>
-                    ) : (
-                      <Button asChild type="button" variant="outline" disabled={isLoading}>
-                        <Link href={routes.cfn.list}>Cancel</Link>
-                      </Button>
-                    )}
-                    <Button type="submit" variant="sidebar" disabled={isLoading}>
-                      {isLoading ? 'Registering...' : 'Register Cognition Fabric Node'}
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </div>
+            <div className="flex items-center gap-3 pt-4 border-t w-full">
+              {onCancel ? (
+                <Button type="button" variant="outline" onClick={handleCancel} disabled={isLoading}>
+                  Cancel
+                </Button>
+              ) : (
+                <Button asChild type="button" variant="outline" disabled={isLoading}>
+                  <Link href={routes.cfn.list}>Cancel</Link>
+                </Button>
+              )}
+              <Button type="submit" variant="sidebar" disabled={isLoading}>
+                {isLoading ? 'Registering...' : 'Register Cognition Fabric Node'}
+              </Button>
+            </div>
+          </form>
+        </Form>
       </BasePage>
     </div>
   );

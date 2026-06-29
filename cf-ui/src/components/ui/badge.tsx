@@ -19,9 +19,10 @@ const badgeVariants = cva(
         // Semantic status variants
         success: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-400',
         warning: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-400',
-        info: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-400',
+        info: 'border-[hsl(var(--badge-info-border))] bg-[hsl(var(--badge-info-bg))] text-[hsl(var(--badge-info-text))]',
         active: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-400',
-        inactive: 'border-transparent bg-muted text-muted-foreground'
+        inactive: 'border-transparent bg-muted text-muted-foreground',
+        accent: 'border-[hsl(var(--sidebar-icon-active)/0.25)] bg-[hsl(var(--sidebar-icon-active)/0.08)] text-[hsl(var(--sidebar-icon-active))]'
       }
     },
     defaultVariants: {

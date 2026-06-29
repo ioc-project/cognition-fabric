@@ -32,7 +32,6 @@ export function WorkspaceDetails() {
 
   const {masList, isLoading: masLoading} = useMAS(workspaceId || '');
   const {cfns = [], isLoading: cfnLoading} = useCfn();
-  // const {members} = useWorkspaceMembers(workspaceId || '');
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -129,16 +128,6 @@ export function WorkspaceDetails() {
           }
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-            {/* {isAdmin && (
-              <div className="p-4 border rounded-lg bg-card soft-card">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="card-title">Members</h4>
-                  <Users className="w-5 h-5 text-muted-foreground" />
-                </div>
-                <p className="text-4xl font-bold mb-1">{members.length}</p>
-                <p className="text-sm text-muted-foreground mb-6">{members.length === 1 ? 'Team member' : 'Team members'}</p>
-              </div>
-            )} */}
             <div className="p-4 border rounded-lg bg-card soft-card">
               <div className="flex flex-col gap-6">
                 <h4 className="card-title">Multi‑Agentic Systems (MAS)</h4>

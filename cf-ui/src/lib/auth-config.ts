@@ -6,10 +6,6 @@ import {NextAuthOptions} from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import {authApi} from '@/api/endpoints/auth';
 
-if (!process.env.NEXTAUTH_SECRET && process.env.NODE_ENV !== 'production') {
-  console.warn('NEXTAUTH_SECRET is not set. Using a temporary secret for build.');
-}
-
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -35,11 +31,7 @@ export const authOptions: NextAuthOptions = {
             accessToken: data.access_token,
             refreshToken: data.refresh_token
           };
-        } catch (error) {
-          console.error('Auth error:', error);
-          if (error instanceof Error) {
-            console.error('Error message:', error.message);
-          }
+        } catch {
           return null;
         }
       }
@@ -54,7 +46,6 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         const userWithTokens = user as {accessToken?: string; refreshToken?: string; username?: string; role?: string};
         if (!userWithTokens.accessToken || !userWithTokens.refreshToken) {
-          console.error('User object missing required token properties');
           return {...token, error: 'MissingTokens'};
         }
         token.accessToken = userWithTokens.accessToken;

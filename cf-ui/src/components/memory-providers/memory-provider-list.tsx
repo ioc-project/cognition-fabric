@@ -5,7 +5,7 @@
 'use client';
 
 import {useMemo, useState} from 'react';
-import {Database, Plus} from 'lucide-react';
+import {HardDrive, Plus} from 'lucide-react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
@@ -106,7 +106,7 @@ export function MemoryProviderList() {
               <div className="flex items-center justify-center min-h-[50vh]">
                 <ListShell
                   empty={{
-                    icon: Database,
+                    icon: HardDrive,
                     title: 'No Memory Providers registered.',
                     description: 'Register a memory provider to enable persistent memory for your agents.',
                     actionLabel: 'Register Memory Provider',
@@ -116,7 +116,7 @@ export function MemoryProviderList() {
               </div>
             }
           >
-            <div className="space-y-3">
+            <div className="space-y-6">
               <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search…" className="max-w-xs" />
               {viewMode === 'table' ? (
                 <MemoryProviderTableList

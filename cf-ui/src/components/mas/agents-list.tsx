@@ -5,7 +5,6 @@
 'use client';
 
 import {Plus, Users} from 'lucide-react';
-import {FormLabel} from '@/components/ui/form';
 import {Button} from '@/components/ui/button';
 import {AgentCard} from './agent-card';
 import type {Control, UseFormWatch} from 'react-hook-form';
@@ -61,8 +60,7 @@ export function AgentsList({
   const hasAgents = displayAgents.length > 0;
 
   return (
-    <div className="space-y-4 border-t pt-6">
-      <FormLabel>Agents</FormLabel>
+    <div className="space-y-4">
       {isEditMode ? (
         <>
           {!hasAgents ? (
@@ -101,15 +99,6 @@ export function AgentsList({
               );
             })
           )}
-
-          {hasAgents && onAddAgent && (
-            <div className="flex justify-end">
-              <Button type="button" variant="sidebar" size="sm" className="gap-2" onClick={onAddAgent}>
-                <Plus className="w-4 h-4" />
-                Add Agent
-              </Button>
-            </div>
-          )}
         </>
       ) : (
         <>
@@ -126,10 +115,10 @@ export function AgentsList({
                 identityIdentifiers={agent.identity_identifiers}
                 agenticMemoryProviderId={agent.agentic_memory_provider_id}
                 agenticMemoryProviderName={agent.agentic_memory_provider_name}
-                isExpanded={true}
+                isExpanded={agentExpandedState[agent.agent_id] ?? true}
                 isEditMode={false}
                 control={control}
-                onToggleExpand={() => {}}
+                onToggleExpand={() => onToggleExpand(agent.agent_id)}
                 userMemoryProviders={userMemoryProviders}
               />
             ))

@@ -4,15 +4,14 @@
 
 'use client';
 
-import {ChevronDown, ChevronUp, X} from 'lucide-react';
+import {ChevronDown, ChevronUp, X, Bot} from 'lucide-react';
 import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {CopyableInput} from '@/components/ui/copyable-input';
-import {ReadOnlyField} from '@/components/ui/read-only-field';
-import {Label} from '@/components/ui/label';
 import {validateJSON, formatJson} from '@/lib/utils';
+import {dtLabel, dtValue, dtRow} from '@/lib/detail-typography';
 import type {Control} from 'react-hook-form';
 
 interface AgentCardProps {
@@ -53,35 +52,43 @@ export function AgentCard({
   const headerLabel = agentName || agentIdValue || `Agent ${index + 1}`;
 
   return (
-    <div className="rounded-lg border border-border p-4 space-y-4 bg-card">
-      <div className="flex items-center justify-between">
-        <div className={isEditMode ? 'cursor-pointer' : ''} onClick={isEditMode ? onToggleExpand : undefined}>
-          <FormLabel className="mb-0">{headerLabel}</FormLabel>
+    <div className="bg-card border border-border rounded overflow-hidden">
+      <div
+        role="button"
+        tabIndex={0}
+        className="w-full flex items-center justify-between px-4 py-3 bg-[hsl(var(--border)/0.5)] hover:brightness-95 transition-all cursor-pointer"
+        onClick={onToggleExpand}
+        onKeyDown={(e) => e.key === 'Enter' && onToggleExpand()}
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-7 h-7 rounded bg-[hsl(var(--sidebar-icon-active)/0.1)] flex items-center justify-center">
+            <Bot size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+          </div>
+          <div className="text-left">
+            <div className="text-sm text-foreground font-medium">{headerLabel}</div>
+            {agentIdValue && <div className="font-mono text-xs text-muted-foreground truncate max-w-[200px]">{agentIdValue}</div>}
+          </div>
         </div>
-        {isEditMode && (
-          <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-3">
+          {isEditMode && onRemove && (
             <button
               type="button"
-              className="h-5 w-5 p-0 text-xs leading-none inline-flex items-center justify-center rounded bg-background hover:bg-muted border border-border"
-              onClick={onToggleExpand}
+              className="h-5 w-5 inline-flex items-center justify-center rounded bg-card hover:bg-red-50 border border-border text-muted-foreground hover:text-red-500 transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove();
+              }}
             >
-              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              <X size={11} />
             </button>
-            {onRemove && (
-              <button
-                type="button"
-                className="h-5 w-5 p-0 text-xs leading-none inline-flex items-center justify-center rounded bg-background hover:bg-muted border border-border"
-                onClick={onRemove}
-              >
-                <X className="w-3 h-3" />
-              </button>
-            )}
-          </div>
-        )}
+          )}
+          {isExpanded ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
+        </div>
       </div>
 
       {isExpanded && (
-        <>
+        <div className="px-4 pb-4 border-t border-border bg-card">
           {isEditMode ? (
             <EditModeFields index={index} control={control} userMemoryProviders={userMemoryProviders} />
           ) : (
@@ -95,7 +102,7 @@ export function AgentCard({
               agenticMemoryProviderName={agenticMemoryProviderName}
             />
           )}
-        </>
+        </div>
       )}
     </div>
   );
@@ -111,7 +118,7 @@ function EditModeFields({
   userMemoryProviders: Array<{id: string; provider_name: string}>;
 }) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pt-4">
       <FormField
         control={control}
         name={`agents.${index}.name`}
@@ -231,33 +238,37 @@ function ViewModeFields({
   agenticMemoryProviderId?: string;
   agenticMemoryProviderName?: string;
 }) {
+  const rowClass = dtRow;
+  const labelClass = dtLabel;
+  const valueClass = dtValue;
+
   return (
-    <div className="space-y-3">
+    <div>
       {agentIdValue && (
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Agent ID</Label>
+        <div className={rowClass}>
+          <span className={labelClass}>Agent ID</span>
           <CopyableInput value={agentIdValue} />
         </div>
       )}
 
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Name</Label>
-        <ReadOnlyField value={agentName || '—'} />
+      <div className={rowClass}>
+        <span className={labelClass}>Name</span>
+        <span className={valueClass}>{agentName || '-'}</span>
       </div>
 
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">URL</Label>
-        <ReadOnlyField value={agentUrl || '—'} />
+      <div className={rowClass}>
+        <span className={labelClass}>URL</span>
+        <span className={valueClass}>{agentUrl || '-'}</span>
       </div>
 
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Identity Type</Label>
-        <ReadOnlyField value={identityType || 'Not configured'} />
+      <div className={rowClass}>
+        <span className={labelClass}>Identity Type</span>
+        <span className={valueClass}>{identityType || '-'}</span>
       </div>
 
-      <div className="space-y-1">
-        <Label className="text-xs text-muted-foreground">Identity Identifiers</Label>
-        <pre className="font-mono text-xs rounded-md border bg-muted/40 p-3 min-h-[80px] whitespace-pre-wrap break-all text-foreground">
+      <div className={rowClass}>
+        <span className={labelClass}>Identifiers</span>
+        <pre className="font-mono text-sm text-muted-foreground bg-muted border border-border rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
           {identityIdentifiers && Object.keys(identityIdentifiers).length > 0
             ? JSON.stringify(identityIdentifiers, null, 2)
             : '{\n  "url": "main::agents::retrieval-agent-1"\n}'}
@@ -265,11 +276,10 @@ function ViewModeFields({
       </div>
 
       {agenticMemoryProviderId && (
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Memory Provider</Label>
-          <ReadOnlyField value={agenticMemoryProviderName || agenticMemoryProviderId || ''} />
-          <div className="pt-1">
-            <Label className="text-xs text-muted-foreground">Provider ID</Label>
+        <div className={rowClass}>
+          <span className={labelClass}>Memory Provider</span>
+          <div className="space-y-1">
+            <span className={valueClass}>{agenticMemoryProviderName || agenticMemoryProviderId}</span>
             <CopyableInput value={agenticMemoryProviderId} />
           </div>
         </div>

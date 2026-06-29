@@ -5,7 +5,7 @@
 'use client';
 
 import {useMemo, useState} from 'react';
-import {Cpu} from 'lucide-react';
+import {BrainCircuit} from 'lucide-react';
 import {useRouter} from 'next/navigation';
 import {mutate as globalMutate} from 'swr';
 import {Button} from '@/components/ui/button';
@@ -271,7 +271,7 @@ export function CognitiveAgentList() {
               <div className="flex items-center justify-center min-h-[50vh]">
                 <ListShell
                   empty={{
-                    icon: Cpu,
+                    icon: BrainCircuit,
                     title: 'No Cognition Engines yet.',
                     description: 'Cognition engines will appear here once they are created.'
                   }}
@@ -279,7 +279,7 @@ export function CognitiveAgentList() {
               </div>
             }
           >
-            <div className="space-y-3">
+            <div className="space-y-6">
               <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search…" className="max-w-xs" />
               {viewMode === 'table' ? (
                 <CognitiveAgentTableList

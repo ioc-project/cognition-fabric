@@ -14,22 +14,30 @@ import {masApi} from '@/api/endpoints';
 import type {MultiAgenticSystem, MultiAgenticSystemUpdate} from '@/api/endpoints/mas';
 import {Button} from '@/components/ui/button';
 import {BasePage} from '@/components/ui/base-page';
-import {Card, CardContent} from '@/components/ui/card';
+import {Input} from '@/components/ui/input';
+import {Textarea} from '@/components/ui/textarea';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
+import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/ui/form';
+import {CopyableInput} from '@/components/ui/copyable-input';
+import {Badge} from '@/components/ui/badge';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes} from '@/constants/routes';
-import {parseError} from '@/lib/utils';
+import {parseError, DATE_TIME_FORMAT_OPTIONS, validateJSON, formatJson} from '@/lib/utils';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {useMemoryProviders} from '@/hooks/useMemoryProviders';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {toast} from 'sonner';
-import {Network, BarChart3} from 'lucide-react';
+import {Network, BarChart3, Bot, BrainCircuit, HardDrive, ChevronDown, ChevronUp, Unlink, Plus} from 'lucide-react';
+import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
+import {StatCard} from '@/components/ui/stat-card';
 import {useCognitionEngines} from '@/hooks/useCognitionEngines';
 import {MASAuditLog} from './mas-audit-log';
-import {MASFormFields} from './mas-form-fields';
 import {MASAssociateCEModal} from './mas-associate-ce-modal';
+import {AgentsList} from './agents-list';
 import {UpdateMASFormSchema, type FormValues} from './mas-form-schema';
+import {dtLabel, dtSectionHeader, dtMetaLabel, dtMetaValue, dtPanelHeader, dtPanelHeaderInteractive} from '@/lib/detail-typography';
 
 export default function MASDetailsPage() {
   const router = useRouter();
@@ -44,8 +52,6 @@ export default function MASDetailsPage() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [masConfigExpanded, setMasConfigExpanded] = useState(true);
-  const [cesSectionExpanded, setCesSectionExpanded] = useState(true);
-  const [expandedCEs, setExpandedCEs] = useState<Record<string, boolean>>({});
   const [associateModalOpen, setAssociateModalOpen] = useState(false);
   const [selectedCEIds, setSelectedCEIds] = useState<string[]>([]);
   const [isAssociating, setIsAssociating] = useState(false);
@@ -214,6 +220,15 @@ export default function MASDetailsPage() {
     router.replace(routes.mas.details(masId!));
   };
 
+  const agents = mas?.agents || [];
+  const totalAgents = agents.length;
+  const ces = mas?.cognition_engines || [];
+  const enabledCEs = ces.filter((c) => c.enabled).length;
+
+  const labelClass = dtLabel;
+  const metadataLabelClass = dtMetaLabel;
+  const metadataValueClass = dtMetaValue;
+
   return (
     <>
       <BasePage
@@ -253,35 +268,293 @@ export default function MASDetailsPage() {
           errorListStateProps={{title: 'Failed to load MAS details'}}
           emptyListStateProps={{title: 'No MAS details found'}}
         >
-          <div className="flex justify-center py-4">
-            <Card variant="list" className="w-full max-w-4xl">
-              <CardContent className="p-8">
-                <MASFormFields
-                  mas={mas}
-                  form={form}
-                  isEditMode={isEditMode}
-                  masConfigExpanded={masConfigExpanded}
-                  setMasConfigExpanded={setMasConfigExpanded}
-                  agentFields={agentFields}
-                  appendAgent={appendAgent}
-                  removeAgent={removeAgent}
-                  agentExpandedState={agentExpandedState}
-                  setAgentExpandedState={setAgentExpandedState}
-                  sharedMemoryProviders={sharedMemoryProviders}
-                  userMemoryProviders={userMemoryProviders}
-                  cesSectionExpanded={cesSectionExpanded}
-                  setCesSectionExpanded={setCesSectionExpanded}
-                  expandedCEs={expandedCEs}
-                  setExpandedCEs={setExpandedCEs}
-                  availableCEs={availableCEs}
-                  disassociatingId={disassociatingId}
-                  onDisassociateCE={handleDisassociateCE}
-                  onOpenAssociateModal={() => setAssociateModalOpen(true)}
-                  onSubmit={handleSave}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
+              <div className="grid grid-cols-3 gap-8">
+                <StatCard icon={<Bot size={14} className="text-[hsl(var(--sidebar-icon-active))]" />} label="Agents" value={totalAgents} />
+                <StatCard
+                  icon={<HardDrive size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
+                  label="Shared Memory Provider"
+                  value={mas?.shared_memory?.name || 'None'}
                 />
-              </CardContent>
-            </Card>
-          </div>
+                <StatCard
+                  icon={<BrainCircuit size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
+                  label="Cognition Engines"
+                  value={ces.length}
+                  sublabel={`${enabledCEs} enabled${ces.length - enabledCEs > 0 ? `, ${ces.length - enabledCEs} disabled` : ''}`}
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="grid grid-cols-4 gap-8">
+                  <div className="bg-card border border-border rounded-lg py-10 px-5">
+                    <span className={labelClass}>Name</span>
+                    {isEditMode ? (
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({field}) => (
+                          <FormItem className="space-y-1 mt-2">
+                            <FormControl>
+                              <Input {...field} className="h-8 text-sm" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <p className="text-2xl font-semibold text-foreground mt-2">{mas?.name || '-'}</p>
+                    )}
+                  </div>
+
+                  <div className="bg-card border border-border rounded-lg py-10 px-5 min-w-0">
+                    <span className={labelClass}>ID</span>
+                    <div className="mt-2">
+                      <CopyableInput value={mas?.id || ''} />
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-border rounded-lg py-10 px-5 min-w-0">
+                    <span className={labelClass}>Workspace ID</span>
+                    <div className="mt-2">
+                      <CopyableInput value={mas?.workspace_id || ''} />
+                    </div>
+                  </div>
+
+                  <div className="bg-card border border-border rounded-lg py-10 px-5">
+                    <span className={labelClass}>Shared Memory</span>
+                    {isEditMode ? (
+                      <FormField
+                        control={form.control}
+                        name="shared_memory_provider_id"
+                        render={({field}) => (
+                          <FormItem className="space-y-1 mt-2">
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger className="h-8 text-sm">
+                                  <SelectValue placeholder="Select provider" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {sharedMemoryProviders.length === 0 ? (
+                                  <div className="py-2 px-2 text-sm text-muted-foreground">No providers available</div>
+                                ) : (
+                                  sharedMemoryProviders.map((provider) => (
+                                    <SelectItem key={provider.id} value={provider.id}>
+                                      {provider.provider_name}
+                                    </SelectItem>
+                                  ))
+                                )}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <p className="text-2xl font-semibold text-foreground mt-2">{mas?.shared_memory?.name || 'None'}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-card border border-border rounded-lg py-6 px-5">
+                  <span className={labelClass}>Description</span>
+                  {isEditMode ? (
+                    <FormField
+                      control={form.control}
+                      name="description"
+                      render={({field}) => (
+                        <FormItem className="space-y-1 mt-2">
+                          <FormControl>
+                            <Input {...field} className="h-8 text-sm" />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ) : (
+                    <p className="text-sm text-foreground mt-2">{mas?.description || '-'}</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-x-8 px-1 pt-1">
+                  {mas?.created_at && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className={metadataLabelClass}>Created</span>
+                      <span className={metadataValueClass}>{new Date(mas.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
+                    </div>
+                  )}
+                  {mas?.updated_at && (
+                    <div className="flex flex-col gap-0.5">
+                      <span className={metadataLabelClass}>Last Modified</span>
+                      <span className={metadataValueClass}>{new Date(mas.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded overflow-hidden">
+                <div className={dtPanelHeader}>
+                  <div className="flex items-center gap-2">
+                    <Bot size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                    <span className={dtSectionHeader}>Agents</span>
+                    {(isEditMode ? agentFields.length : (mas?.agents?.length ?? 0)) > 0 && (
+                      <Badge variant="accent" className="rounded px-1.5">
+                        {isEditMode ? agentFields.length : (mas?.agents?.length ?? 0)}
+                      </Badge>
+                    )}
+                  </div>
+                  {isEditMode && agentFields.length > 0 && (
+                    <Button
+                      type="button"
+                      variant="sidebar"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() =>
+                        appendAgent({agent_id: '', name: '', url: '', agentic_memory_provider_id: '', identity_type: '', identity_identifiers: ''})
+                      }
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add Agent
+                    </Button>
+                  )}
+                </div>
+                <div className="p-4">
+                  <AgentsList
+                    agents={agentFields}
+                    control={form.control}
+                    watch={form.watch}
+                    isEditMode={isEditMode}
+                    agentExpandedState={agentExpandedState}
+                    onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
+                    onAddAgent={
+                      isEditMode
+                        ? () =>
+                            appendAgent({
+                              agent_id: '',
+                              name: '',
+                              url: '',
+                              agentic_memory_provider_id: '',
+                              identity_type: '',
+                              identity_identifiers: ''
+                            })
+                        : undefined
+                    }
+                    onRemoveAgent={isEditMode ? removeAgent : undefined}
+                    masAgentsData={!isEditMode && mas?.agents ? mas.agents : undefined}
+                    userMemoryProviders={userMemoryProviders}
+                  />
+                </div>
+              </div>
+
+              <div className="bg-card border border-border rounded overflow-hidden">
+                <div className={dtPanelHeaderInteractive} onClick={() => setMasConfigExpanded(!masConfigExpanded)}>
+                  <div className="flex items-center gap-2">
+                    <span className={dtSectionHeader}>Config</span>
+                    {isEditMode &&
+                      (() => {
+                        const cv = form.watch('config') ?? '';
+                        return cv.trim() !== '' ? (
+                          <span
+                            className={`text-xs px-1.5 py-0.5 rounded ${validateJSON(cv) ? 'text-green-600 bg-green-50 border border-green-200' : 'text-red-600 bg-red-50 border border-red-200'}`}
+                          >
+                            {validateJSON(cv) ? 'Valid JSON' : 'Invalid JSON'}
+                          </span>
+                        ) : null;
+                      })()}
+                  </div>
+                  {masConfigExpanded ? (
+                    <ChevronUp size={13} className="text-muted-foreground" />
+                  ) : (
+                    <ChevronDown size={13} className="text-muted-foreground" />
+                  )}
+                </div>
+                {masConfigExpanded && (
+                  <div className="p-4">
+                    {isEditMode ? (
+                      <FormField
+                        control={form.control}
+                        name="config"
+                        render={({field}) => (
+                          <FormItem>
+                            <FormControl>
+                              <Textarea
+                                placeholder={`{\n  "key": "value"\n}`}
+                                className="font-mono text-sm min-h-[150px] resize-y"
+                                {...field}
+                                onBlur={() => field.onChange(formatJson(field.value || ''))}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <pre className="font-mono text-sm text-muted-foreground bg-muted border border-border rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
+                        {mas?.config && Object.keys(mas.config).length > 0 ? JSON.stringify(mas.config, null, 2) : '{\n  "key": "value"\n}'}
+                      </pre>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-card border border-border rounded overflow-hidden">
+                <div className={dtPanelHeader}>
+                  <div className="flex items-center gap-2">
+                    <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                    <span className={dtSectionHeader}>Associated Cognition Engines</span>
+                    {ces.length > 0 && (
+                      <Badge variant="accent" className="rounded px-1.5">
+                        {ces.length}
+                      </Badge>
+                    )}
+                  </div>
+                  {availableCEs.length > 0 && (
+                    <Button type="button" variant="sidebar" size="sm" onClick={() => setAssociateModalOpen(true)}>
+                      + Associate
+                    </Button>
+                  )}
+                </div>
+
+                {ces.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Subkind</TableHead>
+                        <TableHead>Enabled</TableHead>
+                        <TableHead />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {ces.map((ce) => (
+                        <TableRow key={ce.ce_id}>
+                          <TableCell>{ce.name}</TableCell>
+                          <TableCell className="font-mono text-muted-foreground">{ce.kind || '-'}</TableCell>
+                          <TableCell className="font-mono text-muted-foreground">{ce.subkind || '-'}</TableCell>
+                          <TableCell>{ce.enabled ? <Badge variant="info">Enabled</Badge> : <Badge variant="inactive">Disabled</Badge>}</TableCell>
+                          <TableCell>
+                            <button
+                              type="button"
+                              disabled={disassociatingId === ce.ce_id}
+                              onClick={() => handleDisassociateCE(ce.ce_id, ce.name)}
+                              className="flex items-center gap-1 text-sm text-muted-foreground hover:text-red-600 border border-border hover:border-red-200 hover:bg-red-50 px-2 py-1 rounded transition-colors disabled:opacity-50"
+                            >
+                              <Unlink className="w-3 h-3" />
+                              {disassociatingId === ce.ce_id ? 'Removing...' : 'Disassociate'}
+                            </button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="px-4 py-4 text-sm text-muted-foreground">No Cognition Engines associated yet.</p>
+                )}
+              </div>
+            </form>
+          </Form>
         </ConditionalSWRRenderer>
       </BasePage>
 

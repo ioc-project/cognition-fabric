@@ -15,7 +15,7 @@ export const authApi = {
     );
 
     if (error) {
-      throw new Error('Login failed');
+      throw error;
     }
 
     return data as TokenResponse;

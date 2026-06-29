@@ -37,11 +37,7 @@ export function CreateInvitationDialog({workspaceId, workspaceName, open, onOpen
   const {data: session} = useSession();
   const {createInvitation} = useWorkspaceInvitations(workspaceId);
   const {members} = useWorkspaceMembers(workspaceId);
-  const {data: usersData, error: usersError} = useSWR('all-users', () => userApi.list());
-
-  if (usersError) {
-    console.warn('Failed to load users list:', usersError);
-  }
+  const {data: usersData} = useSWR('all-users', () => userApi.list());
 
   const currentUserId = session?.user?.id;
   const memberUsernames = new Set(members.map((m: WorkspaceMember) => m.username));

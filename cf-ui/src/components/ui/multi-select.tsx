@@ -52,7 +52,7 @@ export function MultiSelect({
       <DropdownMenuTrigger asChild disabled={disabled}>
         <button
           className={cn(
-            'flex h-10 w-full items-center justify-between rounded-md border-2 border-[#d5dff7] dark:border-border soft-card px-3 py-2 text-sm text-foreground ring-offset-background focus:outline-none focus:border-[#0051af] dark:focus:border-ring focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50',
+            'flex h-10 w-full items-center justify-between rounded-md border-2 border-[#d5dff7] dark:border-border bg-[hsl(var(--input-bg-light))] dark:bg-[hsl(var(--soft-card-bg))] px-3 py-2 text-sm text-foreground ring-offset-background focus:outline-none focus:border-[#0051af] dark:focus:border-ring focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50',
             !value.length && 'text-muted-foreground',
             className
           )}

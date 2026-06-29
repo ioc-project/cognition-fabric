@@ -5,7 +5,7 @@
 'use client';
 
 import {useMemo, useState} from 'react';
-import {Plus, BrainCircuit} from 'lucide-react';
+import {Plus, Workflow} from 'lucide-react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {Button} from '@/components/ui/button';
@@ -72,7 +72,7 @@ export function MASList({workspaceId}: MASListProps) {
     await deleteDialog.confirm(async (data) => {
       try {
         await deleteMAS(data.id);
-        toast.success(`Multi-Agent System "${data.name}" deleted successfully`);
+        toast.success(`Multi-Agentic System "${data.name}" deleted successfully`);
       } catch (err) {
         const errorMessage = parseError(err);
         setDeleteError(errorMessage);
@@ -112,17 +112,17 @@ export function MASList({workspaceId}: MASListProps) {
               <div className="flex items-center justify-center min-h-[50vh]">
                 <ListShell
                   empty={{
-                    icon: BrainCircuit,
+                    icon: Workflow,
                     title: 'No Multi-Agentic Systems exist in this workspace.',
                     description: 'Create one to get started.',
-                    actionLabel: 'Create Multi-Agent System',
+                    actionLabel: 'Create Multi-Agentic System',
                     href: routes.mas.create
                   }}
                 />
               </div>
             }
           >
-            <div className="space-y-3">
+            <div className="space-y-6">
               <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search…" className="max-w-xs" />
               {viewMode === 'table' ? (
                 <MASTableList
@@ -165,7 +165,7 @@ export function MASList({workspaceId}: MASListProps) {
           }
         }}
         onConfirm={handleDeleteMAS}
-        title={`Delete ${deleteDialog.data?.name || 'Multi-Agent System'}`}
+        title={`Delete ${deleteDialog.data?.name || 'Multi-Agentic System'}`}
         description={deleteError ?? `Delete "${deleteDialog.data?.name}"? This action is permanent and cannot be undone.`}
         confirmText="Delete"
         loading={deleteDialog.isLoading}
