@@ -370,15 +370,6 @@ export default function MASDetailsPage() {
                     </InfoRow>
                   </InfoPanel>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    {mas?.created_at && (
-                      <MetaCard label="Created" mono>{new Date(mas.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
-                    )}
-                    {mas?.updated_at && (
-                      <MetaCard label="Last Modified" mono>{new Date(mas.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
-                    )}
-                  </div>
-
                   {isEditMode ? (
                     <FormField
                       control={form.control}
@@ -400,6 +391,15 @@ export default function MASDetailsPage() {
                       isEditMode={false}
                     />
                   )}
+
+                  <div className="grid grid-cols-2 gap-3">
+                    {mas?.created_at && (
+                      <MetaCard label="Created" mono>{new Date(mas.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
+                    )}
+                    {mas?.updated_at && (
+                      <MetaCard label="Last Modified" mono>{new Date(mas.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
+                    )}
+                  </div>
                 </div>
               )}
 
