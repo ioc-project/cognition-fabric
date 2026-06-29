@@ -4,13 +4,13 @@
 
 'use client';
 
-import {Clock, User, Copy, Check} from 'lucide-react';
-import {useState} from 'react';
+import {Clock, User} from 'lucide-react';
 import {Badge} from '@/components/ui/badge';
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from '@/components/ui/dialog';
-import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
 import type {AuditEvent, AuditInformation} from '@/api/endpoints/audit';
 import {cn} from '@/lib/utils';
+import {SyntaxJson} from '@/components/ui/syntax-json';
+import {InlineId} from '@/components/ui/inline-id';
 
 interface AuditDetailPanelProps {
   event: AuditEvent | null;
@@ -58,34 +58,6 @@ function getResourceTypeLabel(resourceType: string): string {
   return labels[resourceType] || resourceType;
 }
 
-function CopyableCode({value, label}: {value: string; label?: string}) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <TooltipProvider>
-      <div className="flex items-center gap-1.5 group">
-        {label && <span className="text-muted-foreground font-medium text-xs">{label}:</span>}
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono cursor-help truncate max-w-[240px]">{value}</code>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p className="font-mono text-xs">{value}</p>
-          </TooltipContent>
-        </Tooltip>
-        <button onClick={handleCopy} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded" title="Copy">
-          {copied ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
-        </button>
-      </div>
-    </TooltipProvider>
-  );
-}
 
 function DetailRow({label, children}: {label: string; children: React.ReactNode}) {
   return (
@@ -125,22 +97,16 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
             <div className="flex items-center gap-2 flex-wrap">
               <Badge variant={getAuditTypeBadgeVariant(event.audit_type)}>{getAuditTypeLabel(event.audit_type)}</Badge>
               <Badge variant="outline">{getResourceTypeLabel(event.resource_type)}</Badge>
-              {info?.status && (
-                <Badge variant={info.status === 'SUCCESS' ? 'success' : info.status === 'FAILED' ? 'destructive' : 'inactive'}>{info.status}</Badge>
-              )}
-              {info?.http_status && (
-                <Badge variant={info.http_status >= 200 && info.http_status < 300 ? 'default' : 'destructive'}>HTTP {info.http_status}</Badge>
-              )}
             </div>
 
             <div className="space-y-4 p-4 rounded-lg border border-border bg-muted/20">
               <DetailRow label="Event ID">
-                <CopyableCode value={String(event.id)} />
+                <InlineId value={String(event.id)} />
               </DetailRow>
 
               {event.operation_id && (
                 <DetailRow label="Operation ID">
-                  <CopyableCode value={event.operation_id} />
+                  <InlineId value={event.operation_id} />
                 </DetailRow>
               )}
 
@@ -150,17 +116,17 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
 
               <DetailRow label="Resource Identifier">
                 {resolvedResourceName ? (
-                  <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2">
                     <span className="text-sm font-medium">{resolvedResourceName}</span>
-                    <CopyableCode value={event.resource_identifier} />
+                    <InlineId value={event.resource_identifier} />
                   </div>
                 ) : (
-                  <CopyableCode value={event.resource_identifier} />
+                  <InlineId value={event.resource_identifier} />
                 )}
               </DetailRow>
 
               <DetailRow label="Audit Resource ID">
-                <CopyableCode value={event.audit_resource_identifier} />
+                <InlineId value={event.audit_resource_identifier} />
               </DetailRow>
 
               <DetailRow label="Created">
@@ -180,7 +146,7 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
               <DetailRow label="Created By">
                 <div className="flex items-center gap-1.5 text-sm">
                   <User className="w-3.5 h-3.5 text-muted-foreground" />
-                  <CopyableCode value={String(createdBy)} />
+                  <span>{String(createdBy)}</span>
                 </div>
               </DetailRow>
 
@@ -218,9 +184,9 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
                       {info.request.http_request_body && Object.keys(info.request.http_request_body).length > 0 && (
                         <div>
                           <div className="text-[10px] text-muted-foreground mb-1">Body:</div>
-                          <pre className="text-[10px] font-mono bg-muted p-2 rounded overflow-auto max-h-48 whitespace-pre-wrap">
-                            {JSON.stringify(info.request.http_request_body, null, 2)}
-                          </pre>
+                          <div className="rounded overflow-auto max-h-48">
+                            <SyntaxJson code={JSON.stringify(info.request.http_request_body, null, 2)} />
+                          </div>
                         </div>
                       )}
                     </div>
@@ -230,30 +196,26 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
                 {info.response && (
                   <div className="p-3 bg-card rounded-lg border border-border">
                     <div className="text-xs text-muted-foreground font-semibold mb-2">Response</div>
-                    <pre className="text-[10px] font-mono bg-muted p-2 rounded overflow-auto max-h-60 whitespace-pre-wrap break-words">
-                      {(() => {
+                    <div className="rounded overflow-auto max-h-60">
+                      <SyntaxJson code={(() => {
                         const response = info.response as Record<string, unknown>;
                         if ('raw' in response && response.raw !== undefined) {
                           if (typeof response.raw === 'string') {
-                            try {
-                              return JSON.stringify(JSON.parse(response.raw), null, 2);
-                            } catch {
-                              return response.raw;
-                            }
+                            try { return JSON.stringify(JSON.parse(response.raw), null, 2); } catch { return response.raw; }
                           }
                           return JSON.stringify(response.raw, null, 2);
                         }
                         return JSON.stringify(response, null, 2);
-                      })()}
-                    </pre>
+                      })()} />
+                    </div>
                   </div>
                 )}
 
                 {!info.request && !info.response && (
                   <div className="p-3 bg-card rounded-lg border border-border">
-                    <pre className="text-[10px] font-mono bg-muted p-2 rounded overflow-auto max-h-96 whitespace-pre-wrap">
-                      {JSON.stringify(info, null, 2)}
-                    </pre>
+                    <div className="rounded overflow-auto max-h-96">
+                      <SyntaxJson code={JSON.stringify(info, null, 2)} />
+                    </div>
                   </div>
                 )}
               </div>

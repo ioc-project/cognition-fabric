@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import {Trash2} from 'lucide-react';
-import {Button} from '@/components/ui/button';
+import {ActionButton} from '@/components/ui/action-button';
 
 interface DetailsPageActionsProps {
   onDelete?: () => void;
@@ -29,28 +29,18 @@ export function DetailsPageActions({
   if (isEditMode && onSave && onCancelEdit) {
     return (
       <div className="flex gap-2">
-        <Button variant="outline" size="sm" onClick={onCancelEdit} disabled={isSaving}>
-          Cancel
-        </Button>
-        <Button variant="sidebar" size="sm" onClick={onSave} disabled={isSaving}>
-          {isSaving ? 'Saving...' : 'Save'}
-        </Button>
+        <ActionButton label="Cancel" onClick={onCancelEdit} disabled={isSaving} />
+        <ActionButton label={isSaving ? 'Saving...' : 'Save'} variant="primary" onClick={onSave} disabled={isSaving} />
       </div>
     );
   }
 
   return (
     <div className="flex items-center gap-2">
-      {onEdit && (
-        <Button variant="sidebar" size="sm" onClick={onEdit}>
-          Edit
-        </Button>
-      )}
+      {onEdit && <ActionButton label="Edit" onClick={onEdit} />}
       {onEdit && onDelete && <div className="w-px h-5 bg-border shrink-0" />}
       {onDelete && (
-        <Button variant="outline-destructive" size="sm" onClick={onDelete} disabled={deleteDisabled}>
-          {deleteLabel ? deleteLabel : <Trash2 className="h-4 w-4" />}
-        </Button>
+        <ActionButton icon={Trash2} label={deleteLabel} variant="destructive" onClick={onDelete} disabled={deleteDisabled} />
       )}
     </div>
   );

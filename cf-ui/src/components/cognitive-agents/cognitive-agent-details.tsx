@@ -10,15 +10,13 @@ import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {mutate as globalMutate} from 'swr';
 import {BasePage} from '@/components/ui/base-page';
-import {Button} from '@/components/ui/button';
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/ui/form';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {routes} from '@/constants/routes';
-import {parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
+import {cn, parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {useCognitionEngine} from '@/hooks/useCognitionEngines';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {useCEToggleFlow} from '@/hooks/useCEToggleFlow';
@@ -32,11 +30,43 @@ import {UpdateCEFormSchema, type FormValues} from '@/components/cognitive-agents
 import {toast} from 'sonner';
 import {StatusDot} from '@/components/ui/status-dot';
 import {DetailTabs} from '@/components/ui/detail-tabs';
-import {InlineId} from '@/components/ui/inline-id';
+import {IdHoverCard} from '@/components/ui/id-hover-card';
 import {CollapsibleJsonField} from '@/components/mas/collapsible-json-field';
 import {dtPanelHeader, dtSectionHeader} from '@/lib/detail-typography';
 import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import {MetaCard} from '@/components/ui/meta-card';
+
+function ToggleDisplay({active, onClick}: {active: boolean; onClick?: () => void}) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        display: 'inline-flex',
+        height: '16px',
+        width: '28px',
+        flexShrink: 0,
+        alignItems: 'center',
+        borderRadius: '9999px',
+        padding: '2px',
+        transition: 'background-color 0.2s',
+        backgroundColor: active ? 'hsl(var(--indicator-active))' : 'hsl(var(--muted-foreground) / 0.3)',
+        cursor: onClick ? 'pointer' : 'default'
+      }}
+    >
+      <div
+        style={{
+          height: '12px',
+          width: '12px',
+          borderRadius: '9999px',
+          backgroundColor: 'hsl(var(--background))',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+          transition: 'transform 0.2s',
+          transform: active ? 'translateX(12px)' : 'translateX(0)'
+        }}
+      />
+    </div>
+  );
+}
 
 export default function CognitiveAgentDetailsPage() {
   const router = useRouter();
@@ -154,9 +184,13 @@ export default function CognitiveAgentDetailsPage() {
             <div className="flex items-center gap-3 flex-wrap">
               <StatusDot variant="health" active={ce.status === 'online'} />
               <span className="text-muted-foreground/30 text-xs select-none">·</span>
-              <StatusDot variant="state" active={ce.enabled} />
-              <span className="text-muted-foreground/30 text-xs select-none">·</span>
-              <InlineId label="ID" value={ce.id} />
+              <IdHoverCard
+                value={ce.id}
+                items={[
+                  {label: 'CE ID', value: ce.id},
+                  ...(ce.cfn_id ? [{label: 'CFN', value: ce.cfn_id}] : [])
+                ]}
+              />
             </div>
           ) : undefined
         }
@@ -177,11 +211,18 @@ export default function CognitiveAgentDetailsPage() {
           ce && (
             <div className="flex items-center gap-2">
               {!isEditMode && (
-                <Button variant={ce.enabled ? 'outline' : 'sidebar'} size="sm" onClick={toggleFlow.openToggleFlow}>
-                  {ce.enabled ? 'Disable' : 'Enable'}
-                </Button>
+                <>
+                  <button
+                    type="button"
+                    onClick={toggleFlow.openToggleFlow}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                  >
+                    <ToggleDisplay active={ce.enabled} />
+                    <span>{ce.enabled ? 'Enabled' : 'Disabled'}</span>
+                  </button>
+                  <div className="w-px h-5 bg-border mx-1 shrink-0" />
+                </>
               )}
-              <div className="w-px h-5 bg-border mx-1 shrink-0" />
               <DetailsPageActions
                 onDelete={deleteFlow.openDeleteFlow}
                 deleteDisabled={ce?.enabled}
@@ -227,52 +268,40 @@ export default function CognitiveAgentDetailsPage() {
                           control={form.control}
                           name="mas_auto_associate"
                           render={({field}) => (
-                            <FormItem className="flex-1 space-y-1">
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger className="h-8 text-sm">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="true">Enabled</SelectItem>
-                                  <SelectItem value="false">Disabled</SelectItem>
-                                </SelectContent>
-                              </Select>
+                            <FormItem>
+                              <FormControl>
+                                <ToggleDisplay
+                                  active={field.value === 'true'}
+                                  onClick={() => field.onChange(field.value === 'true' ? 'false' : 'true')}
+                                />
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
                       ) : (
-                        <StatusDot variant="state" active={!!ce?.mas_auto_associate} />
+                        <ToggleDisplay active={!!ce?.mas_auto_associate} />
                       )}
                     </InfoRow>
-                    <InfoRow label="Enabled">
-                      {isEditMode ? (
+                    {isEditMode && (
+                      <InfoRow label="Enabled">
                         <FormField
                           control={form.control}
                           name="enabled"
                           render={({field}) => (
-                            <FormItem className="flex-1 space-y-1">
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger className="h-8 text-sm">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="true">Enabled</SelectItem>
-                                  <SelectItem value="false">Disabled</SelectItem>
-                                </SelectContent>
-                              </Select>
+                            <FormItem>
+                              <FormControl>
+                                <ToggleDisplay
+                                  active={field.value === 'true'}
+                                  onClick={() => field.onChange(field.value === 'true' ? 'false' : 'true')}
+                                />
+                              </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
-                      ) : (
-                        <StatusDot variant="state" active={!!ce?.enabled} />
-                      )}
-                    </InfoRow>
+                      </InfoRow>
+                    )}
                   </InfoPanel>
 
                   <div className="grid grid-cols-3 gap-3">

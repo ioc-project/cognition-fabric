@@ -24,7 +24,7 @@ import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {toast} from 'sonner';
 import {StatusDot} from '@/components/ui/status-dot';
 import {DetailTabs} from '@/components/ui/detail-tabs';
-import {InlineId} from '@/components/ui/inline-id';
+import {IdHoverCard} from '@/components/ui/id-hover-card';
 import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import {MetaCard} from '@/components/ui/meta-card';
 
@@ -158,7 +158,7 @@ export default function CfnDetailsPage() {
             <span className="text-muted-foreground/30 text-xs select-none">·</span>
             <StatusDot variant="state" active={cfn.enabled} />
             <span className="text-muted-foreground/30 text-xs select-none">·</span>
-            <InlineId label="ID" value={cfn.id} />
+            <IdHoverCard value={cfn.id} items={[{label: 'CFN ID', value: cfn.id}]} />
           </div>
         ) : undefined
       }

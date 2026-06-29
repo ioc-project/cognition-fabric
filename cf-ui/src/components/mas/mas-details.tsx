@@ -28,6 +28,7 @@ import {useMemoryProviders} from '@/hooks/useMemoryProviders';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {toast} from 'sonner';
 import {Network, BarChart3, Bot, BrainCircuit, Unlink, Plus, MoreHorizontal} from 'lucide-react';
+import {ActionButton} from '@/components/ui/action-button';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {useCognitionEngines} from '@/hooks/useCognitionEngines';
@@ -42,6 +43,7 @@ import {StatusDot} from '@/components/ui/status-dot';
 import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import {MetaCard} from '@/components/ui/meta-card';
 import {CollapsibleJsonField} from './collapsible-json-field';
+import {IdHoverCard} from '@/components/ui/id-hover-card';
 
 export default function MASDetailsPage() {
   const router = useRouter();
@@ -234,11 +236,13 @@ export default function MASDetailsPage() {
         title={mas?.name || 'MAS Details'}
         customDescription={
           mas ? (
-            <div className="flex items-center gap-3 flex-wrap">
-              <InlineId label="ID" value={mas.id} />
-              <span className="text-muted-foreground/30 text-xs select-none">·</span>
-              <InlineId label="Workspace" value={mas.workspace_id} />
-            </div>
+            <IdHoverCard
+              value={mas.id}
+              items={[
+                {label: 'MAS ID', value: mas.id},
+                {label: 'Workspace', value: mas.workspace_id}
+              ]}
+            />
           ) : undefined
         }
         customInfo={
@@ -260,14 +264,8 @@ export default function MASDetailsPage() {
         callToAction={
           mas && (
             <div className="flex items-center gap-2">
-              <Button variant="sidebar" size="sm" onClick={() => router.push(routes.mas.metrics(masId!))} className="gap-2">
-                <BarChart3 className="w-4 h-4" />
-                Metrics
-              </Button>
-              <Button variant="sidebar" size="sm" onClick={() => router.push(routes.mas.knowledgeGraph(masId!))} className="gap-2">
-                <Network className="w-4 h-4" />
-                Knowledge Graph
-              </Button>
+              <ActionButton icon={BarChart3} label="Metrics" onClick={() => router.push(routes.mas.metrics(masId!))} />
+              <ActionButton icon={Network} label="Knowledge Graph" onClick={() => router.push(routes.mas.knowledgeGraph(masId!))} />
               <MASAuditLog masId={masId!} workspaceId={workspaceId!} masName={mas.name} agents={mas.agents || undefined} />
               {activeTab !== 'cognition-engines' && (
                 <>

@@ -8,7 +8,7 @@ import {useState} from 'react';
 import {Copy, Check} from 'lucide-react';
 
 interface InlineIdProps {
-  label: string;
+  label?: string;
   value: string;
 }
 
@@ -27,7 +27,7 @@ export function InlineId({label, value}: InlineIdProps) {
       title={value}
       className="group flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
     >
-      <span className="font-medium">{label}</span>
+      {label && <span className="font-medium">{label}</span>}
       <span className="font-mono">{display}</span>
       {copied ? (
         <Check className="w-3 h-3 text-green-500 shrink-0" />

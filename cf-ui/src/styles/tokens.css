@@ -1,4 +1,11 @@
 :root {
+  --syntax-key: #001080;
+  --syntax-string: #a31515;
+  --syntax-number: #098658;
+  --syntax-keyword: #0000ff;
+  --syntax-success: #16a34a;
+  --syntax-error: #dc2626;
+
   --brand: 212 80% 48%;
   --brand-hover: 212 80% 42%;
   --brand-foreground: 0 0% 100%;
@@ -10,6 +17,13 @@
 }
 
 .dark {
+  --syntax-key: #9cdcfe;
+  --syntax-string: #ce9178;
+  --syntax-number: #b5cea8;
+  --syntax-keyword: #569cd6;
+  --syntax-success: #4ade80;
+  --syntax-error: #f87171;
+
   --brand: 212 90% 60%;
   --brand-hover: 212 90% 52%;
   --brand-foreground: 0 0% 100%;

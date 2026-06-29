@@ -5,6 +5,7 @@
 'use client';
 
 import {ChevronDown, ChevronUp, X, Bot} from 'lucide-react';
+import {InlineId} from '@/components/ui/inline-id';
 import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
@@ -66,7 +67,7 @@ export function AgentCard({
           </div>
           <div className="text-left">
             <div className="text-sm text-foreground font-medium">{headerLabel}</div>
-            {agentIdValue && <div className="font-mono text-xs text-muted-foreground truncate max-w-[200px]">{agentIdValue}</div>}
+            {agentIdValue && <InlineId label="ID" value={agentIdValue} />}
           </div>
         </div>
 
@@ -244,13 +245,6 @@ function ViewModeFields({
 
   return (
     <div>
-      {agentIdValue && (
-        <div className={rowClass}>
-          <span className={labelClass}>Agent ID</span>
-          <CopyableInput value={agentIdValue} />
-        </div>
-      )}
-
       <div className={rowClass}>
         <span className={labelClass}>Name</span>
         <span className={valueClass}>{agentName || '-'}</span>

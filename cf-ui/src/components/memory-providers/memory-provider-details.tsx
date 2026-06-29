@@ -237,7 +237,7 @@ export default function MemoryProviderDetailsPage() {
             <div className="flex items-center gap-3 flex-wrap">
               <StatusDot variant="state" active={provider.enabled} />
               <span className="text-muted-foreground/30 text-xs select-none">·</span>
-              <InlineId label="ID" value={provider.id} />
+              <InlineId value={provider.id} />
             </div>
           ) : undefined
         }
@@ -488,10 +488,10 @@ export default function MemoryProviderDetailsPage() {
                 {provider?.updated_at && (
                   <MetaCard label="Last Modified" mono>{new Date(provider.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
                 )}
-                {provider?.created_by && (
+                {provider?.created_by?.trim() && provider.created_by !== 'unknown' && (
                   <MetaCard label="Created By">{provider.created_by}</MetaCard>
                 )}
-                {provider?.updated_by && (
+                {provider?.updated_by?.trim() && provider.updated_by !== 'unknown' && (
                   <MetaCard label="Last Modified By">{provider.updated_by}</MetaCard>
                 )}
               </div>

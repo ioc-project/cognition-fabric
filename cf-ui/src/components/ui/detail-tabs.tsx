@@ -33,7 +33,7 @@ export function DetailTabs({tabs, activeTab, onTabChange, className}: DetailTabs
               'flex items-center gap-1.5 px-4 py-2.5 text-[12.5px] font-medium transition-colors',
               isActive
                 ? 'text-foreground shadow-[inset_0_-2px_0_hsl(var(--indicator-active))]'
-                : 'text-[#9ca3af] hover:text-[#6b7280] dark:text-muted-foreground dark:hover:text-foreground/70'
+                : 'text-muted-foreground hover:text-foreground/70'
             )}
           >
             {tab.label}

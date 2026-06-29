@@ -5,14 +5,16 @@
 'use client';
 
 import {useEffect, useMemo, useState} from 'react';
-import {ChevronDown, ChevronRight, Clock, Edit, Plus, Trash2, User, History, Copy, Check} from 'lucide-react';
+import {ChevronDown, ChevronRight, Clock, Edit, Plus, Trash2, User, History} from 'lucide-react';
 import {useAuditEvents} from '@/hooks/useAuditEvents';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
+import {ActionButton} from '@/components/ui/action-button';
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from '@/components/ui/dialog';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
+import {InlineId} from '@/components/ui/inline-id';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
+import {SyntaxJson} from '@/components/ui/syntax-json';
 import type {AuditEvent, AuditInformation} from '@/api/endpoints/audit';
 import {cn} from '@/lib/utils';
 
@@ -217,7 +219,6 @@ function AuditEventCard({
   const displayAgentChanges = filterAgentId ? event.agentChanges?.filter((change) => change.agentId === filterAgentId) : event.agentChanges;
 
   const hasDetails = event.audit_information || event.operation_id;
-  const status = event.audit_information?.status;
   const httpStatus = event.audit_information?.http_status;
   const createdBy = event.created_by === '00000000-0000-0000-0000-000000000000' ? 'Admin' : event.created_by;
 
@@ -231,11 +232,6 @@ function AuditEventCard({
               {getAuditTypeLabel(event.audit_type)}
             </Badge>
 
-            {status && (
-              <Badge variant="outline" className="text-xs">
-                {status}
-              </Badge>
-            )}
 
             {httpStatus && (
               <Badge
@@ -261,13 +257,14 @@ function AuditEventCard({
 
         {event.operation_id && (
           <div className="flex items-start text-xs">
-            <TruncatedCopyableId id={event.operation_id} label="Operation" />
+            <InlineId label="Operation" value={event.operation_id} />
           </div>
         )}
 
         {event.audit_resource_identifier && (
-          <div className="flex items-start text-xs">
-            <TruncatedCopyableId id={event.audit_resource_identifier} label="Resource" resolvedName={resolvedResourceName} />
+          <div className="flex flex-col gap-0.5 text-xs">
+            {resolvedResourceName && <span className="text-xs font-medium text-foreground">{resolvedResourceName}</span>}
+            <InlineId label="Resource" value={event.audit_resource_identifier} />
           </div>
         )}
 
@@ -352,7 +349,7 @@ function AuditEventCard({
             {event.audit_information?.http_status && (
               <div className="flex items-center gap-2 text-xs">
                 <span className="text-muted-foreground font-medium">HTTP Status:</span>
-                <Badge variant={event.audit_information.http_status === 200 ? 'default' : 'destructive'} className="text-[10px] h-5">
+                <Badge variant={event.audit_information.http_status >= 200 && event.audit_information.http_status < 300 ? 'default' : 'destructive'} className="text-[10px] h-5">
                   {event.audit_information.http_status}
                 </Badge>
               </div>
@@ -373,9 +370,9 @@ function AuditEventCard({
                   {event.audit_information.request.http_request_body && Object.keys(event.audit_information.request.http_request_body).length > 0 && (
                     <div>
                       <div className="text-muted-foreground mb-1 font-sans text-[10px]">Body:</div>
-                      <pre className="text-[10px] font-mono bg-muted p-2 rounded overflow-auto max-h-40">
-                        {JSON.stringify(event.audit_information.request.http_request_body, null, 2)}
-                      </pre>
+                      <div className="rounded overflow-auto max-h-40">
+                        <SyntaxJson code={JSON.stringify(event.audit_information.request.http_request_body, null, 2)} />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -385,31 +382,25 @@ function AuditEventCard({
             {event.audit_information?.response && (
               <div className="p-3 bg-background rounded-lg border border-border">
                 <div className="text-muted-foreground mb-2 font-sans font-semibold text-xs">Response:</div>
-                <pre className="text-[10px] font-mono bg-muted p-2 rounded overflow-auto max-h-60 whitespace-pre-wrap break-words">
-                  {(() => {
+                <div className="rounded overflow-auto max-h-60">
+                  <SyntaxJson code={(() => {
                     const response = event.audit_information.response;
-                    // Check if response has a 'raw' field
                     if ('raw' in response && response.raw !== undefined) {
                       if (typeof response.raw === 'string') {
-                        try {
-                          return JSON.stringify(JSON.parse(response.raw), null, 2);
-                        } catch {
-                          return response.raw;
-                        }
+                        try { return JSON.stringify(JSON.parse(response.raw), null, 2); } catch { return response.raw; }
                       }
                       return JSON.stringify(response.raw, null, 2);
                     }
-                    // Otherwise render the response object directly
                     return JSON.stringify(response, null, 2);
-                  })()}
-                </pre>
+                  })()} />
+                </div>
               </div>
             )}
 
             {!event.audit_information?.request && !event.audit_information?.response && (
-              <div className="p-3 bg-background rounded-lg border border-border text-xs font-mono overflow-auto max-h-96">
-                <div className="text-muted-foreground mb-2 font-sans">Audit Information:</div>
-                <pre className="whitespace-pre-wrap">{JSON.stringify(event.audit_information, null, 2)}</pre>
+              <div className="p-3 bg-background rounded-lg border border-border overflow-auto max-h-96">
+                <div className="text-muted-foreground mb-2 font-sans text-xs">Audit Information:</div>
+                <SyntaxJson code={JSON.stringify(event.audit_information, null, 2)} />
               </div>
             )}
           </div>
@@ -428,56 +419,6 @@ function getResourceTypeLabel(resourceType: string): string {
   return labels[resourceType] || resourceType;
 }
 
-function TruncatedCopyableId({id, label, resolvedName}: {id: string; label?: string; resolvedName?: string}) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(id);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const truncated = id.length > 12 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id;
-
-  return (
-    <TooltipProvider>
-      {resolvedName ? (
-        <div className="flex flex-col gap-0.5">
-          {label && <span className="text-muted-foreground font-medium text-xs">{label}:</span>}
-          <span className="text-xs font-medium">{resolvedName}</span>
-          <div className="flex items-center gap-1.5 group">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono cursor-help truncate max-w-[240px]">{truncated}</code>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="font-mono text-xs">{id}</p>
-              </TooltipContent>
-            </Tooltip>
-            <button onClick={handleCopy} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded" title="Copy">
-              {copied ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center gap-1.5 group">
-          {label && <span className="text-muted-foreground font-medium text-xs">{label}:</span>}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono cursor-help">{truncated}</code>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="font-mono text-xs">{id}</p>
-            </TooltipContent>
-          </Tooltip>
-          <button onClick={handleCopy} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded" title="Copy">
-            {copied ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
-          </button>
-        </div>
-      )}
-    </TooltipProvider>
-  );
-}
 
 export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}: MASAuditLogProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -585,10 +526,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
 
   return (
     <>
-      <Button variant="sidebar" size="sm" onClick={() => setIsOpen(true)} className="gap-2">
-        <History className="w-4 h-4" />
-        Audit
-      </Button>
+      <ActionButton icon={History} label="Audit" onClick={() => setIsOpen(true)} />
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent
