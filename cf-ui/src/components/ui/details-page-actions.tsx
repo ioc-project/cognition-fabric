@@ -39,9 +39,7 @@ export function DetailsPageActions({
     <div className="flex items-center gap-2">
       {onEdit && <ActionButton label="Edit" onClick={onEdit} />}
       {onEdit && onDelete && <div className="w-px h-5 bg-border shrink-0" />}
-      {onDelete && (
-        <ActionButton icon={Trash2} label={deleteLabel} variant="destructive" onClick={onDelete} disabled={deleteDisabled} />
-      )}
+      {onDelete && <ActionButton icon={Trash2} label={deleteLabel} variant="destructive" onClick={onDelete} disabled={deleteDisabled} />}
     </div>
   );
 }

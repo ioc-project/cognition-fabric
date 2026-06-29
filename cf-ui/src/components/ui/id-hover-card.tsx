@@ -23,7 +23,10 @@ function IdRow({label, value, divider}: {label: string; value: string; divider: 
   };
   return (
     <div
-      className={cn('group/row flex items-center justify-between gap-6 px-4 py-2.5 hover:bg-muted/50 transition-colors cursor-pointer', divider && 'border-b border-border')}
+      className={cn(
+        'group/row flex items-center justify-between gap-6 px-4 py-2.5 hover:bg-muted/50 transition-colors cursor-pointer',
+        divider && 'border-b border-border'
+      )}
       onClick={handleCopy}
     >
       <div>
@@ -31,7 +34,11 @@ function IdRow({label, value, divider}: {label: string; value: string; divider: 
         <div className="text-xs font-mono text-foreground">{value.slice(0, 18)}...</div>
       </div>
       <div className="shrink-0 text-muted-foreground">
-        {copied ? <Check className="w-3.5 h-3.5 text-green-500" /> : <Copy className="w-3.5 h-3.5 opacity-0 group-hover/row:opacity-100 transition-opacity" />}
+        {copied ? (
+          <Check className="w-3.5 h-3.5 text-green-500" />
+        ) : (
+          <Copy className="w-3.5 h-3.5 opacity-0 group-hover/row:opacity-100 transition-opacity" />
+        )}
       </div>
     </div>
   );

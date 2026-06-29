@@ -13,7 +13,9 @@ interface StatusDotProps {
 }
 
 export function StatusDot({variant, active, activeLabel, inactiveLabel, className}: StatusDotProps) {
-  const label = active ? (activeLabel ?? (variant === 'health' ? 'Online' : 'Enabled')) : (inactiveLabel ?? (variant === 'health' ? 'Offline' : 'Disabled'));
+  const label = active
+    ? (activeLabel ?? (variant === 'health' ? 'Online' : 'Enabled'))
+    : (inactiveLabel ?? (variant === 'health' ? 'Offline' : 'Disabled'));
 
   return (
     <div className={cn('flex items-center gap-1.5', className)}>

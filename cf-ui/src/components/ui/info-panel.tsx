@@ -6,11 +6,7 @@ import {type ReactNode} from 'react';
 import {cn} from '@/lib/utils';
 
 export function InfoPanel({children, className}: {children: ReactNode; className?: string}) {
-  return (
-    <div className={cn('rounded-lg border border-border overflow-hidden bg-card shadow-sm', className)}>
-      {children}
-    </div>
-  );
+  return <div className={cn('rounded-lg border border-border overflow-hidden bg-card shadow-sm', className)}>{children}</div>;
 }
 
 export function InfoRow({label, children, className}: {label: string; children: ReactNode; className?: string}) {

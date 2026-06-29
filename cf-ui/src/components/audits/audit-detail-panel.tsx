@@ -39,32 +39,17 @@ const RESOURCE_TYPE_LABELS: Record<string, string> = {
 
 function AuditTypePill({auditType}: {auditType: string}) {
   const label = AUDIT_TYPE_LABELS[auditType] ?? auditType.replace(/_/g, ' ');
-  return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-violet-50 text-violet-700">
-      <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-violet-500" />
-      {label}
-    </span>
-  );
+  return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">{label}</span>;
 }
 
 function ResourceTypePill({resourceType}: {resourceType: string}) {
   const label = RESOURCE_TYPE_LABELS[resourceType] ?? resourceType;
-  return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-sky-50 text-sky-700">
-      <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-sky-500" />
-      {label}
-    </span>
-  );
+  return <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-sky-50 text-sky-700">{label}</span>;
 }
-
-
 
 function SectionLabel({children}: {children: React.ReactNode}) {
-  return (
-    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground pt-4 pb-1">{children}</p>
-  );
+  return <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground pt-4 pb-1">{children}</p>;
 }
-
 
 export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDetailPanelProps) {
   const isOpen = event !== null;
@@ -106,7 +91,6 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-
               {/* Resource */}
               <InfoPanel>
                 <InfoRow label="Type">
@@ -124,9 +108,7 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
               {/* Audit Information */}
               {info && (
                 <div className="space-y-3">
-                  {info.request && (
-                    <CollapsibleJsonField label="Request" value={JSON.stringify(info.request, null, 2)} isEditMode={false} />
-                  )}
+                  {info.request && <CollapsibleJsonField label="Request" value={JSON.stringify(info.request, null, 2)} isEditMode={false} />}
                   {info.response && (
                     <CollapsibleJsonField
                       label="Response"
@@ -135,7 +117,11 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
                         const response = info.response as Record<string, unknown>;
                         if ('raw' in response && response.raw !== undefined) {
                           if (typeof response.raw === 'string') {
-                            try { return JSON.stringify(JSON.parse(response.raw), null, 2); } catch { return response.raw; }
+                            try {
+                              return JSON.stringify(JSON.parse(response.raw), null, 2);
+                            } catch {
+                              return response.raw;
+                            }
                           }
                           return JSON.stringify(response.raw, null, 2);
                         }
@@ -151,9 +137,21 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
 
               {/* Metadata */}
               <InfoPanel>
-                <InfoRow label="Created"><span className="text-sm font-mono text-foreground">{new Date(event.created_on).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span></InfoRow>
-                <InfoRow label="Last Modified"><span className="text-sm font-mono text-foreground">{new Date(event.last_modified_on).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span></InfoRow>
-                {createdBy && <InfoRow label="Created By"><span className="text-sm text-foreground">{String(createdBy)}</span></InfoRow>}
+                <InfoRow label="Created">
+                  <span className="text-sm font-mono text-foreground">
+                    {new Date(event.created_on).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                  </span>
+                </InfoRow>
+                <InfoRow label="Last Modified">
+                  <span className="text-sm font-mono text-foreground">
+                    {new Date(event.last_modified_on).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                  </span>
+                </InfoRow>
+                {createdBy && (
+                  <InfoRow label="Created By">
+                    <span className="text-sm text-foreground">{String(createdBy)}</span>
+                  </InfoRow>
+                )}
               </InfoPanel>
 
               {/* Extra Information */}
@@ -165,7 +163,6 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
                   </div>
                 </div>
               )}
-
             </div>
           </>
         )}

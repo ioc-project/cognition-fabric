@@ -10,13 +10,12 @@ import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {mutate as globalMutate} from 'swr';
 import {BasePage} from '@/components/ui/base-page';
-import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
 import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/ui/form';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {routes} from '@/constants/routes';
-import {cn, parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
+import {parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {useCognitionEngine} from '@/hooks/useCognitionEngines';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {useCEToggleFlow} from '@/hooks/useCEToggleFlow';
@@ -184,13 +183,7 @@ export default function CognitiveAgentDetailsPage() {
             <div className="flex items-center gap-3 flex-wrap">
               <StatusDot variant="health" active={ce.status === 'online'} />
               <span className="text-muted-foreground/30 text-xs select-none">·</span>
-              <IdHoverCard
-                value={ce.id}
-                items={[
-                  {label: 'CE ID', value: ce.id},
-                  ...(ce.cfn_id ? [{label: 'CFN', value: ce.cfn_id}] : [])
-                ]}
-              />
+              <IdHoverCard value={ce.id} items={[{label: 'CE ID', value: ce.id}, ...(ce.cfn_id ? [{label: 'CFN', value: ce.cfn_id}] : [])]} />
             </div>
           ) : undefined
         }
@@ -246,7 +239,6 @@ export default function CognitiveAgentDetailsPage() {
         >
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
-
               {activeTab === 'overview' && (
                 <div className="space-y-4">
                   <InfoPanel>
@@ -306,13 +298,19 @@ export default function CognitiveAgentDetailsPage() {
 
                   <div className="grid grid-cols-3 gap-3">
                     {ce?.created_at && (
-                      <MetaCard label="Created" mono>{new Date(ce.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
+                      <MetaCard label="Created" mono>
+                        {new Date(ce.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                      </MetaCard>
                     )}
                     {ce?.updated_at && (
-                      <MetaCard label="Last Modified" mono>{new Date(ce.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
+                      <MetaCard label="Last Modified" mono>
+                        {new Date(ce.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                      </MetaCard>
                     )}
                     {ce?.last_seen && (
-                      <MetaCard label="Last Seen" mono>{new Date(ce.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
+                      <MetaCard label="Last Seen" mono>
+                        {new Date(ce.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                      </MetaCard>
                     )}
                   </div>
                 </div>
@@ -376,7 +374,10 @@ export default function CognitiveAgentDetailsPage() {
                         <div className="flex flex-wrap gap-1.5">
                           {ce?.metrics && ce.metrics.length > 0 ? (
                             ce.metrics.map((metric) => (
-                              <span key={metric} className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5">
+                              <span
+                                key={metric}
+                                className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5"
+                              >
                                 {metric}
                               </span>
                             ))
@@ -436,7 +437,6 @@ export default function CognitiveAgentDetailsPage() {
                   )}
                 </div>
               )}
-
             </form>
           </Form>
         </ConditionalSWRRenderer>

@@ -76,7 +76,6 @@ const UpdateCfnFormSchema = z.object({
 
 type FormValues = z.infer<typeof UpdateCfnFormSchema>;
 
-
 export default function CfnDetailsPage() {
   const router = useRouter();
   const params = useParams();
@@ -166,7 +165,9 @@ export default function CfnDetailsPage() {
         <DetailTabs
           activeTab={activeTab}
           onTabChange={(id) => {
-            if (id !== 'overview' && isEditMode) handleCancelEdit();
+            if (id !== 'overview' && isEditMode) {
+              handleCancelEdit();
+            }
             setActiveTab(id as typeof activeTab);
           }}
           tabs={[
@@ -180,7 +181,8 @@ export default function CfnDetailsPage() {
       useBreadcrumbs
       breadcrumbs={crumbs}
       callToAction={
-        cfn && activeTab === 'overview' && (
+        cfn &&
+        activeTab === 'overview' && (
           <DetailsPageActions
             onEdit={() => setIsEditMode(true)}
             isEditMode={isEditMode}
@@ -201,7 +203,6 @@ export default function CfnDetailsPage() {
       >
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
-
             {activeTab === 'overview' && (
               <div className="space-y-4">
                 <InfoPanel>
@@ -268,13 +269,19 @@ export default function CfnDetailsPage() {
 
                 <div className="grid grid-cols-3 gap-3">
                   {cfn?.created_at && (
-                    <MetaCard label="Created" mono>{new Date(cfn.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
+                    <MetaCard label="Created" mono>
+                      {new Date(cfn.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                    </MetaCard>
                   )}
                   {cfn?.last_seen && (
-                    <MetaCard label="Last Seen" mono>{new Date(cfn.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
+                    <MetaCard label="Last Seen" mono>
+                      {new Date(cfn.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                    </MetaCard>
                   )}
                   {cfn?.updated_at && (
-                    <MetaCard label="Last Modified" mono>{new Date(cfn.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
+                    <MetaCard label="Last Modified" mono>
+                      {new Date(cfn.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                    </MetaCard>
                   )}
                 </div>
               </div>
@@ -372,7 +379,6 @@ export default function CfnDetailsPage() {
                 )}
               </div>
             )}
-
           </form>
         </Form>
       </ConditionalSWRRenderer>

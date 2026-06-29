@@ -20,7 +20,7 @@ import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/
 import {Badge} from '@/components/ui/badge';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes} from '@/constants/routes';
-import {cn, parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
+import {parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
@@ -38,7 +38,6 @@ import {AgentsList} from './agents-list';
 import {UpdateMASFormSchema, type FormValues} from './mas-form-schema';
 import {dtSectionHeader, dtPanelHeader} from '@/lib/detail-typography';
 import {DetailTabs} from '@/components/ui/detail-tabs';
-import {InlineId} from '@/components/ui/inline-id';
 import {StatusDot} from '@/components/ui/status-dot';
 import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import {MetaCard} from '@/components/ui/meta-card';
@@ -249,7 +248,9 @@ export default function MASDetailsPage() {
           <DetailTabs
             activeTab={activeTab}
             onTabChange={(id) => {
-              if (id === 'cognition-engines' && isEditMode) handleCancelEdit();
+              if (id === 'cognition-engines' && isEditMode) {
+                handleCancelEdit();
+              }
               setActiveTab(id as typeof activeTab);
             }}
             tabs={[
@@ -294,7 +295,6 @@ export default function MASDetailsPage() {
         >
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
-
               {/* Overview tab */}
               {activeTab === 'overview' && (
                 <div className="space-y-4">
@@ -394,10 +394,14 @@ export default function MASDetailsPage() {
 
                   <div className="grid grid-cols-2 gap-3">
                     {mas?.created_at && (
-                      <MetaCard label="Created" mono>{new Date(mas.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
+                      <MetaCard label="Created" mono>
+                        {new Date(mas.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                      </MetaCard>
                     )}
                     {mas?.updated_at && (
-                      <MetaCard label="Last Modified" mono>{new Date(mas.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
+                      <MetaCard label="Last Modified" mono>
+                        {new Date(mas.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                      </MetaCard>
                     )}
                   </div>
                 </div>
@@ -552,7 +556,6 @@ export default function MASDetailsPage() {
                   )}
                 </div>
               )}
-
             </form>
           </Form>
         </ConditionalSWRRenderer>

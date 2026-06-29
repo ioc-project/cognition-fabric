@@ -60,7 +60,6 @@ function parseProviderConfig(config: MemoryProvider['config']): Omit<FormValues,
   };
 }
 
-
 export default function MemoryProviderDetailsPage() {
   const router = useRouter();
   const params = useParams();
@@ -164,11 +163,19 @@ export default function MemoryProviderDetailsPage() {
         } else if (values.authType === 'bearer' && values.access_token) {
           credentials.access_token = values.access_token;
         } else if (values.authType === 'basic') {
-          if (values.username) credentials.username = values.username;
-          if (values.password) credentials.password = values.password;
+          if (values.username) {
+            credentials.username = values.username;
+          }
+          if (values.password) {
+            credentials.password = values.password;
+          }
         } else if (values.authType === 'custom') {
-          if (values.header_name) credentials.header_name = values.header_name;
-          if (values.header_value) credentials.header_value = values.header_value;
+          if (values.header_name) {
+            credentials.header_name = values.header_name;
+          }
+          if (values.header_value) {
+            credentials.header_value = values.header_value;
+          }
         }
         auth.credentials = credentials;
       }
@@ -221,7 +228,11 @@ export default function MemoryProviderDetailsPage() {
     <InfoRow label={label}>
       <div className="flex items-center gap-2">
         <span className="text-sm text-foreground font-mono">{revealedFields.has(fieldKey) ? value : '••••••••••••'}</span>
-        <button type="button" className="shrink-0 text-muted-foreground hover:text-foreground transition-colors" onClick={() => toggleReveal(fieldKey)}>
+        <button
+          type="button"
+          className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+          onClick={() => toggleReveal(fieldKey)}
+        >
           {revealedFields.has(fieldKey) ? <EyeOff size={13} /> : <Eye size={13} />}
         </button>
       </div>
@@ -266,7 +277,6 @@ export default function MemoryProviderDetailsPage() {
         >
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4" autoComplete="off">
-
               <InfoPanel>
                 <InfoRow label="Name">
                   {isEditMode ? (
@@ -359,10 +369,16 @@ export default function MemoryProviderDetailsPage() {
                   (() => {
                     const creds = providerConfig?.auth?.credentials;
                     const type = providerConfig?.auth?.type;
-                    if (!creds || !type || type === 'none') return null;
-                    if (type === 'token') return <RevealRow fieldKey="api_key" label="API Key" value={creds.api_key ?? ''} />;
-                    if (type === 'bearer') return <RevealRow fieldKey="access_token" label="Access Token" value={creds.access_token ?? ''} />;
-                    if (type === 'basic')
+                    if (!creds || !type || type === 'none') {
+                      return null;
+                    }
+                    if (type === 'token') {
+                      return <RevealRow fieldKey="api_key" label="API Key" value={creds.api_key ?? ''} />;
+                    }
+                    if (type === 'bearer') {
+                      return <RevealRow fieldKey="access_token" label="Access Token" value={creds.access_token ?? ''} />;
+                    }
+                    if (type === 'basic') {
                       return (
                         <>
                           <InfoRow label="Username">
@@ -371,7 +387,8 @@ export default function MemoryProviderDetailsPage() {
                           <RevealRow fieldKey="password" label="Password" value={creds.password ?? ''} />
                         </>
                       );
-                    if (type === 'custom')
+                    }
+                    if (type === 'custom') {
                       return (
                         <>
                           <InfoRow label="Header Name">
@@ -380,6 +397,7 @@ export default function MemoryProviderDetailsPage() {
                           <RevealRow fieldKey="header_value" label="Header Value" value={creds.header_value ?? ''} />
                         </>
                       );
+                    }
                     return null;
                   })()}
 
@@ -470,7 +488,13 @@ export default function MemoryProviderDetailsPage() {
                         render={({field}) => (
                           <FormItem className="flex-1 space-y-1">
                             <FormControl>
-                              <Input type="password" placeholder="Enter header value" autoComplete="new-password" {...field} className="h-8 text-sm" />
+                              <Input
+                                type="password"
+                                placeholder="Enter header value"
+                                autoComplete="new-password"
+                                {...field}
+                                className="h-8 text-sm"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -483,19 +507,20 @@ export default function MemoryProviderDetailsPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 {provider?.created_at && (
-                  <MetaCard label="Created" mono>{new Date(provider.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
+                  <MetaCard label="Created" mono>
+                    {new Date(provider.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                  </MetaCard>
                 )}
                 {provider?.updated_at && (
-                  <MetaCard label="Last Modified" mono>{new Date(provider.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</MetaCard>
+                  <MetaCard label="Last Modified" mono>
+                    {new Date(provider.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                  </MetaCard>
                 )}
-                {provider?.created_by?.trim() && provider.created_by !== 'unknown' && (
-                  <MetaCard label="Created By">{provider.created_by}</MetaCard>
-                )}
+                {provider?.created_by?.trim() && provider.created_by !== 'unknown' && <MetaCard label="Created By">{provider.created_by}</MetaCard>}
                 {provider?.updated_by?.trim() && provider.updated_by !== 'unknown' && (
                   <MetaCard label="Last Modified By">{provider.updated_by}</MetaCard>
                 )}
               </div>
-
             </form>
           </Form>
         </ConditionalSWRRenderer>
