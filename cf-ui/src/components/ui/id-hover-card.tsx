@@ -5,9 +5,9 @@
 'use client';
 
 import {useState} from 'react';
-import {Copy, Check} from 'lucide-react';
+import {Copy, Check, Hash} from 'lucide-react';
 import {cn} from '@/lib/utils';
-import {InlineId} from '@/components/ui/inline-id';
+import {Popover, PopoverTrigger, PopoverContent} from '@/components/ui/popover';
 
 interface IdHoverCardProps {
   value: string;
@@ -29,9 +29,9 @@ function IdRow({label, value, divider}: {label: string; value: string; divider: 
       )}
       onClick={handleCopy}
     >
-      <div>
+      <div className="min-w-0">
         <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-0.5">{label}</div>
-        <div className="text-xs font-mono text-foreground">{value.slice(0, 18)}...</div>
+        <div className="text-xs font-mono text-foreground break-all">{value}</div>
       </div>
       <div className="shrink-0 text-muted-foreground">
         {copied ? (
@@ -46,15 +46,21 @@ function IdRow({label, value, divider}: {label: string; value: string; divider: 
 
 export function IdHoverCard({value, items}: IdHoverCardProps) {
   return (
-    <div className="group relative inline-block">
-      <InlineId value={value} />
-      <div className="invisible group-hover:visible opacity-0 group-hover:opacity-100 transition-opacity absolute left-0 top-full pt-1.5 z-10">
-        <div className="bg-card border border-border rounded-lg shadow-lg overflow-hidden min-w-[220px]">
-          {items.map((item, i) => (
-            <IdRow key={item.label} label={item.label} value={item.value} divider={i < items.length - 1} />
-          ))}
-        </div>
-      </div>
-    </div>
+    <Popover>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="group flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <Hash className="w-3 h-3 shrink-0" />
+          <span className="font-mono">{value.slice(0, 8)}...</span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent>
+        {items.map((item, i) => (
+          <IdRow key={item.label} label={item.label} value={item.value} divider={i < items.length - 1} />
+        ))}
+      </PopoverContent>
+    </Popover>
   );
 }

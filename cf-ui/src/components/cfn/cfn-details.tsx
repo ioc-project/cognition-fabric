@@ -24,9 +24,12 @@ import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {toast} from 'sonner';
 import {StatusDot} from '@/components/ui/status-dot';
 import {DetailTabs} from '@/components/ui/detail-tabs';
-import {IdHoverCard} from '@/components/ui/id-hover-card';
+import {InlineId} from '@/components/ui/inline-id';
 import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import {MetaCard} from '@/components/ui/meta-card';
+import {Badge} from '@/components/ui/badge';
+import {BrainCircuit, Database, Network} from 'lucide-react';
+import {dtSectionHeader, dtPanelHeader} from '@/lib/detail-typography';
 
 interface CfnCE {
   id: string;
@@ -157,7 +160,7 @@ export default function CfnDetailsPage() {
             <span className="text-muted-foreground/30 text-xs select-none">·</span>
             <StatusDot variant="state" active={cfn.enabled} />
             <span className="text-muted-foreground/30 text-xs select-none">·</span>
-            <IdHoverCard value={cfn.id} items={[{label: 'CFN ID', value: cfn.id}]} />
+            <InlineId value={cfn.id} />
           </div>
         ) : undefined
       }
@@ -289,6 +292,17 @@ export default function CfnDetailsPage() {
 
             {activeTab === 'cognition-engines' && (
               <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                <div className={dtPanelHeader}>
+                  <div className="flex items-center gap-2">
+                    <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                    <span className={dtSectionHeader}>Cognition Engines</span>
+                    {cognitionEngines.length > 0 && (
+                      <Badge variant="accent" className="rounded px-1.5">
+                        {cognitionEngines.length}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
                 {cognitionEngines.length > 0 ? (
                   <Table>
                     <TableHeader>
@@ -304,8 +318,24 @@ export default function CfnDetailsPage() {
                       {cognitionEngines.map((ce) => (
                         <TableRow key={ce.id}>
                           <TableCell className="font-medium">{ce.name}</TableCell>
-                          <TableCell className="font-mono text-muted-foreground">{ce.kind || '—'}</TableCell>
-                          <TableCell className="font-mono text-muted-foreground">{ce.subkind || '—'}</TableCell>
+                          <TableCell>
+                            {ce.kind ? (
+                              <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                {ce.kind}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {ce.subkind ? (
+                              <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                {ce.subkind}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
                           <TableCell>
                             <StatusDot variant="health" active={ce.status === 'online'} />
                           </TableCell>
@@ -324,6 +354,17 @@ export default function CfnDetailsPage() {
 
             {activeTab === 'memory-providers' && (
               <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                <div className={dtPanelHeader}>
+                  <div className="flex items-center gap-2">
+                    <Database size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                    <span className={dtSectionHeader}>Memory Providers</span>
+                    {memoryProviders.length > 0 && (
+                      <Badge variant="accent" className="rounded px-1.5">
+                        {memoryProviders.length}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
                 {memoryProviders.length > 0 ? (
                   <Table>
                     <TableHeader>
@@ -353,6 +394,17 @@ export default function CfnDetailsPage() {
 
             {activeTab === 'workspaces' && (
               <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                <div className={dtPanelHeader}>
+                  <div className="flex items-center gap-2">
+                    <Network size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                    <span className={dtSectionHeader}>Multi-Agentic Systems</span>
+                    {allMAS.length > 0 && (
+                      <Badge variant="accent" className="rounded px-1.5">
+                        {allMAS.length}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
                 {allMAS.length > 0 ? (
                   <Table>
                     <TableHeader>
