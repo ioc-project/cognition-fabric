@@ -14,16 +14,27 @@ export function SyntaxJson({code}: SyntaxJsonProps) {
   const highlighted = escaped
     .replace(/("(?:[^"\\]|\\.)*")\s*:/g, '<span style="color:var(--syntax-key)">$1</span>:')
     .replace(/:\s*("(?:[^"\\]|\\.)*")/g, (_, val) => {
-      if (SUCCESS_VALS.test(val)) return `: <span style="color:var(--syntax-success)">${val}</span>`;
+      if (SUCCESS_VALS.test(val)) return `: <span style="color:var(--syntax-string)">${val}</span>`;
       if (ERROR_VALS.test(val)) return `: <span style="color:var(--syntax-error)">${val}</span>`;
       return `: <span style="color:var(--syntax-string)">${val}</span>`;
     })
     .replace(/:\s*(\d+(?:\.\d+)?)/g, ': <span style="color:var(--syntax-number)">$1</span>')
     .replace(/:\s*(true|false|null)\b/g, ': <span style="color:var(--syntax-keyword)">$1</span>');
+
+  // Color structural chars only in text nodes (not inside existing spans)
+  const withPunctuation = highlighted
+    .split(/(<[^>]+>)/)
+    .map((part, i) =>
+      i % 2 === 0
+        ? part.replace(/[{}\[\],]/g, '<span style="color:var(--syntax-punctuation)">$&</span>')
+        : part
+    )
+    .join('');
+
   return (
     <pre
       className="text-xs leading-relaxed text-muted-foreground p-4 font-mono"
-      dangerouslySetInnerHTML={{__html: highlighted}}
+      dangerouslySetInnerHTML={{__html: withPunctuation}}
     />
   );
 }

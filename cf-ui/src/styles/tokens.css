@@ -1,10 +1,10 @@
 :root {
-  --syntax-key: #001080;
-  --syntax-string: #a31515;
-  --syntax-number: #098658;
-  --syntax-keyword: #0000ff;
-  --syntax-success: #16a34a;
+  --syntax-key: #7c3aed;
+  --syntax-string: #16a34a;
+  --syntax-number: #ea580c;
+  --syntax-keyword: #2563eb;
   --syntax-error: #dc2626;
+  --syntax-punctuation: #9ca3af;
 
   --brand: 212 80% 48%;
   --brand-hover: 212 80% 42%;
@@ -17,12 +17,12 @@
 }
 
 .dark {
-  --syntax-key: #9cdcfe;
-  --syntax-string: #ce9178;
-  --syntax-number: #b5cea8;
-  --syntax-keyword: #569cd6;
-  --syntax-success: #4ade80;
+  --syntax-key: #a78bfa;
+  --syntax-string: #4ade80;
+  --syntax-number: #fb923c;
+  --syntax-keyword: #60a5fa;
   --syntax-error: #f87171;
+  --syntax-punctuation: #6b7280;
 
   --brand: 212 90% 60%;
   --brand-hover: 212 90% 52%;
