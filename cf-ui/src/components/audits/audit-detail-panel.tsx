@@ -91,7 +91,6 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
             </div>
 
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-              {/* Resource */}
               <InfoPanel>
                 <InfoRow label="Type">
                   <span className="inline-flex items-center px-2 py-0.5 rounded bg-muted text-xs font-mono font-medium text-foreground">
@@ -105,7 +104,6 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
                 )}
               </InfoPanel>
 
-              {/* Audit Information */}
               {info && (
                 <div className="space-y-3">
                   {info.request && <CollapsibleJsonField label="Request" value={JSON.stringify(info.request, null, 2)} isEditMode={false} />}
@@ -135,7 +133,6 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
                 </div>
               )}
 
-              {/* Metadata */}
               <InfoPanel>
                 <InfoRow label="Created">
                   <span className="text-sm font-mono text-foreground">
@@ -154,7 +151,6 @@ export function AuditDetailPanel({event, onClose, resolvedResourceName}: AuditDe
                 )}
               </InfoPanel>
 
-              {/* Extra Information */}
               {event.audit_extra_information && (
                 <div>
                   <SectionLabel>Extra Information</SectionLabel>

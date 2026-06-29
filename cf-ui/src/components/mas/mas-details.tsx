@@ -295,7 +295,6 @@ export default function MASDetailsPage() {
         >
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
-              {/* Overview tab */}
               {activeTab === 'overview' && (
                 <div className="space-y-4">
                   <InfoPanel>
@@ -407,7 +406,6 @@ export default function MASDetailsPage() {
                 </div>
               )}
 
-              {/* Agents tab */}
               {activeTab === 'agents' && (
                 <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
                   <div className={dtPanelHeader}>
@@ -464,7 +462,6 @@ export default function MASDetailsPage() {
                 </div>
               )}
 
-              {/* Cognition Engines tab */}
               {activeTab === 'cognition-engines' && (
                 <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
                   <div className={dtPanelHeader}>
