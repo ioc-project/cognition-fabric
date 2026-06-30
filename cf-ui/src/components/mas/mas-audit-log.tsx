@@ -5,14 +5,17 @@
 'use client';
 
 import {useEffect, useMemo, useState} from 'react';
-import {ChevronDown, ChevronRight, Clock, Edit, Plus, Trash2, User, History, Copy, Check} from 'lucide-react';
+import {ChevronDown, ChevronRight, Edit, Plus, Trash2, User, History} from 'lucide-react';
 import {useAuditEvents} from '@/hooks/useAuditEvents';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
+import {ActionButton} from '@/components/ui/action-button';
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from '@/components/ui/dialog';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
+import {InlineId} from '@/components/ui/inline-id';
+import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
+import {CollapsibleJsonField} from '@/components/mas/collapsible-json-field';
 import type {AuditEvent, AuditInformation} from '@/api/endpoints/audit';
 import {cn} from '@/lib/utils';
 
@@ -134,73 +137,6 @@ function getAuditTypeLabel(auditType: string): string {
   return labels[auditType] || auditType.replace(/_/g, ' ');
 }
 
-function getAuditTypeBadgeVariant(auditType: string): 'default' | 'secondary' | 'destructive' | 'outline' {
-  const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-    RESOURCE_CREATED: 'default',
-    RESOURCE_UPDATED: 'secondary',
-    RESOURCE_DELETED: 'destructive',
-    RESOURCE_PURGED: 'destructive',
-    KNOWLEDGE_INGESTION: 'default',
-    KNOWLEDGE_QUERY: 'secondary',
-    REASONING_QUERY: 'secondary',
-    REASONING_FEEDBACK: 'outline',
-    MEMORY_OPERATION: 'secondary',
-    AGENT_MEMORY_OPERATION: 'secondary'
-  };
-  return variants[auditType] || 'outline';
-}
-
-function getAuditTypeIcon(auditType: string) {
-  switch (auditType) {
-    case 'KNOWLEDGE_INGESTION':
-      return <Plus className="w-4 h-4" />;
-    case 'KNOWLEDGE_QUERY':
-    case 'REASONING_QUERY':
-      return <Clock className="w-4 h-4" />;
-    case 'MEMORY_OPERATION':
-    case 'AGENT_MEMORY_OPERATION':
-      return <Clock className="w-4 h-4" />;
-    case 'RESOURCE_CREATED':
-      return <Plus className="w-4 h-4" />;
-    case 'RESOURCE_UPDATED':
-      return <Edit className="w-4 h-4" />;
-    case 'RESOURCE_DELETED':
-    case 'RESOURCE_PURGED':
-      return <Trash2 className="w-4 h-4" />;
-    default:
-      return <History className="w-4 h-4" />;
-  }
-}
-
-function formatRelativeTime(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffSeconds < 60) {
-    return 'Just now';
-  }
-  if (diffMinutes < 60) {
-    return `${diffMinutes}m ago`;
-  }
-  if (diffHours < 24) {
-    return `${diffHours}h ago`;
-  }
-  if (diffDays < 7) {
-    return `${diffDays}d ago`;
-  }
-
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
-  });
-}
-
 function AuditEventCard({
   event,
   expanded,
@@ -217,7 +153,6 @@ function AuditEventCard({
   const displayAgentChanges = filterAgentId ? event.agentChanges?.filter((change) => change.agentId === filterAgentId) : event.agentChanges;
 
   const hasDetails = event.audit_information || event.operation_id;
-  const status = event.audit_information?.status;
   const httpStatus = event.audit_information?.http_status;
   const createdBy = event.created_by === '00000000-0000-0000-0000-000000000000' ? 'Admin' : event.created_by;
 
@@ -226,17 +161,9 @@ function AuditEventCard({
       <div className="space-y-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant={getAuditTypeBadgeVariant(event.audit_type)} className="flex items-center gap-1">
-              {getAuditTypeIcon(event.audit_type)}
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
               {getAuditTypeLabel(event.audit_type)}
-            </Badge>
-
-            {status && (
-              <Badge variant="outline" className="text-xs">
-                {status}
-              </Badge>
-            )}
-
+            </span>
             {httpStatus && (
               <Badge
                 variant={httpStatus >= 200 && httpStatus < 300 ? 'default' : httpStatus >= 400 ? 'destructive' : 'secondary'}
@@ -245,13 +172,7 @@ function AuditEventCard({
                 HTTP {httpStatus}
               </Badge>
             )}
-
-            <span className="text-xs text-muted-foreground flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-              {formatRelativeTime(event.created_on)}
-            </span>
           </div>
-
           {hasDetails && (
             <Button variant="ghost" size="sm" onClick={onToggle} className="h-6 w-6 p-0">
               {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -259,25 +180,19 @@ function AuditEventCard({
           )}
         </div>
 
-        {event.operation_id && (
-          <div className="flex items-start text-xs">
-            <TruncatedCopyableId id={event.operation_id} label="Operation" />
-          </div>
-        )}
-
-        {event.audit_resource_identifier && (
-          <div className="flex items-start text-xs">
-            <TruncatedCopyableId id={event.audit_resource_identifier} label="Resource" resolvedName={resolvedResourceName} />
-          </div>
-        )}
-
-        {event.resource_type && (
-          <div className="flex items-center gap-2 text-xs">
-            <span className="text-muted-foreground font-medium">Type:</span>
-            <Badge variant="outline" className="text-[10px] h-5">
-              {getResourceTypeLabel(event.resource_type)}
-            </Badge>
-          </div>
+        {(resolvedResourceName || event.operation_id) && (
+          <InfoPanel>
+            {resolvedResourceName && (
+              <InfoRow label="Name">
+                <span className="text-sm text-foreground">{resolvedResourceName}</span>
+              </InfoRow>
+            )}
+            {event.operation_id && (
+              <InfoRow label="Operation">
+                <InlineId value={event.operation_id} />
+              </InfoRow>
+            )}
+          </InfoPanel>
         )}
 
         {event.masChanges && event.masChanges.length > 0 && (
@@ -349,133 +264,36 @@ function AuditEventCard({
 
         {expanded && event.audit_information && (
           <div className="mt-3 space-y-3">
-            {event.audit_information?.http_status && (
-              <div className="flex items-center gap-2 text-xs">
-                <span className="text-muted-foreground font-medium">HTTP Status:</span>
-                <Badge variant={event.audit_information.http_status === 200 ? 'default' : 'destructive'} className="text-[10px] h-5">
-                  {event.audit_information.http_status}
-                </Badge>
-              </div>
-            )}
-
             {event.audit_information?.request && (
-              <div className="p-3 bg-background rounded-lg border border-border">
-                <div className="text-muted-foreground mb-2 font-sans font-semibold text-xs">Request:</div>
-                <div className="space-y-2">
-                  {event.audit_information.request.http_method && event.audit_information.request.http_url && (
-                    <div className="flex items-start gap-2 text-xs">
-                      <Badge variant="outline" className="text-[10px] h-5 font-mono">
-                        {event.audit_information.request.http_method}
-                      </Badge>
-                      <code className="text-[10px] break-all">{event.audit_information.request.http_url}</code>
-                    </div>
-                  )}
-                  {event.audit_information.request.http_request_body && Object.keys(event.audit_information.request.http_request_body).length > 0 && (
-                    <div>
-                      <div className="text-muted-foreground mb-1 font-sans text-[10px]">Body:</div>
-                      <pre className="text-[10px] font-mono bg-muted p-2 rounded overflow-auto max-h-40">
-                        {JSON.stringify(event.audit_information.request.http_request_body, null, 2)}
-                      </pre>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <CollapsibleJsonField label="Request" value={JSON.stringify(event.audit_information.request, null, 2)} isEditMode={false} />
             )}
-
             {event.audit_information?.response && (
-              <div className="p-3 bg-background rounded-lg border border-border">
-                <div className="text-muted-foreground mb-2 font-sans font-semibold text-xs">Response:</div>
-                <pre className="text-[10px] font-mono bg-muted p-2 rounded overflow-auto max-h-60 whitespace-pre-wrap break-words">
-                  {(() => {
-                    const response = event.audit_information.response;
-                    // Check if response has a 'raw' field
-                    if ('raw' in response && response.raw !== undefined) {
-                      if (typeof response.raw === 'string') {
-                        try {
-                          return JSON.stringify(JSON.parse(response.raw), null, 2);
-                        } catch {
-                          return response.raw;
-                        }
+              <CollapsibleJsonField
+                label="Response"
+                isEditMode={false}
+                value={(() => {
+                  const response = event.audit_information.response;
+                  if ('raw' in response && response.raw !== undefined) {
+                    if (typeof response.raw === 'string') {
+                      try {
+                        return JSON.stringify(JSON.parse(response.raw), null, 2);
+                      } catch {
+                        return response.raw;
                       }
-                      return JSON.stringify(response.raw, null, 2);
                     }
-                    // Otherwise render the response object directly
-                    return JSON.stringify(response, null, 2);
-                  })()}
-                </pre>
-              </div>
+                    return JSON.stringify(response.raw, null, 2);
+                  }
+                  return JSON.stringify(response, null, 2);
+                })()}
+              />
             )}
-
             {!event.audit_information?.request && !event.audit_information?.response && (
-              <div className="p-3 bg-background rounded-lg border border-border text-xs font-mono overflow-auto max-h-96">
-                <div className="text-muted-foreground mb-2 font-sans">Audit Information:</div>
-                <pre className="whitespace-pre-wrap">{JSON.stringify(event.audit_information, null, 2)}</pre>
-              </div>
+              <CollapsibleJsonField label="Audit Information" value={JSON.stringify(event.audit_information, null, 2)} isEditMode={false} />
             )}
           </div>
         )}
       </div>
     </div>
-  );
-}
-
-function getResourceTypeLabel(resourceType: string): string {
-  const labels: Record<string, string> = {
-    MAS: 'Multi-Agentic System',
-    'MAS-AGENT': 'Multi-Agentic System agent',
-    MEMORY_PROVIDER: 'Memory Provider'
-  };
-  return labels[resourceType] || resourceType;
-}
-
-function TruncatedCopyableId({id, label, resolvedName}: {id: string; label?: string; resolvedName?: string}) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(id);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const truncated = id.length > 12 ? `${id.slice(0, 8)}...${id.slice(-4)}` : id;
-
-  return (
-    <TooltipProvider>
-      {resolvedName ? (
-        <div className="flex flex-col gap-0.5">
-          {label && <span className="text-muted-foreground font-medium text-xs">{label}:</span>}
-          <span className="text-xs font-medium">{resolvedName}</span>
-          <div className="flex items-center gap-1.5 group">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono cursor-help truncate max-w-[240px]">{truncated}</code>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p className="font-mono text-xs">{id}</p>
-              </TooltipContent>
-            </Tooltip>
-            <button onClick={handleCopy} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded" title="Copy">
-              {copied ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="flex items-center gap-1.5 group">
-          {label && <span className="text-muted-foreground font-medium text-xs">{label}:</span>}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <code className="bg-muted px-1.5 py-0.5 rounded text-xs font-mono cursor-help">{truncated}</code>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p className="font-mono text-xs">{id}</p>
-            </TooltipContent>
-          </Tooltip>
-          <button onClick={handleCopy} className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-muted rounded" title="Copy">
-            {copied ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3 text-muted-foreground" />}
-          </button>
-        </div>
-      )}
-    </TooltipProvider>
   );
 }
 
@@ -585,10 +403,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
 
   return (
     <>
-      <Button variant="sidebar" size="sm" onClick={() => setIsOpen(true)} className="gap-2">
-        <History className="w-4 h-4" />
-        Audit
-      </Button>
+      <ActionButton icon={History} label="Audit" onClick={() => setIsOpen(true)} />
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent

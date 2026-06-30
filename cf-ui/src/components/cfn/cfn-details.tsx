@@ -10,23 +10,26 @@ import useSWR, {mutate as globalMutate} from 'swr';
 import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {z} from 'zod';
-import {BrainCircuit, Workflow, HardDrive, Settings2, ChevronDown, ChevronUp} from 'lucide-react';
 import {swrKeys} from '@/lib/swr-config';
 import {cfnApi} from '@/api/endpoints';
 import type {Cfn, UpdateCfnRequest} from '@/api/types/cfn';
 import {BasePage} from '@/components/ui/base-page';
 import {Input} from '@/components/ui/input';
 import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/ui/form';
-import {Badge} from '@/components/ui/badge';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
 import {routes, breadcrumbs} from '@/constants/routes';
 import {DATE_TIME_FORMAT_OPTIONS, parseError} from '@/lib/utils';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {toast} from 'sonner';
-import {CopyableInput} from '@/components/ui/copyable-input';
-import {StatCard} from '@/components/ui/stat-card';
-import {dtLabel, dtSectionHeader, dtMetaLabel, dtMetaValue, dtPanelHeaderInteractive} from '@/lib/detail-typography';
+import {StatusDot} from '@/components/ui/status-dot';
+import {DetailTabs} from '@/components/ui/detail-tabs';
+import {InlineId} from '@/components/ui/inline-id';
+import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
+import {MetaCard} from '@/components/ui/meta-card';
+import {Badge} from '@/components/ui/badge';
+import {BrainCircuit, Database, Network} from 'lucide-react';
+import {dtSectionHeader, dtPanelHeader} from '@/lib/detail-typography';
 
 interface CfnCE {
   id: string;
@@ -84,9 +87,7 @@ export default function CfnDetailsPage() {
   const cfnId = Array.isArray(rawCfnId) ? rawCfnId[0] : rawCfnId;
 
   const [isEditMode, setIsEditMode] = useState(false);
-  const [ceExpanded, setCeExpanded] = useState(true);
-  const [masExpanded, setMasExpanded] = useState(true);
-  const [mpExpanded, setMpExpanded] = useState(true);
+  const [activeTab, setActiveTab] = useState<'overview' | 'cognition-engines' | 'memory-providers' | 'workspaces'>('overview');
 
   const {data: cfn, error, isLoading, mutate} = useSWR<Cfn>(cfnId ? swrKeys.cfnDetails(cfnId) : null, () => cfnApi.get(cfnId as string));
 
@@ -148,28 +149,43 @@ export default function CfnDetailsPage() {
   const cognitionEngines = cfnConfig.cognition_engines ?? [];
   const memoryProviders = cfnConfig.memory_providers ?? [];
   const allMAS = (cfnConfig.workspaces ?? []).flatMap((w) => w.multi_agentic_systems ?? []);
-  const enabledCEs = cognitionEngines.filter((ce) => ce.enabled).length;
-
-  const labelClass = dtLabel;
-  const metadataLabelClass = dtMetaLabel;
-  const metadataValueClass = dtMetaValue;
 
   return (
     <BasePage
       title={cfn?.name || 'CFN Details'}
-      description="View details about your Cognition Fabric Node"
       customDescription={
-        cfn && (
-          <div className="flex items-center gap-2">
-            <Badge variant={cfn.status === 'online' ? 'success' : 'inactive'}>{cfn.status === 'online' ? 'Online' : 'Offline'}</Badge>
-            <Badge variant={cfn.enabled ? 'info' : 'inactive'}>{cfn.enabled ? 'Enabled' : 'Disabled'}</Badge>
+        cfn ? (
+          <div className="flex items-center gap-3 flex-wrap">
+            <StatusDot variant="health" active={cfn.status === 'online'} />
+            <span className="text-muted-foreground/30 text-xs select-none">·</span>
+            <StatusDot variant="state" active={cfn.enabled} />
+            <span className="text-muted-foreground/30 text-xs select-none">·</span>
+            <InlineId value={cfn.id} />
           </div>
-        )
+        ) : undefined
+      }
+      customInfo={
+        <DetailTabs
+          activeTab={activeTab}
+          onTabChange={(id) => {
+            if (id !== 'overview' && isEditMode) {
+              handleCancelEdit();
+            }
+            setActiveTab(id as typeof activeTab);
+          }}
+          tabs={[
+            {id: 'overview', label: 'Overview'},
+            {id: 'cognition-engines', label: 'Cognition Engines', count: cognitionEngines.length || undefined},
+            {id: 'memory-providers', label: 'Memory Providers', count: memoryProviders.length || undefined},
+            {id: 'workspaces', label: 'Multi-Agentic Systems', count: allMAS.length || undefined}
+          ]}
+        />
       }
       useBreadcrumbs
       breadcrumbs={crumbs}
       callToAction={
-        cfn && (
+        cfn &&
+        activeTab === 'overview' && (
           <DetailsPageActions
             onEdit={() => setIsEditMode(true)}
             isEditMode={isEditMode}
@@ -189,249 +205,232 @@ export default function CfnDetailsPage() {
         emptyListStateProps={{title: 'No CFN details found'}}
       >
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
-            <div className="grid grid-cols-4 gap-8">
-              <StatCard
-                icon={<BrainCircuit size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
-                label="Cognition Engines"
-                value={cognitionEngines.length}
-                sublabel={`${enabledCEs} enabled${cognitionEngines.length - enabledCEs > 0 ? `, ${cognitionEngines.length - enabledCEs} disabled` : ''}`}
-              />
-              <StatCard
-                icon={<Workflow size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
-                label="Multi-Agentic Systems"
-                value={allMAS.length}
-                sublabel={allMAS.length > 0 ? `${allMAS.reduce((acc, m) => acc + (m.agents?.length ?? 0), 0)} agents total` : undefined}
-              />
-              <StatCard
-                icon={<HardDrive size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
-                label="Memory Providers"
-                value={memoryProviders.length}
-                sublabel={memoryProviders.length > 0 ? `${memoryProviders.filter((m) => m.enabled).length} enabled` : undefined}
-              />
-              {cfnConfig.config_version !== undefined && (
-                <StatCard
-                  icon={<Settings2 size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
-                  label="Config Version"
-                  value={`v${cfnConfig.config_version}`}
-                />
-              )}
-            </div>
-
-            <div className="space-y-3">
-              <div className="grid grid-cols-4 gap-8">
-                <div className="bg-card border border-border rounded-lg py-10 px-5">
-                  <span className={labelClass}>Name</span>
-                  {isEditMode ? (
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({field}) => (
-                        <FormItem className="space-y-1 mt-2">
-                          <FormControl>
-                            <Input {...field} className="h-8 text-sm" maxLength={100} autoComplete="off" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ) : (
-                    <p className="text-2xl font-semibold text-foreground mt-2">{cfn?.name || '-'}</p>
+          <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
+            {activeTab === 'overview' && (
+              <div className="space-y-4">
+                <InfoPanel>
+                  <InfoRow label="Name">
+                    {isEditMode ? (
+                      <FormField
+                        control={form.control}
+                        name="name"
+                        render={({field}) => (
+                          <FormItem className="flex-1 space-y-1">
+                            <FormControl>
+                              <Input {...field} className="h-8 text-sm" maxLength={100} autoComplete="off" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <span className="text-sm text-foreground">{cfn?.name || '—'}</span>
+                    )}
+                  </InfoRow>
+                  <InfoRow label="IP Address">
+                    {isEditMode ? (
+                      <FormField
+                        control={form.control}
+                        name="ip_address"
+                        render={({field}) => (
+                          <FormItem className="flex-1 space-y-1">
+                            <FormControl>
+                              <Input {...field} className="h-8 text-sm font-mono" placeholder="192.168.1.100" autoComplete="off" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <span className="text-sm text-foreground font-mono">{cfn?.ip_address || '—'}</span>
+                    )}
+                  </InfoRow>
+                  <InfoRow label="Port">
+                    {isEditMode ? (
+                      <FormField
+                        control={form.control}
+                        name="port"
+                        render={({field}) => (
+                          <FormItem className="flex-1 space-y-1">
+                            <FormControl>
+                              <Input {...field} type="number" className="h-8 text-sm font-mono" placeholder="8080" autoComplete="off" />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    ) : (
+                      <span className="text-sm text-foreground font-mono">{cfn?.port ? String(cfn.port) : '—'}</span>
+                    )}
+                  </InfoRow>
+                  {cfnConfig.config_version !== undefined && (
+                    <InfoRow label="Config Version">
+                      <span className="text-sm text-foreground font-mono">v{cfnConfig.config_version}</span>
+                    </InfoRow>
                   )}
-                </div>
+                </InfoPanel>
 
-                <div className="bg-card border border-border rounded-lg py-10 px-5 min-w-0">
-                  <span className={labelClass}>ID</span>
-                  <div className="mt-2">
-                    <CopyableInput value={cfn?.id || ''} />
-                  </div>
-                </div>
-
-                <div className="bg-card border border-border rounded-lg py-10 px-5">
-                  <span className={labelClass}>IP Address</span>
-                  {isEditMode ? (
-                    <FormField
-                      control={form.control}
-                      name="ip_address"
-                      render={({field}) => (
-                        <FormItem className="space-y-1 mt-2">
-                          <FormControl>
-                            <Input {...field} className="h-8 text-sm font-mono" placeholder="192.168.1.100" autoComplete="off" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ) : (
-                    <p className="text-2xl font-semibold text-foreground font-mono mt-2">{cfn?.ip_address || '-'}</p>
+                <div className="grid grid-cols-3 gap-3">
+                  {cfn?.created_at && (
+                    <MetaCard label="Created" mono>
+                      {new Date(cfn.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                    </MetaCard>
                   )}
-                </div>
-
-                <div className="bg-card border border-border rounded-lg py-10 px-5">
-                  <span className={labelClass}>Port</span>
-                  {isEditMode ? (
-                    <FormField
-                      control={form.control}
-                      name="port"
-                      render={({field}) => (
-                        <FormItem className="space-y-1 mt-2">
-                          <FormControl>
-                            <Input {...field} type="number" className="h-8 text-sm font-mono" placeholder="8080" autoComplete="off" />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  ) : (
-                    <p className="text-2xl font-semibold text-foreground font-mono mt-2">{cfn?.port ? String(cfn.port) : '-'}</p>
+                  {cfn?.last_seen && (
+                    <MetaCard label="Last Seen" mono>
+                      {new Date(cfn.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                    </MetaCard>
+                  )}
+                  {cfn?.updated_at && (
+                    <MetaCard label="Last Modified" mono>
+                      {new Date(cfn.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                    </MetaCard>
                   )}
                 </div>
               </div>
+            )}
 
-              <div className="grid grid-cols-3 gap-x-8 px-1 pt-1">
-                {cfn?.created_at && (
-                  <div className="flex flex-col gap-0.5">
-                    <span className={metadataLabelClass}>Created</span>
-                    <span className={metadataValueClass}>{new Date(cfn.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
+            {activeTab === 'cognition-engines' && (
+              <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                <div className={dtPanelHeader}>
+                  <div className="flex items-center gap-2">
+                    <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                    <span className={dtSectionHeader}>Cognition Engines</span>
+                    {cognitionEngines.length > 0 && (
+                      <Badge variant="accent" className="rounded px-1.5">
+                        {cognitionEngines.length}
+                      </Badge>
+                    )}
                   </div>
-                )}
-                {cfn?.last_seen && (
-                  <div className="flex flex-col gap-0.5">
-                    <span className={metadataLabelClass}>Last Seen</span>
-                    <span className={metadataValueClass}>{new Date(cfn.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
-                  </div>
-                )}
-                {cfn?.updated_at && (
-                  <div className="flex flex-col gap-0.5">
-                    <span className={metadataLabelClass}>Last Modified</span>
-                    <span className={metadataValueClass}>{new Date(cfn.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-card border border-border rounded overflow-hidden">
-              <div className={dtPanelHeaderInteractive} onClick={() => setCeExpanded((v) => !v)}>
-                <div className="flex items-center gap-2">
-                  <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
-                  <span className={dtSectionHeader}>Cognition Engines</span>
-                  {cognitionEngines.length > 0 && (
-                    <Badge variant="accent" className="rounded px-1.5">
-                      {cognitionEngines.length}
-                    </Badge>
-                  )}
                 </div>
-                {ceExpanded ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
-              </div>
-              {ceExpanded && cognitionEngines.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Kind</TableHead>
-                      <TableHead>Subkind</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Enabled</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {cognitionEngines.map((ce) => (
-                      <TableRow key={ce.id}>
-                        <TableCell>{ce.name}</TableCell>
-                        <TableCell className="font-mono text-muted-foreground">{ce.kind || '-'}</TableCell>
-                        <TableCell className="font-mono text-muted-foreground">{ce.subkind || '-'}</TableCell>
-                        <TableCell>
-                          <Badge variant={ce.status === 'online' ? 'success' : 'inactive'}>{ce.status === 'online' ? 'Online' : 'Offline'}</Badge>
-                        </TableCell>
-                        <TableCell>{ce.enabled ? <Badge variant="info">Enabled</Badge> : <Badge variant="inactive">Disabled</Badge>}</TableCell>
+                {cognitionEngines.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Kind</TableHead>
+                        <TableHead>Subkind</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Enabled</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : ceExpanded ? (
-                <p className="px-4 py-4 text-sm text-muted-foreground">No Cognition Engines registered.</p>
-              ) : null}
-            </div>
-
-            <div className="bg-card border border-border rounded overflow-hidden">
-              <div className={dtPanelHeaderInteractive} onClick={() => setMasExpanded((v) => !v)}>
-                <div className="flex items-center gap-2">
-                  <Workflow size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
-                  <span className={dtSectionHeader}>Multi-Agentic Systems</span>
-                  {allMAS.length > 0 && (
-                    <Badge variant="accent" className="rounded px-1.5">
-                      {allMAS.length}
-                    </Badge>
-                  )}
-                </div>
-                {masExpanded ? (
-                  <ChevronUp size={13} className="text-muted-foreground" />
+                    </TableHeader>
+                    <TableBody>
+                      {cognitionEngines.map((ce) => (
+                        <TableRow key={ce.id}>
+                          <TableCell className="font-medium">{ce.name}</TableCell>
+                          <TableCell>
+                            {ce.kind ? (
+                              <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                {ce.kind}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {ce.subkind ? (
+                              <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                {ce.subkind}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <StatusDot variant="health" active={ce.status === 'online'} />
+                          </TableCell>
+                          <TableCell>
+                            <StatusDot variant="state" active={!!ce.enabled} />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 ) : (
-                  <ChevronDown size={13} className="text-muted-foreground" />
+                  <p className="px-5 py-4 text-sm text-muted-foreground">No Cognition Engines registered.</p>
                 )}
               </div>
-              {masExpanded && allMAS.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Agents</TableHead>
-                      <TableHead>Shared Memory</TableHead>
-                      <TableHead>Attached Cognition Engines</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {allMAS.map((mas) => (
-                      <TableRow key={mas.id}>
-                        <TableCell>{mas.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{mas.agents?.length ?? 0}</TableCell>
-                        <TableCell className="text-muted-foreground">{mas.shared_memory?.name || '-'}</TableCell>
-                        <TableCell className="text-muted-foreground">{mas.cognition_engines?.length ?? 0}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : masExpanded ? (
-                <p className="px-4 py-4 text-sm text-muted-foreground">No Multi-Agentic Systems found.</p>
-              ) : null}
-            </div>
+            )}
 
-            <div className="bg-card border border-border rounded overflow-hidden">
-              <div className={dtPanelHeaderInteractive} onClick={() => setMpExpanded((v) => !v)}>
-                <div className="flex items-center gap-2">
-                  <HardDrive size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
-                  <span className={dtSectionHeader}>Memory Providers</span>
-                  {memoryProviders.length > 0 && (
-                    <Badge variant="accent" className="rounded px-1.5">
-                      {memoryProviders.length}
-                    </Badge>
-                  )}
+            {activeTab === 'memory-providers' && (
+              <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                <div className={dtPanelHeader}>
+                  <div className="flex items-center gap-2">
+                    <Database size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                    <span className={dtSectionHeader}>Memory Providers</span>
+                    {memoryProviders.length > 0 && (
+                      <Badge variant="accent" className="rounded px-1.5">
+                        {memoryProviders.length}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
-                {mpExpanded ? <ChevronUp size={13} className="text-muted-foreground" /> : <ChevronDown size={13} className="text-muted-foreground" />}
-              </div>
-              {mpExpanded && memoryProviders.length > 0 ? (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Enabled</TableHead>
-                      <TableHead>Description</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {memoryProviders.map((mp) => (
-                      <TableRow key={mp.id}>
-                        <TableCell>{mp.name}</TableCell>
-                        <TableCell>{mp.enabled ? <Badge variant="info">Enabled</Badge> : <Badge variant="inactive">Disabled</Badge>}</TableCell>
-                        <TableCell className="text-muted-foreground">{mp.description || '-'}</TableCell>
+                {memoryProviders.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Enabled</TableHead>
+                        <TableHead>Description</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : mpExpanded ? (
-                <p className="px-4 py-4 text-sm text-muted-foreground">No memory providers registered.</p>
-              ) : null}
-            </div>
+                    </TableHeader>
+                    <TableBody>
+                      {memoryProviders.map((mp) => (
+                        <TableRow key={mp.id}>
+                          <TableCell className="font-medium">{mp.name}</TableCell>
+                          <TableCell>
+                            <StatusDot variant="state" active={mp.enabled} />
+                          </TableCell>
+                          <TableCell className="text-muted-foreground">{mp.description || '—'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="px-5 py-4 text-sm text-muted-foreground">No memory providers registered.</p>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'workspaces' && (
+              <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                <div className={dtPanelHeader}>
+                  <div className="flex items-center gap-2">
+                    <Network size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                    <span className={dtSectionHeader}>Multi-Agentic Systems</span>
+                    {allMAS.length > 0 && (
+                      <Badge variant="accent" className="rounded px-1.5">
+                        {allMAS.length}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                {allMAS.length > 0 ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Agents</TableHead>
+                        <TableHead>Shared Memory</TableHead>
+                        <TableHead>Attached Cognition Engines</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allMAS.map((mas) => (
+                        <TableRow key={mas.id}>
+                          <TableCell className="font-medium">{mas.name}</TableCell>
+                          <TableCell className="text-muted-foreground">{mas.agents?.length ?? 0}</TableCell>
+                          <TableCell className="text-muted-foreground">{mas.shared_memory?.name || '—'}</TableCell>
+                          <TableCell className="text-muted-foreground">{mas.cognition_engines?.length ?? 0}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="px-5 py-4 text-sm text-muted-foreground">No Multi-Agentic Systems found.</p>
+                )}
+              </div>
+            )}
           </form>
         </Form>
       </ConditionalSWRRenderer>

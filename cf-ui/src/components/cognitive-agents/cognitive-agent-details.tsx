@@ -10,16 +10,12 @@ import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {mutate as globalMutate} from 'swr';
 import {BasePage} from '@/components/ui/base-page';
-import {Button} from '@/components/ui/button';
-import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/ui/form';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
-import {CopyableInput} from '@/components/ui/copyable-input';
 import {routes} from '@/constants/routes';
-import {parseError, DATE_TIME_FORMAT_OPTIONS, validateJSON, formatJson} from '@/lib/utils';
+import {parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {useCognitionEngine} from '@/hooks/useCognitionEngines';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {useCEToggleFlow} from '@/hooks/useCEToggleFlow';
@@ -31,10 +27,45 @@ import useSWR from 'swr';
 import {CognitionEngineDialogs} from '@/components/cognitive-agents/cognition-engine-dialogs';
 import {UpdateCEFormSchema, type FormValues} from '@/components/cognitive-agents/cognition-engine-form-fields';
 import {toast} from 'sonner';
-import {Badge} from '@/components/ui/badge';
-import {StatCard} from '@/components/ui/stat-card';
-import {ChevronDown, ChevronUp, Cpu, Tag, Network} from 'lucide-react';
-import {dtLabel, dtValue, dtRow, dtSectionHeader, dtMetaLabel, dtMetaValue, dtPanelHeader, dtPanelHeaderInteractive} from '@/lib/detail-typography';
+import {StatusDot} from '@/components/ui/status-dot';
+import {DetailTabs} from '@/components/ui/detail-tabs';
+import {IdHoverCard} from '@/components/ui/id-hover-card';
+import {CollapsibleJsonField} from '@/components/mas/collapsible-json-field';
+import {dtPanelHeader, dtSectionHeader} from '@/lib/detail-typography';
+import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
+import {MetaCard} from '@/components/ui/meta-card';
+
+function ToggleDisplay({active, onClick}: {active: boolean; onClick?: () => void}) {
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        display: 'inline-flex',
+        height: '16px',
+        width: '28px',
+        flexShrink: 0,
+        alignItems: 'center',
+        borderRadius: '9999px',
+        padding: '2px',
+        transition: 'background-color 0.2s',
+        backgroundColor: active ? 'hsl(var(--indicator-active))' : 'hsl(var(--muted-foreground) / 0.3)',
+        cursor: onClick ? 'pointer' : 'default'
+      }}
+    >
+      <div
+        style={{
+          height: '12px',
+          width: '12px',
+          borderRadius: '9999px',
+          backgroundColor: 'hsl(var(--background))',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+          transition: 'transform 0.2s',
+          transform: active ? 'translateX(12px)' : 'translateX(0)'
+        }}
+      />
+    </div>
+  );
+}
 
 export default function CognitiveAgentDetailsPage() {
   const router = useRouter();
@@ -49,8 +80,7 @@ export default function CognitiveAgentDetailsPage() {
   const {data: cfn} = useSWR(ce?.cfn_id ? swrKeys.cfnDetails(ce.cfn_id) : null, () => cfnApi.get(ce!.cfn_id));
 
   const [isEditMode, setIsEditMode] = useState(false);
-  const [configExpanded, setConfigExpanded] = useState(true);
-  const [masConfigExpanded, setMasConfigExpanded] = useState(true);
+  const [activeTab, setActiveTab] = useState<'overview' | 'capabilities' | 'config'>('overview');
 
   const toggleFlow = useCEToggleFlow({cognitiveAgentId, ce, defaultWorkspaceId, mutate});
   const deleteFlow = useCEDeleteFlow({
@@ -65,9 +95,6 @@ export default function CognitiveAgentDetailsPage() {
     resolver: zodResolver(UpdateCEFormSchema),
     defaultValues: {url: '', enabled: 'true', mas_auto_associate: 'false', capabilities: '', metrics: '', config: '', mas_config: ''}
   });
-
-  const configWatch = form.watch('config');
-  const masConfigWatch = form.watch('mas_config');
 
   useEffect(() => {
     if (!cognitiveAgentId) {
@@ -147,36 +174,47 @@ export default function CognitiveAgentDetailsPage() {
     }
   };
 
-  const labelClass = dtLabel;
-  const valueClass = dtValue;
-  const metadataLabelClass = dtMetaLabel;
-  const metadataValueClass = dtMetaValue;
-
-  const configEntries = ce?.config && Object.keys(ce.config).length > 0 ? Object.entries(ce.config) : [];
-  const masConfigEntries = ce?.mas_config && Object.keys(ce.mas_config).length > 0 ? Object.entries(ce.mas_config) : [];
-
   return (
     <>
       <BasePage
         title={ce?.name || 'Cognition Engine'}
-        description="View details about your Cognition Engine"
         customDescription={
-          ce && (
-            <div className="flex items-center gap-2">
-              <Badge variant={ce.status === 'online' ? 'success' : 'inactive'}>{ce.status === 'online' ? 'Online' : 'Offline'}</Badge>
-              <Badge variant={ce.enabled ? 'info' : 'inactive'}>{ce.enabled ? 'Enabled' : 'Disabled'}</Badge>
+          ce ? (
+            <div className="flex items-center gap-3 flex-wrap">
+              <StatusDot variant="health" active={ce.status === 'online'} />
+              <span className="text-muted-foreground/30 text-xs select-none">·</span>
+              <IdHoverCard value={ce.id} items={[{label: 'CE ID', value: ce.id}, ...(ce.cfn_id ? [{label: 'CFN', value: ce.cfn_id}] : [])]} />
             </div>
-          )
+          ) : undefined
+        }
+        customInfo={
+          <DetailTabs
+            activeTab={activeTab}
+            onTabChange={(id) => setActiveTab(id as typeof activeTab)}
+            tabs={[
+              {id: 'overview', label: 'Overview'},
+              {id: 'capabilities', label: 'Capabilities'},
+              {id: 'config', label: 'Config'}
+            ]}
+          />
         }
         useBreadcrumbs
         breadcrumbs={crumbs}
         callToAction={
           ce && (
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               {!isEditMode && (
-                <Button variant={ce.enabled ? 'outline' : 'sidebar'} size="sm" onClick={toggleFlow.openToggleFlow}>
-                  {ce.enabled ? 'Disable' : 'Enable'}
-                </Button>
+                <>
+                  <button
+                    type="button"
+                    onClick={toggleFlow.openToggleFlow}
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm border border-border rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                  >
+                    <ToggleDisplay active={ce.enabled} />
+                    <span>{ce.enabled ? 'Enabled' : 'Disabled'}</span>
+                  </button>
+                  <div className="w-px h-5 bg-border mx-1 shrink-0" />
+                </>
               )}
               <DetailsPageActions
                 onDelete={deleteFlow.openDeleteFlow}
@@ -200,314 +238,205 @@ export default function CognitiveAgentDetailsPage() {
           emptyListStateProps={{title: 'No details found'}}
         >
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
-              <div className="grid grid-cols-3 gap-8">
-                <StatCard
-                  icon={<Cpu size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
-                  label="Kind"
-                  value={ce?.kind || '-'}
-                  sublabel={ce?.subkind || undefined}
-                />
-                <StatCard icon={<Tag size={14} className="text-[hsl(var(--sidebar-icon-active))]" />} label="Version" value={ce?.version || '-'} />
-                <StatCard
-                  icon={<Network size={14} className="text-[hsl(var(--sidebar-icon-active))]" />}
-                  label="MAS Auto Associate"
-                  value={ce?.mas_auto_associate ? 'Enabled' : 'Disabled'}
-                />
-              </div>
-
-              <div className="space-y-3">
-                <div className="grid grid-cols-4 gap-8">
-                  <div className="bg-card border border-border rounded-lg py-10 px-5">
-                    <span className={labelClass}>Name</span>
-                    <p className="text-2xl font-semibold text-foreground mt-2">{ce?.name || '-'}</p>
-                  </div>
-
-                  <div className="bg-card border border-border rounded-lg py-10 px-5 min-w-0">
-                    <span className={labelClass}>ID</span>
-                    <div className="mt-2">
-                      <CopyableInput value={ce?.id || ''} />
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border rounded-lg py-10 px-5 min-w-0">
-                    <span className={labelClass}>CFN</span>
-                    {cfn?.name && <p className="text-2xl font-semibold text-foreground mt-2">{cfn.name}</p>}
-                    <div className="mt-2">
-                      <CopyableInput value={ce?.cfn_id || ''} />
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border rounded-lg py-10 px-5">
-                    <span className={labelClass}>URL</span>
-                    {isEditMode ? (
-                      <FormField
-                        control={form.control}
-                        name="url"
-                        render={({field}) => (
-                          <FormItem className="space-y-1 mt-2">
-                            <FormControl>
-                              <Input {...field} className="h-8 text-sm font-mono" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    ) : (
-                      <p className="text-2xl font-semibold text-foreground font-mono mt-2">{ce?.url || '-'}</p>
-                    )}
-                  </div>
-                </div>
-
-                {isEditMode && (
-                  <div className="grid grid-cols-4 gap-8">
-                    <div className="bg-card border border-border rounded-lg py-10 px-5">
-                      <span className={labelClass}>MAS Auto Associate</span>
-                      <FormField
-                        control={form.control}
-                        name="mas_auto_associate"
-                        render={({field}) => (
-                          <FormItem className="space-y-1 mt-2">
-                            <Select onValueChange={field.onChange} value={field.value}>
+            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
+              {activeTab === 'overview' && (
+                <div className="space-y-4">
+                  <InfoPanel>
+                    <InfoRow label="Kind">
+                      <span className="text-sm text-foreground font-mono">{ce?.kind || '—'}</span>
+                    </InfoRow>
+                    <InfoRow label="Subkind">
+                      <span className="text-sm text-foreground font-mono">{ce?.subkind || '—'}</span>
+                    </InfoRow>
+                    <InfoRow label="Version">
+                      <span className="text-sm text-foreground font-mono">{ce?.version || '—'}</span>
+                    </InfoRow>
+                    <InfoRow label="CFN">
+                      <span className="text-sm text-foreground">{cfn?.name || '—'}</span>
+                    </InfoRow>
+                    <InfoRow label="MAS Auto Associate">
+                      {isEditMode ? (
+                        <FormField
+                          control={form.control}
+                          name="mas_auto_associate"
+                          render={({field}) => (
+                            <FormItem>
                               <FormControl>
-                                <SelectTrigger className="h-8 text-sm">
-                                  <SelectValue />
-                                </SelectTrigger>
+                                <ToggleDisplay
+                                  active={field.value === 'true'}
+                                  onClick={() => field.onChange(field.value === 'true' ? 'false' : 'true')}
+                                />
                               </FormControl>
-                              <SelectContent>
-                                <SelectItem value="true">Enabled</SelectItem>
-                                <SelectItem value="false">Disabled</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="bg-card border border-border rounded-lg py-10 px-5">
-                      <span className={labelClass}>Enabled</span>
-                      <FormField
-                        control={form.control}
-                        name="enabled"
-                        render={({field}) => (
-                          <FormItem className="space-y-1 mt-2">
-                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <ToggleDisplay active={!!ce?.mas_auto_associate} />
+                      )}
+                    </InfoRow>
+                    {isEditMode && (
+                      <InfoRow label="Enabled">
+                        <FormField
+                          control={form.control}
+                          name="enabled"
+                          render={({field}) => (
+                            <FormItem>
                               <FormControl>
-                                <SelectTrigger className="h-8 text-sm">
-                                  <SelectValue />
-                                </SelectTrigger>
+                                <ToggleDisplay
+                                  active={field.value === 'true'}
+                                  onClick={() => field.onChange(field.value === 'true' ? 'false' : 'true')}
+                                />
                               </FormControl>
-                              <SelectContent>
-                                <SelectItem value="true">Enabled</SelectItem>
-                                <SelectItem value="false">Disabled</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-                )}
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </InfoRow>
+                    )}
+                  </InfoPanel>
 
-                <div className="grid grid-cols-3 gap-x-8 px-1 pt-1">
-                  {ce?.created_at && (
-                    <div className="flex flex-col gap-0.5">
-                      <span className={metadataLabelClass}>Created</span>
-                      <span className={metadataValueClass}>{new Date(ce.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
-                    </div>
-                  )}
-                  {ce?.updated_at && (
-                    <div className="flex flex-col gap-0.5">
-                      <span className={metadataLabelClass}>Last Modified</span>
-                      <span className={metadataValueClass}>{new Date(ce.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
-                    </div>
-                  )}
-                  {ce?.last_seen && (
-                    <div className="flex flex-col gap-0.5">
-                      <span className={metadataLabelClass}>Last Seen</span>
-                      <span className={metadataValueClass}>{new Date(ce.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-card border border-border rounded overflow-hidden">
-                  <div className={dtPanelHeader}>
-                    <span className={dtSectionHeader}>Capabilities</span>
-                  </div>
-                  <div className="p-4">
-                    {isEditMode ? (
-                      <FormField
-                        control={form.control}
-                        name="capabilities"
-                        render={({field}) => (
-                          <FormItem>
-                            <FormControl>
-                              <Textarea {...field} placeholder="one capability per line" className="font-mono text-xs min-h-[80px] resize-none" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    ) : (
-                      <div className="flex flex-wrap gap-1.5">
-                        {ce?.capabilities && ce.capabilities.length > 0 ? (
-                          ce.capabilities.map((cap) => (
-                            <span key={cap} className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5">
-                              {cap}
-                            </span>
-                          ))
-                        ) : (
-                          <span className={valueClass}>—</span>
-                        )}
-                      </div>
+                  <div className="grid grid-cols-3 gap-3">
+                    {ce?.created_at && (
+                      <MetaCard label="Created" mono>
+                        {new Date(ce.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                      </MetaCard>
+                    )}
+                    {ce?.updated_at && (
+                      <MetaCard label="Last Modified" mono>
+                        {new Date(ce.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                      </MetaCard>
+                    )}
+                    {ce?.last_seen && (
+                      <MetaCard label="Last Seen" mono>
+                        {new Date(ce.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                      </MetaCard>
                     )}
                   </div>
                 </div>
+              )}
 
-                <div className="bg-card border border-border rounded overflow-hidden">
-                  <div className={dtPanelHeader}>
-                    <span className={dtSectionHeader}>Metrics</span>
-                  </div>
-                  <div className="p-4">
-                    {isEditMode ? (
-                      <FormField
-                        control={form.control}
-                        name="metrics"
-                        render={({field}) => (
-                          <FormItem>
-                            <FormControl>
-                              <Textarea {...field} placeholder="one metric per line" className="font-mono text-xs min-h-[80px] resize-none" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    ) : (
-                      <div className="flex flex-wrap gap-1.5">
-                        {ce?.metrics && ce.metrics.length > 0 ? (
-                          ce.metrics.map((metric) => (
-                            <span key={metric} className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5">
-                              {metric}
-                            </span>
-                          ))
-                        ) : (
-                          <span className={valueClass}>—</span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-card border border-border rounded overflow-hidden">
-                <div className={dtPanelHeaderInteractive} onClick={() => setConfigExpanded((v) => !v)}>
-                  <div className="flex items-center gap-2">
-                    <span className={dtSectionHeader}>Config</span>
-                    {isEditMode && configWatch && configWatch.trim() !== '' && (
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded ${validateJSON(configWatch) ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}
-                      >
-                        {validateJSON(configWatch) ? 'Valid JSON' : 'Invalid JSON'}
-                      </span>
-                    )}
-                  </div>
-                  {configExpanded ? (
-                    <ChevronUp size={13} className="text-muted-foreground" />
-                  ) : (
-                    <ChevronDown size={13} className="text-muted-foreground" />
-                  )}
-                </div>
-
-                {configExpanded && (
-                  <div className="p-4">
-                    {isEditMode ? (
-                      <FormField
-                        control={form.control}
-                        name="config"
-                        render={({field}) => (
-                          <FormItem>
-                            <FormControl>
-                              <Textarea
-                                placeholder={'{\n  "key": "value"\n}'}
-                                className="font-mono text-sm min-h-[150px] resize-y"
-                                {...field}
-                                onBlur={() => field.onChange(formatJson(field.value || ''))}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    ) : configEntries.length === 0 ? (
-                      <span className={valueClass}>—</span>
-                    ) : (
-                      configEntries.map(([key, value]) => (
-                        <div key={key} className={dtRow}>
-                          <span className={labelClass}>{key}</span>
-                          <span className={valueClass}>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
+              {activeTab === 'capabilities' && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                    <div className={dtPanelHeader}>
+                      <span className={dtSectionHeader}>Capabilities</span>
+                    </div>
+                    <div className="p-4">
+                      {isEditMode ? (
+                        <FormField
+                          control={form.control}
+                          name="capabilities"
+                          render={({field}) => (
+                            <FormItem>
+                              <FormControl>
+                                <Textarea {...field} placeholder="one capability per line" className="font-mono text-xs min-h-[120px] resize-none" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {ce?.capabilities && ce.capabilities.length > 0 ? (
+                            ce.capabilities.map((cap) => (
+                              <span key={cap} className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5">
+                                {cap}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
                         </div>
-                      ))
-                    )}
+                      )}
+                    </div>
                   </div>
-                )}
-              </div>
 
-              <div className="bg-card border border-border rounded overflow-hidden">
-                <div className={dtPanelHeaderInteractive} onClick={() => setMasConfigExpanded((v) => !v)}>
-                  <div className="flex items-center gap-2">
-                    <span className={dtSectionHeader}>MAS Config</span>
-                    {isEditMode && masConfigWatch && masConfigWatch.trim() !== '' && (
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded ${validateJSON(masConfigWatch) ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}
-                      >
-                        {validateJSON(masConfigWatch) ? 'Valid JSON' : 'Invalid JSON'}
-                      </span>
-                    )}
+                  <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                    <div className={dtPanelHeader}>
+                      <span className={dtSectionHeader}>Metrics</span>
+                    </div>
+                    <div className="p-4">
+                      {isEditMode ? (
+                        <FormField
+                          control={form.control}
+                          name="metrics"
+                          render={({field}) => (
+                            <FormItem>
+                              <FormControl>
+                                <Textarea {...field} placeholder="one metric per line" className="font-mono text-xs min-h-[120px] resize-none" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5">
+                          {ce?.metrics && ce.metrics.length > 0 ? (
+                            ce.metrics.map((metric) => (
+                              <span
+                                key={metric}
+                                className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5"
+                              >
+                                {metric}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm text-muted-foreground">—</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  {masConfigExpanded ? (
-                    <ChevronUp size={13} className="text-muted-foreground" />
+                </div>
+              )}
+
+              {activeTab === 'config' && (
+                <div className="space-y-4">
+                  {isEditMode ? (
+                    <FormField
+                      control={form.control}
+                      name="config"
+                      render={({field}) => (
+                        <CollapsibleJsonField
+                          label="Config"
+                          value={field.value ?? ''}
+                          isEditMode={true}
+                          field={field}
+                          placeholder={'{\n  "key": "value"\n}'}
+                        />
+                      )}
+                    />
                   ) : (
-                    <ChevronDown size={13} className="text-muted-foreground" />
+                    <CollapsibleJsonField
+                      label="Config"
+                      value={ce?.config && Object.keys(ce.config).length > 0 ? JSON.stringify(ce.config, null, 2) : ''}
+                      isEditMode={false}
+                    />
+                  )}
+                  {isEditMode ? (
+                    <FormField
+                      control={form.control}
+                      name="mas_config"
+                      render={({field}) => (
+                        <CollapsibleJsonField
+                          label="MAS Config"
+                          value={field.value ?? ''}
+                          isEditMode={true}
+                          field={field}
+                          placeholder={'{\n  "key": "value"\n}'}
+                        />
+                      )}
+                    />
+                  ) : (
+                    <CollapsibleJsonField
+                      label="MAS Config"
+                      value={ce?.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''}
+                      isEditMode={false}
+                    />
                   )}
                 </div>
-
-                {masConfigExpanded && (
-                  <div className="p-4">
-                    {isEditMode ? (
-                      <FormField
-                        control={form.control}
-                        name="mas_config"
-                        render={({field}) => (
-                          <FormItem>
-                            <FormControl>
-                              <Textarea
-                                placeholder={'{\n  "key": "value"\n}'}
-                                className="font-mono text-sm min-h-[150px] resize-y"
-                                {...field}
-                                onBlur={() => field.onChange(formatJson(field.value || ''))}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    ) : masConfigEntries.length === 0 ? (
-                      <span className={valueClass}>—</span>
-                    ) : (
-                      masConfigEntries.map(([key, value]) => (
-                        <div key={key} className={dtRow}>
-                          <span className={labelClass}>{key}</span>
-                          <span className={valueClass}>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
+              )}
             </form>
           </Form>
         </ConditionalSWRRenderer>
