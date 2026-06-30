@@ -48,10 +48,7 @@ export function IdHoverCard({value, items}: IdHoverCardProps) {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="group flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
+        <button type="button" className="group flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
           <Hash className="w-3 h-3 shrink-0" />
           <span className="font-mono">{value.slice(0, 8)}...</span>
         </button>
