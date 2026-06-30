@@ -4,13 +4,14 @@
 
 'use client';
 
-import {CircuitBoard, LayoutGrid, LayoutList, Network, Plus} from 'lucide-react';
+import {CircuitBoard, Plus} from 'lucide-react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {useMemo, useState} from 'react';
 import {Button} from '@/components/ui/button';
 import {SearchInput} from '@/components/ui/search-input';
 import {ListShell} from '@/components/ui/list-shell';
+import {ViewToggle} from '@/components/ui/view-toggle';
 import {BasePage} from '@/components/ui/base-page';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {CfnTableList} from './cfn-table-list';
@@ -66,28 +67,11 @@ export function CfnList() {
     return topologyNodes.filter((n) => n.name.toLowerCase().includes(q));
   }, [topologyNodes, searchQuery]);
 
-  const viewToggle = (
-    <div className="flex items-center gap-0.5 rounded-lg border border-border bg-muted p-0.5 shrink-0">
-      {(
-        [
-          {mode: 'table' as ViewMode, label: 'Table', Icon: LayoutList},
-          {mode: 'card' as ViewMode, label: 'Card', Icon: LayoutGrid},
-          {mode: 'topology' as ViewMode, label: 'Topology', Icon: Network}
-        ] as const
-      ).map(({mode, label, Icon}) => (
-        <button
-          key={mode}
-          onClick={() => setViewMode(mode)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-            viewMode === mode ? 'bg-background text-foreground shadow-sm font-semibold' : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Icon className="w-3.5 h-3.5" />
-          {label}
-        </button>
-      ))}
-    </div>
-  );
+  const viewToggleOptions: {value: ViewMode; label: string}[] = [
+    {value: 'topology', label: 'Topology'},
+    {value: 'table', label: 'Table'},
+    {value: 'card', label: 'Card'}
+  ];
 
   return (
     <>
@@ -98,7 +82,7 @@ export function CfnList() {
           callToAction={
             cfns.length > 0 || viewMode === 'topology' ? (
               <div className="flex gap-2 items-center">
-                {viewToggle}
+                <ViewToggle options={viewToggleOptions} value={viewMode} onChange={setViewMode} />
                 <Button asChild variant="sidebar" className="gap-2">
                   <Link href={routes.cfn.create}>
                     <Plus className="w-4 h-4" />
@@ -110,7 +94,7 @@ export function CfnList() {
           }
         >
           {viewMode === 'topology' ? (
-            <div className="min-h-[500px] h-[calc(100vh-280px)]">
+            <div className="min-h-[500px] h-[calc(100vh-224px)]">
               {topoLoading ? (
                 <div className="flex items-center justify-center h-full text-sm text-muted-foreground">Loading topology…</div>
               ) : topoError ? (
