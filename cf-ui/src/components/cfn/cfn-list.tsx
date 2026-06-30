@@ -4,7 +4,7 @@
 
 'use client';
 
-import {CircuitBoard, Plus} from 'lucide-react';
+import {CircuitBoard, LayoutGrid, LayoutList, Network, Plus} from 'lucide-react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {useMemo, useState} from 'react';
@@ -15,16 +15,20 @@ import {BasePage} from '@/components/ui/base-page';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {CfnTableList} from './cfn-table-list';
 import {CfnCardList} from './cfn-card-list';
+import {CfnTopology} from './cfn-topology';
 import {useCfn} from '@/hooks/useCfn';
+import {useCfnTopology} from '@/hooks/useCfnTopology';
 import {routes} from '@/constants/routes';
 import type {Cfn} from '@/api/types/cfn';
 
 type SortConfig = {key: string; dir: 'asc' | 'desc'} | null;
+type ViewMode = 'table' | 'card' | 'topology';
 
 export function CfnList() {
   const router = useRouter();
   const {cfns = [], isLoading: loading, error: swrError} = useCfn();
-  const [viewMode, setViewMode] = useState<'table' | 'card'>('table');
+  const {nodes: topologyNodes, isLoading: topoLoading, error: topoError} = useCfnTopology();
+  const [viewMode, setViewMode] = useState<ViewMode>('table');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
@@ -56,6 +60,29 @@ export function CfnList() {
     return items;
   }, [cfns, searchQuery, sortConfig]);
 
+  const viewToggle = (
+    <div className="flex rounded-md border border-border overflow-hidden shrink-0">
+      {(
+        [
+          {mode: 'table' as ViewMode, label: 'Table', Icon: LayoutList},
+          {mode: 'card' as ViewMode, label: 'Card', Icon: LayoutGrid},
+          {mode: 'topology' as ViewMode, label: 'Topology', Icon: Network}
+        ] as const
+      ).map(({mode, label, Icon}) => (
+        <button
+          key={mode}
+          onClick={() => setViewMode(mode)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
+            viewMode === mode ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'
+          }`}
+        >
+          <Icon className="w-3.5 h-3.5" />
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
   return (
     <>
       <div className="space-y-8">
@@ -63,11 +90,9 @@ export function CfnList() {
           title="Cognition Fabric Nodes"
           description="View and manage Cognition Fabric Nodes"
           callToAction={
-            cfns.length > 0 ? (
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={() => setViewMode(viewMode === 'table' ? 'card' : 'table')}>
-                  {viewMode === 'table' ? 'Card View' : 'Table View'}
-                </Button>
+            cfns.length > 0 || viewMode === 'topology' ? (
+              <div className="flex gap-2 items-center">
+                {viewToggle}
                 <Button asChild variant="sidebar" className="gap-2">
                   <Link href={routes.cfn.create}>
                     <Plus className="w-4 h-4" />
@@ -78,52 +103,64 @@ export function CfnList() {
             ) : undefined
           }
         >
-          <ConditionalSWRRenderer
-            data={cfns}
-            error={swrError}
-            itemName="Cognition Fabric Nodes"
-            customIsLoading={loading}
-            customEmptyComponent={
-              <div className="flex items-center justify-center min-h-[50vh]">
-                <ListShell
-                  empty={{
-                    icon: CircuitBoard,
-                    title: 'No Cognition Fabric Nodes exist.',
-                    description: 'Register a Cognition Fabric Node to start managing your distributed memory plane.',
-                    actionLabel: 'Register Node',
-                    href: routes.cfn.create
-                  }}
-                />
-              </div>
-            }
-          >
-            <div className="space-y-6">
-              <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search…" className="max-w-xs" />
-              {viewMode === 'table' ? (
-                <CfnTableList
-                  cfns={displayedCfns}
-                  selectedId={selectedId}
-                  onRowClick={(cfn) => {
-                    setSelectedId(cfn.id);
-                    router.push(routes.cfn.details(cfn.id));
-                  }}
-                  onOpenEdit={(cfn) => router.push(`${routes.cfn.details(cfn.id)}?edit=true`)}
-                  sortConfig={sortConfig}
-                  onSort={toggleSort}
-                />
+          {viewMode === 'topology' ? (
+            <div className="min-h-[500px] h-[calc(100vh-280px)]">
+              {topoLoading ? (
+                <div className="flex items-center justify-center h-full text-sm text-muted-foreground">Loading topology…</div>
+              ) : topoError ? (
+                <div className="flex items-center justify-center h-full text-sm text-destructive">{topoError}</div>
               ) : (
-                <CfnCardList
-                  cfns={displayedCfns}
-                  selectedId={selectedId}
-                  onCardClick={(cfn) => {
-                    setSelectedId(cfn.id);
-                    router.push(routes.cfn.details(cfn.id));
-                  }}
-                  onOpenEdit={(cfn) => router.push(`${routes.cfn.details(cfn.id)}?edit=true`)}
-                />
+                <CfnTopology nodes={topologyNodes} />
               )}
             </div>
-          </ConditionalSWRRenderer>
+          ) : (
+            <ConditionalSWRRenderer
+              data={cfns}
+              error={swrError}
+              itemName="Cognition Fabric Nodes"
+              customIsLoading={loading}
+              customEmptyComponent={
+                <div className="flex items-center justify-center min-h-[50vh]">
+                  <ListShell
+                    empty={{
+                      icon: CircuitBoard,
+                      title: 'No Cognition Fabric Nodes exist.',
+                      description: 'Register a Cognition Fabric Node to start managing your distributed memory plane.',
+                      actionLabel: 'Register Node',
+                      href: routes.cfn.create
+                    }}
+                  />
+                </div>
+              }
+            >
+              <div className="space-y-6">
+                <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Search…" className="max-w-xs" />
+                {viewMode === 'table' ? (
+                  <CfnTableList
+                    cfns={displayedCfns}
+                    selectedId={selectedId}
+                    onRowClick={(cfn) => {
+                      setSelectedId(cfn.id);
+                      router.push(routes.cfn.details(cfn.id));
+                    }}
+                    onOpenEdit={(cfn) => router.push(`${routes.cfn.details(cfn.id)}?edit=true`)}
+                    sortConfig={sortConfig}
+                    onSort={toggleSort}
+                  />
+                ) : (
+                  <CfnCardList
+                    cfns={displayedCfns}
+                    selectedId={selectedId}
+                    onCardClick={(cfn) => {
+                      setSelectedId(cfn.id);
+                      router.push(routes.cfn.details(cfn.id));
+                    }}
+                    onOpenEdit={(cfn) => router.push(`${routes.cfn.details(cfn.id)}?edit=true`)}
+                  />
+                )}
+              </div>
+            </ConditionalSWRRenderer>
+          )}
         </BasePage>
       </div>
     </>
