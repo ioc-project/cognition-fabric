@@ -333,12 +333,24 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
   }, [start, end, selectedCE, selectedAgent]);
 
   const trendLabel = useMemo(() => {
-    if (activePreset === '1h') return 'vs prev hour';
-    if (activePreset === '6h') return 'vs prev 6h';
-    if (activePreset === '24h') return 'vs prev day';
-    if (activePreset === '7d') return 'vs prev week';
-    if (activePreset === '30d') return 'vs prev month';
-    if (activePreset === '1y') return 'vs prev year';
+    if (activePreset === '1h') {
+      return 'vs prev hour';
+    }
+    if (activePreset === '6h') {
+      return 'vs prev 6h';
+    }
+    if (activePreset === '24h') {
+      return 'vs prev day';
+    }
+    if (activePreset === '7d') {
+      return 'vs prev week';
+    }
+    if (activePreset === '30d') {
+      return 'vs prev month';
+    }
+    if (activePreset === '1y') {
+      return 'vs prev year';
+    }
     return 'vs prev period';
   }, [activePreset]);
 

@@ -26,9 +26,7 @@ export function ViewToggle<T extends string>({options, value, onChange, classNam
           onClick={() => value !== opt.value && onChange(opt.value)}
           className={cn(
             'px-3 py-1.5 text-xs font-medium rounded transition-colors',
-            value === opt.value
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+            value === opt.value ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
           )}
         >
           {opt.label}

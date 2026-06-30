@@ -37,7 +37,6 @@ function CfnCard({node, onOpenEdit}: {node: CognitionFabricNodeTopology; onOpenE
 
   return (
     <Card variant="list" className="flex flex-col" style={{borderTop: `2px solid ${online ? '#22c55e' : 'hsl(var(--border))'}`}}>
-
       <div className="pb-4 mb-4 border-b border-border/50 flex justify-between items-start gap-3">
         <div className="min-w-0">
           <div className="text-sm font-semibold text-foreground">{node.name}</div>
@@ -48,7 +47,9 @@ function CfnCard({node, onOpenEdit}: {node: CognitionFabricNodeTopology; onOpenE
           )}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <span className={`inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full font-medium border ${online ? 'text-green-600 border-green-200 bg-green-50 dark:text-green-400 dark:border-green-900 dark:bg-green-950' : 'text-muted-foreground border-border bg-muted'}`}>
+          <span
+            className={`inline-flex items-center gap-1.5 text-xs px-2 py-0.5 rounded-full font-medium border ${online ? 'text-green-600 border-green-200 bg-green-50 dark:text-green-400 dark:border-green-900 dark:bg-green-950' : 'text-muted-foreground border-border bg-muted'}`}
+          >
             <span className={`w-1.5 h-1.5 rounded-full ${online ? 'bg-green-500' : 'bg-muted-foreground/50'}`} />
             {online ? 'Online' : 'Offline'}
           </span>
@@ -56,32 +57,32 @@ function CfnCard({node, onOpenEdit}: {node: CognitionFabricNodeTopology; onOpenE
             {node.enabled ? 'Enabled' : 'Disabled'}
           </span>
           <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
-              <MoreVertical className="w-4 h-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link href={routes.cfn.details(node.id)}>
-                <Eye className="w-4 h-4 mr-2" />
-                View Details
-              </Link>
-            </DropdownMenuItem>
-            {onOpenEdit && (
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onOpenEdit(node);
-                }}
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                Edit
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => e.stopPropagation()}>
+                <MoreVertical className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem asChild>
+                <Link href={routes.cfn.details(node.id)}>
+                  <Eye className="w-4 h-4 mr-2" />
+                  View Details
+                </Link>
               </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
+              {onOpenEdit && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onOpenEdit(node);
+                  }}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -116,7 +117,9 @@ function CfnCard({node, onOpenEdit}: {node: CognitionFabricNodeTopology; onOpenE
           ) : (
             <ul className="space-y-1">
               {memProviders.slice(0, 3).map((mp) => (
-                <li key={mp.id} className="text-xs text-foreground truncate">· {mp.name}</li>
+                <li key={mp.id} className="text-xs text-foreground truncate">
+                  · {mp.name}
+                </li>
               ))}
               {memProviders.length > 3 && <li className="text-xs text-muted-foreground">+{memProviders.length - 3} more</li>}
             </ul>
@@ -125,11 +128,7 @@ function CfnCard({node, onOpenEdit}: {node: CognitionFabricNodeTopology; onOpenE
       </div>
 
       <div className="flex items-center justify-between pt-3 mt-4 border-t border-border/50">
-        {lastSeen ? (
-          <span className="text-xs text-muted-foreground">Last seen {lastSeen}</span>
-        ) : (
-          <span />
-        )}
+        {lastSeen ? <span className="text-xs text-muted-foreground">Last seen {lastSeen}</span> : <span />}
         <Link
           href={routes.cfn.details(node.id)}
           onClick={(e) => e.stopPropagation()}

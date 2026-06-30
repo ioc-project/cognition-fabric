@@ -62,7 +62,9 @@ export function CfnList() {
   }, [cfns, searchQuery, sortConfig]);
 
   const displayedTopologyNodes = useMemo(() => {
-    if (!searchQuery.trim()) return topologyNodes;
+    if (!searchQuery.trim()) {
+      return topologyNodes;
+    }
     const q = searchQuery.toLowerCase();
     return topologyNodes.filter((n) => n.name.toLowerCase().includes(q));
   }, [topologyNodes, searchQuery]);
