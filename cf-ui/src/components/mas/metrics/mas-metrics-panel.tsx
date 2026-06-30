@@ -16,7 +16,8 @@ import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/c
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {cn} from '@/lib/utils';
-import {Activity, AlertTriangle, CalendarIcon, ChevronDown, Download, FileText, Image, Layers, LayoutGrid, LayoutList} from 'lucide-react';
+import {Activity, AlertTriangle, CalendarIcon, ChevronDown, Download, FileText, Image, Layers} from 'lucide-react';
+import {ViewToggle} from '@/components/ui/view-toggle';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
 import {EmptyState} from '@/components/ui/empty-state';
 
@@ -25,7 +26,8 @@ const TIME_PRESETS = [
   {label: '6h', hours: 6},
   {label: '24h', hours: 24},
   {label: '7d', hours: 168},
-  {label: '30d', hours: 720}
+  {label: '30d', hours: 720},
+  {label: '1y', hours: 8760}
 ] as const;
 
 type PresetLabel = (typeof TIME_PRESETS)[number]['label'];
@@ -162,10 +164,6 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
 
   function handleClearFilters() {
     updateParams({ce_id: null, agent_id: null, service: null, view: null});
-  }
-
-  function toggleView() {
-    updateParams({view: currentView === 'grid' ? 'single' : 'grid'});
   }
 
   function toggleComparison() {
@@ -335,21 +333,12 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
   }, [start, end, selectedCE, selectedAgent]);
 
   const trendLabel = useMemo(() => {
-    if (activePreset === '1h') {
-      return 'vs prev hour';
-    }
-    if (activePreset === '6h') {
-      return 'vs prev 6h';
-    }
-    if (activePreset === '24h') {
-      return 'vs prev day';
-    }
-    if (activePreset === '7d') {
-      return 'vs prev week';
-    }
-    if (activePreset === '30d') {
-      return 'vs prev month';
-    }
+    if (activePreset === '1h') return 'vs prev hour';
+    if (activePreset === '6h') return 'vs prev 6h';
+    if (activePreset === '24h') return 'vs prev day';
+    if (activePreset === '7d') return 'vs prev week';
+    if (activePreset === '30d') return 'vs prev month';
+    if (activePreset === '1y') return 'vs prev year';
     return 'vs prev period';
   }, [activePreset]);
 
@@ -577,40 +566,14 @@ export function MASMetricsPanel({masId, cognitionEngines = [], agents = []}: MAS
                 <TooltipContent side="bottom">Overlay previous period</TooltipContent>
               </Tooltip>
 
-              <div className="flex items-center gap-1 border rounded-md p-1 bg-muted/40">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => currentView !== 'grid' && toggleView()}
-                      className={cn(
-                        'p-1.5 rounded transition-colors',
-                        currentView === 'grid'
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                      )}
-                    >
-                      <LayoutGrid className="w-3.5 h-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">Grid view</TooltipContent>
-                </Tooltip>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={() => currentView !== 'single' && toggleView()}
-                      className={cn(
-                        'p-1.5 rounded transition-colors',
-                        currentView === 'single'
-                          ? 'bg-primary text-primary-foreground shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-                      )}
-                    >
-                      <LayoutList className="w-3.5 h-3.5" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom">Single chart</TooltipContent>
-                </Tooltip>
-              </div>
+              <ViewToggle
+                options={[
+                  {value: 'grid', label: 'Grid'},
+                  {value: 'single', label: 'Single'}
+                ]}
+                value={currentView}
+                onChange={(v) => updateParams({view: v === 'grid' ? null : v})}
+              />
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
