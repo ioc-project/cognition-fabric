@@ -28,7 +28,7 @@ export function CfnList() {
   const router = useRouter();
   const {cfns = [], isLoading: loading, error: swrError} = useCfn();
   const {nodes: topologyNodes, isLoading: topoLoading, error: topoError} = useCfnTopology();
-  const [viewMode, setViewMode] = useState<ViewMode>('table');
+  const [viewMode, setViewMode] = useState<ViewMode>('topology');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
@@ -60,8 +60,14 @@ export function CfnList() {
     return items;
   }, [cfns, searchQuery, sortConfig]);
 
+  const displayedTopologyNodes = useMemo(() => {
+    if (!searchQuery.trim()) return topologyNodes;
+    const q = searchQuery.toLowerCase();
+    return topologyNodes.filter((n) => n.name.toLowerCase().includes(q));
+  }, [topologyNodes, searchQuery]);
+
   const viewToggle = (
-    <div className="flex rounded-md border border-border overflow-hidden shrink-0">
+    <div className="flex items-center gap-0.5 rounded-lg border border-border bg-muted p-0.5 shrink-0">
       {(
         [
           {mode: 'table' as ViewMode, label: 'Table', Icon: LayoutList},
@@ -72,8 +78,8 @@ export function CfnList() {
         <button
           key={mode}
           onClick={() => setViewMode(mode)}
-          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium transition-colors ${
-            viewMode === mode ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'
+          className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+            viewMode === mode ? 'bg-background text-foreground shadow-sm font-semibold' : 'text-muted-foreground hover:text-foreground'
           }`}
         >
           <Icon className="w-3.5 h-3.5" />
@@ -148,15 +154,7 @@ export function CfnList() {
                     onSort={toggleSort}
                   />
                 ) : (
-                  <CfnCardList
-                    cfns={displayedCfns}
-                    selectedId={selectedId}
-                    onCardClick={(cfn) => {
-                      setSelectedId(cfn.id);
-                      router.push(routes.cfn.details(cfn.id));
-                    }}
-                    onOpenEdit={(cfn) => router.push(`${routes.cfn.details(cfn.id)}?edit=true`)}
-                  />
+                  <CfnCardList nodes={displayedTopologyNodes} onOpenEdit={(node) => router.push(`${routes.cfn.details(node.id)}?edit=true`)} />
                 )}
               </div>
             </ConditionalSWRRenderer>
