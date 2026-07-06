@@ -10,7 +10,7 @@ import Link from 'next/link';
 import React from 'react';
 
 const NotFound: React.FC = () => {
-  const primaryHref = '/workspaces';
+  const primaryHref = '/fabric';
 
   return (
     <div className="border rounded-lg p-6">
@@ -24,7 +24,7 @@ const NotFound: React.FC = () => {
         <p>Sorry, we can&apos;t find the page you&apos;re looking for. It might have been removed or renamed, or maybe it never existed.</p>
         <Link href={primaryHref} className="mt-3">
           <Button asChild>
-            <span>Go to Workspaces</span>
+            <span>Go to Cognition Fabric</span>
           </Button>
         </Link>
       </div>

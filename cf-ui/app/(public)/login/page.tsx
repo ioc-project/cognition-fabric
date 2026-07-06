@@ -34,7 +34,7 @@ function LoginForm() {
         setError('Invalid username or password');
         setLoading(false);
       } else if (result?.ok) {
-        window.location.href = '/cfn?ensureDefault=1';
+        window.location.href = '/fabric?ensureDefault=1';
       }
     } catch (err) {
       setError('An unexpected error occurred during login. Please try again.');

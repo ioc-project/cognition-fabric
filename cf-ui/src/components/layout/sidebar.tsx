@@ -32,8 +32,8 @@ export function Sidebar() {
         id: 'cfn',
         href: routes.cfn.list,
         icon: Network,
-        label: 'Cognition Fabric Nodes',
-        isActive: () => segments[0] === 'cfn'
+        label: 'Cognition Fabric',
+        isActive: () => segments[0] === 'fabric'
       },
       {
         id: 'memory-providers',

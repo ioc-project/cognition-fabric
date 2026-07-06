@@ -4,7 +4,7 @@
 
 'use client';
 
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useCallback} from 'react';
 import {useParams, useRouter, useSearchParams} from 'next/navigation';
 import useSWR, {mutate as globalMutate} from 'swr';
 import {useForm} from 'react-hook-form';
@@ -29,6 +29,9 @@ import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import {MetaCard} from '@/components/ui/meta-card';
 import {Badge} from '@/components/ui/badge';
 import {BrainCircuit, Database, Network} from 'lucide-react';
+import {ConfirmDialog} from '@/components/ui/confirm-dialog';
+import {useConfirmDialog} from '@/hooks/useConfirmDialog';
+import {ActionButton} from '@/components/ui/action-button';
 import {dtSectionHeader, dtPanelHeader} from '@/lib/detail-typography';
 
 interface CfnCE {
@@ -87,7 +90,9 @@ export default function CfnDetailsPage() {
   const cfnId = Array.isArray(rawCfnId) ? rawCfnId[0] : rawCfnId;
 
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isToggling, setIsToggling] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'cognition-engines' | 'memory-providers' | 'workspaces'>('overview');
+  const deleteDialog = useConfirmDialog<{id: string; name: string}>();
 
   const {data: cfn, error, isLoading, mutate} = useSWR<Cfn>(cfnId ? swrKeys.cfnDetails(cfnId) : null, () => cfnApi.get(cfnId as string));
 
@@ -120,6 +125,38 @@ export default function CfnDetailsPage() {
 
   const crumbs = breadcrumbs.cfnDetails(cfn?.name || 'CFN');
 
+  const handleToggleEnabled = useCallback(async () => {
+    if (!cfn || !cfnId) return;
+    setIsToggling(true);
+    try {
+      if (cfn.enabled) {
+        await cfnApi.disable(cfnId);
+      } else {
+        await cfnApi.enable(cfnId);
+      }
+      await mutate();
+      await globalMutate(swrKeys.cfnTopology());
+    } catch (err) {
+      toast.error(parseError(err));
+    } finally {
+      setIsToggling(false);
+    }
+  }, [cfn, cfnId, mutate]);
+
+  const handleDelete = useCallback(async () => {
+    await deleteDialog.confirm(async (data) => {
+      try {
+        await cfnApi.delete(data.id);
+        toast.success(`"${data.name}" removed successfully`);
+        await globalMutate(swrKeys.cfnTopology());
+        router.push(routes.cfn.list);
+      } catch (err) {
+        toast.error(parseError(err));
+        throw err;
+      }
+    });
+  }, [deleteDialog, router]);
+
   const handleSave = async (values: FormValues) => {
     try {
       const payload: UpdateCfnRequest = {
@@ -151,6 +188,7 @@ export default function CfnDetailsPage() {
   const allMAS = (cfnConfig.workspaces ?? []).flatMap((w) => w.multi_agentic_systems ?? []);
 
   return (
+    <>
     <BasePage
       title={cfn?.name || 'CFN Details'}
       customDescription={
@@ -184,15 +222,24 @@ export default function CfnDetailsPage() {
       useBreadcrumbs
       breadcrumbs={crumbs}
       callToAction={
-        cfn &&
-        activeTab === 'overview' && (
-          <DetailsPageActions
-            onEdit={() => setIsEditMode(true)}
-            isEditMode={isEditMode}
-            onSave={form.handleSubmit(handleSave)}
-            onCancelEdit={handleCancelEdit}
-            isSaving={form.formState.isSubmitting}
-          />
+        cfn && (
+          <div className="flex items-center gap-2">
+            {!isEditMode && (
+              <ActionButton
+                label={cfn.enabled ? 'Disable' : 'Enable'}
+                onClick={handleToggleEnabled}
+                disabled={isToggling}
+              />
+            )}
+            <DetailsPageActions
+              onEdit={activeTab === 'overview' ? () => setIsEditMode(true) : undefined}
+              onDelete={() => deleteDialog.open({id: cfn.id, name: cfn.name})}
+              isEditMode={isEditMode}
+              onSave={form.handleSubmit(handleSave)}
+              onCancelEdit={handleCancelEdit}
+              isSaving={form.formState.isSubmitting}
+            />
+          </div>
         )
       }
     >
@@ -435,5 +482,16 @@ export default function CfnDetailsPage() {
         </Form>
       </ConditionalSWRRenderer>
     </BasePage>
+    <ConfirmDialog
+      open={deleteDialog.isOpen}
+      onOpenChange={deleteDialog.close}
+      onConfirm={handleDelete}
+      title={`Remove ${deleteDialog.data?.name || 'CFN Node'}`}
+      description={`Are you sure you want to remove "${deleteDialog.data?.name}"? This action cannot be undone.`}
+      confirmText="Remove"
+      variant="destructive"
+      loading={deleteDialog.isLoading}
+    />
+    </>
   );
 }
