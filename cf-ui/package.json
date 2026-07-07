@@ -11,7 +11,8 @@
     "lint": "eslint --fix . && prettier \"**/*.+(ts*|js*)\" --write",
     "format": "prettier \"**/*.+(ts*|js*)\" --write",
     "clean": "rm -rf .next node_modules/.cache",
-    "generate:api": "openapi-typescript ${CFN_UI_API_BASE_URL:-http://localhost:9000}/api/openapi.json -o src/api/generated/schema.d.ts"
+    "generate:api": "openapi-typescript ${CFN_UI_API_BASE_URL:-http://localhost:9000}/api/openapi.json -o src/api/generated/schema.d.ts",
+    "postgenerate:api": "{ printf '// Copyright 2026 Cisco Systems, Inc. and its affiliates\\n//\\n// SPDX-License-Identifier: Apache-2.0\\n\\n'; cat src/api/generated/schema.d.ts; } > src/api/generated/schema.d.ts.tmp && mv src/api/generated/schema.d.ts.tmp src/api/generated/schema.d.ts"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.11",
