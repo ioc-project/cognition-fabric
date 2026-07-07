@@ -27,10 +27,6 @@ export const UpdateCEFormSchema = z.object({
   config: z
     .string()
     .optional()
-    .refine((val) => !val || !val.trim() || validateJSON(val), {message: 'Must be valid JSON'}),
-  mas_config: z
-    .string()
-    .optional()
     .refine((val) => !val || !val.trim() || validateJSON(val), {message: 'Must be valid JSON'})
 });
 
@@ -42,23 +38,11 @@ interface CognitionEngineFormFieldsProps {
   isEditMode: boolean;
   configExpanded: boolean;
   setConfigExpanded: (v: boolean) => void;
-  masConfigExpanded: boolean;
-  setMasConfigExpanded: (v: boolean) => void;
   onSubmit: (values: FormValues) => Promise<void>;
 }
 
-export function CognitionEngineFormFields({
-  ce,
-  form,
-  isEditMode,
-  configExpanded,
-  setConfigExpanded,
-  masConfigExpanded,
-  setMasConfigExpanded,
-  onSubmit
-}: CognitionEngineFormFieldsProps) {
+export function CognitionEngineFormFields({ce, form, isEditMode, configExpanded, setConfigExpanded, onSubmit}: CognitionEngineFormFieldsProps) {
   const configValue = ce?.config && Object.keys(ce.config).length > 0 ? JSON.stringify(ce.config, null, 2) : '';
-  const masConfigValue = ce?.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : '';
 
   return (
     <Form {...form}>
@@ -186,20 +170,10 @@ export function CognitionEngineFormFields({
               />
             )}
           />
-          <FormField
-            control={form.control}
-            name="mas_config"
-            render={({field}) => (
-              <CollapsibleJsonField
-                label="MAS Config"
-                value={isEditMode ? field.value || '' : masConfigValue}
-                isExpanded={masConfigExpanded}
-                onToggleExpand={() => setMasConfigExpanded(!masConfigExpanded)}
-                isEditMode={isEditMode}
-                field={field}
-                placeholder={'{\n  "key": "value"\n}'}
-              />
-            )}
+          <CollapsibleJsonField
+            label="Default MAS Config"
+            value={ce?.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''}
+            isEditMode={false}
           />
         </div>
 
