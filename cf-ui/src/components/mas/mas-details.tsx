@@ -27,11 +27,11 @@ import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {useMemoryProviders} from '@/hooks/useMemoryProviders';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {toast} from 'sonner';
-import {Network, BarChart3, Bot, BrainCircuit, Unlink, Plus, MoreHorizontal} from 'lucide-react';
+import {Network, BarChart3, Bot, BrainCircuit, Unlink, Plus, Settings2, MoreHorizontal} from 'lucide-react';
 import {ActionButton} from '@/components/ui/action-button';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
-import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {useCognitionEngines} from '@/hooks/useCognitionEngines';
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {MASAuditLog} from './mas-audit-log';
 import {MASAssociateCEModal} from './mas-associate-ce-modal';
 import {AgentsList} from './agents-list';
@@ -42,6 +42,10 @@ import {StatusDot} from '@/components/ui/status-dot';
 import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import {MetaCard} from '@/components/ui/meta-card';
 import {CollapsibleJsonField} from './collapsible-json-field';
+import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter} from '@/components/ui/dialog';
+import {Label} from '@/components/ui/label';
+import {Textarea} from '@/components/ui/textarea';
+import {validateJSON, formatJson} from '@/lib/utils';
 import {IdHoverCard} from '@/components/ui/id-hover-card';
 
 export default function MASDetailsPage() {
@@ -63,6 +67,9 @@ export default function MASDetailsPage() {
   const [isAssociating, setIsAssociating] = useState(false);
   const [disassociatingId, setDisassociatingId] = useState<string | null>(null);
   const [agentExpandedState, setAgentExpandedState] = useState<Record<string, boolean>>({});
+  const [editConfigCE, setEditConfigCE] = useState<{ce_id: string; name: string; mas_config: Record<string, unknown> | null} | null>(null);
+  const [editConfigValue, setEditConfigValue] = useState('');
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
   const deleteDialog = useConfirmDialog<{id: string; name: string}>();
 
   const {
@@ -217,6 +224,24 @@ export default function MASDetailsPage() {
       toast.error(parseError(err));
     } finally {
       setDisassociatingId(null);
+    }
+  };
+
+  const handleSaveCEConfig = async () => {
+    if (!workspaceId || !masId || !editConfigCE) {
+      return;
+    }
+    setIsSavingConfig(true);
+    try {
+      const parsed = editConfigValue.trim() === '' ? {} : JSON.parse(editConfigValue);
+      await masApi.patchCEMasConfig(workspaceId, masId, editConfigCE.ce_id, parsed);
+      toast.success(`Config updated for "${editConfigCE.name}"`);
+      await mutate();
+      setEditConfigCE(null);
+    } catch (err) {
+      toast.error(parseError(err));
+    } finally {
+      setIsSavingConfig(false);
     }
   };
 
@@ -498,7 +523,7 @@ export default function MASDetailsPage() {
                       </TableHeader>
                       <TableBody>
                         {ces.map((ce) => (
-                          <TableRow key={ce.ce_id}>
+                          <TableRow key={ce.ce_id} className="group">
                             <TableCell className="font-medium">{ce.name}</TableCell>
                             <TableCell>
                               {ce.kind ? (
@@ -521,28 +546,70 @@ export default function MASDetailsPage() {
                             <TableCell>
                               <StatusDot variant="state" active={ce.enabled} />
                             </TableCell>
-                            <TableCell className="w-10">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <button
+                            <TableCell className="text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button
                                     type="button"
-                                    className="p-1 rounded hover:bg-muted transition-colors"
-                                    disabled={disassociatingId === ce.ce_id}
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1.5 h-7 text-xs"
+                                    onClick={() => {
+                                      setEditConfigCE({ce_id: ce.ce_id, name: ce.name, mas_config: ce.mas_config ?? null});
+                                      setEditConfigValue(
+                                        ce.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''
+                                      );
+                                    }}
                                   >
-                                    <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                                  </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950 gap-2"
+                                    <Settings2 className="w-3 h-3" />
+                                    Edit Config
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1.5 h-7 text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950"
+                                    disabled={disassociatingId === ce.ce_id}
                                     onClick={() => handleDisassociateCE(ce.ce_id, ce.name)}
-                                    disabled={disassociatingId === ce.ce_id}
                                   >
-                                    <Unlink className="w-4 h-4" />
+                                    <Unlink className="w-3 h-3" />
                                     {disassociatingId === ce.ce_id ? 'Removing...' : 'Disassociate'}
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
+                                  </Button>
+                                </div>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <button
+                                      type="button"
+                                      className="p-1 rounded hover:bg-muted transition-colors"
+                                      disabled={disassociatingId === ce.ce_id}
+                                    >
+                                      <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                                    </button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      className="gap-2"
+                                      onClick={() => {
+                                        setEditConfigCE({ce_id: ce.ce_id, name: ce.name, mas_config: ce.mas_config ?? null});
+                                        setEditConfigValue(
+                                          ce.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''
+                                        );
+                                      }}
+                                    >
+                                      <Settings2 className="w-4 h-4" />
+                                      Edit Config
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                      className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950 gap-2"
+                                      onClick={() => handleDisassociateCE(ce.ce_id, ce.name)}
+                                      disabled={disassociatingId === ce.ce_id}
+                                    >
+                                      <Unlink className="w-4 h-4" />
+                                      {disassociatingId === ce.ce_id ? 'Removing...' : 'Disassociate'}
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -567,6 +634,41 @@ export default function MASDetailsPage() {
         isAssociating={isAssociating}
         onAssociate={handleAssociateCEs}
       />
+
+      <Dialog open={!!editConfigCE} onOpenChange={(open) => !open && setEditConfigCE(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Config for {editConfigCE?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">Overrides the default MAS config for this CE</Label>
+              {editConfigValue.trim() && (
+                <span
+                  className={`text-xs px-2 py-0.5 rounded ${validateJSON(editConfigValue) ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}
+                >
+                  {validateJSON(editConfigValue) ? 'Valid JSON' : 'Invalid JSON'}
+                </span>
+              )}
+            </div>
+            <Textarea
+              value={editConfigValue}
+              onChange={(e) => setEditConfigValue(e.target.value)}
+              onBlur={() => setEditConfigValue(formatJson(editConfigValue) || editConfigValue)}
+              placeholder={'{\n  "key": "value"\n}'}
+              className="font-mono text-sm min-h-[180px] resize-y"
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setEditConfigCE(null)}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={handleSaveCEConfig} disabled={isSavingConfig}>
+              {isSavingConfig ? 'Saving...' : 'Save'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={deleteDialog.isOpen}
