@@ -6,7 +6,7 @@
 
 import {useState, useMemo, useRef, useCallback, useEffect} from 'react';
 import {motion, AnimatePresence} from 'framer-motion';
-import {X, ArrowUpRight, Copy, Check} from 'lucide-react';
+import {X, ArrowUpRight, Copy, Check, Plus, Minus, Maximize2} from 'lucide-react';
 import Link from 'next/link';
 import type {CognitionFabricNodeTopology, MemoryProviderListItem} from '@/api/endpoints/cfn';
 import {routes} from '@/constants/routes';
@@ -135,14 +135,17 @@ function DetailPanel({sel, nodes, onClose}: {sel: NonNullable<Selected>; nodes: 
       exit={{opacity: 0, x: 20}}
       transition={{duration: 0.15}}
       style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        bottom: 0,
         width: 340,
-        flexShrink: 0,
-        height: '100%',
         borderLeft: `1px solid ${C.border}`,
         background: '#0e1420',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden'
+        overflow: 'hidden',
+        zIndex: 20
       }}
     >
       <div
@@ -311,6 +314,7 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [positions, setPositions] = useState<{x: number; y: number}[]>(() => nodePositions(nodes.length));
   const [isDragging, setIsDragging] = useState(false);
+  const [viewScale, setViewScale] = useState(0.80);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{
@@ -440,6 +444,11 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
     [nodes]
   );
 
+  const vw = W / viewScale;
+  const vh = H / viewScale;
+  const vx = (W - vw) / 2;
+  const vy = (H - vh) / 2;
+
   return (
     <div style={{display: 'flex', flexDirection: 'column', height: '100%', background: C.bg, overflow: 'hidden'}}>
       <div
@@ -475,7 +484,7 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
       <div style={{flex: 1, display: 'flex', position: 'relative', overflow: 'hidden'}}>
         <svg
           ref={svgRef}
-          viewBox={`0 0 ${W} ${H}`}
+          viewBox={`${vx} ${vy} ${vw} ${vh}`}
           preserveAspectRatio="xMidYMid slice"
           style={{flex: 1, display: 'block', background: C.bg, cursor: isDragging ? 'grabbing' : 'crosshair'}}
           onPointerMove={handleSvgPointerMove}
@@ -531,9 +540,8 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
             }
             const a = nodes[i];
             const b = nodes[j];
-            const bothOnline = a.status === 'online' && b.status === 'online';
             const active = sel?.id === a.id || sel?.id === b.id || hovered === a.id || hovered === b.id;
-            const edgeColor = bothOnline ? C.cfnOnline : C.cfnOffline;
+            const edgeColor = '#4a7fa5';
             const dx = pb.x - pa.x;
             const dy = pb.y - pa.y;
             const len = Math.sqrt(dx * dx + dy * dy);
@@ -552,17 +560,8 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
 
             return (
               <g key={`${i}-${j}`}>
-                {bothOnline && (
-                  <path d={d} fill="none" stroke={edgeColor} strokeWidth={active ? 3 : 1.5} opacity={active ? 0.35 : 0.12} filter="url(#edge-glow)" />
-                )}
-                <path
-                  d={d}
-                  fill="none"
-                  stroke={edgeColor}
-                  strokeWidth={active ? 1.5 : 0.8}
-                  opacity={active ? 0.9 : bothOnline ? 0.45 : 0.2}
-                  strokeDasharray={bothOnline ? undefined : '4 6'}
-                />
+                <path d={d} fill="none" stroke={edgeColor} strokeWidth={active ? 3 : 1.5} opacity={active ? 0.25 : 0.08} filter="url(#edge-glow)" />
+                <path d={d} fill="none" stroke={edgeColor} strokeWidth={active ? 1.5 : 0.8} opacity={active ? 0.9 : 0.35} />
               </g>
             );
           })}
@@ -673,6 +672,23 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
           )}
         </svg>
 
+        <div style={{position: 'absolute', bottom: 16, left: 16, display: 'flex', flexDirection: 'column', gap: 2, zIndex: 10}}>
+          {[
+            {icon: <Plus size={12} />, title: 'Zoom in', action: () => setViewScale((s) => Math.min(s * 1.25, 4))},
+            {icon: <Minus size={12} />, title: 'Zoom out', action: () => setViewScale((s) => Math.max(s / 1.25, 0.25))},
+            {icon: <Maximize2 size={11} />, title: 'Fit view', action: () => setViewScale(1)}
+          ].map((btn) => (
+            <button
+              key={btn.title}
+              title={btn.title}
+              onClick={btn.action}
+              style={{width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, color: C.textSub, cursor: 'pointer'}}
+            >
+              {btn.icon}
+            </button>
+          ))}
+        </div>
+
         <AnimatePresence>{sel && <DetailPanel key={sel.id} sel={sel} nodes={nodes} onClose={() => setSel(null)} />}</AnimatePresence>
       </div>
 
@@ -701,7 +717,7 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
             </div>
           ))}
           <div style={{display: 'flex', alignItems: 'center', gap: 5}}>
-            <div style={{width: 20, height: 0, borderTop: `1px solid rgba(34,197,94,0.4)`}} />
+            <div style={{width: 20, height: 0, borderTop: '1px solid #4a7fa566'}} />
             fabric connection
           </div>
         </div>
