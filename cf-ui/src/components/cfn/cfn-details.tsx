@@ -126,7 +126,9 @@ export default function CfnDetailsPage() {
   const crumbs = breadcrumbs.cfnDetails(cfn?.name || 'CFN');
 
   const handleToggleEnabled = useCallback(async () => {
-    if (!cfn || !cfnId) return;
+    if (!cfn || !cfnId) {
+      return;
+    }
     setIsToggling(true);
     try {
       if (cfn.enabled) {
@@ -189,309 +191,303 @@ export default function CfnDetailsPage() {
 
   return (
     <>
-    <BasePage
-      title={cfn?.name || 'CFN Details'}
-      customDescription={
-        cfn ? (
-          <div className="flex items-center gap-3 flex-wrap">
-            <StatusDot variant="health" active={cfn.status === 'online'} />
-            <span className="text-muted-foreground/30 text-xs select-none">·</span>
-            <StatusDot variant="state" active={cfn.enabled} />
-            <span className="text-muted-foreground/30 text-xs select-none">·</span>
-            <InlineId value={cfn.id} />
-          </div>
-        ) : undefined
-      }
-      customInfo={
-        <DetailTabs
-          activeTab={activeTab}
-          onTabChange={(id) => {
-            if (id !== 'overview' && isEditMode) {
-              handleCancelEdit();
-            }
-            setActiveTab(id as typeof activeTab);
-          }}
-          tabs={[
-            {id: 'overview', label: 'Overview'},
-            {id: 'cognition-engines', label: 'Cognition Engines', count: cognitionEngines.length || undefined},
-            {id: 'memory-providers', label: 'Memory Providers', count: memoryProviders.length || undefined},
-            {id: 'workspaces', label: 'Multi-Agentic Systems', count: allMAS.length || undefined}
-          ]}
-        />
-      }
-      useBreadcrumbs
-      breadcrumbs={crumbs}
-      callToAction={
-        cfn && (
-          <div className="flex items-center gap-2">
-            {!isEditMode && (
-              <ActionButton
-                label={cfn.enabled ? 'Disable' : 'Enable'}
-                onClick={handleToggleEnabled}
-                disabled={isToggling}
+      <BasePage
+        title={cfn?.name || 'CFN Details'}
+        customDescription={
+          cfn ? (
+            <div className="flex items-center gap-3 flex-wrap">
+              <StatusDot variant="health" active={cfn.status === 'online'} />
+              <span className="text-muted-foreground/30 text-xs select-none">·</span>
+              <StatusDot variant="state" active={cfn.enabled} />
+              <span className="text-muted-foreground/30 text-xs select-none">·</span>
+              <InlineId value={cfn.id} />
+            </div>
+          ) : undefined
+        }
+        customInfo={
+          <DetailTabs
+            activeTab={activeTab}
+            onTabChange={(id) => {
+              if (id !== 'overview' && isEditMode) {
+                handleCancelEdit();
+              }
+              setActiveTab(id as typeof activeTab);
+            }}
+            tabs={[
+              {id: 'overview', label: 'Overview'},
+              {id: 'cognition-engines', label: 'Cognition Engines', count: cognitionEngines.length || undefined},
+              {id: 'memory-providers', label: 'Memory Providers', count: memoryProviders.length || undefined},
+              {id: 'workspaces', label: 'Multi-Agentic Systems', count: allMAS.length || undefined}
+            ]}
+          />
+        }
+        useBreadcrumbs
+        breadcrumbs={crumbs}
+        callToAction={
+          cfn && (
+            <div className="flex items-center gap-2">
+              {!isEditMode && <ActionButton label={cfn.enabled ? 'Disable' : 'Enable'} onClick={handleToggleEnabled} disabled={isToggling} />}
+              <DetailsPageActions
+                onEdit={activeTab === 'overview' ? () => setIsEditMode(true) : undefined}
+                onDelete={() => deleteDialog.open({id: cfn.id, name: cfn.name})}
+                isEditMode={isEditMode}
+                onSave={form.handleSubmit(handleSave)}
+                onCancelEdit={handleCancelEdit}
+                isSaving={form.formState.isSubmitting}
               />
-            )}
-            <DetailsPageActions
-              onEdit={activeTab === 'overview' ? () => setIsEditMode(true) : undefined}
-              onDelete={() => deleteDialog.open({id: cfn.id, name: cfn.name})}
-              isEditMode={isEditMode}
-              onSave={form.handleSubmit(handleSave)}
-              onCancelEdit={handleCancelEdit}
-              isSaving={form.formState.isSubmitting}
-            />
-          </div>
-        )
-      }
-    >
-      <ConditionalSWRRenderer
-        data={cfn}
-        error={error}
-        itemName="CFN details"
-        customIsLoading={isLoading}
-        errorListStateProps={{title: 'Failed to load CFN details'}}
-        emptyListStateProps={{title: 'No CFN details found'}}
+            </div>
+          )
+        }
       >
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
-            {activeTab === 'overview' && (
-              <div className="space-y-4">
-                <InfoPanel>
-                  <InfoRow label="Name">
-                    {isEditMode ? (
-                      <FormField
-                        control={form.control}
-                        name="name"
-                        render={({field}) => (
-                          <FormItem className="flex-1 space-y-1">
-                            <FormControl>
-                              <Input {...field} className="h-8 text-sm" maxLength={100} autoComplete="off" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    ) : (
-                      <span className="text-sm text-foreground">{cfn?.name || '—'}</span>
-                    )}
-                  </InfoRow>
-                  <InfoRow label="IP Address">
-                    {isEditMode ? (
-                      <FormField
-                        control={form.control}
-                        name="ip_address"
-                        render={({field}) => (
-                          <FormItem className="flex-1 space-y-1">
-                            <FormControl>
-                              <Input {...field} className="h-8 text-sm font-mono" placeholder="192.168.1.100" autoComplete="off" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    ) : (
-                      <span className="text-sm text-foreground font-mono">{cfn?.ip_address || '—'}</span>
-                    )}
-                  </InfoRow>
-                  <InfoRow label="Port">
-                    {isEditMode ? (
-                      <FormField
-                        control={form.control}
-                        name="port"
-                        render={({field}) => (
-                          <FormItem className="flex-1 space-y-1">
-                            <FormControl>
-                              <Input {...field} type="number" className="h-8 text-sm font-mono" placeholder="8080" autoComplete="off" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    ) : (
-                      <span className="text-sm text-foreground font-mono">{cfn?.port ? String(cfn.port) : '—'}</span>
-                    )}
-                  </InfoRow>
-                  {cfnConfig.config_version !== undefined && (
-                    <InfoRow label="Config Version">
-                      <span className="text-sm text-foreground font-mono">v{cfnConfig.config_version}</span>
+        <ConditionalSWRRenderer
+          data={cfn}
+          error={error}
+          itemName="CFN details"
+          customIsLoading={isLoading}
+          errorListStateProps={{title: 'Failed to load CFN details'}}
+          emptyListStateProps={{title: 'No CFN details found'}}
+        >
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
+              {activeTab === 'overview' && (
+                <div className="space-y-4">
+                  <InfoPanel>
+                    <InfoRow label="Name">
+                      {isEditMode ? (
+                        <FormField
+                          control={form.control}
+                          name="name"
+                          render={({field}) => (
+                            <FormItem className="flex-1 space-y-1">
+                              <FormControl>
+                                <Input {...field} className="h-8 text-sm" maxLength={100} autoComplete="off" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <span className="text-sm text-foreground">{cfn?.name || '—'}</span>
+                      )}
                     </InfoRow>
-                  )}
-                </InfoPanel>
+                    <InfoRow label="IP Address">
+                      {isEditMode ? (
+                        <FormField
+                          control={form.control}
+                          name="ip_address"
+                          render={({field}) => (
+                            <FormItem className="flex-1 space-y-1">
+                              <FormControl>
+                                <Input {...field} className="h-8 text-sm font-mono" placeholder="192.168.1.100" autoComplete="off" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <span className="text-sm text-foreground font-mono">{cfn?.ip_address || '—'}</span>
+                      )}
+                    </InfoRow>
+                    <InfoRow label="Port">
+                      {isEditMode ? (
+                        <FormField
+                          control={form.control}
+                          name="port"
+                          render={({field}) => (
+                            <FormItem className="flex-1 space-y-1">
+                              <FormControl>
+                                <Input {...field} type="number" className="h-8 text-sm font-mono" placeholder="8080" autoComplete="off" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <span className="text-sm text-foreground font-mono">{cfn?.port ? String(cfn.port) : '—'}</span>
+                      )}
+                    </InfoRow>
+                    {cfnConfig.config_version !== undefined && (
+                      <InfoRow label="Config Version">
+                        <span className="text-sm text-foreground font-mono">v{cfnConfig.config_version}</span>
+                      </InfoRow>
+                    )}
+                  </InfoPanel>
 
-                <div className="grid grid-cols-3 gap-3">
-                  {cfn?.created_at && (
-                    <MetaCard label="Created" mono>
-                      {new Date(cfn.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
-                    </MetaCard>
-                  )}
-                  {cfn?.last_seen && (
-                    <MetaCard label="Last Seen" mono>
-                      {new Date(cfn.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
-                    </MetaCard>
-                  )}
-                  {cfn?.updated_at && (
-                    <MetaCard label="Last Modified" mono>
-                      {new Date(cfn.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
-                    </MetaCard>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'cognition-engines' && (
-              <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
-                <div className={dtPanelHeader}>
-                  <div className="flex items-center gap-2">
-                    <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
-                    <span className={dtSectionHeader}>Cognition Engines</span>
-                    {cognitionEngines.length > 0 && (
-                      <Badge variant="accent" className="rounded px-1.5">
-                        {cognitionEngines.length}
-                      </Badge>
+                  <div className="grid grid-cols-3 gap-3">
+                    {cfn?.created_at && (
+                      <MetaCard label="Created" mono>
+                        {new Date(cfn.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                      </MetaCard>
+                    )}
+                    {cfn?.last_seen && (
+                      <MetaCard label="Last Seen" mono>
+                        {new Date(cfn.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                      </MetaCard>
+                    )}
+                    {cfn?.updated_at && (
+                      <MetaCard label="Last Modified" mono>
+                        {new Date(cfn.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                      </MetaCard>
                     )}
                   </div>
                 </div>
-                {cognitionEngines.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Kind</TableHead>
-                        <TableHead>Subkind</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Enabled</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {cognitionEngines.map((ce) => (
-                        <TableRow key={ce.id}>
-                          <TableCell className="font-medium">{ce.name}</TableCell>
-                          <TableCell>
-                            {ce.kind ? (
-                              <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                {ce.kind}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {ce.subkind ? (
-                              <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                {ce.subkind}
-                              </span>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <StatusDot variant="health" active={ce.status === 'online'} />
-                          </TableCell>
-                          <TableCell>
-                            <StatusDot variant="state" active={!!ce.enabled} />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <p className="px-5 py-4 text-sm text-muted-foreground">No Cognition Engines registered.</p>
-                )}
-              </div>
-            )}
+              )}
 
-            {activeTab === 'memory-providers' && (
-              <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
-                <div className={dtPanelHeader}>
-                  <div className="flex items-center gap-2">
-                    <Database size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
-                    <span className={dtSectionHeader}>Memory Providers</span>
-                    {memoryProviders.length > 0 && (
-                      <Badge variant="accent" className="rounded px-1.5">
-                        {memoryProviders.length}
-                      </Badge>
-                    )}
+              {activeTab === 'cognition-engines' && (
+                <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                  <div className={dtPanelHeader}>
+                    <div className="flex items-center gap-2">
+                      <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                      <span className={dtSectionHeader}>Cognition Engines</span>
+                      {cognitionEngines.length > 0 && (
+                        <Badge variant="accent" className="rounded px-1.5">
+                          {cognitionEngines.length}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                </div>
-                {memoryProviders.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Enabled</TableHead>
-                        <TableHead>Description</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {memoryProviders.map((mp) => (
-                        <TableRow key={mp.id}>
-                          <TableCell className="font-medium">{mp.name}</TableCell>
-                          <TableCell>
-                            <StatusDot variant="state" active={mp.enabled} />
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">{mp.description || '—'}</TableCell>
+                  {cognitionEngines.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Kind</TableHead>
+                          <TableHead>Subkind</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Enabled</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <p className="px-5 py-4 text-sm text-muted-foreground">No memory providers registered.</p>
-                )}
-              </div>
-            )}
+                      </TableHeader>
+                      <TableBody>
+                        {cognitionEngines.map((ce) => (
+                          <TableRow key={ce.id}>
+                            <TableCell className="font-medium">{ce.name}</TableCell>
+                            <TableCell>
+                              {ce.kind ? (
+                                <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                  {ce.kind}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {ce.subkind ? (
+                                <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                  {ce.subkind}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <StatusDot variant="health" active={ce.status === 'online'} />
+                            </TableCell>
+                            <TableCell>
+                              <StatusDot variant="state" active={!!ce.enabled} />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="px-5 py-4 text-sm text-muted-foreground">No Cognition Engines registered.</p>
+                  )}
+                </div>
+              )}
 
-            {activeTab === 'workspaces' && (
-              <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
-                <div className={dtPanelHeader}>
-                  <div className="flex items-center gap-2">
-                    <Network size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
-                    <span className={dtSectionHeader}>Multi-Agentic Systems</span>
-                    {allMAS.length > 0 && (
-                      <Badge variant="accent" className="rounded px-1.5">
-                        {allMAS.length}
-                      </Badge>
-                    )}
+              {activeTab === 'memory-providers' && (
+                <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                  <div className={dtPanelHeader}>
+                    <div className="flex items-center gap-2">
+                      <Database size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                      <span className={dtSectionHeader}>Memory Providers</span>
+                      {memoryProviders.length > 0 && (
+                        <Badge variant="accent" className="rounded px-1.5">
+                          {memoryProviders.length}
+                        </Badge>
+                      )}
+                    </div>
                   </div>
-                </div>
-                {allMAS.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Agents</TableHead>
-                        <TableHead>Shared Memory</TableHead>
-                        <TableHead>Attached Cognition Engines</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {allMAS.map((mas) => (
-                        <TableRow key={mas.id}>
-                          <TableCell className="font-medium">{mas.name}</TableCell>
-                          <TableCell className="text-muted-foreground">{mas.agents?.length ?? 0}</TableCell>
-                          <TableCell className="text-muted-foreground">{mas.shared_memory?.name || '—'}</TableCell>
-                          <TableCell className="text-muted-foreground">{mas.cognition_engines?.length ?? 0}</TableCell>
+                  {memoryProviders.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Enabled</TableHead>
+                          <TableHead>Description</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <p className="px-5 py-4 text-sm text-muted-foreground">No Multi-Agentic Systems found.</p>
-                )}
-              </div>
-            )}
-          </form>
-        </Form>
-      </ConditionalSWRRenderer>
-    </BasePage>
-    <ConfirmDialog
-      open={deleteDialog.isOpen}
-      onOpenChange={deleteDialog.close}
-      onConfirm={handleDelete}
-      title={`Remove ${deleteDialog.data?.name || 'CFN Node'}`}
-      description={`Are you sure you want to remove "${deleteDialog.data?.name}"? This action cannot be undone.`}
-      confirmText="Remove"
-      variant="destructive"
-      loading={deleteDialog.isLoading}
-    />
+                      </TableHeader>
+                      <TableBody>
+                        {memoryProviders.map((mp) => (
+                          <TableRow key={mp.id}>
+                            <TableCell className="font-medium">{mp.name}</TableCell>
+                            <TableCell>
+                              <StatusDot variant="state" active={mp.enabled} />
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">{mp.description || '—'}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="px-5 py-4 text-sm text-muted-foreground">No memory providers registered.</p>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'workspaces' && (
+                <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                  <div className={dtPanelHeader}>
+                    <div className="flex items-center gap-2">
+                      <Network size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                      <span className={dtSectionHeader}>Multi-Agentic Systems</span>
+                      {allMAS.length > 0 && (
+                        <Badge variant="accent" className="rounded px-1.5">
+                          {allMAS.length}
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  {allMAS.length > 0 ? (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Agents</TableHead>
+                          <TableHead>Shared Memory</TableHead>
+                          <TableHead>Attached Cognition Engines</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allMAS.map((mas) => (
+                          <TableRow key={mas.id}>
+                            <TableCell className="font-medium">{mas.name}</TableCell>
+                            <TableCell className="text-muted-foreground">{mas.agents?.length ?? 0}</TableCell>
+                            <TableCell className="text-muted-foreground">{mas.shared_memory?.name || '—'}</TableCell>
+                            <TableCell className="text-muted-foreground">{mas.cognition_engines?.length ?? 0}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  ) : (
+                    <p className="px-5 py-4 text-sm text-muted-foreground">No Multi-Agentic Systems found.</p>
+                  )}
+                </div>
+              )}
+            </form>
+          </Form>
+        </ConditionalSWRRenderer>
+      </BasePage>
+      <ConfirmDialog
+        open={deleteDialog.isOpen}
+        onOpenChange={deleteDialog.close}
+        onConfirm={handleDelete}
+        title={`Remove ${deleteDialog.data?.name || 'CFN Node'}`}
+        description={`Are you sure you want to remove "${deleteDialog.data?.name}"? This action cannot be undone.`}
+        confirmText="Remove"
+        variant="destructive"
+        loading={deleteDialog.isLoading}
+      />
     </>
   );
 }

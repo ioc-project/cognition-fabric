@@ -25,7 +25,7 @@ const C = {
   memory: '#a855f7',
   text: '#e2e8f0',
   textSub: '#64748b',
-  textDim: '#334155',
+  textDim: '#334155'
 };
 
 type MPNode = MemoryProviderListItem;
@@ -33,20 +33,30 @@ type Selected = {id: string} | null;
 
 function ago(iso: string) {
   const m = Math.floor((Date.now() - +new Date(iso)) / 60000);
-  if (m < 60) return `${m}m ago`;
-  if (m < 1440) return `${Math.floor(m / 60)}h ago`;
+  if (m < 60) {
+    return `${m}m ago`;
+  }
+  if (m < 1440) {
+    return `${Math.floor(m / 60)}h ago`;
+  }
   return `${Math.floor(m / 1440)}d ago`;
 }
 
 function splitName(name: string, maxLen: number): [string, string] {
-  if (name.length <= maxLen) return [name, ''];
+  if (name.length <= maxLen) {
+    return [name, ''];
+  }
   const breakAt = Math.max(name.lastIndexOf(' ', maxLen), name.lastIndexOf('-', maxLen));
   const cut = breakAt > 0 ? breakAt : maxLen;
   const line1 = name.slice(0, cut);
   const rest = name.slice(breakAt > 0 ? cut + 1 : cut);
-  if (rest.length <= maxLen) return [line1, rest];
+  if (rest.length <= maxLen) {
+    return [line1, rest];
+  }
   const breakAt2 = Math.max(rest.lastIndexOf(' ', maxLen - 1), rest.lastIndexOf('-', maxLen - 1));
-  if (breakAt2 > 0) return [line1, rest.slice(0, breakAt2) + '…'];
+  if (breakAt2 > 0) {
+    return [line1, rest.slice(0, breakAt2) + '…'];
+  }
   return [line1, rest.slice(0, maxLen - 1) + '…'];
 }
 
@@ -64,7 +74,18 @@ function PanelId({value}: {value: string}) {
       type="button"
       onClick={handleCopy}
       title={value}
-      style={{display: 'inline-flex', alignItems: 'center', gap: 4, fontFamily: 'monospace', fontSize: 11, color: C.textSub, background: 'none', border: 'none', cursor: 'pointer', padding: 0}}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        fontFamily: 'monospace',
+        fontSize: 11,
+        color: C.textSub,
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        padding: 0
+      }}
     >
       <span>{`${value.slice(0, 8)}...`}</span>
       {copied ? <Check size={11} color="#22c55e" /> : <Copy size={11} style={{opacity: 0.5}} />}
@@ -83,7 +104,17 @@ function DetailRow({label, value}: {label: string; value: string}) {
 
 function SectionLabel({children}: {children: React.ReactNode}) {
   return (
-    <p style={{fontFamily: 'monospace', fontSize: 9, color: C.textSub, letterSpacing: '0.15em', textTransform: 'uppercase', marginTop: 16, marginBottom: 8}}>
+    <p
+      style={{
+        fontFamily: 'monospace',
+        fontSize: 9,
+        color: C.textSub,
+        letterSpacing: '0.15em',
+        textTransform: 'uppercase',
+        marginTop: 16,
+        marginBottom: 8
+      }}
+    >
       {children}
     </p>
   );
@@ -91,7 +122,9 @@ function SectionLabel({children}: {children: React.ReactNode}) {
 
 function DetailPanel({sel, nodes, onClose}: {sel: NonNullable<Selected>; nodes: CognitionFabricNodeTopology[]; onClose: () => void}) {
   const node = nodes.find((n) => n.id === sel.id);
-  if (!node) return null;
+  if (!node) {
+    return null;
+  }
   const online = node.status === 'online';
   const color = online ? C.cfnOnline : C.cfnOffline;
 
@@ -101,11 +134,25 @@ function DetailPanel({sel, nodes, onClose}: {sel: NonNullable<Selected>; nodes: 
       animate={{opacity: 1, x: 0}}
       exit={{opacity: 0, x: 20}}
       transition={{duration: 0.15}}
-      style={{width: 340, flexShrink: 0, height: '100%', borderLeft: `1px solid ${C.border}`, background: '#0e1420', display: 'flex', flexDirection: 'column', overflow: 'hidden'}}
+      style={{
+        width: 340,
+        flexShrink: 0,
+        height: '100%',
+        borderLeft: `1px solid ${C.border}`,
+        background: '#0e1420',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}
     >
-      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: `1px solid ${C.border}`}}>
+      <div
+        style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: `1px solid ${C.border}`}}
+      >
         <span style={{fontFamily: 'monospace', fontSize: 10, color: C.textSub, letterSpacing: '0.15em', textTransform: 'uppercase'}}>Inspect</span>
-        <button onClick={onClose} style={{color: C.textSub, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center'}}>
+        <button
+          onClick={onClose}
+          style={{color: C.textSub, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center'}}
+        >
           <X size={14} />
         </button>
       </div>
@@ -115,7 +162,9 @@ function DetailPanel({sel, nodes, onClose}: {sel: NonNullable<Selected>; nodes: 
           <span style={{fontFamily: 'monospace', fontSize: 9, color, letterSpacing: '0.14em'}}>CFN · {node.status.toUpperCase()}</span>
         </div>
         <p style={{fontSize: 14, fontWeight: 600, color: C.text, marginBottom: 2}}>{node.name}</p>
-        <div style={{marginBottom: 16}}><PanelId value={node.id} /></div>
+        <div style={{marginBottom: 16}}>
+          <PanelId value={node.id} />
+        </div>
         <DetailRow label="ip : port" value={node.ip_address ? `${node.ip_address}:${node.port ?? '—'}` : '—'} />
         <DetailRow label="enabled" value={String(node.enabled)} />
         <DetailRow label="last seen" value={node.last_seen ? ago(node.last_seen) : '—'} />
@@ -124,7 +173,9 @@ function DetailPanel({sel, nodes, onClose}: {sel: NonNullable<Selected>; nodes: 
           <>
             <SectionLabel>Workspaces ({node.workspace_ids?.length})</SectionLabel>
             {node.workspace_ids?.map((ws) => (
-              <p key={ws} style={{fontFamily: 'monospace', fontSize: 11, color: C.textSub, wordBreak: 'break-all', marginBottom: 4}}>{ws}</p>
+              <p key={ws} style={{fontFamily: 'monospace', fontSize: 11, color: C.textSub, wordBreak: 'break-all', marginBottom: 4}}>
+                {ws}
+              </p>
             ))}
           </>
         )}
@@ -133,8 +184,14 @@ function DetailPanel({sel, nodes, onClose}: {sel: NonNullable<Selected>; nodes: 
             <SectionLabel>Cognition Engines ({node.cognition_engines?.length})</SectionLabel>
             {node.cognition_engines?.map((ce) => (
               <div key={ce.id} style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4}}>
-                <div style={{width: 6, height: 6, borderRadius: '50%', background: ce.status === 'online' ? C.engine : C.cfnOffline, flexShrink: 0}} />
-                <span style={{fontFamily: 'monospace', fontSize: 11, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{ce.name}</span>
+                <div
+                  style={{width: 6, height: 6, borderRadius: '50%', background: ce.status === 'online' ? C.engine : C.cfnOffline, flexShrink: 0}}
+                />
+                <span
+                  style={{fontFamily: 'monospace', fontSize: 11, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
+                >
+                  {ce.name}
+                </span>
                 <span style={{fontFamily: 'monospace', fontSize: 11, color: C.textSub, marginLeft: 'auto', flexShrink: 0}}>v{ce.version}</span>
               </div>
             ))}
@@ -146,16 +203,40 @@ function DetailPanel({sel, nodes, onClose}: {sel: NonNullable<Selected>; nodes: 
             {node.memory_providers?.map((mp) => (
               <div key={mp.id} style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4}}>
                 <div style={{width: 6, height: 6, background: C.memory, transform: 'rotate(45deg)', flexShrink: 0}} />
-                <span style={{fontFamily: 'monospace', fontSize: 11, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{mp.name}</span>
+                <span
+                  style={{fontFamily: 'monospace', fontSize: 11, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
+                >
+                  {mp.name}
+                </span>
               </div>
             ))}
           </>
         )}
         <Link
           href={routes.cfn.details(node.id)}
-          style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 24, padding: '10px 16px', borderRadius: 6, border: `1px solid ${C.cfnOnline}`, background: `${C.cfnOnline}18`, color: C.cfnOnline, fontFamily: 'monospace', fontSize: 12, fontWeight: 600, textDecoration: 'none', letterSpacing: '0.04em'}}
-          onMouseEnter={(e) => { e.currentTarget.style.background = `${C.cfnOnline}30`; }}
-          onMouseLeave={(e) => { e.currentTarget.style.background = `${C.cfnOnline}18`; }}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            marginTop: 24,
+            padding: '10px 16px',
+            borderRadius: 6,
+            border: `1px solid ${C.cfnOnline}`,
+            background: `${C.cfnOnline}18`,
+            color: C.cfnOnline,
+            fontFamily: 'monospace',
+            fontSize: 12,
+            fontWeight: 600,
+            textDecoration: 'none',
+            letterSpacing: '0.04em'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = `${C.cfnOnline}30`;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = `${C.cfnOnline}18`;
+          }}
         >
           View Node Details <ArrowUpRight size={13} />
         </Link>
@@ -164,19 +245,30 @@ function DetailPanel({sel, nodes, onClose}: {sel: NonNullable<Selected>; nodes: 
   );
 }
 
-function StatGroup({label, total, online, offline, sub, subColor}: {label: string; total: number; online?: number; offline?: number; sub?: string; subColor?: string}) {
+function StatGroup({
+  label,
+  total,
+  online,
+  offline,
+  sub,
+  subColor
+}: {
+  label: string;
+  total: number;
+  online?: number;
+  offline?: number;
+  sub?: string;
+  subColor?: string;
+}) {
   return (
     <div style={{textAlign: 'right'}}>
       <div style={{fontSize: 13, fontWeight: 700, color: C.text}}>
-        <span style={{fontSize: 18}}>{total}</span>{' '}
-        <span style={{fontSize: 11, color: C.textSub, fontWeight: 400}}>{label}</span>
+        <span style={{fontSize: 18}}>{total}</span> <span style={{fontSize: 11, color: C.textSub, fontWeight: 400}}>{label}</span>
       </div>
       <div style={{fontSize: 11, fontFamily: 'monospace', marginTop: 2}}>
         {online !== undefined && (
           <>
-            <span style={{color: C.cfnOnline}}>{online} online</span>
-            {' '}
-            <span style={{color: C.cfnOffline}}>{offline} offline</span>
+            <span style={{color: C.cfnOnline}}>{online} online</span> <span style={{color: C.cfnOffline}}>{offline} offline</span>
           </>
         )}
         {sub && <span style={{color: subColor ?? C.textSub}}>{sub}</span>}
@@ -189,12 +281,21 @@ function StatGroup({label, total, online, offline, sub, subColor}: {label: strin
 function nodePositions(n: number): {x: number; y: number}[] {
   const cx = W / 2;
   const cy = H * 0.5;
-  if (n === 0) return [];
-  if (n === 1) return [{x: cx, y: cy}];
-  if (n === 2) return [{x: cx - 250, y: cy}, {x: cx + 250, y: cy}];
+  if (n === 0) {
+    return [];
+  }
+  if (n === 1) {
+    return [{x: cx, y: cy}];
+  }
+  if (n === 2) {
+    return [
+      {x: cx - 250, y: cy},
+      {x: cx + 250, y: cy}
+    ];
+  }
   const minDist = 220;
   const rCalc = minDist / (2 * Math.sin(Math.PI / n));
-  const r = Math.min(Math.max(rCalc, 180), Math.min(W * 0.37, H * 0.40));
+  const r = Math.min(Math.max(rCalc, 180), Math.min(W * 0.37, H * 0.4));
   return Array.from({length: n}, (_, i) => {
     const angle = (2 * Math.PI * i) / n - Math.PI / 2;
     return {x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r};
@@ -229,7 +330,9 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
     const mpMap = new Map<string, MPNode>();
     for (const node of nodes) {
       for (const mp of node.memory_providers ?? []) {
-        if (!mpMap.has(mp.id)) mpMap.set(mp.id, mp);
+        if (!mpMap.has(mp.id)) {
+          mpMap.set(mp.id, mp);
+        }
       }
     }
     return Array.from(mpMap.values());
@@ -240,7 +343,10 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
     const ces: {id: string; status?: string}[] = [];
     for (const node of nodes) {
       for (const ce of node.cognition_engines ?? []) {
-        if (!seen.has(ce.id)) { seen.add(ce.id); ces.push(ce); }
+        if (!seen.has(ce.id)) {
+          seen.add(ce.id);
+          ces.push(ce);
+        }
       }
     }
     return ces;
@@ -261,69 +367,102 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
 
   const screenToSvg = useCallback((clientX: number, clientY: number): {x: number; y: number} => {
     const svg = svgRef.current;
-    if (!svg) return {x: 0, y: 0};
+    if (!svg) {
+      return {x: 0, y: 0};
+    }
     const pt = svg.createSVGPoint();
     pt.x = clientX;
     pt.y = clientY;
     const ctm = svg.getScreenCTM();
-    if (!ctm) return {x: 0, y: 0};
+    if (!ctm) {
+      return {x: 0, y: 0};
+    }
     const t = pt.matrixTransform(ctm.inverse());
     return {x: t.x, y: t.y};
   }, []);
 
-  const handleNodePointerDown = useCallback((e: React.PointerEvent<SVGGElement>, nodeIdx: number) => {
-    e.stopPropagation();
-    const svgPos = screenToSvg(e.clientX, e.clientY);
-    dragRef.current = {
-      nodeIdx,
-      startSvgX: svgPos.x,
-      startSvgY: svgPos.y,
-      startNodeX: positions[nodeIdx].x,
-      startNodeY: positions[nodeIdx].y,
-      moved: false,
-    };
-    svgRef.current?.setPointerCapture(e.pointerId);
-  }, [positions, screenToSvg]);
+  const handleNodePointerDown = useCallback(
+    (e: React.PointerEvent<SVGGElement>, nodeIdx: number) => {
+      e.stopPropagation();
+      const svgPos = screenToSvg(e.clientX, e.clientY);
+      dragRef.current = {
+        nodeIdx,
+        startSvgX: svgPos.x,
+        startSvgY: svgPos.y,
+        startNodeX: positions[nodeIdx].x,
+        startNodeY: positions[nodeIdx].y,
+        moved: false
+      };
+      svgRef.current?.setPointerCapture(e.pointerId);
+    },
+    [positions, screenToSvg]
+  );
 
-  const handleSvgPointerMove = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    const d = dragRef.current;
-    if (!d) return;
-    const svgPos = screenToSvg(e.clientX, e.clientY);
-    const dx = svgPos.x - d.startSvgX;
-    const dy = svgPos.y - d.startSvgY;
-    if (!d.moved && Math.sqrt(dx * dx + dy * dy) > 4) {
-      d.moved = true;
-      setIsDragging(true);
-    }
-    if (d.moved) {
-      setPositions((prev) => {
-        const next = [...prev];
-        next[d.nodeIdx] = {x: d.startNodeX + dx, y: d.startNodeY + dy};
-        return next;
-      });
-    }
-  }, [screenToSvg]);
-
-  const handleSvgPointerUp = useCallback((e: React.PointerEvent<SVGSVGElement>) => {
-    const d = dragRef.current;
-    svgRef.current?.releasePointerCapture(e.pointerId);
-    setIsDragging(false);
-    if (d) {
-      if (!d.moved) {
-        const nodeId = nodes[d.nodeIdx].id;
-        setSel((prev) => (prev?.id === nodeId ? null : {id: nodeId}));
+  const handleSvgPointerMove = useCallback(
+    (e: React.PointerEvent<SVGSVGElement>) => {
+      const d = dragRef.current;
+      if (!d) {
+        return;
       }
-      dragRef.current = null;
-    } else {
-      setSel(null);
-    }
-  }, [nodes]);
+      const svgPos = screenToSvg(e.clientX, e.clientY);
+      const dx = svgPos.x - d.startSvgX;
+      const dy = svgPos.y - d.startSvgY;
+      if (!d.moved && Math.sqrt(dx * dx + dy * dy) > 4) {
+        d.moved = true;
+        setIsDragging(true);
+      }
+      if (d.moved) {
+        setPositions((prev) => {
+          const next = [...prev];
+          next[d.nodeIdx] = {x: d.startNodeX + dx, y: d.startNodeY + dy};
+          return next;
+        });
+      }
+    },
+    [screenToSvg]
+  );
+
+  const handleSvgPointerUp = useCallback(
+    (e: React.PointerEvent<SVGSVGElement>) => {
+      const d = dragRef.current;
+      svgRef.current?.releasePointerCapture(e.pointerId);
+      setIsDragging(false);
+      if (d) {
+        if (!d.moved) {
+          const nodeId = nodes[d.nodeIdx].id;
+          setSel((prev) => (prev?.id === nodeId ? null : {id: nodeId}));
+        }
+        dragRef.current = null;
+      } else {
+        setSel(null);
+      }
+    },
+    [nodes]
+  );
 
   return (
     <div style={{display: 'flex', flexDirection: 'column', height: '100%', background: C.bg, overflow: 'hidden'}}>
-      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 20px', background: C.surface, borderBottom: `1px solid ${C.border}`, flexShrink: 0}}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 20px',
+          background: C.surface,
+          borderBottom: `1px solid ${C.border}`,
+          flexShrink: 0
+        }}
+      >
         <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
-          <div style={{width: 8, height: 8, borderRadius: '50%', background: onlineCFNs > 0 ? C.cfnOnline : C.textSub, boxShadow: onlineCFNs > 0 ? `0 0 6px ${C.cfnOnline}` : 'none'}} />
+          <div
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: '50%',
+              background: onlineCFNs > 0 ? C.cfnOnline : C.textSub,
+              boxShadow: onlineCFNs > 0 ? `0 0 6px ${C.cfnOnline}` : 'none'
+            }}
+          />
           <span style={{fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', color: C.textSub, fontFamily: 'monospace'}}>COGNITION FABRIC</span>
         </div>
         <div style={{display: 'flex', gap: 32}}>
@@ -351,11 +490,17 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
             </pattern>
             <filter id="edge-glow" x="-20%" y="-20%" width="140%" height="140%">
               <feGaussianBlur in="SourceGraphic" stdDeviation="2" result="blur" />
-              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
             </filter>
             <filter id="node-glow" x="-30%" y="-30%" width="160%" height="160%">
               <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
-              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
             </filter>
             <radialGradient id="pulse-online" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor="#22c55e" stopOpacity="0.15" />
@@ -367,8 +512,10 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
           <rect width={W} height={H} fill="url(#dotgrid)" />
 
           <ellipse
-            cx={W * 0.5} cy={H * 0.52}
-            rx={W * 0.38} ry={H * 0.42}
+            cx={W * 0.5}
+            cy={H * 0.52}
+            rx={W * 0.38}
+            ry={H * 0.42}
             fill="none"
             stroke="#1e3a5f"
             strokeWidth="1"
@@ -379,7 +526,9 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
           {edges.map(([i, j]) => {
             const pa = positions[i];
             const pb = positions[j];
-            if (!pa || !pb) return null;
+            if (!pa || !pb) {
+              return null;
+            }
             const a = nodes[i];
             const b = nodes[j];
             const bothOnline = a.status === 'online' && b.status === 'online';
@@ -388,7 +537,9 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
             const dx = pb.x - pa.x;
             const dy = pb.y - pa.y;
             const len = Math.sqrt(dx * dx + dy * dy);
-            if (len < 1) return null;
+            if (len < 1) {
+              return null;
+            }
             const ux = dx / len;
             const uy = dy / len;
             const sx = pa.x + ux * NODE_R;
@@ -404,14 +555,23 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
                 {bothOnline && (
                   <path d={d} fill="none" stroke={edgeColor} strokeWidth={active ? 3 : 1.5} opacity={active ? 0.35 : 0.12} filter="url(#edge-glow)" />
                 )}
-                <path d={d} fill="none" stroke={edgeColor} strokeWidth={active ? 1.5 : 0.8} opacity={active ? 0.9 : bothOnline ? 0.45 : 0.2} strokeDasharray={bothOnline ? undefined : '4 6'} />
+                <path
+                  d={d}
+                  fill="none"
+                  stroke={edgeColor}
+                  strokeWidth={active ? 1.5 : 0.8}
+                  opacity={active ? 0.9 : bothOnline ? 0.45 : 0.2}
+                  strokeDasharray={bothOnline ? undefined : '4 6'}
+                />
               </g>
             );
           })}
 
           {nodes.map((node, i) => {
             const pos = positions[i];
-            if (!pos) return null;
+            if (!pos) {
+              return null;
+            }
             const isSelected = sel?.id === node.id;
             const isHovered = hovered === node.id;
             const online = node.status === 'online';
@@ -430,7 +590,11 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
                 transform={`translate(${pos.x}, ${pos.y})`}
                 style={{cursor: isDragging ? 'grabbing' : 'grab'}}
                 onPointerDown={(e) => handleNodePointerDown(e, i)}
-                onMouseEnter={() => { if (!dragRef.current) setHovered(node.id); }}
+                onMouseEnter={() => {
+                  if (!dragRef.current) {
+                    setHovered(node.id);
+                  }
+                }}
                 onMouseLeave={() => setHovered(null)}
               >
                 {online && (
@@ -446,33 +610,57 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
 
                 <circle r={NODE_R} fill="#0d1520" stroke={ringColor} strokeWidth={isSelected ? 2.5 : 1.5} />
                 <circle r={NODE_R - 2} fill={dotColor} opacity="0.06" />
-                <text textAnchor="middle" y={nameY} fontSize="11" fontWeight="700" fill={C.text} fontFamily="'Inter', system-ui, sans-serif">{line1}</text>
-                {line2 && <text textAnchor="middle" y={nameY + 13} fontSize="11" fontWeight="700" fill={C.text} fontFamily="'Inter', system-ui, sans-serif">{line2}</text>}
+                <text textAnchor="middle" y={nameY} fontSize="11" fontWeight="700" fill={C.text} fontFamily="'Inter', system-ui, sans-serif">
+                  {line1}
+                </text>
+                {line2 && (
+                  <text textAnchor="middle" y={nameY + 13} fontSize="11" fontWeight="700" fill={C.text} fontFamily="'Inter', system-ui, sans-serif">
+                    {line2}
+                  </text>
+                )}
 
                 <line x1={-40} y1={-8} x2={40} y2={-8} stroke="#2e4060" strokeWidth="0.7" opacity="0.8" />
 
                 <text textAnchor="middle" y={4} fontSize="9" fontFamily="monospace">
                   {onlineCEs > 0 && offlineCEs > 0 ? (
-                    <><tspan fill={C.cfnOnline}>●</tspan><tspan fill={C.text}> {onlineCEs}  </tspan><tspan fill={C.cfnOffline}>●</tspan><tspan fill={C.text}> {offlineCEs}</tspan></>
+                    <>
+                      <tspan fill={C.cfnOnline}>●</tspan>
+                      <tspan fill={C.text}> {onlineCEs} </tspan>
+                      <tspan fill={C.cfnOffline}>●</tspan>
+                      <tspan fill={C.text}> {offlineCEs}</tspan>
+                    </>
                   ) : onlineCEs > 0 ? (
-                    <><tspan fill={C.cfnOnline}>●</tspan><tspan fill={C.text}> {onlineCEs} Cognition Engines</tspan></>
+                    <>
+                      <tspan fill={C.cfnOnline}>●</tspan>
+                      <tspan fill={C.text}> {onlineCEs} Cognition Engines</tspan>
+                    </>
                   ) : offlineCEs > 0 ? (
-                    <><tspan fill={C.cfnOffline}>●</tspan><tspan fill={C.text}> {offlineCEs} Cognition Engines</tspan></>
+                    <>
+                      <tspan fill={C.cfnOffline}>●</tspan>
+                      <tspan fill={C.text}> {offlineCEs} Cognition Engines</tspan>
+                    </>
                   ) : (
                     <tspan fill={C.textSub}>0 Cognition Engines</tspan>
                   )}
                 </text>
                 {onlineCEs > 0 && offlineCEs > 0 && (
-                  <text textAnchor="middle" y={15} fontSize="9" fill={C.textSub} fontFamily="monospace">Cognition Engines</text>
+                  <text textAnchor="middle" y={15} fontSize="9" fill={C.textSub} fontFamily="monospace">
+                    Cognition Engines
+                  </text>
                 )}
 
                 <line x1={-40} y1={21} x2={40} y2={21} stroke="#2e4060" strokeWidth="0.7" opacity="0.8" />
 
                 <text textAnchor="middle" y={32} fontSize="9" fontFamily="monospace">
-                  {memCount > 0
-                    ? <><tspan fill={C.memory}>◆</tspan><tspan fill={C.text}> {memCount}</tspan><tspan fill={C.textSub}> {memCount === 1 ? 'Memory Provider' : 'Memory Providers'}</tspan></>
-                    : <tspan fill={C.textDim}>—</tspan>
-                  }
+                  {memCount > 0 ? (
+                    <>
+                      <tspan fill={C.memory}>◆</tspan>
+                      <tspan fill={C.text}> {memCount}</tspan>
+                      <tspan fill={C.textSub}> {memCount === 1 ? 'Memory Provider' : 'Memory Providers'}</tspan>
+                    </>
+                  ) : (
+                    <tspan fill={C.textDim}>—</tspan>
+                  )}
                 </text>
               </g>
             );
@@ -485,21 +673,28 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
           )}
         </svg>
 
-        <AnimatePresence>
-          {sel && (
-            <DetailPanel
-              key={sel.id}
-              sel={sel}
-              nodes={nodes}
-              onClose={() => setSel(null)}
-            />
-          )}
-        </AnimatePresence>
+        <AnimatePresence>{sel && <DetailPanel key={sel.id} sel={sel} nodes={nodes} onClose={() => setSel(null)} />}</AnimatePresence>
       </div>
 
-      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 20px', background: C.surface, borderTop: `1px solid ${C.border}`, fontSize: 11, color: C.textSub, fontFamily: 'monospace', flexShrink: 0}}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 20px',
+          background: C.surface,
+          borderTop: `1px solid ${C.border}`,
+          fontSize: 11,
+          color: C.textSub,
+          fontFamily: 'monospace',
+          flexShrink: 0
+        }}
+      >
         <div style={{display: 'flex', gap: 20}}>
-          {[['online', C.cfnOnline], ['offline', C.cfnOffline]].map(([label, color]) => (
+          {[
+            ['online', C.cfnOnline],
+            ['offline', C.cfnOffline]
+          ].map(([label, color]) => (
             <div key={label} style={{display: 'flex', alignItems: 'center', gap: 5}}>
               <div style={{width: 7, height: 7, borderRadius: '50%', background: color}} />
               {label}

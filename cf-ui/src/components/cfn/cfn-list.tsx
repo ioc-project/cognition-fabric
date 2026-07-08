@@ -52,8 +52,10 @@ export function CfnList() {
     return (
       <div className="-m-8 flex flex-col" style={{height: TOPOLOGY_HEIGHT}}>
         {/* Slim controls bar */}
-        <div className="flex items-center justify-between px-6 py-3 border-b border-border" style={{flexShrink: 0, background: 'hsl(var(--main-background))'}}>
-
+        <div
+          className="flex items-center justify-between px-6 py-3 border-b border-border"
+          style={{flexShrink: 0, background: 'hsl(var(--main-background))'}}
+        >
           <div className="flex flex-col">
             <span className="text-sm font-semibold text-foreground">Cognition Fabric</span>
             <span className="text-xs text-muted-foreground">View and manage Cognition Fabric Nodes</span>

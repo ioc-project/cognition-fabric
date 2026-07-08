@@ -128,7 +128,11 @@ function CfnCard({node, onOpenEdit}: {node: CognitionFabricNodeTopology; onOpenE
       </div>
 
       <div className="flex items-center justify-between pt-3 mt-4 border-t border-border/50">
-        {lastSeen ? <span className={`text-xs ${online ? 'text-muted-foreground' : 'text-red-500 dark:text-red-400'}`}>Last seen {lastSeen}</span> : <span />}
+        {lastSeen ? (
+          <span className={`text-xs ${online ? 'text-muted-foreground' : 'text-red-500 dark:text-red-400'}`}>Last seen {lastSeen}</span>
+        ) : (
+          <span />
+        )}
         <Link
           href={routes.cfn.details(node.id)}
           onClick={(e) => e.stopPropagation()}
