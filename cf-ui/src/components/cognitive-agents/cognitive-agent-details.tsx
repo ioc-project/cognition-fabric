@@ -34,6 +34,8 @@ import {CollapsibleJsonField} from '@/components/mas/collapsible-json-field';
 import {dtPanelHeader, dtSectionHeader} from '@/lib/detail-typography';
 import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import {MetaCard} from '@/components/ui/meta-card';
+import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
+import {Info} from 'lucide-react';
 
 function ToggleDisplay({active, onClick}: {active: boolean; onClick?: () => void}) {
   return (
@@ -93,7 +95,7 @@ export default function CognitiveAgentDetailsPage() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(UpdateCEFormSchema),
-    defaultValues: {url: '', enabled: 'true', mas_auto_associate: 'false', capabilities: '', metrics: '', config: '', mas_config: ''}
+    defaultValues: {url: '', enabled: 'true', mas_auto_associate: 'false', capabilities: '', metrics: '', config: ''}
   });
 
   useEffect(() => {
@@ -116,8 +118,7 @@ export default function CognitiveAgentDetailsPage() {
         mas_auto_associate: ce.mas_auto_associate ? 'true' : 'false',
         capabilities: ce.capabilities ? ce.capabilities.join('\n') : '',
         metrics: ce.metrics ? ce.metrics.join('\n') : '',
-        config: ce.config && Object.keys(ce.config).length > 0 ? JSON.stringify(ce.config, null, 2) : '',
-        mas_config: ce.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''
+        config: ce.config && Object.keys(ce.config).length > 0 ? JSON.stringify(ce.config, null, 2) : ''
       });
     }
   }, [ce, form]);
@@ -146,8 +147,7 @@ export default function CognitiveAgentDetailsPage() {
         mas_auto_associate: values.mas_auto_associate === 'true',
         capabilities: parseArrayField(values.capabilities),
         metrics: parseArrayField(values.metrics),
-        config: parseJsonField(values.config),
-        mas_config: parseJsonField(values.mas_config)
+        config: parseJsonField(values.config)
       });
 
       toast.success('Cognition Engine updated successfully');
@@ -168,8 +168,7 @@ export default function CognitiveAgentDetailsPage() {
         mas_auto_associate: ce.mas_auto_associate ? 'true' : 'false',
         capabilities: ce.capabilities ? ce.capabilities.join('\n') : '',
         metrics: ce.metrics ? ce.metrics.join('\n') : '',
-        config: ce.config && Object.keys(ce.config).length > 0 ? JSON.stringify(ce.config, null, 2) : '',
-        mas_config: ce.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''
+        config: ce.config && Object.keys(ce.config).length > 0 ? JSON.stringify(ce.config, null, 2) : ''
       });
     }
   };
@@ -414,27 +413,28 @@ export default function CognitiveAgentDetailsPage() {
                       isEditMode={false}
                     />
                   )}
-                  {isEditMode ? (
-                    <FormField
-                      control={form.control}
-                      name="mas_config"
-                      render={({field}) => (
-                        <CollapsibleJsonField
-                          label="MAS Config"
-                          value={field.value ?? ''}
-                          isEditMode={true}
-                          field={field}
-                          placeholder={'{\n  "key": "value"\n}'}
-                        />
-                      )}
-                    />
-                  ) : (
-                    <CollapsibleJsonField
-                      label="MAS Config"
-                      value={ce?.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''}
-                      isEditMode={false}
-                    />
-                  )}
+                  <CollapsibleJsonField
+                    label="Default MAS Config"
+                    labelSuffix={
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span
+                              className="inline-flex items-center text-muted-foreground hover:text-foreground cursor-default"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Info className="w-3.5 h-3.5" />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="max-w-[280px] text-xs bg-popover text-left">
+                            Override these settings per MAS from the MAS details page.
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    }
+                    value={ce?.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''}
+                    isEditMode={false}
+                  />
                 </div>
               )}
             </form>

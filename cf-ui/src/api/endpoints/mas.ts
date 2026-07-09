@@ -103,6 +103,19 @@ export const masApi = {
     return data;
   },
 
+  patchCEMasConfig: async (workspaceId: string, masId: string, ceId: string, masConfig: Record<string, unknown>): Promise<void> => {
+    const {error} = await apiClient.PATCH('/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}/cognition-engines/{ce_id}', {
+      params: {
+        path: {workspace_id: workspaceId, mas_id: masId, ce_id: ceId}
+      },
+      body: {mas_config: masConfig}
+    });
+
+    if (error) {
+      throw error;
+    }
+  },
+
   disassociateCE: async (workspaceId: string, masId: string, ceId: string): Promise<void> => {
     const {error} = await apiClient.DELETE('/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}/cognition-engines/{ce_id}', {
       params: {

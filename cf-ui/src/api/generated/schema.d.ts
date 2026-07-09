@@ -664,7 +664,11 @@ export interface paths {
         delete: operations["disassociate_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines__ce_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update CE mas_config for a specific MAS
+         * @description Override the mas_config for a single CE-MAS association.
+         */
+        patch: operations["patch_mas_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines__ce_id__patch"];
         trace?: never;
     };
     "/api/cognition-engines": {
@@ -1240,13 +1244,6 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             /**
-             * Mas Config
-             * @description Factory defaults for per-MAS configuration
-             */
-            mas_config?: {
-                [key: string]: unknown;
-            } | null;
-            /**
              * Auth
              * @description Auth credentials
              */
@@ -1710,6 +1707,19 @@ export interface components {
             mas_config: {
                 [key: string]: unknown;
             } | null;
+        };
+        /**
+         * MasCognitionEnginePatchRequest
+         * @description Schema for PATCH /workspaces/{ws}/mas/{mas_id}/cognition-engines/{ce_id}
+         */
+        MasCognitionEnginePatchRequest: {
+            /**
+             * Mas Config
+             * @description Per-MAS config override for this CE
+             */
+            mas_config: {
+                [key: string]: unknown;
+            };
         };
         /**
          * MemoryProviderAuthConfig
@@ -3311,6 +3321,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_mas_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines__ce_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                mas_id: string;
+                ce_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MasCognitionEnginePatchRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             204: {
