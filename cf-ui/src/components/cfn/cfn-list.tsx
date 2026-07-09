@@ -28,7 +28,7 @@ const TOPOLOGY_HEIGHT = 'calc(100vh - 52px)';
 
 export function CfnList() {
   const router = useRouter();
-  const {nodes: topologyNodes, isLoading: topoLoading, error: topoError} = useCfnTopology();
+  const {nodes: topologyNodes, isLoading: topoLoading, error: topoError, mutate: topoMutate} = useCfnTopology();
   const [viewMode, setViewMode] = useState<ViewMode>('topology');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -75,7 +75,12 @@ export function CfnList() {
           {topoLoading ? (
             <div className="flex items-center justify-center h-full text-sm text-muted-foreground">Loading topology…</div>
           ) : topoError ? (
-            <div className="flex items-center justify-center h-full text-sm text-destructive">{topoError}</div>
+            <div className="flex flex-col items-center justify-center h-full gap-3">
+              <p className="text-sm text-destructive">{topoError}</p>
+              <Button variant="outline" size="sm" onClick={() => topoMutate()}>
+                Retry
+              </Button>
+            </div>
           ) : (
             <CfnTopology nodes={topologyNodes} />
           )}

@@ -150,8 +150,8 @@ export default function CfnDetailsPage() {
       try {
         await cfnApi.delete(data.id);
         toast.success(`"${data.name}" removed successfully`);
-        await globalMutate(swrKeys.cfnTopology());
         router.push(routes.cfn.list);
+        await globalMutate(swrKeys.cfnTopology());
       } catch (err) {
         toast.error(parseError(err));
         throw err;
@@ -169,7 +169,7 @@ export default function CfnDetailsPage() {
       await cfnApi.update(cfnId as string, payload);
       toast.success('Cognition Fabric Node updated successfully');
       await mutate();
-      await globalMutate(swrKeys.cfn());
+      await globalMutate(swrKeys.cfnTopology());
       setIsEditMode(false);
       router.replace(routes.cfn.details(cfnId!));
     } catch (err) {
@@ -184,7 +184,7 @@ export default function CfnDetailsPage() {
     router.replace(routes.cfn.details(cfnId!));
   };
 
-  const cfnConfig = (cfn?.config as CfnConfig | null) ?? {};
+  const cfnConfig: CfnConfig = cfn?.config !== null && typeof cfn?.config === 'object' ? (cfn.config as CfnConfig) : {};
   const cognitionEngines = cfnConfig.cognition_engines ?? [];
   const memoryProviders = cfnConfig.memory_providers ?? [];
   const allMAS = (cfnConfig.workspaces ?? []).flatMap((w) => w.multi_agentic_systems ?? []);

@@ -6,7 +6,7 @@
 
 import {useState, useMemo, useRef, useCallback, useEffect} from 'react';
 import {motion, AnimatePresence} from 'framer-motion';
-import {X, ArrowUpRight, Copy, Check, Plus, Minus, Maximize2} from 'lucide-react';
+import {X, ArrowUpRight, Copy, Check, Plus, Minus, Maximize2, Network} from 'lucide-react';
 import Link from 'next/link';
 import type {CognitionFabricNodeTopology, MemoryProviderListItem} from '@/api/endpoints/cfn';
 import {routes} from '@/constants/routes';
@@ -14,6 +14,9 @@ import {routes} from '@/constants/routes';
 const W = 1200;
 const H = 700;
 const NODE_R = 76;
+const HUB_R = 20;
+const HUB_X = W / 2;
+const HUB_Y = H / 2;
 
 const C = {
   bg: '#0a0c10',
@@ -62,13 +65,25 @@ function splitName(name: string, maxLen: number): [string, string] {
 
 function PanelId({value}: {value: string}) {
   const [copied, setCopied] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(value);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      timerRef.current = setTimeout(() => setCopied(false), 2000);
     } catch {}
   };
+  useEffect(
+    () => () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    },
+    []
+  );
   return (
     <button
       type="button"
@@ -356,15 +371,6 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
     return ces;
   }, [nodes]);
 
-  const edges = useMemo(() => {
-    const result: [number, number][] = [];
-    for (let i = 0; i < nodes.length; i++) {
-      for (let j = i + 1; j < nodes.length; j++) {
-        result.push([i, j]);
-      }
-    }
-    return result;
-  }, [nodes.length]);
 
   const onlineCFNs = nodes.filter((n) => n.status === 'online').length;
   const onlineCEs = allCEs.filter((ce) => ce.status === 'online').length;
@@ -433,8 +439,10 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
       setIsDragging(false);
       if (d) {
         if (!d.moved) {
-          const nodeId = nodes[d.nodeIdx].id;
-          setSel((prev) => (prev?.id === nodeId ? null : {id: nodeId}));
+          const node = nodes[d.nodeIdx];
+          if (node) {
+            setSel((prev) => (prev?.id === node.id ? null : {id: node.id}));
+          }
         }
         dragRef.current = null;
       } else {
@@ -532,39 +540,48 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
             opacity="0.5"
           />
 
-          {edges.map(([i, j]) => {
-            const pa = positions[i];
-            const pb = positions[j];
-            if (!pa || !pb) {
+          {nodes.map((node, i) => {
+            const pos = positions[i];
+            if (!pos) {
               return null;
             }
-            const a = nodes[i];
-            const b = nodes[j];
-            const active = sel?.id === a.id || sel?.id === b.id || hovered === a.id || hovered === b.id;
-            const edgeColor = '#4a7fa5';
-            const dx = pb.x - pa.x;
-            const dy = pb.y - pa.y;
+            const active = sel?.id === node.id || hovered === node.id;
+            const dx = pos.x - HUB_X;
+            const dy = pos.y - HUB_Y;
             const len = Math.sqrt(dx * dx + dy * dy);
             if (len < 1) {
               return null;
             }
             const ux = dx / len;
             const uy = dy / len;
-            const sx = pa.x + ux * NODE_R;
-            const sy = pa.y + uy * NODE_R;
-            const ex = pb.x - ux * NODE_R;
-            const ey = pb.y - uy * NODE_R;
-            const mx = (sx + ex) / 2 + (ey - sy) * 0.08;
-            const my = (sy + ey) / 2 - (ex - sx) * 0.08;
-            const d = `M ${sx} ${sy} Q ${mx} ${my} ${ex} ${ey}`;
-
+            const sx = HUB_X + ux * HUB_R;
+            const sy = HUB_Y + uy * HUB_R;
+            const ex = pos.x - ux * NODE_R;
+            const ey = pos.y - uy * NODE_R;
             return (
-              <g key={`${i}-${j}`}>
-                <path d={d} fill="none" stroke={edgeColor} strokeWidth={active ? 3 : 1.5} opacity={active ? 0.25 : 0.08} filter="url(#edge-glow)" />
-                <path d={d} fill="none" stroke={edgeColor} strokeWidth={active ? 1.5 : 0.8} opacity={active ? 0.9 : 0.35} />
+              <g key={`spoke-${node.id}`}>
+                <line
+                  x1={sx} y1={sy} x2={ex} y2={ey}
+                  stroke="#4a7fa5" strokeWidth={active ? 3 : 1.5}
+                  opacity={active ? 0.25 : 0.08}
+                  filter="url(#edge-glow)"
+                />
+                <line
+                  x1={sx} y1={sy} x2={ex} y2={ey}
+                  stroke="#4a7fa5" strokeWidth={active ? 1.5 : 0.8}
+                  opacity={active ? 0.9 : 0.35}
+                />
               </g>
             );
           })}
+
+          <g>
+            <circle cx={HUB_X} cy={HUB_Y} r={HUB_R + 10} fill="none" stroke="#4a7fa5" strokeWidth="1" opacity="0.12" />
+            <circle cx={HUB_X} cy={HUB_Y} r={HUB_R} fill="#0e1a2e" stroke="#4a7fa5" strokeWidth="1.5" opacity="0.85" />
+            <foreignObject x={HUB_X - 10} y={HUB_Y - 10} width={20} height={20} style={{pointerEvents: 'none'}}>
+              <Network size={20} color="#4a7fa5" />
+            </foreignObject>
+          </g>
 
           {nodes.map((node, i) => {
             const pos = positions[i];

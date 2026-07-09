@@ -6,6 +6,7 @@
 
 import {Zap, Database, ArrowRight, MoreVertical, Eye, Edit} from 'lucide-react';
 import Link from 'next/link';
+import {useRouter} from 'next/navigation';
 import {Card} from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
@@ -28,6 +29,7 @@ export function CfnCardList({nodes, onOpenEdit}: CfnCardListProps) {
 }
 
 function CfnCard({node, onOpenEdit}: {node: CognitionFabricNodeTopology; onOpenEdit?: (node: CognitionFabricNodeTopology) => void}) {
+  const router = useRouter();
   const online = node.status === 'online';
   const engines = node.cognition_engines ?? [];
   const memProviders = node.memory_providers ?? [];
@@ -36,7 +38,12 @@ function CfnCard({node, onOpenEdit}: {node: CognitionFabricNodeTopology; onOpenE
     : null;
 
   return (
-    <Card variant="list" className="flex flex-col" style={{borderTop: `2px solid ${online ? '#22c55e' : 'hsl(var(--border))'}`}}>
+    <Card
+      variant="list"
+      className="flex flex-col cursor-pointer"
+      style={{borderTop: `2px solid ${online ? '#22c55e' : 'hsl(var(--border))'}`}}
+      onClick={() => router.push(routes.cfn.details(node.id))}
+    >
       <div className="pb-4 mb-4 border-b border-border/50 flex justify-between items-start gap-3">
         <div className="min-w-0">
           <div className="text-sm font-semibold text-foreground">{node.name}</div>
@@ -137,6 +144,7 @@ function CfnCard({node, onOpenEdit}: {node: CognitionFabricNodeTopology; onOpenE
           href={routes.cfn.details(node.id)}
           onClick={(e) => e.stopPropagation()}
           className="inline-flex items-center justify-center w-6 h-6 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+          aria-label={`View details for ${node.name}`}
         >
           <ArrowRight className="w-3.5 h-3.5" />
         </Link>
