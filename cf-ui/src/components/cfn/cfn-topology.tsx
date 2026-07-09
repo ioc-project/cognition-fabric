@@ -371,7 +371,6 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
     return ces;
   }, [nodes]);
 
-
   const onlineCFNs = nodes.filter((n) => n.status === 'online').length;
   const onlineCEs = allCEs.filter((ce) => ce.status === 'online').length;
 
@@ -561,16 +560,16 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
             return (
               <g key={`spoke-${node.id}`}>
                 <line
-                  x1={sx} y1={sy} x2={ex} y2={ey}
-                  stroke="#4a7fa5" strokeWidth={active ? 3 : 1.5}
+                  x1={sx}
+                  y1={sy}
+                  x2={ex}
+                  y2={ey}
+                  stroke="#4a7fa5"
+                  strokeWidth={active ? 3 : 1.5}
                   opacity={active ? 0.25 : 0.08}
                   filter="url(#edge-glow)"
                 />
-                <line
-                  x1={sx} y1={sy} x2={ex} y2={ey}
-                  stroke="#4a7fa5" strokeWidth={active ? 1.5 : 0.8}
-                  opacity={active ? 0.9 : 0.35}
-                />
+                <line x1={sx} y1={sy} x2={ex} y2={ey} stroke="#4a7fa5" strokeWidth={active ? 1.5 : 0.8} opacity={active ? 0.9 : 0.35} />
               </g>
             );
           })}
