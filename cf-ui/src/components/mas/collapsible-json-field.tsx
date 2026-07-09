@@ -4,7 +4,7 @@
 
 'use client';
 
-import {useState} from 'react';
+import React, {useState} from 'react';
 import {ChevronDown, ChevronUp} from 'lucide-react';
 import {FormControl, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Textarea} from '@/components/ui/textarea';
@@ -14,6 +14,7 @@ import {dtPanelHeaderInteractive, dtSectionHeader} from '@/lib/detail-typography
 
 interface CollapsibleJsonFieldProps {
   label: string;
+  labelSuffix?: React.ReactNode;
   value: string;
   isExpanded?: boolean;
   onToggleExpand?: () => void;
@@ -26,6 +27,7 @@ interface CollapsibleJsonFieldProps {
 
 export function CollapsibleJsonField({
   label,
+  labelSuffix,
   value,
   isExpanded: controlledExpanded,
   onToggleExpand,
@@ -51,13 +53,16 @@ export function CollapsibleJsonField({
     }
 
     return (
-      <div className="rounded-lg border border-border overflow-hidden bg-card shadow-sm">
-        <button type="button" className={cn('w-full', dtPanelHeaderInteractive)} onClick={handleToggle}>
-          <span className={dtSectionHeader}>{label}</span>
+      <div className="rounded-lg border border-border bg-card shadow-sm">
+        <button type="button" className={cn('w-full rounded-lg', dtPanelHeaderInteractive)} onClick={handleToggle}>
+          <span className="flex items-center gap-1.5">
+            <span className={dtSectionHeader}>{label}</span>
+            {labelSuffix}
+          </span>
           <ChevronDown size={14} className={cn('text-muted-foreground transition-transform', !isExpanded && '-rotate-90')} />
         </button>
         {isExpanded && (
-          <div className="border-t border-border bg-muted">
+          <div className="border-t border-border bg-muted rounded-b-lg">
             <SyntaxJson code={formatted || '{\n  "key": "value"\n}'} />
           </div>
         )}
@@ -70,6 +75,7 @@ export function CollapsibleJsonField({
       <div className="flex items-center justify-between cursor-pointer" onClick={handleToggle}>
         <div className="flex items-center gap-2">
           <FormLabel>{label}</FormLabel>
+          {labelSuffix}
           {field?.value && field.value.trim() !== '' && (
             <span className={`text-xs px-2 py-0.5 rounded ${validateJSON(field.value) ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
               {validateJSON(field.value) ? 'Valid JSON' : 'Invalid JSON'}
