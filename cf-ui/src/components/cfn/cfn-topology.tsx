@@ -314,7 +314,7 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
   const [hovered, setHovered] = useState<string | null>(null);
   const [positions, setPositions] = useState<{x: number; y: number}[]>(() => nodePositions(nodes.length));
   const [isDragging, setIsDragging] = useState(false);
-  const [viewScale, setViewScale] = useState(0.80);
+  const [viewScale, setViewScale] = useState(0.8);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const dragRef = useRef<{
@@ -682,7 +682,18 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
               key={btn.title}
               title={btn.title}
               onClick={btn.action}
-              style={{width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 4, color: C.textSub, cursor: 'pointer'}}
+              style={{
+                width: 26,
+                height: 26,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 4,
+                color: C.textSub,
+                cursor: 'pointer'
+              }}
             >
               {btn.icon}
             </button>
