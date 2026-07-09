@@ -5,7 +5,7 @@
 'use client';
 
 import React, {useEffect, useMemo} from 'react';
-import {BrainCircuit, CircuitBoard, ClipboardList, HardDrive, Workflow, type LucideIcon} from 'lucide-react';
+import {BrainCircuit, ClipboardList, HardDrive, Network, Workflow, type LucideIcon} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments, useRouter} from 'next/navigation';
 import {routes} from '@/constants/routes';
@@ -31,9 +31,9 @@ export function Sidebar() {
       {
         id: 'cfn',
         href: routes.cfn.list,
-        icon: CircuitBoard,
-        label: 'Cognition Fabric Nodes',
-        isActive: () => segments[0] === 'cfn'
+        icon: Network,
+        label: 'Cognition Fabric',
+        isActive: () => segments[0] === 'fabric'
       },
       {
         id: 'memory-providers',

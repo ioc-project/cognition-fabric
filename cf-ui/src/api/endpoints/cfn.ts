@@ -4,6 +4,13 @@
 
 import {apiClient} from '../client';
 import type {Cfn, CreateCfnRequest, CreateCfnResponse, ListCfnResponse, UpdateCfnRequest} from '../types/cfn';
+import type {components} from '../generated/schema';
+
+type CognitionFabricTopologyResponse = components['schemas']['CognitionFabricTopologyResponse'];
+export type {CognitionFabricTopologyResponse};
+export type CognitionFabricNodeTopology = components['schemas']['CognitionFabricNodeTopology'];
+
+export type MemoryProviderListItem = components['schemas']['MemoryProviderListItem'];
 
 export const cfnApi = {
   list: async (workspaceId?: string): Promise<ListCfnResponse> => {
@@ -76,6 +83,14 @@ export const cfnApi = {
       }
     });
 
+    if (error) {
+      throw error;
+    }
+    return data;
+  },
+
+  topology: async (): Promise<CognitionFabricTopologyResponse> => {
+    const {data, error} = await apiClient.GET('/api/cognition-fabric');
     if (error) {
       throw error;
     }

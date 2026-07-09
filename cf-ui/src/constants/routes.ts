@@ -44,9 +44,9 @@ export const routes = {
   },
 
   cfn: {
-    list: '/cfn',
-    create: '/cfn/create',
-    details: (cfnId: string) => `/cfn/${cfnId}`
+    list: '/fabric',
+    create: '/fabric/create',
+    details: (cfnId: string) => `/fabric/${cfnId}`
   },
 
   memoryProviders: {
@@ -183,16 +183,16 @@ export const breadcrumbs = {
 
   cfnList: (): BreadcrumbItem[] => [
     {link: routes.home, text: 'Home'},
-    {link: '', text: 'Cognition Fabric Nodes', active: true}
+    {link: '', text: 'Cognition Fabric', active: true}
   ],
 
   cfnDetails: (cfnName: string): BreadcrumbItem[] => [
-    {link: routes.cfn.list, text: 'Cognition Fabric Nodes'},
+    {link: routes.cfn.list, text: 'Cognition Fabric'},
     {link: '', text: cfnName, active: true}
   ],
 
   createCfn: (): BreadcrumbItem[] => [
-    {link: routes.cfn.list, text: 'Cognition Fabric Nodes'},
+    {link: routes.cfn.list, text: 'Cognition Fabric'},
     {link: '', text: 'Register Cognition Fabric Node', active: true}
   ],
 
