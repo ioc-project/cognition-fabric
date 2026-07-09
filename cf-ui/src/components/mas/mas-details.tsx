@@ -515,8 +515,8 @@ export default function MASDetailsPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Name</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Subkind</TableHead>
+                          <TableHead>Kinds</TableHead>
+                          <TableHead>Subprotocols</TableHead>
                           <TableHead>Enabled</TableHead>
                           <TableHead />
                         </TableRow>
@@ -526,19 +526,29 @@ export default function MASDetailsPage() {
                           <TableRow key={ce.ce_id} className="group">
                             <TableCell className="font-medium">{ce.name}</TableCell>
                             <TableCell>
-                              {ce.kind ? (
-                                <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                  {ce.kind}
-                                </span>
+                              {ce.kinds_subkinds && Object.keys(ce.kinds_subkinds).length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {Object.entries(ce.kinds_subkinds as Record<string, unknown[]>).flatMap(([kind, subkinds]) =>
+                                    (subkinds as string[]).map((sk) => (
+                                      <span key={`${kind}:${sk}`} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                        {kind}: {sk}
+                                      </span>
+                                    ))
+                                  )}
+                                </div>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}
                             </TableCell>
                             <TableCell>
-                              {ce.subkind ? (
-                                <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                  {ce.subkind}
-                                </span>
+                              {ce.subprotocols && (ce.subprotocols as unknown[]).length > 0 ? (
+                                <div className="flex flex-wrap gap-1">
+                                  {(ce.subprotocols as string[]).map((sp) => (
+                                    <span key={sp} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                      {sp}
+                                    </span>
+                                  ))}
+                                </div>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}

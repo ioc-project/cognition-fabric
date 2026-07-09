@@ -241,16 +241,41 @@ export default function CognitiveAgentDetailsPage() {
               {activeTab === 'overview' && (
                 <div className="space-y-4">
                   <InfoPanel>
-                    <InfoRow label="Kind">
-                      <span className="text-sm text-foreground font-mono">{ce?.kind || '—'}</span>
+                    <InfoRow label="Kinds" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
+                      {ce?.kinds_subkinds && Object.keys(ce.kinds_subkinds).length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {Object.entries(ce.kinds_subkinds).flatMap(([kind, subkinds]) =>
+                            subkinds.map((sk) => (
+                              <span key={`${kind}:${sk}`} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                {kind}: {sk}
+                              </span>
+                            ))
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-foreground font-mono">—</span>
+                      )}
                     </InfoRow>
-                    <InfoRow label="Subkind">
-                      <span className="text-sm text-foreground font-mono">{ce?.subkind || '—'}</span>
-                    </InfoRow>
-                    <InfoRow label="Version">
+                    {ce?.subprotocols && ce.subprotocols.length > 0 && (
+                      <InfoRow label="Subprotocols" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
+                        <div className="flex flex-wrap gap-1.5">
+                          {ce.subprotocols.map((sp) => (
+                            <span key={sp} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                              {sp}
+                            </span>
+                          ))}
+                        </div>
+                      </InfoRow>
+                    )}
+                    {ce?.category && ce.category !== 'UNKNOWN' && (
+                      <InfoRow label="Category" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
+                        <span className="text-sm text-foreground font-mono">{ce.category}</span>
+                      </InfoRow>
+                    )}
+                    <InfoRow label="Version" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
                       <span className="text-sm text-foreground font-mono">{ce?.version || '—'}</span>
                     </InfoRow>
-                    <InfoRow label="CFN">
+                    <InfoRow label="CFN" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
                       <span className="text-sm text-foreground">{cfn?.name || '—'}</span>
                     </InfoRow>
                     <InfoRow label="MAS Auto Associate">
@@ -413,6 +438,7 @@ export default function CognitiveAgentDetailsPage() {
                       isEditMode={false}
                     />
                   )}
+                  <div className={`transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
                   <CollapsibleJsonField
                     label="Default MAS Config"
                     labelSuffix={
@@ -435,6 +461,7 @@ export default function CognitiveAgentDetailsPage() {
                     value={ce?.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''}
                     isEditMode={false}
                   />
+                  </div>
                 </div>
               )}
             </form>

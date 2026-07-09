@@ -34,8 +34,8 @@ import {dtSectionHeader, dtPanelHeader} from '@/lib/detail-typography';
 interface CfnCE {
   id: string;
   name: string;
-  kind?: string | null;
-  subkind?: string | null;
+  kinds_subkinds?: Record<string, string[]> | null;
+  subprotocols?: string[] | null;
   status?: string;
   enabled?: boolean;
 }
@@ -264,7 +264,7 @@ export default function CfnDetailsPage() {
                     )}
                   </InfoRow>
                   {cfnConfig.config_version !== undefined && (
-                    <InfoRow label="Config Version">
+                    <InfoRow label="Config Version" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
                       <span className="text-sm text-foreground font-mono">v{cfnConfig.config_version}</span>
                     </InfoRow>
                   )}
@@ -308,8 +308,8 @@ export default function CfnDetailsPage() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
-                        <TableHead>Kind</TableHead>
-                        <TableHead>Subkind</TableHead>
+                        <TableHead>Kinds</TableHead>
+                        <TableHead>Subprotocols</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Enabled</TableHead>
                       </TableRow>
@@ -319,19 +319,29 @@ export default function CfnDetailsPage() {
                         <TableRow key={ce.id}>
                           <TableCell className="font-medium">{ce.name}</TableCell>
                           <TableCell>
-                            {ce.kind ? (
-                              <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                {ce.kind}
-                              </span>
+                            {ce.kinds_subkinds && Object.keys(ce.kinds_subkinds).length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {Object.entries(ce.kinds_subkinds).flatMap(([kind, subkinds]) =>
+                                  subkinds.map((sk) => (
+                                    <span key={`${kind}:${sk}`} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                      {kind}: {sk}
+                                    </span>
+                                  ))
+                                )}
+                              </div>
                             ) : (
                               <span className="text-muted-foreground">—</span>
                             )}
                           </TableCell>
                           <TableCell>
-                            {ce.subkind ? (
-                              <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                {ce.subkind}
-                              </span>
+                            {ce.subprotocols && ce.subprotocols.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {ce.subprotocols.map((sp) => (
+                                  <span key={sp} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                    {sp}
+                                  </span>
+                                ))}
+                              </div>
                             ) : (
                               <span className="text-muted-foreground">—</span>
                             )}

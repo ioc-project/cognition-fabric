@@ -664,11 +664,7 @@ export interface paths {
         delete: operations["disassociate_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines__ce_id__delete"];
         options?: never;
         head?: never;
-        /**
-         * Update CE mas_config for a specific MAS
-         * @description Override the mas_config for a single CE-MAS association.
-         */
-        patch: operations["patch_mas_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines__ce_id__patch"];
+        patch?: never;
         trace?: never;
     };
     "/api/cognition-engines": {
@@ -1077,6 +1073,16 @@ export interface components {
             totalElements: number;
         };
         /**
+         * CECategory
+         * @description Category of a Cognition Engine.
+         *
+         *     - UNKNOWN: Default/unspecified category
+         *     - GAT: Gateway CE (e.g., CASA)
+         *     - COG: Cognition Engines (all other CEs)
+         * @enum {string}
+         */
+        CECategory: "UNKNOWN" | "GAT" | "COG";
+        /**
          * CognitionEngineAssociateResponse
          * @description Schema for CE-MAS association response
          */
@@ -1104,10 +1110,13 @@ export interface components {
             name: string;
             /** Version */
             version: string;
-            /** Kind */
-            kind: string | null;
-            /** Subkind */
-            subkind: string | null;
+            /** Kinds Subkinds */
+            kinds_subkinds: {
+                [key: string]: string[];
+            } | null;
+            /** Subprotocols */
+            subprotocols: string[] | null;
+            category: components["schemas"]["CECategory"];
             /** Url */
             url: string;
             /** Enabled */
@@ -1174,10 +1183,13 @@ export interface components {
             name: string;
             /** Version */
             version: string;
-            /** Kind */
-            kind: string | null;
-            /** Subkind */
-            subkind: string | null;
+            /** Kinds Subkinds */
+            kinds_subkinds: {
+                [key: string]: string[];
+            } | null;
+            /** Subprotocols */
+            subprotocols: string[] | null;
+            category: components["schemas"]["CECategory"];
             /** Url */
             url: string;
             /** Enabled */
@@ -1207,7 +1219,7 @@ export interface components {
          * @description Schema for PATCH /cognition-engines/{id}.
          *
          *     Only the fields listed here can be updated.
-         *     Attempting to update immutable fields (cfn_id, version, name, kind, subkind)
+         *     Attempting to update immutable fields (cfn_id, version, name, kinds_subkinds, subprotocols, category)
          *     will be rejected with 400.
          */
         CognitionEnginePatchRequest: {
@@ -1244,6 +1256,13 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             /**
+             * Mas Config
+             * @description Factory defaults for per-MAS configuration
+             */
+            mas_config?: {
+                [key: string]: unknown;
+            } | null;
+            /**
              * Auth
              * @description Auth credentials
              */
@@ -1266,15 +1285,19 @@ export interface components {
              */
             name?: string | null;
             /**
-             * Kind
+             * Kinds Subkinds
              * @description Immutable — cannot be updated via PATCH
              */
-            kind?: string | null;
+            kinds_subkinds?: {
+                [key: string]: string[];
+            } | null;
             /**
-             * Subkind
+             * Subprotocols
              * @description Immutable — cannot be updated via PATCH
              */
-            subkind?: string | null;
+            subprotocols?: string[] | null;
+            /** @description Immutable — cannot be updated via PATCH */
+            category?: components["schemas"]["CECategory"] | null;
         };
         /**
          * CognitionEngineRegisterRequest
@@ -1302,15 +1325,22 @@ export interface components {
              */
             version: string;
             /**
-             * Kind
-             * @description Engine kind, e.g. 'knowledge', 'contingency'
+             * Kinds Subkinds
+             * @description Map of kind -> list of subkinds, e.g. {'intent': ['mission'], 'exchange': ['team-formation']}. All supported subkinds must be listed. Required for L9 routing.
              */
-            kind?: string | null;
+            kinds_subkinds: {
+                [key: string]: string[];
+            };
             /**
-             * Subkind
-             * @description Engine subkind, e.g. 'distillation', 'query', 'alignment'
+             * Subprotocols
+             * @description List of subprotocols supported by this CE, e.g. ['sab'].
              */
-            subkind?: string | null;
+            subprotocols?: string[] | null;
+            /**
+             * @description CE category: 'UNKNOWN', 'GAT' (Gateway, e.g. CASA), or 'COG' (Cognition, default for most CEs)
+             * @default COG
+             */
+            category: components["schemas"]["CECategory"];
             /**
              * Mas Auto Associate
              * @description If true, CE is auto-associated with all MAS under the same CFN's workspaces
@@ -1362,10 +1392,13 @@ export interface components {
             name: string;
             /** Version */
             version: string;
-            /** Kind */
-            kind: string | null;
-            /** Subkind */
-            subkind: string | null;
+            /** Kinds Subkinds */
+            kinds_subkinds: {
+                [key: string]: string[];
+            } | null;
+            /** Subprotocols */
+            subprotocols: string[] | null;
+            category: components["schemas"]["CECategory"];
             /** Enabled */
             enabled: boolean;
             /** Mas Auto Associate */
@@ -1693,10 +1726,14 @@ export interface components {
             ce_id: string;
             /** Name */
             name: string;
-            /** Kind */
-            kind: string | null;
-            /** Subkind */
-            subkind: string | null;
+            /** Kinds Subkinds */
+            kinds_subkinds: {
+                [key: string]: unknown;
+            } | null;
+            /** Subprotocols */
+            subprotocols: unknown[] | null;
+            /** Category */
+            category: string | null;
             /** Url */
             url: string;
             /** Enabled */
@@ -1707,19 +1744,6 @@ export interface components {
             mas_config: {
                 [key: string]: unknown;
             } | null;
-        };
-        /**
-         * MasCognitionEnginePatchRequest
-         * @description Schema for PATCH /workspaces/{ws}/mas/{mas_id}/cognition-engines/{ce_id}
-         */
-        MasCognitionEnginePatchRequest: {
-            /**
-             * Mas Config
-             * @description Per-MAS config override for this CE
-             */
-            mas_config: {
-                [key: string]: unknown;
-            };
         };
         /**
          * MemoryProviderAuthConfig
@@ -3321,41 +3345,6 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    patch_mas_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines__ce_id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                workspace_id: string;
-                mas_id: string;
-                ce_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MasCognitionEnginePatchRequest"];
-            };
-        };
         responses: {
             /** @description Successful Response */
             204: {

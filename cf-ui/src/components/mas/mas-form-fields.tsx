@@ -93,7 +93,7 @@ export function MASFormFields({
             </div>
           )}
 
-          <div className="space-y-2">
+          <div className={`space-y-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
             <Label>ID</Label>
             <CopyableInput value={mas?.id || ''} />
           </div>
@@ -217,7 +217,7 @@ export function MASFormFields({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
-          <div className="space-y-2">
+          <div className={`space-y-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
             <Label>Workspace ID</Label>
             <CopyableInput value={mas?.workspace_id || ''} />
           </div>
@@ -303,16 +303,30 @@ export function MASFormFields({
                                   <Label className="text-xs text-muted-foreground">URL</Label>
                                   <ReadOnlyField value={ce.url || '—'} className="font-mono text-xs" />
                                 </div>
-                                {ce.kind && (
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Kind</Label>
-                                    <ReadOnlyField value={ce.kind} />
+                                {ce.kinds_subkinds && Object.keys(ce.kinds_subkinds).length > 0 && (
+                                  <div className="space-y-1 md:col-span-2">
+                                    <Label className="text-xs text-muted-foreground">Kinds & Subkinds</Label>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {Object.entries(ce.kinds_subkinds as Record<string, unknown[]>).flatMap(([kind, subkinds]) =>
+                                        (subkinds as string[]).map((sk) => (
+                                          <span key={`${kind}:${sk}`} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                            {kind}: {sk}
+                                          </span>
+                                        ))
+                                      )}
+                                    </div>
                                   </div>
                                 )}
-                                {ce.subkind && (
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Subkind</Label>
-                                    <ReadOnlyField value={ce.subkind} />
+                                {ce.subprotocols && (ce.subprotocols as unknown[]).length > 0 && (
+                                  <div className="space-y-1 md:col-span-2">
+                                    <Label className="text-xs text-muted-foreground">Subprotocols</Label>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {(ce.subprotocols as string[]).map((sp) => (
+                                        <span key={sp} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                          {sp}
+                                        </span>
+                                      ))}
+                                    </div>
                                   </div>
                                 )}
                               </div>
