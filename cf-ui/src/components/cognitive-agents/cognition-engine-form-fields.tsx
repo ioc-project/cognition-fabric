@@ -17,6 +17,7 @@ import {CollapsibleJsonField} from '@/components/mas/collapsible-json-field';
 import {DATE_TIME_FORMAT_OPTIONS, validateJSON} from '@/lib/utils';
 import type {CognitionEngineDetail} from '@/api/endpoints/cognition-engine';
 import {dtCompactLabel} from '@/lib/detail-typography';
+import {KindsSubkindsDisplay} from '@/components/ui/kinds-subkinds-display';
 
 export const UpdateCEFormSchema = z.object({
   url: z.string().url('Must be a valid URL').or(z.literal('')),
@@ -44,6 +45,7 @@ interface CognitionEngineFormFieldsProps {
 export function CognitionEngineFormFields({ce, form, isEditMode, configExpanded, setConfigExpanded, onSubmit}: CognitionEngineFormFieldsProps) {
   const configValue = ce?.config && Object.keys(ce.config).length > 0 ? JSON.stringify(ce.config, null, 2) : '';
 
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -65,25 +67,8 @@ export function CognitionEngineFormFields({ce, form, isEditMode, configExpanded,
             <ReadOnlyField value={ce?.version || ''} className="font-mono" />
           </div>
           <div className={`space-y-2 md:col-span-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
-            <Label className={dtCompactLabel}>Kinds & Subkinds</Label>
-            {ce?.kinds_subkinds && Object.keys(ce.kinds_subkinds).length > 0 ? (
-              <div className="space-y-1">
-                {Object.entries(ce.kinds_subkinds).map(([kind, subkinds]) => (
-                  <div key={kind} className="flex items-center gap-0.5">
-                    <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 shrink-0">{kind}:</span>
-                    <div className="flex flex-wrap gap-1">
-                      {subkinds.map((sk) => (
-                        <span key={sk} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                          {sk}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <ReadOnlyField value="—" />
-            )}
+            <Label className={dtCompactLabel}>Kinds</Label>
+            <KindsSubkindsDisplay kindsSubkinds={ce?.kinds_subkinds} emptyDisplay={<ReadOnlyField value="-" />} />
           </div>
           {ce?.subprotocols && ce.subprotocols.length > 0 && (
             <div className={`space-y-2 md:col-span-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>

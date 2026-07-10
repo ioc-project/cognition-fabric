@@ -36,6 +36,7 @@ import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import {MetaCard} from '@/components/ui/meta-card';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
 import {Info} from 'lucide-react';
+import {KindsSubkindsDisplay} from '@/components/ui/kinds-subkinds-display';
 
 function ToggleDisplay({active, onClick}: {active: boolean; onClick?: () => void}) {
   return (
@@ -173,6 +174,7 @@ export default function CognitiveAgentDetailsPage() {
     }
   };
 
+
   return (
     <>
       <BasePage
@@ -241,25 +243,8 @@ export default function CognitiveAgentDetailsPage() {
               {activeTab === 'overview' && (
                 <div className="space-y-4">
                   <InfoPanel>
-                    <InfoRow label="Kinds & Subkinds" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
-                      {ce?.kinds_subkinds && Object.keys(ce.kinds_subkinds).length > 0 ? (
-                        <div className="space-y-1">
-                          {Object.entries(ce.kinds_subkinds).map(([kind, subkinds]) => (
-                            <div key={kind} className="flex items-center gap-0.5">
-                              <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 shrink-0">{kind}:</span>
-                              <div className="flex flex-wrap gap-1">
-                                {subkinds.map((sk) => (
-                                  <span key={sk} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                    {sk}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <span className="text-sm text-foreground font-mono">—</span>
-                      )}
+                    <InfoRow label="Kinds" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
+                      <KindsSubkindsDisplay kindsSubkinds={ce?.kinds_subkinds} emptyDisplay={<span className="text-sm text-foreground font-mono">-</span>} />
                     </InfoRow>
                     {ce?.subprotocols && ce.subprotocols.length > 0 && (
                       <InfoRow label="Subprotocols" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>

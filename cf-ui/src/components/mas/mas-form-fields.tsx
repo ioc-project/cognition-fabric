@@ -20,6 +20,7 @@ import {ChevronDown, ChevronUp, Plus, Unlink} from 'lucide-react';
 import type {MultiAgenticSystem} from '@/api/endpoints/mas';
 import type {CognitionEngineListItem} from '@/api/endpoints/cognition-engine';
 import type {FormValues} from './mas-form-schema';
+import {KindsSubkindsDisplay} from '@/components/ui/kinds-subkinds-display';
 
 interface MASFormFieldsProps {
   mas: MultiAgenticSystem | undefined;
@@ -68,6 +69,7 @@ export function MASFormFields({
   onOpenAssociateModal,
   onSubmit
 }: MASFormFieldsProps) {
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -303,25 +305,10 @@ export function MASFormFields({
                                   <Label className="text-xs text-muted-foreground">URL</Label>
                                   <ReadOnlyField value={ce.url || '—'} className="font-mono text-xs" />
                                 </div>
-                                {ce.kinds_subkinds && Object.keys(ce.kinds_subkinds).length > 0 && (
-                                  <div className="space-y-1 md:col-span-2">
-                                    <Label className="text-xs text-muted-foreground">Kinds & Subkinds</Label>
-                                    <div className="space-y-1">
-                                      {Object.entries(ce.kinds_subkinds as Record<string, unknown[]>).map(([kind, subkinds]) => (
-                                        <div key={kind} className="flex items-center gap-0.5">
-                                          <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 shrink-0">{kind}:</span>
-                                          <div className="flex flex-wrap gap-1">
-                                            {(subkinds as string[]).map((sk) => (
-                                              <span key={sk} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                                {sk}
-                                              </span>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
+                                <div className="space-y-1 md:col-span-2">
+                                  <Label className="text-xs text-muted-foreground">Kinds</Label>
+                                  <KindsSubkindsDisplay kindsSubkinds={ce.kinds_subkinds as Record<string, string[]>} />
+                                </div>
                                 {ce.subprotocols && (ce.subprotocols as unknown[]).length > 0 && (
                                   <div className="space-y-1 md:col-span-2">
                                     <Label className="text-xs text-muted-foreground">Subprotocols</Label>

@@ -47,6 +47,7 @@ import {Label} from '@/components/ui/label';
 import {Textarea} from '@/components/ui/textarea';
 import {validateJSON, formatJson} from '@/lib/utils';
 import {IdHoverCard} from '@/components/ui/id-hover-card';
+import {KindsSubkindsDisplay} from '@/components/ui/kinds-subkinds-display';
 
 export default function MASDetailsPage() {
   const router = useRouter();
@@ -253,6 +254,7 @@ export default function MASDetailsPage() {
 
   const ces = mas?.cognition_engines || [];
   const enabledCEs = ces.filter((c) => c.enabled).length;
+
 
   return (
     <>
@@ -515,7 +517,7 @@ export default function MASDetailsPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Name</TableHead>
-                          <TableHead>Kinds & Subkinds</TableHead>
+                          <TableHead>Kinds</TableHead>
                           <TableHead>Subprotocols</TableHead>
                           <TableHead>Enabled</TableHead>
                           <TableHead />
@@ -526,24 +528,7 @@ export default function MASDetailsPage() {
                           <TableRow key={ce.ce_id} className="group">
                             <TableCell className="font-medium">{ce.name}</TableCell>
                             <TableCell>
-                              {ce.kinds_subkinds && Object.keys(ce.kinds_subkinds).length > 0 ? (
-                                <div className="space-y-1">
-                                  {Object.entries(ce.kinds_subkinds as Record<string, unknown[]>).map(([kind, subkinds]) => (
-                                    <div key={kind} className="flex items-center gap-0.5">
-                                      <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 shrink-0">{kind}:</span>
-                                      <div className="flex flex-wrap gap-1">
-                                        {(subkinds as string[]).map((sk) => (
-                                          <span key={sk} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                            {sk}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
+                              <KindsSubkindsDisplay kindsSubkinds={ce.kinds_subkinds as Record<string, string[]>} />
                             </TableCell>
                             <TableCell>
                               {ce.subprotocols && (ce.subprotocols as unknown[]).length > 0 ? (

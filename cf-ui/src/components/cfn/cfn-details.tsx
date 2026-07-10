@@ -34,6 +34,7 @@ import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {ActionButton} from '@/components/ui/action-button';
 import {dtSectionHeader, dtPanelHeader} from '@/lib/detail-typography';
+import {KindsSubkindsDisplay} from '@/components/ui/kinds-subkinds-display';
 
 interface CfnMAS {
   id: string;
@@ -180,6 +181,7 @@ export default function CfnDetailsPage() {
   const cognitionEngines = cfnConfig.cognition_engines ?? [];
   const memoryProviders = cfnConfig.memory_providers ?? [];
   const allMAS = (cfnConfig.workspaces ?? []).flatMap((w) => w.multi_agentic_systems ?? []);
+
 
   return (
     <>
@@ -343,7 +345,7 @@ export default function CfnDetailsPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Name</TableHead>
-                          <TableHead>Kinds & Subkinds</TableHead>
+                          <TableHead>Kinds</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Enabled</TableHead>
                         </TableRow>
@@ -353,24 +355,7 @@ export default function CfnDetailsPage() {
                           <TableRow key={ce.id}>
                             <TableCell className="font-medium">{ce.name}</TableCell>
                             <TableCell>
-                              {ce.kinds_subkinds && Object.keys(ce.kinds_subkinds).length > 0 ? (
-                                <div className="space-y-1">
-                                  {Object.entries(ce.kinds_subkinds).map(([kind, subkinds]) => (
-                                    <div key={kind} className="flex items-center gap-0.5">
-                                      <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 shrink-0">{kind}:</span>
-                                      <div className="flex flex-wrap gap-1">
-                                        {subkinds.map((sk) => (
-                                          <span key={sk} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                            {sk}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
+                              <KindsSubkindsDisplay kindsSubkinds={ce.kinds_subkinds} />
                             </TableCell>
                             <TableCell>
                               <StatusDot variant="health" active={ce.status === 'online'} />
