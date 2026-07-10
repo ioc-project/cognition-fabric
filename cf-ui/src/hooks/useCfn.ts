@@ -4,7 +4,7 @@
 
 'use client';
 
-import useSWR from 'swr';
+import useSWR, {mutate as globalMutate} from 'swr';
 import {cfnApi} from '@/api/endpoints';
 import type {CreateCfnRequest, ListCfnResponse} from '@/api/types/cfn';
 import {parseError, sortByCreatedAtDesc} from '@/lib/utils';
@@ -23,6 +23,7 @@ export function useCfn(workspaceId?: string) {
   const addCfn = async (payload: CreateCfnRequest) => {
     const response = await runAddCfn(payload);
     await mutate(undefined, {revalidate: true});
+    await globalMutate(swrKeys.cfnTopology());
     return response;
   };
 
@@ -44,6 +45,7 @@ export function useCfn(workspaceId?: string) {
   const enableCfn = async (cfnId: string) => {
     const result = await runEnableCfn(cfnId);
     await mutate(undefined, {revalidate: true});
+    await globalMutate(swrKeys.cfnTopology());
     return result;
   };
 
@@ -52,6 +54,7 @@ export function useCfn(workspaceId?: string) {
   const disableCfn = async (cfnId: string) => {
     const result = await runDisableCfn(cfnId);
     await mutate(undefined, {revalidate: true});
+    await globalMutate(swrKeys.cfnTopology());
     return result;
   };
 

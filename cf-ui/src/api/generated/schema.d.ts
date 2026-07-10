@@ -353,6 +353,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/cognition-fabric": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Cognition Fabric Topology
+         * @description Returns the full Cognition Fabric topology with nested CEs and memory providers per CFN.
+         */
+        get: operations["get_cognition_fabric_topology_api_cognition_fabric_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/memory-providers": {
         parameters: {
             query?: never;
@@ -664,7 +684,11 @@ export interface paths {
         delete: operations["disassociate_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines__ce_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update CE mas_config for a specific MAS
+         * @description Override the mas_config for a single CE-MAS association.
+         */
+        patch: operations["patch_mas_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines__ce_id__patch"];
         trace?: never;
     };
     "/api/cognition-engines": {
@@ -1256,13 +1280,6 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             /**
-             * Mas Config
-             * @description Factory defaults for per-MAS configuration
-             */
-            mas_config?: {
-                [key: string]: unknown;
-            } | null;
-            /**
              * Auth
              * @description Auth credentials
              */
@@ -1512,6 +1529,16 @@ export interface components {
              */
             enabled: boolean;
             /**
+             * Ip Address
+             * @description Node IP address
+             */
+            ip_address?: string | null;
+            /**
+             * Port
+             * @description Node port
+             */
+            port?: number | null;
+            /**
              * Created At
              * Format: date-time
              * @description Creation timestamp
@@ -1648,6 +1675,34 @@ export interface components {
          */
         CognitionFabricNodeStatus: "online" | "offline";
         /**
+         * CognitionFabricNodeTopology
+         * @description A CFN node with its nested cognition engines and memory providers
+         */
+        CognitionFabricNodeTopology: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Workspace Ids */
+            workspace_ids?: string[];
+            /** Status */
+            status: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Last Seen */
+            last_seen: string;
+            /** Ip Address */
+            ip_address?: string | null;
+            /** Port */
+            port?: number | null;
+            /** Created At */
+            created_at: string;
+            /** Cognition Engines */
+            cognition_engines?: components["schemas"]["CognitionEngineListItem"][];
+            /** Memory Providers */
+            memory_providers?: components["schemas"]["MemoryProviderListItem"][];
+        };
+        /**
          * CognitionFabricNodeUpdateRequest
          * @description Schema for updating Cognition Fabric Node
          * @example {
@@ -1682,6 +1737,18 @@ export interface components {
              * @description Updated port number of the CFN node
              */
             port?: number | null;
+        };
+        /**
+         * CognitionFabricTopologyResponse
+         * @description Aggregated view of the entire Cognition Fabric topology
+         */
+        CognitionFabricTopologyResponse: {
+            /** Cognition Fabric Nodes */
+            cognition_fabric_nodes: components["schemas"]["CognitionFabricNodeTopology"][];
+            /** Counts */
+            counts: {
+                [key: string]: unknown;
+            };
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1744,6 +1811,19 @@ export interface components {
             mas_config: {
                 [key: string]: unknown;
             } | null;
+        };
+        /**
+         * MasCognitionEnginePatchRequest
+         * @description Schema for PATCH /workspaces/{ws}/mas/{mas_id}/cognition-engines/{ce_id}
+         */
+        MasCognitionEnginePatchRequest: {
+            /**
+             * Mas Config
+             * @description Per-MAS config override for this CE
+             */
+            mas_config: {
+                [key: string]: unknown;
+            };
         };
         /**
          * MemoryProviderAuthConfig
@@ -1877,6 +1957,29 @@ export interface components {
              * @description Total number of providers
              */
             total: number;
+        };
+        /**
+         * MemoryProviderListItem
+         * @description Schema for memory provider list item
+         */
+        MemoryProviderListItem: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Description */
+            description: string | null;
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            } | null;
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /**
          * MemoryProviderUpdate
@@ -2776,6 +2879,26 @@ export interface operations {
             };
         };
     };
+    get_cognition_fabric_topology_api_cognition_fabric_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CognitionFabricTopologyResponse"];
+                };
+            };
+        };
+    };
     list_memory_providers_api_memory_providers_get: {
         parameters: {
             query?: never;
@@ -3345,6 +3468,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_mas_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines__ce_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                mas_id: string;
+                ce_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MasCognitionEnginePatchRequest"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             204: {

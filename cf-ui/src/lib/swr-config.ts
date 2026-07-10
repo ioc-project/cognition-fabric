@@ -32,7 +32,9 @@ export const swrKeys = {
   myPendingInvitations: () => ['my-pending-invitations'] as const,
 
   masMetrics: (workspaceId: string, masId: string, filters: Record<string, string>) =>
-    ['mas-metrics', workspaceId, masId, JSON.stringify(filters)] as const
+    ['mas-metrics', workspaceId, masId, JSON.stringify(filters)] as const,
+
+  cfnTopology: () => ['cfn-topology'] as const
 };
 
 import {fetchAPI} from '@/api/client';

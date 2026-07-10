@@ -94,7 +94,6 @@ export function AgentCard({
             <EditModeFields index={index} control={control} userMemoryProviders={userMemoryProviders} />
           ) : (
             <ViewModeFields
-              agentIdValue={agentIdValue}
               agentName={agentName}
               agentUrl={agentUrl}
               identityType={identityType}
@@ -223,7 +222,6 @@ function EditModeFields({
 }
 
 function ViewModeFields({
-  agentIdValue,
   agentName,
   agentUrl,
   identityType,
@@ -231,7 +229,6 @@ function ViewModeFields({
   agenticMemoryProviderId,
   agenticMemoryProviderName
 }: {
-  agentIdValue?: string;
   agentName?: string;
   agentUrl?: string;
   identityType?: string;
