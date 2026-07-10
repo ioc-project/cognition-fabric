@@ -13,6 +13,7 @@ import {z} from 'zod';
 import {swrKeys} from '@/lib/swr-config';
 import {cfnApi} from '@/api/endpoints';
 import type {Cfn, UpdateCfnRequest} from '@/api/types/cfn';
+import type {CognitionEngineListItem} from '@/api/endpoints/cognition-engine';
 import {BasePage} from '@/components/ui/base-page';
 import {Input} from '@/components/ui/input';
 import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/ui/form';
@@ -31,15 +32,6 @@ import {Badge} from '@/components/ui/badge';
 import {BrainCircuit, Database, Network} from 'lucide-react';
 import {dtSectionHeader, dtPanelHeader} from '@/lib/detail-typography';
 
-interface CfnCE {
-  id: string;
-  name: string;
-  kinds_subkinds?: Record<string, string[]> | null;
-  subprotocols?: string[] | null;
-  status?: string;
-  enabled?: boolean;
-}
-
 interface CfnMAS {
   id: string;
   name: string;
@@ -56,7 +48,7 @@ interface CfnMemoryProvider {
 }
 
 interface CfnConfig {
-  cognition_engines?: CfnCE[];
+  cognition_engines?: CognitionEngineListItem[];
   memory_providers?: CfnMemoryProvider[];
   workspaces?: {workspace_id: string; workspace_name?: string; multi_agentic_systems?: CfnMAS[]}[];
   config_version?: number;
