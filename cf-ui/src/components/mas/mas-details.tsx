@@ -289,7 +289,7 @@ export default function MASDetailsPage() {
         breadcrumbs={crumbs}
         callToAction={
           mas && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5">
               <ActionButton icon={BarChart3} label="Metrics" onClick={() => router.push(routes.mas.metrics(masId!))} />
               <ActionButton icon={Network} label="Knowledge Graph" onClick={() => router.push(routes.mas.knowledgeGraph(masId!))} />
               <MASAuditLog masId={masId!} workspaceId={workspaceId!} masName={mas.name} agents={mas.agents || undefined} />
@@ -434,7 +434,7 @@ export default function MASDetailsPage() {
               {activeTab === 'agents' && (
                 <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
                   <div className={dtPanelHeader}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-0.5">
                       <Bot size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
                       <span className={dtSectionHeader}>Agents</span>
                       {agentFields.length > 0 && (
@@ -490,7 +490,7 @@ export default function MASDetailsPage() {
               {activeTab === 'cognition-engines' && (
                 <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
                   <div className={dtPanelHeader}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-0.5">
                       <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
                       <span className={dtSectionHeader}>Associated Cognition Engines</span>
                       {ces.length > 0 && (
@@ -515,7 +515,7 @@ export default function MASDetailsPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Name</TableHead>
-                          <TableHead>Kinds</TableHead>
+                          <TableHead>Kinds & Subkinds</TableHead>
                           <TableHead>Subprotocols</TableHead>
                           <TableHead>Enabled</TableHead>
                           <TableHead />
@@ -527,17 +527,22 @@ export default function MASDetailsPage() {
                             <TableCell className="font-medium">{ce.name}</TableCell>
                             <TableCell>
                               {ce.kinds_subkinds && Object.keys(ce.kinds_subkinds).length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {Object.entries(ce.kinds_subkinds as Record<string, unknown[]>).flatMap(([kind, subkinds]) =>
-                                    (subkinds as string[]).map((sk) => (
-                                      <span key={`${kind}:${sk}`} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                        {kind}: {sk}
-                                      </span>
-                                    ))
-                                  )}
+                                <div className="space-y-1">
+                                  {Object.entries(ce.kinds_subkinds as Record<string, unknown[]>).map(([kind, subkinds]) => (
+                                    <div key={kind} className="flex items-center gap-0.5">
+                                      <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 shrink-0">{kind}:</span>
+                                      <div className="flex flex-wrap gap-1">
+                                        {(subkinds as string[]).map((sk) => (
+                                          <span key={sk} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                            {sk}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  ))}
                                 </div>
                               ) : (
-                                <span className="text-muted-foreground">—</span>
+                                <span className="text-muted-foreground">-</span>
                               )}
                             </TableCell>
                             <TableCell>
@@ -550,7 +555,7 @@ export default function MASDetailsPage() {
                                   ))}
                                 </div>
                               ) : (
-                                <span className="text-muted-foreground">—</span>
+                                <span className="text-muted-foreground">-</span>
                               )}
                             </TableCell>
                             <TableCell>
@@ -651,7 +656,7 @@ export default function MASDetailsPage() {
             <DialogTitle>Edit Config for {editConfigCE?.name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5">
               <Label className="text-xs text-muted-foreground">Overrides the default MAS config for this CE</Label>
               {editConfigValue.trim() && (
                 <span

@@ -201,7 +201,7 @@ export default function CognitiveAgentDetailsPage() {
         breadcrumbs={crumbs}
         callToAction={
           ce && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5">
               {!isEditMode && (
                 <>
                   <button
@@ -241,16 +241,21 @@ export default function CognitiveAgentDetailsPage() {
               {activeTab === 'overview' && (
                 <div className="space-y-4">
                   <InfoPanel>
-                    <InfoRow label="Kinds" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
+                    <InfoRow label="Kinds & Subkinds" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
                       {ce?.kinds_subkinds && Object.keys(ce.kinds_subkinds).length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5">
-                          {Object.entries(ce.kinds_subkinds).flatMap(([kind, subkinds]) =>
-                            subkinds.map((sk) => (
-                              <span key={`${kind}:${sk}`} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                {kind}: {sk}
-                              </span>
-                            ))
-                          )}
+                        <div className="space-y-1">
+                          {Object.entries(ce.kinds_subkinds).map(([kind, subkinds]) => (
+                            <div key={kind} className="flex items-center gap-0.5">
+                              <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 shrink-0">{kind}:</span>
+                              <div className="flex flex-wrap gap-1">
+                                {subkinds.map((sk) => (
+                                  <span key={sk} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                    {sk}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       ) : (
                         <span className="text-sm text-foreground font-mono">—</span>

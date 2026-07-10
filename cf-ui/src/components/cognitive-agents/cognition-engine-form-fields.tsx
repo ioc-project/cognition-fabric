@@ -67,14 +67,19 @@ export function CognitionEngineFormFields({ce, form, isEditMode, configExpanded,
           <div className={`space-y-2 md:col-span-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
             <Label className={dtCompactLabel}>Kinds & Subkinds</Label>
             {ce?.kinds_subkinds && Object.keys(ce.kinds_subkinds).length > 0 ? (
-              <div className="flex flex-wrap gap-1.5">
-                {Object.entries(ce.kinds_subkinds).flatMap(([kind, subkinds]) =>
-                  subkinds.map((sk) => (
-                    <span key={`${kind}:${sk}`} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                      {kind}: {sk}
-                    </span>
-                  ))
-                )}
+              <div className="space-y-1">
+                {Object.entries(ce.kinds_subkinds).map(([kind, subkinds]) => (
+                  <div key={kind} className="flex items-center gap-0.5">
+                    <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 shrink-0">{kind}:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {subkinds.map((sk) => (
+                        <span key={sk} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                          {sk}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <ReadOnlyField value="—" />

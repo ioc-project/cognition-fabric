@@ -217,7 +217,7 @@ export default function CfnDetailsPage() {
         breadcrumbs={crumbs}
         callToAction={
           cfn && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5">
               {!isEditMode && <ActionButton label={cfn.enabled ? 'Disable' : 'Enable'} onClick={handleToggleEnabled} disabled={isToggling} />}
               <DetailsPageActions
                 onEdit={activeTab === 'overview' ? () => setIsEditMode(true) : undefined}
@@ -328,7 +328,7 @@ export default function CfnDetailsPage() {
               {activeTab === 'cognition-engines' && (
                 <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
                   <div className={dtPanelHeader}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-0.5">
                       <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
                       <span className={dtSectionHeader}>Cognition Engines</span>
                       {cognitionEngines.length > 0 && (
@@ -343,8 +343,7 @@ export default function CfnDetailsPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Name</TableHead>
-                          <TableHead>Kinds</TableHead>
-                          <TableHead>Subprotocols</TableHead>
+                          <TableHead>Kinds & Subkinds</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Enabled</TableHead>
                         </TableRow>
@@ -355,30 +354,22 @@ export default function CfnDetailsPage() {
                             <TableCell className="font-medium">{ce.name}</TableCell>
                             <TableCell>
                               {ce.kinds_subkinds && Object.keys(ce.kinds_subkinds).length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {Object.entries(ce.kinds_subkinds).flatMap(([kind, subkinds]) =>
-                                    subkinds.map((sk) => (
-                                      <span key={`${kind}:${sk}`} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                        {kind}: {sk}
-                                      </span>
-                                    ))
-                                  )}
-                                </div>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {ce.subprotocols && ce.subprotocols.length > 0 ? (
-                                <div className="flex flex-wrap gap-1">
-                                  {ce.subprotocols.map((sp) => (
-                                    <span key={sp} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                      {sp}
-                                    </span>
+                                <div className="space-y-1">
+                                  {Object.entries(ce.kinds_subkinds).map(([kind, subkinds]) => (
+                                    <div key={kind} className="flex items-center gap-0.5">
+                                      <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 shrink-0">{kind}:</span>
+                                      <div className="flex flex-wrap gap-1">
+                                        {subkinds.map((sk) => (
+                                          <span key={sk} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                            {sk}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
                                   ))}
                                 </div>
                               ) : (
-                                <span className="text-muted-foreground">—</span>
+                                <span className="text-muted-foreground">-</span>
                               )}
                             </TableCell>
                             <TableCell>
@@ -400,7 +391,7 @@ export default function CfnDetailsPage() {
               {activeTab === 'memory-providers' && (
                 <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
                   <div className={dtPanelHeader}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-0.5">
                       <Database size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
                       <span className={dtSectionHeader}>Memory Providers</span>
                       {memoryProviders.length > 0 && (
@@ -440,7 +431,7 @@ export default function CfnDetailsPage() {
               {activeTab === 'workspaces' && (
                 <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
                   <div className={dtPanelHeader}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-0.5">
                       <Network size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
                       <span className={dtSectionHeader}>Multi-Agentic Systems</span>
                       {allMAS.length > 0 && (

@@ -224,7 +224,7 @@ export function MASFormFields({
 
           <div className="md:col-span-2 space-y-3">
             <div className="flex items-center justify-between cursor-pointer" onClick={() => setCesSectionExpanded((prev) => !prev)}>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-0.5">
                 <Label className="text-sm font-medium cursor-pointer">
                   {mas?.cognition_engines && mas.cognition_engines.length > 0
                     ? `${mas.cognition_engines.length} Associated Cognition Engine${mas.cognition_engines.length !== 1 ? 's' : ''}`
@@ -306,14 +306,19 @@ export function MASFormFields({
                                 {ce.kinds_subkinds && Object.keys(ce.kinds_subkinds).length > 0 && (
                                   <div className="space-y-1 md:col-span-2">
                                     <Label className="text-xs text-muted-foreground">Kinds & Subkinds</Label>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {Object.entries(ce.kinds_subkinds as Record<string, unknown[]>).flatMap(([kind, subkinds]) =>
-                                        (subkinds as string[]).map((sk) => (
-                                          <span key={`${kind}:${sk}`} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                            {kind}: {sk}
-                                          </span>
-                                        ))
-                                      )}
+                                    <div className="space-y-1">
+                                      {Object.entries(ce.kinds_subkinds as Record<string, unknown[]>).map(([kind, subkinds]) => (
+                                        <div key={kind} className="flex items-center gap-0.5">
+                                          <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 shrink-0">{kind}:</span>
+                                          <div className="flex flex-wrap gap-1">
+                                            {(subkinds as string[]).map((sk) => (
+                                              <span key={sk} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                                {sk}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      ))}
                                     </div>
                                   </div>
                                 )}
