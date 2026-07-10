@@ -182,7 +182,6 @@ export default function CfnDetailsPage() {
   const memoryProviders = cfnConfig.memory_providers ?? [];
   const allMAS = (cfnConfig.workspaces ?? []).flatMap((w) => w.multi_agentic_systems ?? []);
 
-
   return (
     <>
       <BasePage

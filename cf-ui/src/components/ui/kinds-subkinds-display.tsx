@@ -32,7 +32,10 @@ export function KindsSubkindsDisplay({kindsSubkinds, emptyDisplay}: KindsSubkind
             <span className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 shrink-0">{kind}:</span>
             <div className="flex flex-wrap items-center gap-1">
               {visible.map((sk) => (
-                <span key={sk} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                <span
+                  key={sk}
+                  className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground"
+                >
                   {sk}
                 </span>
               ))}

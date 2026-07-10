@@ -45,7 +45,6 @@ interface CognitionEngineFormFieldsProps {
 export function CognitionEngineFormFields({ce, form, isEditMode, configExpanded, setConfigExpanded, onSubmit}: CognitionEngineFormFieldsProps) {
   const configValue = ce?.config && Object.keys(ce.config).length > 0 ? JSON.stringify(ce.config, null, 2) : '';
 
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -75,7 +74,10 @@ export function CognitionEngineFormFields({ce, form, isEditMode, configExpanded,
               <Label className={dtCompactLabel}>Subprotocols</Label>
               <div className="flex flex-wrap gap-1.5">
                 {ce.subprotocols.map((sp) => (
-                  <span key={sp} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                  <span
+                    key={sp}
+                    className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground"
+                  >
                     {sp}
                   </span>
                 ))}

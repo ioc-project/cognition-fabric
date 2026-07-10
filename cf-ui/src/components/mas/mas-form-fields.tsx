@@ -69,7 +69,6 @@ export function MASFormFields({
   onOpenAssociateModal,
   onSubmit
 }: MASFormFieldsProps) {
-
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -314,7 +313,10 @@ export function MASFormFields({
                                     <Label className="text-xs text-muted-foreground">Subprotocols</Label>
                                     <div className="flex flex-wrap gap-1.5">
                                       {(ce.subprotocols as string[]).map((sp) => (
-                                        <span key={sp} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                        <span
+                                          key={sp}
+                                          className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground"
+                                        >
                                           {sp}
                                         </span>
                                       ))}

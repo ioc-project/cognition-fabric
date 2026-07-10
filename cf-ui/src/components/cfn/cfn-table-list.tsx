@@ -104,7 +104,8 @@ export function CfnTableList({nodes, onRowClick, onOpenEdit}: CfnTableListProps)
                   <td className="px-3 py-3">
                     {node.ip_address ? (
                       <span className="text-xs text-muted-foreground font-mono">
-                        {node.ip_address.replace(/^"|"$/g, '')}{node.port ? `:${node.port}` : ''}
+                        {node.ip_address.replace(/^"|"$/g, '')}
+                        {node.port ? `:${node.port}` : ''}
                       </span>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>

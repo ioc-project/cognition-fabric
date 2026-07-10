@@ -174,7 +174,6 @@ export default function CognitiveAgentDetailsPage() {
     }
   };
 
-
   return (
     <>
       <BasePage
@@ -244,13 +243,19 @@ export default function CognitiveAgentDetailsPage() {
                 <div className="space-y-4">
                   <InfoPanel>
                     <InfoRow label="Kinds" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
-                      <KindsSubkindsDisplay kindsSubkinds={ce?.kinds_subkinds} emptyDisplay={<span className="text-sm text-foreground font-mono">-</span>} />
+                      <KindsSubkindsDisplay
+                        kindsSubkinds={ce?.kinds_subkinds}
+                        emptyDisplay={<span className="text-sm text-foreground font-mono">-</span>}
+                      />
                     </InfoRow>
                     {ce?.subprotocols && ce.subprotocols.length > 0 && (
                       <InfoRow label="Subprotocols" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
                         <div className="flex flex-wrap gap-1.5">
                           {ce.subprotocols.map((sp) => (
-                            <span key={sp} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                            <span
+                              key={sp}
+                              className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground"
+                            >
                               {sp}
                             </span>
                           ))}
@@ -429,28 +434,28 @@ export default function CognitiveAgentDetailsPage() {
                     />
                   )}
                   <div className={`transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
-                  <CollapsibleJsonField
-                    label="Default MAS Config"
-                    labelSuffix={
-                      <TooltipProvider delayDuration={200}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span
-                              className="inline-flex items-center text-muted-foreground hover:text-foreground cursor-default"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Info className="w-3.5 h-3.5" />
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[280px] text-xs bg-popover text-left">
-                            Override these settings per MAS from the MAS details page.
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    }
-                    value={ce?.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''}
-                    isEditMode={false}
-                  />
+                    <CollapsibleJsonField
+                      label="Default MAS Config"
+                      labelSuffix={
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span
+                                className="inline-flex items-center text-muted-foreground hover:text-foreground cursor-default"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Info className="w-3.5 h-3.5" />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[280px] text-xs bg-popover text-left">
+                              Override these settings per MAS from the MAS details page.
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      }
+                      value={ce?.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''}
+                      isEditMode={false}
+                    />
                   </div>
                 </div>
               )}

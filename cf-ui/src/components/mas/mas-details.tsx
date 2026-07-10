@@ -255,7 +255,6 @@ export default function MASDetailsPage() {
   const ces = mas?.cognition_engines || [];
   const enabledCEs = ces.filter((c) => c.enabled).length;
 
-
   return (
     <>
       <BasePage
@@ -534,7 +533,10 @@ export default function MASDetailsPage() {
                               {ce.subprotocols && (ce.subprotocols as unknown[]).length > 0 ? (
                                 <div className="flex flex-wrap gap-1">
                                   {(ce.subprotocols as string[]).map((sp) => (
-                                    <span key={sp} className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
+                                    <span
+                                      key={sp}
+                                      className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground"
+                                    >
                                       {sp}
                                     </span>
                                   ))}
