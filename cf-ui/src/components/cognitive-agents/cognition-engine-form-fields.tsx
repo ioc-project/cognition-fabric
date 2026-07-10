@@ -216,7 +216,7 @@ export function CognitionEngineFormFields({ce, form, isEditMode, configExpanded,
                 />
               ) : (
                 <pre className="font-mono text-[11px] text-muted-foreground bg-muted border border-border rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
-                  {ce?.metrics ? ce.metrics.join('\n') : '—'}
+                  {ce?.metrics ? ce.metrics.join('\n') : '-'}
                 </pre>
               )}
             </div>
@@ -237,7 +237,7 @@ export function CognitionEngineFormFields({ce, form, isEditMode, configExpanded,
                 />
               ) : (
                 <pre className="font-mono text-[11px] text-muted-foreground bg-muted border border-border rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
-                  {ce?.capabilities ? ce.capabilities.join('\n') : '—'}
+                  {ce?.capabilities ? ce.capabilities.join('\n') : '-'}
                 </pre>
               )}
             </div>

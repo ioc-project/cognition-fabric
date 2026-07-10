@@ -108,7 +108,7 @@ export function CfnTableList({nodes, onRowClick, onOpenEdit}: CfnTableListProps)
                         {node.port ? `:${node.port}` : ''}
                       </span>
                     ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
+                      <span className="text-xs text-muted-foreground">-</span>
                     )}
                   </td>
                   <td className="px-3 py-3">
@@ -130,7 +130,7 @@ export function CfnTableList({nodes, onRowClick, onOpenEdit}: CfnTableListProps)
                         <span className="text-muted-foreground/60">○</span> {offlineEngines}
                       </span>
                     ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
+                      <span className="text-xs text-muted-foreground">-</span>
                     )}
                   </td>
                   <td className="px-3 py-3">
@@ -139,10 +139,10 @@ export function CfnTableList({nodes, onRowClick, onOpenEdit}: CfnTableListProps)
                         {memProviders.length} shared
                       </span>
                     ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
+                      <span className="text-xs text-muted-foreground">-</span>
                     )}
                   </td>
-                  <td className={cn('px-3 py-3 text-xs', online ? 'text-muted-foreground' : 'text-red-500 dark:text-red-400')}>{lastSeen ?? '—'}</td>
+                  <td className={cn('px-3 py-3 text-xs', online ? 'text-muted-foreground' : 'text-red-500 dark:text-red-400')}>{lastSeen ?? '-'}</td>
                   <td className="px-3 py-3 text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

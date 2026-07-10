@@ -293,7 +293,7 @@ export default function MemoryProviderDetailsPage() {
                       )}
                     />
                   ) : (
-                    <span className="text-sm text-foreground">{provider?.name || '—'}</span>
+                    <span className="text-sm text-foreground">{provider?.name || '-'}</span>
                   )}
                 </InfoRow>
 
@@ -312,7 +312,7 @@ export default function MemoryProviderDetailsPage() {
                       )}
                     />
                   ) : (
-                    <span className="text-sm text-foreground">{provider?.description || '—'}</span>
+                    <span className="text-sm text-foreground">{provider?.description || '-'}</span>
                   )}
                 </InfoRow>
 
@@ -331,7 +331,7 @@ export default function MemoryProviderDetailsPage() {
                       )}
                     />
                   ) : (
-                    <span className="text-sm text-foreground font-mono">{providerConfig?.url || '—'}</span>
+                    <span className="text-sm text-foreground font-mono">{providerConfig?.url || '-'}</span>
                   )}
                 </InfoRow>
 
@@ -382,7 +382,7 @@ export default function MemoryProviderDetailsPage() {
                       return (
                         <>
                           <InfoRow label="Username">
-                            <span className="text-sm text-foreground">{creds.username ?? '—'}</span>
+                            <span className="text-sm text-foreground">{creds.username ?? '-'}</span>
                           </InfoRow>
                           <RevealRow fieldKey="password" label="Password" value={creds.password ?? ''} />
                         </>
@@ -392,7 +392,7 @@ export default function MemoryProviderDetailsPage() {
                       return (
                         <>
                           <InfoRow label="Header Name">
-                            <span className="text-sm text-foreground">{creds.header_name ?? '—'}</span>
+                            <span className="text-sm text-foreground">{creds.header_name ?? '-'}</span>
                           </InfoRow>
                           <RevealRow fieldKey="header_value" label="Header Value" value={creds.header_value ?? ''} />
                         </>

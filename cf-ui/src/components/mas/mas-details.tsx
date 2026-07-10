@@ -339,7 +339,7 @@ export default function MASDetailsPage() {
                           )}
                         />
                       ) : (
-                        <span className="text-sm text-foreground">{mas?.name || '—'}</span>
+                        <span className="text-sm text-foreground">{mas?.name || '-'}</span>
                       )}
                     </InfoRow>
                     <InfoRow label="Description">
@@ -357,7 +357,7 @@ export default function MASDetailsPage() {
                           )}
                         />
                       ) : (
-                        <span className="text-sm text-foreground">{mas?.description || '—'}</span>
+                        <span className="text-sm text-foreground">{mas?.description || '-'}</span>
                       )}
                     </InfoRow>
                     <InfoRow label="Shared Memory">
@@ -390,7 +390,7 @@ export default function MASDetailsPage() {
                           )}
                         />
                       ) : (
-                        <span className="text-sm text-foreground">{mas?.shared_memory?.name || '—'}</span>
+                        <span className="text-sm text-foreground">{mas?.shared_memory?.name || '-'}</span>
                       )}
                     </InfoRow>
                   </InfoPanel>

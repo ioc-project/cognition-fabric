@@ -268,10 +268,10 @@ export default function CognitiveAgentDetailsPage() {
                       </InfoRow>
                     )}
                     <InfoRow label="Version" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
-                      <span className="text-sm text-foreground font-mono">{ce?.version || '—'}</span>
+                      <span className="text-sm text-foreground font-mono">{ce?.version || '-'}</span>
                     </InfoRow>
                     <InfoRow label="CFN" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
-                      <span className="text-sm text-foreground">{cfn?.name || '—'}</span>
+                      <span className="text-sm text-foreground">{cfn?.name || '-'}</span>
                     </InfoRow>
                     <InfoRow label="MAS Auto Associate">
                       {isEditMode ? (
@@ -364,7 +364,7 @@ export default function CognitiveAgentDetailsPage() {
                               </span>
                             ))
                           ) : (
-                            <span className="text-sm text-muted-foreground">—</span>
+                            <span className="text-sm text-muted-foreground">-</span>
                           )}
                         </div>
                       )}
@@ -401,7 +401,7 @@ export default function CognitiveAgentDetailsPage() {
                               </span>
                             ))
                           ) : (
-                            <span className="text-sm text-muted-foreground">—</span>
+                            <span className="text-sm text-muted-foreground">-</span>
                           )}
                         </div>
                       )}

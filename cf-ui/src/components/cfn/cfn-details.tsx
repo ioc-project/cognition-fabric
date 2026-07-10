@@ -260,7 +260,7 @@ export default function CfnDetailsPage() {
                           )}
                         />
                       ) : (
-                        <span className="text-sm text-foreground">{cfn?.name || '—'}</span>
+                        <span className="text-sm text-foreground">{cfn?.name || '-'}</span>
                       )}
                     </InfoRow>
                     <InfoRow label="IP Address">
@@ -278,7 +278,7 @@ export default function CfnDetailsPage() {
                           )}
                         />
                       ) : (
-                        <span className="text-sm text-foreground font-mono">{cfn?.ip_address ? cfn.ip_address.replace(/^"|"$/g, '') : '—'}</span>
+                        <span className="text-sm text-foreground font-mono">{cfn?.ip_address ? cfn.ip_address.replace(/^"|"$/g, '') : '-'}</span>
                       )}
                     </InfoRow>
                     <InfoRow label="Port">
@@ -296,7 +296,7 @@ export default function CfnDetailsPage() {
                           )}
                         />
                       ) : (
-                        <span className="text-sm text-foreground font-mono">{cfn?.port ? String(cfn.port) : '—'}</span>
+                        <span className="text-sm text-foreground font-mono">{cfn?.port ? String(cfn.port) : '-'}</span>
                       )}
                     </InfoRow>
                     {cfnConfig.config_version !== undefined && (
@@ -401,7 +401,7 @@ export default function CfnDetailsPage() {
                             <TableCell>
                               <StatusDot variant="state" active={mp.enabled} />
                             </TableCell>
-                            <TableCell className="text-muted-foreground">{mp.description || '—'}</TableCell>
+                            <TableCell className="text-muted-foreground">{mp.description || '-'}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -440,7 +440,7 @@ export default function CfnDetailsPage() {
                           <TableRow key={mas.id}>
                             <TableCell className="font-medium">{mas.name}</TableCell>
                             <TableCell className="text-muted-foreground">{mas.agents?.length ?? 0}</TableCell>
-                            <TableCell className="text-muted-foreground">{mas.shared_memory?.name || '—'}</TableCell>
+                            <TableCell className="text-muted-foreground">{mas.shared_memory?.name || '-'}</TableCell>
                             <TableCell className="text-muted-foreground">{mas.cognition_engines?.length ?? 0}</TableCell>
                           </TableRow>
                         ))}

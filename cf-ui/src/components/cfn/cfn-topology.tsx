@@ -183,9 +183,9 @@ function DetailPanel({sel, nodes, onClose}: {sel: NonNullable<Selected>; nodes: 
         <div style={{marginBottom: 16}}>
           <PanelId value={node.id} />
         </div>
-        <DetailRow label="ip : port" value={node.ip_address ? `${node.ip_address.replace(/^"|"$/g, '')}:${node.port ?? '—'}` : '—'} />
+        <DetailRow label="ip : port" value={node.ip_address ? `${node.ip_address.replace(/^"|"$/g, '')}:${node.port ?? '-'}` : '-'} />
         <DetailRow label="enabled" value={String(node.enabled)} />
-        <DetailRow label="last seen" value={node.last_seen ? ago(node.last_seen) : '—'} />
+        <DetailRow label="last seen" value={node.last_seen ? ago(node.last_seen) : '-'} />
         <DetailRow label="created" value={new Date(node.created_at).toLocaleDateString()} />
         {(node.workspace_ids ?? []).length > 0 && (
           <>
@@ -674,7 +674,7 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
                       <tspan fill={C.textSub}> {memCount === 1 ? 'Memory Provider' : 'Memory Providers'}</tspan>
                     </>
                   ) : (
-                    <tspan fill={C.textDim}>—</tspan>
+                    <tspan fill={C.textDim}>-</tspan>
                   )}
                 </text>
               </g>

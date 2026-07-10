@@ -302,7 +302,7 @@ export function MASFormFields({
                                 </div>
                                 <div className="space-y-1">
                                   <Label className="text-xs text-muted-foreground">URL</Label>
-                                  <ReadOnlyField value={ce.url || '—'} className="font-mono text-xs" />
+                                  <ReadOnlyField value={ce.url || '-'} className="font-mono text-xs" />
                                 </div>
                                 <div className="space-y-1 md:col-span-2">
                                   <Label className="text-xs text-muted-foreground">Kinds</Label>
