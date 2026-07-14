@@ -516,7 +516,7 @@ export default function MASDetailsPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Name</TableHead>
-                          <TableHead>Kinds</TableHead>
+                          <TableHead>Kinds & Subkinds</TableHead>
                           <TableHead>Subprotocols</TableHead>
                           <TableHead>Enabled</TableHead>
                           <TableHead />
@@ -525,9 +525,9 @@ export default function MASDetailsPage() {
                       <TableBody>
                         {ces.map((ce) => (
                           <TableRow key={ce.ce_id} className="group">
-                            <TableCell className="font-medium">{ce.name}</TableCell>
-                            <TableCell>
-                              <KindsSubkindsDisplay kindsSubkinds={ce.kinds_subkinds as Record<string, string[]>} />
+                            <TableCell className="font-medium align-top py-3">{ce.name}</TableCell>
+                            <TableCell className="align-top py-3">
+                              <KindsSubkindsDisplay kindsSubkinds={ce.kinds_subkinds as Record<string, string[]>} compact />
                             </TableCell>
                             <TableCell>
                               {ce.subprotocols && (ce.subprotocols as unknown[]).length > 0 ? (
@@ -535,7 +535,7 @@ export default function MASDetailsPage() {
                                   {(ce.subprotocols as string[]).map((sp) => (
                                     <span
                                       key={sp}
-                                      className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground"
+                                      className="inline-flex items-center font-mono text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded text-foreground"
                                     >
                                       {sp}
                                     </span>

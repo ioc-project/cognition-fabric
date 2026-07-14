@@ -344,7 +344,7 @@ export default function CfnDetailsPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Name</TableHead>
-                          <TableHead>Kinds</TableHead>
+                          <TableHead>Kinds & Subkinds</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Enabled</TableHead>
                         </TableRow>
@@ -352,9 +352,9 @@ export default function CfnDetailsPage() {
                       <TableBody>
                         {cognitionEngines.map((ce) => (
                           <TableRow key={ce.id}>
-                            <TableCell className="font-medium">{ce.name}</TableCell>
-                            <TableCell>
-                              <KindsSubkindsDisplay kindsSubkinds={ce.kinds_subkinds} />
+                            <TableCell className="font-medium align-top py-3">{ce.name}</TableCell>
+                            <TableCell className="align-top py-3">
+                              <KindsSubkindsDisplay kindsSubkinds={ce.kinds_subkinds} compact />
                             </TableCell>
                             <TableCell>
                               <StatusDot variant="health" active={ce.status === 'online'} />

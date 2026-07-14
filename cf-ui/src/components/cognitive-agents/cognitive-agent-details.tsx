@@ -84,7 +84,6 @@ export default function CognitiveAgentDetailsPage() {
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'capabilities' | 'config'>('overview');
-
   const toggleFlow = useCEToggleFlow({cognitiveAgentId, ce, defaultWorkspaceId, mutate});
   const deleteFlow = useCEDeleteFlow({
     cognitiveAgentId,
@@ -242,10 +241,14 @@ export default function CognitiveAgentDetailsPage() {
               {activeTab === 'overview' && (
                 <div className="space-y-4">
                   <InfoPanel>
-                    <InfoRow label="Kinds" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
+                    <InfoRow
+                      label={<span className="!text-sm !font-normal !text-muted-foreground">Kinds & Subkinds</span>}
+                      className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}
+                    >
                       <KindsSubkindsDisplay
                         kindsSubkinds={ce?.kinds_subkinds}
                         emptyDisplay={<span className="text-sm text-foreground font-mono">-</span>}
+                        variant="D"
                       />
                     </InfoRow>
                     {ce?.subprotocols && ce.subprotocols.length > 0 && (
@@ -254,7 +257,7 @@ export default function CognitiveAgentDetailsPage() {
                           {ce.subprotocols.map((sp) => (
                             <span
                               key={sp}
-                              className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground"
+                              className="inline-flex items-center font-mono text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded text-foreground"
                             >
                               {sp}
                             </span>

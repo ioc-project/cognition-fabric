@@ -76,7 +76,7 @@ export function CognitionEngineFormFields({ce, form, isEditMode, configExpanded,
                 {ce.subprotocols.map((sp) => (
                   <span
                     key={sp}
-                    className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground"
+                    className="inline-flex items-center font-mono text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded text-foreground"
                   >
                     {sp}
                   </span>
