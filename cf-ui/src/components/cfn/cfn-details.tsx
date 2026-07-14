@@ -13,6 +13,7 @@ import {z} from 'zod';
 import {swrKeys} from '@/lib/swr-config';
 import {cfnApi} from '@/api/endpoints';
 import type {Cfn, UpdateCfnRequest} from '@/api/types/cfn';
+import type {CognitionEngineListItem} from '@/api/endpoints/cognition-engine';
 import {BasePage} from '@/components/ui/base-page';
 import {Input} from '@/components/ui/input';
 import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/ui/form';
@@ -33,15 +34,7 @@ import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {ActionButton} from '@/components/ui/action-button';
 import {dtSectionHeader, dtPanelHeader} from '@/lib/detail-typography';
-
-interface CfnCE {
-  id: string;
-  name: string;
-  kind?: string | null;
-  subkind?: string | null;
-  status?: string;
-  enabled?: boolean;
-}
+import {KindsSubkindsDisplay} from '@/components/ui/kinds-subkinds-display';
 
 interface CfnMAS {
   id: string;
@@ -59,7 +52,7 @@ interface CfnMemoryProvider {
 }
 
 interface CfnConfig {
-  cognition_engines?: CfnCE[];
+  cognition_engines?: CognitionEngineListItem[];
   memory_providers?: CfnMemoryProvider[];
   workspaces?: {workspace_id: string; workspace_name?: string; multi_agentic_systems?: CfnMAS[]}[];
   config_version?: number;
@@ -225,7 +218,7 @@ export default function CfnDetailsPage() {
         breadcrumbs={crumbs}
         callToAction={
           cfn && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5">
               {!isEditMode && <ActionButton label={cfn.enabled ? 'Disable' : 'Enable'} onClick={handleToggleEnabled} disabled={isToggling} />}
               <DetailsPageActions
                 onEdit={activeTab === 'overview' ? () => setIsEditMode(true) : undefined}
@@ -267,7 +260,7 @@ export default function CfnDetailsPage() {
                           )}
                         />
                       ) : (
-                        <span className="text-sm text-foreground">{cfn?.name || '—'}</span>
+                        <span className="text-sm text-foreground">{cfn?.name || '-'}</span>
                       )}
                     </InfoRow>
                     <InfoRow label="IP Address">
@@ -285,7 +278,7 @@ export default function CfnDetailsPage() {
                           )}
                         />
                       ) : (
-                        <span className="text-sm text-foreground font-mono">{cfn?.ip_address || '—'}</span>
+                        <span className="text-sm text-foreground font-mono">{cfn?.ip_address ? cfn.ip_address.replace(/^"|"$/g, '') : '-'}</span>
                       )}
                     </InfoRow>
                     <InfoRow label="Port">
@@ -303,11 +296,11 @@ export default function CfnDetailsPage() {
                           )}
                         />
                       ) : (
-                        <span className="text-sm text-foreground font-mono">{cfn?.port ? String(cfn.port) : '—'}</span>
+                        <span className="text-sm text-foreground font-mono">{cfn?.port ? String(cfn.port) : '-'}</span>
                       )}
                     </InfoRow>
                     {cfnConfig.config_version !== undefined && (
-                      <InfoRow label="Config Version">
+                      <InfoRow label="Config Version" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
                         <span className="text-sm text-foreground font-mono">v{cfnConfig.config_version}</span>
                       </InfoRow>
                     )}
@@ -336,7 +329,7 @@ export default function CfnDetailsPage() {
               {activeTab === 'cognition-engines' && (
                 <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
                   <div className={dtPanelHeader}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-0.5">
                       <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
                       <span className={dtSectionHeader}>Cognition Engines</span>
                       {cognitionEngines.length > 0 && (
@@ -351,8 +344,7 @@ export default function CfnDetailsPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>Name</TableHead>
-                          <TableHead>Kind</TableHead>
-                          <TableHead>Subkind</TableHead>
+                          <TableHead>Kinds & Subkinds</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Enabled</TableHead>
                         </TableRow>
@@ -360,24 +352,9 @@ export default function CfnDetailsPage() {
                       <TableBody>
                         {cognitionEngines.map((ce) => (
                           <TableRow key={ce.id}>
-                            <TableCell className="font-medium">{ce.name}</TableCell>
-                            <TableCell>
-                              {ce.kind ? (
-                                <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                  {ce.kind}
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {ce.subkind ? (
-                                <span className="inline-flex items-center font-mono text-xs bg-muted border border-border px-1.5 py-0.5 rounded text-foreground">
-                                  {ce.subkind}
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
+                            <TableCell className="font-medium align-top py-3">{ce.name}</TableCell>
+                            <TableCell className="align-top py-3">
+                              <KindsSubkindsDisplay kindsSubkinds={ce.kinds_subkinds} compact />
                             </TableCell>
                             <TableCell>
                               <StatusDot variant="health" active={ce.status === 'online'} />
@@ -398,7 +375,7 @@ export default function CfnDetailsPage() {
               {activeTab === 'memory-providers' && (
                 <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
                   <div className={dtPanelHeader}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-0.5">
                       <Database size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
                       <span className={dtSectionHeader}>Memory Providers</span>
                       {memoryProviders.length > 0 && (
@@ -424,7 +401,7 @@ export default function CfnDetailsPage() {
                             <TableCell>
                               <StatusDot variant="state" active={mp.enabled} />
                             </TableCell>
-                            <TableCell className="text-muted-foreground">{mp.description || '—'}</TableCell>
+                            <TableCell className="text-muted-foreground">{mp.description || '-'}</TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -438,7 +415,7 @@ export default function CfnDetailsPage() {
               {activeTab === 'workspaces' && (
                 <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
                   <div className={dtPanelHeader}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-0.5">
                       <Network size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
                       <span className={dtSectionHeader}>Multi-Agentic Systems</span>
                       {allMAS.length > 0 && (
@@ -463,7 +440,7 @@ export default function CfnDetailsPage() {
                           <TableRow key={mas.id}>
                             <TableCell className="font-medium">{mas.name}</TableCell>
                             <TableCell className="text-muted-foreground">{mas.agents?.length ?? 0}</TableCell>
-                            <TableCell className="text-muted-foreground">{mas.shared_memory?.name || '—'}</TableCell>
+                            <TableCell className="text-muted-foreground">{mas.shared_memory?.name || '-'}</TableCell>
                             <TableCell className="text-muted-foreground">{mas.cognition_engines?.length ?? 0}</TableCell>
                           </TableRow>
                         ))}

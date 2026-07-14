@@ -49,7 +49,7 @@ function CfnCard({node, onOpenEdit}: {node: CognitionFabricNodeTopology; onOpenE
           <div className="text-sm font-semibold text-foreground">{node.name}</div>
           {node.ip_address && (
             <div className="text-xs text-muted-foreground font-mono mt-0.5">
-              {node.ip_address} · {node.port ?? '—'}
+              {node.ip_address.replace(/^"|"$/g, '')} · {node.port ?? '-'}
             </div>
           )}
         </div>

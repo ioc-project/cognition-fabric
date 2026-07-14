@@ -20,6 +20,7 @@ import {ChevronDown, ChevronUp, Plus, Unlink} from 'lucide-react';
 import type {MultiAgenticSystem} from '@/api/endpoints/mas';
 import type {CognitionEngineListItem} from '@/api/endpoints/cognition-engine';
 import type {FormValues} from './mas-form-schema';
+import {KindsSubkindsDisplay} from '@/components/ui/kinds-subkinds-display';
 
 interface MASFormFieldsProps {
   mas: MultiAgenticSystem | undefined;
@@ -93,7 +94,7 @@ export function MASFormFields({
             </div>
           )}
 
-          <div className="space-y-2">
+          <div className={`space-y-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
             <Label>ID</Label>
             <CopyableInput value={mas?.id || ''} />
           </div>
@@ -217,14 +218,14 @@ export function MASFormFields({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
-          <div className="space-y-2">
+          <div className={`space-y-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
             <Label>Workspace ID</Label>
             <CopyableInput value={mas?.workspace_id || ''} />
           </div>
 
           <div className="md:col-span-2 space-y-3">
             <div className="flex items-center justify-between cursor-pointer" onClick={() => setCesSectionExpanded((prev) => !prev)}>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-0.5">
                 <Label className="text-sm font-medium cursor-pointer">
                   {mas?.cognition_engines && mas.cognition_engines.length > 0
                     ? `${mas.cognition_engines.length} Associated Cognition Engine${mas.cognition_engines.length !== 1 ? 's' : ''}`
@@ -301,18 +302,25 @@ export function MASFormFields({
                                 </div>
                                 <div className="space-y-1">
                                   <Label className="text-xs text-muted-foreground">URL</Label>
-                                  <ReadOnlyField value={ce.url || '—'} className="font-mono text-xs" />
+                                  <ReadOnlyField value={ce.url || '-'} className="font-mono text-xs" />
                                 </div>
-                                {ce.kind && (
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Kind</Label>
-                                    <ReadOnlyField value={ce.kind} />
-                                  </div>
-                                )}
-                                {ce.subkind && (
-                                  <div className="space-y-1">
-                                    <Label className="text-xs text-muted-foreground">Subkind</Label>
-                                    <ReadOnlyField value={ce.subkind} />
+                                <div className="space-y-1 md:col-span-2">
+                                  <Label className="text-xs text-muted-foreground">Kinds</Label>
+                                  <KindsSubkindsDisplay kindsSubkinds={ce.kinds_subkinds as Record<string, string[]>} />
+                                </div>
+                                {ce.subprotocols && (ce.subprotocols as unknown[]).length > 0 && (
+                                  <div className="space-y-1 md:col-span-2">
+                                    <Label className="text-xs text-muted-foreground">Subprotocols</Label>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {(ce.subprotocols as string[]).map((sp) => (
+                                        <span
+                                          key={sp}
+                                          className="inline-flex items-center font-mono text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded text-foreground"
+                                        >
+                                          {sp}
+                                        </span>
+                                      ))}
+                                    </div>
                                   </div>
                                 )}
                               </div>

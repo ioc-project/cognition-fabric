@@ -17,6 +17,7 @@ import {CollapsibleJsonField} from '@/components/mas/collapsible-json-field';
 import {DATE_TIME_FORMAT_OPTIONS, validateJSON} from '@/lib/utils';
 import type {CognitionEngineDetail} from '@/api/endpoints/cognition-engine';
 import {dtCompactLabel} from '@/lib/detail-typography';
+import {KindsSubkindsDisplay} from '@/components/ui/kinds-subkinds-display';
 
 export const UpdateCEFormSchema = z.object({
   url: z.string().url('Must be a valid URL').or(z.literal('')),
@@ -48,30 +49,47 @@ export function CognitionEngineFormFields({ce, form, isEditMode, configExpanded,
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
+          <div className={`space-y-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
             <Label className={dtCompactLabel}>Name</Label>
             <ReadOnlyField value={ce?.name || ''} />
           </div>
-          <div className="space-y-2">
+          <div className={`space-y-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
             <Label className={dtCompactLabel}>ID</Label>
             <CopyableInput value={ce?.id || ''} />
           </div>
-          <div className="space-y-2">
+          <div className={`space-y-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
             <Label className={dtCompactLabel}>CFN ID</Label>
             <CopyableInput value={ce?.cfn_id || ''} />
           </div>
-          <div className="space-y-2">
+          <div className={`space-y-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
             <Label className={dtCompactLabel}>Version</Label>
             <ReadOnlyField value={ce?.version || ''} className="font-mono" />
           </div>
-          <div className="space-y-2">
-            <Label className={dtCompactLabel}>Kind</Label>
-            <ReadOnlyField value={ce?.kind || '-'} />
+          <div className={`space-y-2 md:col-span-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
+            <Label className={dtCompactLabel}>Kinds</Label>
+            <KindsSubkindsDisplay kindsSubkinds={ce?.kinds_subkinds} emptyDisplay={<ReadOnlyField value="-" />} />
           </div>
-          <div className="space-y-2">
-            <Label className={dtCompactLabel}>Subkind</Label>
-            <ReadOnlyField value={ce?.subkind || '-'} />
-          </div>
+          {ce?.subprotocols && ce.subprotocols.length > 0 && (
+            <div className={`space-y-2 md:col-span-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
+              <Label className={dtCompactLabel}>Subprotocols</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {ce.subprotocols.map((sp) => (
+                  <span
+                    key={sp}
+                    className="inline-flex items-center font-mono text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded text-foreground"
+                  >
+                    {sp}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {ce?.category && ce.category !== 'UNKNOWN' && (
+            <div className={`space-y-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
+              <Label className={dtCompactLabel}>Category</Label>
+              <ReadOnlyField value={ce.category} className="font-mono" />
+            </div>
+          )}
           <div className="space-y-2 md:col-span-2">
             <Label className={dtCompactLabel}>URL</Label>
             {isEditMode ? (
@@ -147,7 +165,7 @@ export function CognitionEngineFormFields({ce, form, isEditMode, configExpanded,
             )}
           </div>
           {ce?.last_seen && (
-            <div className="space-y-2">
+            <div className={`space-y-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
               <Label className={dtCompactLabel}>Last Seen</Label>
               <ReadOnlyField value={new Date(ce.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)} />
             </div>
@@ -170,11 +188,13 @@ export function CognitionEngineFormFields({ce, form, isEditMode, configExpanded,
               />
             )}
           />
-          <CollapsibleJsonField
-            label="Default MAS Config"
-            value={ce?.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''}
-            isEditMode={false}
-          />
+          <div className={`transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
+            <CollapsibleJsonField
+              label="Default MAS Config"
+              value={ce?.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''}
+              isEditMode={false}
+            />
+          </div>
         </div>
 
         {(isEditMode || (ce?.metrics && ce.metrics.length > 0) || (ce?.capabilities && ce.capabilities.length > 0)) && (
@@ -196,7 +216,7 @@ export function CognitionEngineFormFields({ce, form, isEditMode, configExpanded,
                 />
               ) : (
                 <pre className="font-mono text-[11px] text-muted-foreground bg-muted border border-border rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
-                  {ce?.metrics ? ce.metrics.join('\n') : '—'}
+                  {ce?.metrics ? ce.metrics.join('\n') : '-'}
                 </pre>
               )}
             </div>
@@ -217,7 +237,7 @@ export function CognitionEngineFormFields({ce, form, isEditMode, configExpanded,
                 />
               ) : (
                 <pre className="font-mono text-[11px] text-muted-foreground bg-muted border border-border rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
-                  {ce?.capabilities ? ce.capabilities.join('\n') : '—'}
+                  {ce?.capabilities ? ce.capabilities.join('\n') : '-'}
                 </pre>
               )}
             </div>

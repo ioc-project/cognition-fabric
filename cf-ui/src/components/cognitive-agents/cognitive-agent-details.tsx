@@ -36,6 +36,7 @@ import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import {MetaCard} from '@/components/ui/meta-card';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
 import {Info} from 'lucide-react';
+import {KindsSubkindsDisplay} from '@/components/ui/kinds-subkinds-display';
 
 function ToggleDisplay({active, onClick}: {active: boolean; onClick?: () => void}) {
   return (
@@ -83,7 +84,6 @@ export default function CognitiveAgentDetailsPage() {
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'capabilities' | 'config'>('overview');
-
   const toggleFlow = useCEToggleFlow({cognitiveAgentId, ce, defaultWorkspaceId, mutate});
   const deleteFlow = useCEDeleteFlow({
     cognitiveAgentId,
@@ -201,7 +201,7 @@ export default function CognitiveAgentDetailsPage() {
         breadcrumbs={crumbs}
         callToAction={
           ce && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5">
               {!isEditMode && (
                 <>
                   <button
@@ -241,17 +241,40 @@ export default function CognitiveAgentDetailsPage() {
               {activeTab === 'overview' && (
                 <div className="space-y-4">
                   <InfoPanel>
-                    <InfoRow label="Kind">
-                      <span className="text-sm text-foreground font-mono">{ce?.kind || '—'}</span>
+                    <InfoRow
+                      label={<span className="!text-sm !font-normal !text-muted-foreground">Kinds & Subkinds</span>}
+                      className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}
+                    >
+                      <KindsSubkindsDisplay
+                        kindsSubkinds={ce?.kinds_subkinds}
+                        emptyDisplay={<span className="text-sm text-foreground font-mono">-</span>}
+                        variant="D"
+                      />
                     </InfoRow>
-                    <InfoRow label="Subkind">
-                      <span className="text-sm text-foreground font-mono">{ce?.subkind || '—'}</span>
+                    {ce?.subprotocols && ce.subprotocols.length > 0 && (
+                      <InfoRow label="Subprotocols" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
+                        <div className="flex flex-wrap gap-1.5">
+                          {ce.subprotocols.map((sp) => (
+                            <span
+                              key={sp}
+                              className="inline-flex items-center font-mono text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded text-foreground"
+                            >
+                              {sp}
+                            </span>
+                          ))}
+                        </div>
+                      </InfoRow>
+                    )}
+                    {ce?.category && ce.category !== 'UNKNOWN' && (
+                      <InfoRow label="Category" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
+                        <span className="text-sm text-foreground font-mono">{ce.category}</span>
+                      </InfoRow>
+                    )}
+                    <InfoRow label="Version" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
+                      <span className="text-sm text-foreground font-mono">{ce?.version || '-'}</span>
                     </InfoRow>
-                    <InfoRow label="Version">
-                      <span className="text-sm text-foreground font-mono">{ce?.version || '—'}</span>
-                    </InfoRow>
-                    <InfoRow label="CFN">
-                      <span className="text-sm text-foreground">{cfn?.name || '—'}</span>
+                    <InfoRow label="CFN" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
+                      <span className="text-sm text-foreground">{cfn?.name || '-'}</span>
                     </InfoRow>
                     <InfoRow label="MAS Auto Associate">
                       {isEditMode ? (
@@ -344,7 +367,7 @@ export default function CognitiveAgentDetailsPage() {
                               </span>
                             ))
                           ) : (
-                            <span className="text-sm text-muted-foreground">—</span>
+                            <span className="text-sm text-muted-foreground">-</span>
                           )}
                         </div>
                       )}
@@ -381,7 +404,7 @@ export default function CognitiveAgentDetailsPage() {
                               </span>
                             ))
                           ) : (
-                            <span className="text-sm text-muted-foreground">—</span>
+                            <span className="text-sm text-muted-foreground">-</span>
                           )}
                         </div>
                       )}
@@ -413,28 +436,30 @@ export default function CognitiveAgentDetailsPage() {
                       isEditMode={false}
                     />
                   )}
-                  <CollapsibleJsonField
-                    label="Default MAS Config"
-                    labelSuffix={
-                      <TooltipProvider delayDuration={200}>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span
-                              className="inline-flex items-center text-muted-foreground hover:text-foreground cursor-default"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Info className="w-3.5 h-3.5" />
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-[280px] text-xs bg-popover text-left">
-                            Override these settings per MAS from the MAS details page.
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    }
-                    value={ce?.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''}
-                    isEditMode={false}
-                  />
+                  <div className={`transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
+                    <CollapsibleJsonField
+                      label="Default MAS Config"
+                      labelSuffix={
+                        <TooltipProvider delayDuration={200}>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span
+                                className="inline-flex items-center text-muted-foreground hover:text-foreground cursor-default"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Info className="w-3.5 h-3.5" />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="max-w-[280px] text-xs bg-popover text-left">
+                              Override these settings per MAS from the MAS details page.
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      }
+                      value={ce?.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''}
+                      isEditMode={false}
+                    />
+                  </div>
                 </div>
               )}
             </form>
