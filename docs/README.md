@@ -33,7 +33,6 @@ This set follows the org TOME template list. Each file notes its category:
 | [`glossary.md`](glossary.md) | Source definitions, one `##` heading per term. **Start here if a term is unfamiliar.** |
 | [`decisions/`](decisions/README.md) | Numbered ADRs — the full record behind each decided item in `decision-log.md`. |
 | [`specs/`](specs/README.md) | Behavioural specs and API contracts. |
-| [`api/`](api/) | Swagger/OpenAPI documentation (generated). |
 
 ## Related sources of truth
 
