@@ -1,57 +1,112 @@
 # ioc-scale-cfn-svc
 
-Cognition Fabric Node (CFN) — the central orchestration plane for Cognition Fabric.
+**Cognition Fabric Node (CFN)** — the central orchestration plane for Cognition Fabric.
 
-CFN is a microservice that:
-- Routes tasks to Cognitive Engines based on subprotocols
-- Ingests metrics and audit events
-- Manages shared memory
-- Handles registration/heartbeat lifecycle for CEs
+Part of the **Cognition Fabric for Scaling** area within the **Internet of Cognition (IoC)** BHAG.
+
+## What is CF?
+
+Multi-agent systems generate rich cognitive signals — traces, trajectories, findings — but need
+a fabric to route those signals to Cognition Engines (CEs) that act on them. CF is that fabric.
+
+CF provides:
+
+- **Cognition Store** — shared CE memory layer for publishing and consuming findings
+- **Three-tier API surface** — Analytics (read-only), Active (MAS engagement), Enforcing (block/modify/inject)
+- **CE routing and chaining** — compose and sequence Cognition Engines across the fabric
+- **OXP integration** — trajectories and cognitive enrichment as first-class fabric signals
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Multi-Agent Systems (MAS)                           │
+└───────────────────────────────────┬─────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        Cognition Fabric (CF)                                │
+│                                                                             │
+│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐                     │
+│  │  Analytics   │   │    Active    │   │  Enforcing   │  ◄── Three-tier API │
+│  │  (read-only) │   │ (engagement) │   │(dispositions)│                     │
+│  └──────────────┘   └──────────────┘   └──────────────┘                     │
+│                                                                             │
+│  ┌──────────────────────────────────────────────────────┐                   │
+│  │              Cognition Store (findings)              │                   │
+│  └──────────────────────────────────────────────────────┘                   │
+│                                                                             │
+│  ┌──────────────────────────────────────────────────────┐                   │
+│  │           CE Routing & Chaining                      │                   │
+│  └──────────────────────────────────────────────────────┘                   │
+└───────────┬─────────────────┬─────────────────┬─────────────────────────────┘
+            │                 │                 │
+            ▼                 ▼                 ▼
+    ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+    │     OXP      │  │  Enforcement │  │  Cognition   │
+    │ (trajectories│  │    Proxy     │  │   Engines    │
+    │  & traces)   │  │ (in-path)    │  │ (CASA, GATS) │
+    └──────────────┘  └──────────────┘  └──────────────┘
+```
+
+## Key contracts
+
+| Contract | Direction | Purpose |
+|----------|-----------|---------|
+| `ioc.ce.v1` | CF → Enforcement Proxy | Enforcement contract — dispositions (block/modify/inject) |
+| `ioc.cf.tracing.v1` | CF → Enforcement Proxy | Tracing contract — correlated traces into CF |
+| Analytics API | CEs → CF | Read-only observability queries |
+| Active API | CEs → CF | Direct MAS engagement |
+| Enforcing API | CEs → CF | Issue dispositions via Enforcement Proxy |
+
+## Focus areas
+
+| Area | Description |
+|------|-------------|
+| **OXP core integration** | Refactor CF to integrate OXP as a first-class source of cognitive signal |
+| **Cognition Store** | Build the store as required by COGS and GATS CEs |
+| **Three-tier CF API surface** | Analytics, Active, and Enforcing APIs |
+| **CE support** | Routing and chaining of Cognition Engines across the fabric |
+| **L9 interaction with MAS** | Passive, active, and enforcing modes of L9 interaction |
+
+## Consumers
+
+- **CASA CE** — publishes/consumes findings via Cognition Store
+- **Detective Investigations CE** — CE chaining, findings access
+- **GATS CEs** — Enforcing tier dispositions
+- **Security Detections CE** — Analytics tier queries
+- **Enforcement Proxy** — executes enforcement in-path via `ioc.ce.v1`
 
 ## Documentation
 
-Project documentation follows the TOME template:
-
-- [`docs/README.md`](docs/README.md) — documentation index
-- [`docs/charter.md`](docs/charter.md) — project charter (start here)
-- [`docs/architecture.md`](docs/architecture.md) — architecture of record
-- [`docs/decisions/`](docs/decisions/) — Architecture Decision Records (ADRs)
-- [`docs/specs/`](docs/specs/) — behavioral specifications
-- [`docs/glossary.md`](docs/glossary.md) — term definitions
-
-## Project Structure
-
-```
-.
-├── cmd/                    # Application entrypoints
-├── pkg/                    # Library code
-├── docs/                   # Project documentation (TOME template)
-│   ├── decisions/          # Architecture Decision Records
-│   └── specs/              # Behavioral specifications
-├── build/                  # CI build artifacts
-├── deploy/                 # Deployment configurations
-└── .github/                # GitHub configs and hooks
-```
+| Document | Description |
+|----------|-------------|
+| [`docs/charter.md`](docs/charter.md) | Project charter — problem, scope, goals |
+| [`docs/architecture.md`](docs/architecture.md) | Architecture of record |
+| [`docs/dependencies.md`](docs/dependencies.md) | Project dependencies and relationships |
+| [`docs/glossary.md`](docs/glossary.md) | Term definitions |
+| [`docs/decisions/`](docs/decisions/) | Architecture Decision Records (ADRs) |
+| [`docs/specs/`](docs/specs/) | Behavioral specifications |
 
 ## Development
 
 ### Prerequisites
 
-- Go 1.21+
+- Go 1.24+
 
-### Install git hooks
+### Setup
 
 ```bash
+# Clone the repo
+git clone git@github.com:cisco-eti/ioc-scale-cfn-svc.git
+cd ioc-scale-cfn-svc
+
+# Install git hooks
 ln -s $(pwd)/.github/githooks/pre-commit .git/hooks/pre-commit
 ```
 
-## Style Guide
+## Team
 
-Please refer to this style guide to keep code clean, readable, and consistent:
-https://google.github.io/styleguide/go/best-practices
+**T3:** CF — Darren Lau (Lead), Chidumga Izuzu, Samuel Yang, Shridhar Shah
 
-## Effective Go
-
-- https://go.dev/doc/effective_go
-- https://go-proverbs.github.io
-- https://dave.cheney.net/2020/02/23/the-zen-of-go
+See [`docs/team-assignments.md`](docs/team-assignments.md) for full roster.
