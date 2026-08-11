@@ -72,7 +72,18 @@ ln -s $(pwd)/.github/githooks/pre-commit .git/hooks/pre-commit`
 
 ### /docs
 
-  If you need the swag tool, install it using command:
+Project documentation following the TOME template:
+
+- [`docs/README.md`](docs/README.md) — documentation index
+- [`docs/charter.md`](docs/charter.md) — project charter (start here)
+- [`docs/architecture.md`](docs/architecture.md) — architecture of record
+- [`docs/decisions/`](docs/decisions/) — Architecture Decision Records (ADRs)
+- [`docs/specs/`](docs/specs/) — behavioral specifications
+- [`docs/api/`](docs/api/) — Swagger/OpenAPI documentation
+
+#### Generating Swagger docs
+
+If you need the swag tool, install it using command:
 
 ```bash
 go get -u github.com/swaggo/swag/cmd/swag
