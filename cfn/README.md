@@ -1,147 +1,112 @@
-# sre-go-helloworld go reference example
+# ioc-scale-cfn-svc
 
-This project is to be used as a template for new Go based services. It provides
-a light framework for how to structure your codebase, the build and deployment
-components used in our CI/CD pipelines, and some boilerplate code used in many
-of our services. Remember, this is a template and your use case might not need
-everything provided. Delete what you don't need, because you can always come
-back to this template for reference later.
+**Cognition Fabric Node (CFN)** — the central orchestration plane for Cognition Fabric.
 
-This "boilerplate" Go microservice showcases the following features:
+Part of the **Cognition Fabric for Scaling** area within the **Internet of Cognition (IoC)** BHAG.
 
-- CI/CD Setup
-- Config Management
-- Secrets Management
-- Database Access
-- HTTP Server Example
-- Builds with Docker
-- Deployment with Helm Charts
-- Local dev environment with Docker Compose
-- Lifecycle management of long running background jobs
+## What is CF?
 
-## Quick Start
+Multi-agent systems generate rich cognitive signals — traces, trajectories, findings — but need
+a fabric to route those signals to Cognition Engines (CEs) that act on them. CF is that fabric.
 
-## How to use sre-go-helloworld as a template
+CF provides:
 
-1. Create a new repo from the template [sre-go-helloworld](https://github.com/cisco-eti/sre-go-helloworld) repo by clicking on the `Use this template` button on the upper right.
-    ![](docs/assets/use_as_template.png)
-    * Select `cisco-eti` as the Owner and choose a short unique name for the repo (e.g., `<CEC_ID>app`). This repo name will be used as the default name for your new application.
-    * Select `Public` visibility
-    ![](docs/assets/new_repo.png)
+- **Cognition Store** — shared CE memory layer for publishing and consuming findings
+- **Three-tier API surface** — Analytics (read-only), Active (MAS engagement), Enforcing (block/modify/inject)
+- **CE routing and chaining** — compose and sequence Cognition Engines across the fabric
+- **OXP integration** — trajectories and cognitive enrichment as first-class fabric signals
 
-1. Clone the new repo to your local development environment.
-    ```
-    git clone git@github.com:cisco-eti/<YOUR_APP_NAME>.git
-    ```
+## Architecture
 
-1. `cd` into the repo and run the `runme.sh` to reconfigure the repo for your new application.
-    ```shell
-    ./runme.sh
-    ```
-
-1. The previous step should have created a new branch (named `<your app name>-<random string>`). Create a PR from that branch and merge it.
-
-1. Reach out to SRE team in the [**Ask ET&I SRE**](https://eurl.io/#e7SKpvpKj) space to request a fully automated CI/CD pipeline for your new application
-
-After the SRE creates the CI/CD pipeline and deploys your application, you can navigate to `https://<YOUR_APP_NAME>.int.dev.eticloud.io/` to see your deployed application.
-
-See the [Troubleshooting](docs/troubleshooting.md) page if you run into any issues.
-
-## sre-go-helloworld developer setup
-
-## Quick links
-
-- [Github Actions pipeline](https://github.com/cisco-eti/sre-go-helloworld/actions)
-- [SonarQube project](https://sonar.us-east.devhub-cloud.cisco.com/dashboard?id=openg-go-helloworld&codeScope=overall)
-
-## Instructions for Developers
-
-### Install git hook to autoformat and run tests
-
-From the main directory, run:
-
-```bash
-ln -s $(pwd)/.github/githooks/pre-commit .git/hooks/pre-commit`
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         Multi-Agent Systems (MAS)                           │
+└───────────────────────────────────┬─────────────────────────────────────────┘
+                                    │
+                                    ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        Cognition Fabric (CF)                                │
+│                                                                             │
+│  ┌──────────────┐   ┌──────────────┐   ┌──────────────┐                     │
+│  │  Analytics   │   │    Active    │   │  Enforcing   │  ◄── Three-tier API │
+│  │  (read-only) │   │ (engagement) │   │(dispositions)│                     │
+│  └──────────────┘   └──────────────┘   └──────────────┘                     │
+│                                                                             │
+│  ┌──────────────────────────────────────────────────────┐                   │
+│  │              Cognition Store (findings)              │                   │
+│  └──────────────────────────────────────────────────────┘                   │
+│                                                                             │
+│  ┌──────────────────────────────────────────────────────┐                   │
+│  │           CE Routing & Chaining                      │                   │
+│  └──────────────────────────────────────────────────────┘                   │
+└───────────┬─────────────────┬─────────────────┬─────────────────────────────┘
+            │                 │                 │
+            ▼                 ▼                 ▼
+    ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+    │     OXP      │  │  Enforcement │  │  Cognition   │
+    │ (trajectories│  │    Proxy     │  │   Engines    │
+    │  & traces)   │  │ (in-path)    │  │ (CASA, GATS) │
+    └──────────────┘  └──────────────┘  └──────────────┘
 ```
 
-## Source Code Structure
+## Key contracts
 
-### /pkg
+| Contract | Direction | Purpose |
+|----------|-----------|---------|
+| `ioc.ce.v1` | CF → Enforcement Proxy | Enforcement contract — dispositions (block/modify/inject) |
+| `ioc.cf.tracing.v1` | CF → Enforcement Proxy | Tracing contract — correlated traces into CF |
+| Analytics API | CEs → CF | Read-only observability queries |
+| Active API | CEs → CF | Direct MAS engagement |
+| Enforcing API | CEs → CF | Issue dispositions via Enforcement Proxy |
 
-  This will contain the libraries internal to the app
+## Focus areas
 
-### /docs
+| Area | Description |
+|------|-------------|
+| **OXP core integration** | Refactor CF to integrate OXP as a first-class source of cognitive signal |
+| **Cognition Store** | Build the store as required by COGS and GATS CEs |
+| **Three-tier CF API surface** | Analytics, Active, and Enforcing APIs |
+| **CE support** | Routing and chaining of Cognition Engines across the fabric |
+| **L9 interaction with MAS** | Passive, active, and enforcing modes of L9 interaction |
 
-  If you need the swag tool, install it using command:
+## Consumers
+
+- **CASA CE** — publishes/consumes findings via Cognition Store
+- **Detective Investigations CE** — CE chaining, findings access
+- **GATS CEs** — Enforcing tier dispositions
+- **Security Detections CE** — Analytics tier queries
+- **Enforcement Proxy** — executes enforcement in-path via `ioc.ce.v1`
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [`docs/charter.md`](docs/charter.md) | Project charter — problem, scope, goals |
+| [`docs/architecture.md`](docs/architecture.md) | Architecture of record |
+| [`docs/dependencies.md`](docs/dependencies.md) | Project dependencies and relationships |
+| [`docs/glossary.md`](docs/glossary.md) | Term definitions |
+| [`docs/decisions/`](docs/decisions/) | Architecture Decision Records (ADRs) |
+| [`docs/specs/`](docs/specs/) | Behavioral specifications |
+
+## Development
+
+### Prerequisites
+
+- Go 1.24+
+
+### Setup
 
 ```bash
-go get -u github.com/swaggo/swag/cmd/swag
-go install github.com/swaggo/swag/cmd/swag
-go mod tidy
+# Clone the repo
+git clone git@github.com:cisco-eti/ioc-scale-cfn-svc.git
+cd ioc-scale-cfn-svc
+
+# Install git hooks
+ln -s $(pwd)/.github/githooks/pre-commit .git/hooks/pre-commit
 ```
 
-  This contains the rest api specifications in JSON/ yaml. This specifications
-  would be used for api documentation. Generated from handler comments using command:
+## Team
 
-```bash
-swag init --parseDependency --parseInternal
-```
+**T3:** CF — Darren Lau (Lead), Chidumga Izuzu, Samuel Yang, Shridhar Shah
 
-  Then, if you want to play with the API, run the swagger docker container using:
-
-```bash
-docker run --name swagger_ui --rm -p 8080:8080 -e SWAGGER_JSON=/docs/swagger.json -v $(pwd)/docs:/docs swaggerapi/swagger-ui
-```
-
-Open a browser to the swagger UI [http://localhost:8080/](http://localhost:8080/), put http://localhost:5000/docs in the input
-field and click on explore button.
-
-### /build/
-
-Contains most of the CI build artifacts
-
-### /deploy/
-
-This contains system and container orchestration, deployment configurations and templates.
-
-### /.github/
-
-This will have github specific configs, githooks (e.g. go_fmt, staticcheck etc.), contributions
-
-### cmd/helloworld/main.go
-
-This is the main package for the microservice.
-
-### /woke/
-
-Contains configurations related to inclusive linting
-
-
-## Style Guide
-
-Please refer to this style guide to keep code clean, readable, and consistent:
-https://google.github.io/styleguide/go/best-practices
-
-
-## Effective Go
-
-Please refer to the following resources to produce effective, idiomatic,
-readable code in Go:
-- https://go.dev/doc/effective_go
-- https://go-proverbs.github.io
-- https://go.dev/talks/2013/bestpractices.slide
-- https://go.dev/talks/2014/names.slide
-- https://go.dev/talks/2014/readability.slide
-
-More resources:
-- https://dave.cheney.net/2020/02/23/the-zen-of-go
-- https://rakyll.org/style-packages
-- https://github.com/pthethanh/effective-go
-- https://dmitri.shuralyov.com/idiomatic-go
-- https://github.com/golang-standards/project-layout/issues/117
-
-These are examples of big idiomatic projects:
-- https://github.com/perkeep/perkeep
-- https://github.com/tailscale/tailscale
-- https://github.com/upspin/upspin
-- https://github.com/robpike/ivy
+See [`docs/team-assignments.md`](docs/team-assignments.md) for full roster.
