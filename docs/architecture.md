@@ -81,11 +81,11 @@ The **Cognition Fabric Node (CFN)** handles:
 
 ## Key contracts
 
-| Contract | From | To | Purpose |
-|----------|------|-----|---------|
-| `ioc.ce.v1` | CF | Enforcement Proxy | Enforcement contract — dispositions |
-| `ioc.cf.tracing.v1` | CF | Enforcement Proxy | Tracing contract — correlated traces |
-| L9 message schema | L9 T3 | CF | Message and interaction semantics |
+| Contract | From | To | Protocol | Purpose | Status |
+|----------|------|-----|----------|---------|--------|
+| `ioc.ce.v1` | CF | Enforcement Proxy | gRPC/Proto | Enforcement contract — dispositions (`allow`/`block`/`modify`) | [Under discussion](discussions.md#d1-enforcement-api-contract) |
+| `ioc.cf.tracing.v1` | CF | Enforcement Proxy | TBD | Tracing contract — correlated traces | Not started |
+| L9 message schema | L9 T3 | CF | — | Message and interaction semantics | Dependent on L9 T3 |
 
 ## Deployment
 

@@ -1,16 +1,25 @@
 # Specs
 
-Specifications for the behavior of the Cognition Fabric Node service. These stay high-level and
+<!-- kind: source · source of truth: GitHub (this directory) -->
+
+Specifications for the behavior of Cognition Fabric (CF). These stay high-level and
 describe **what** the service must do; byte-level contracts and implementation detail arrive
 with the code.
 
 ## Index
 
-| Spec | Scope |
-|------|-------|
-| — | *No specs recorded yet* |
+| Spec | Scope | Status |
+|------|-------|--------|
+| — | *No finalized specs yet* | — |
+
+## Pending
+
+The following are under discussion and will become specs once finalized:
+
+- [Enforcement API contract](../discussions.md#d1-enforcement-api-contract) — initial agreement with Enforcement Proxy T3
 
 ## Related
 
-- [API documentation](../api/) — Swagger/OpenAPI specs (generated from handler comments)
+- [Discussions](../discussions.md) — open questions and in-progress API designs
 - [Decisions](../decisions/README.md) — rationale behind architectural choices
+- [Architecture](../architecture.md) — three-tier API surface
