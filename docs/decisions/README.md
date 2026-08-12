@@ -8,7 +8,7 @@ ones they replace rather than editing history.
 
 - One file per decision, numbered `NNNN-title.md`, with **Status**, **Context**,
   **Decision**, and **Consequences**.
-- Topics still **under discussion** live in [`../discussions.md`](../discussions.md) until
+- Topics still **under discussion** live in [`../discussions/`](../discussions/README.md) until
   resolved into an ADR.
 - The combined pending-and-decided view is [`../decision-log.md`](../decision-log.md).
 
