@@ -18,7 +18,7 @@ This set follows the org TOME template list. Each file notes its category:
 | [`charter.md`](charter.md) | stable | The problem, why now, alignment, scope, ICP, goals, and KPIs. **The highest-value document here.** |
 | [`roadmap.md`](roadmap.md) | generated | Epic-only roadmap snapshot. |
 | [`architecture.md`](architecture.md) | source | The architecture of record. |
-| [`discussions.md`](discussions.md) | generated | Open questions and discussions. |
+| [`discussions/`](discussions/README.md) | generated | Open questions and discussions. |
 | [`team-assignments.md`](team-assignments.md) | stable | Roster, leadership and decision responsibility, advisors, partner engagement owners. |
 | [`dependencies.md`](dependencies.md) | source + generated | Project-level dependency edges. |
 | [`issues.md`](issues.md) | generated | Issues, risks, and disagreements. |
