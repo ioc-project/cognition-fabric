@@ -9,6 +9,9 @@ Open questions and discussions that have not yet been resolved into ADRs or fina
 | ID | Topic | Status | Owner | Date |
 |----|-------|--------|-------|------|
 | [D1](0001-enforcement-api-contract.md) | Enforcement API contract | Initial agreement | CF + Enforcement Proxy | 2026-08-11 |
+| [D2](0002-workspace-mas-id-flow-from-oxp.md) | Mas and Workspace Identity Propagation | Open | CF + OXP| 2026-08-11 |
+
+
 
 ## Recently resolved
 
