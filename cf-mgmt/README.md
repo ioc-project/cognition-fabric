@@ -1,6 +1,6 @@
 # Internet of Cognition (IOC) - Cognition Fabric Node (CFN) Management Backend Service
 
-[![Docker](https://img.shields.io/badge/docker-ghcr.io-blue?logo=docker)](https://github.com/orgs/outshift-open/packages/container/package/ioc-cfn-mgmt-plane-svc)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io-blue?logo=docker)](https://github.com/orgs/cisco-eti/packages/container/package/ioc-scale-cf-mgmt-svc)
 [![GitHub Pages Site](https://img.shields.io/badge/GitHub%20Pages-Visit-green?logo=github)](https://scaling-potato-qm8j7n7.pages.github.io/)
 
 IoC CFN Management Backend Service - FastAPI backend for workspaces, users, API keys, Cognitive Fabric Nodes, and Multi-Agentic Systems
@@ -79,7 +79,7 @@ task docker-compose-full-stack-down-with-volumes
 ```
 
 > **Note:** The full-stack profile includes `ioc-cfn-svc` (port 9002), which now depends on
-> `ioc-knowledge-db` (PostgreSQL), `ioc-cfn-mgmt-plane-svc`,
+> `ioc-knowledge-db` (PostgreSQL), `ioc-scale-cf-mgmt-svc`,
 > and `ioc-knowledge-memory-svc`. Startup is gated on all services being healthy.
 > The service shares database credentials (`IOC_KNOWLEDGE_DB_USER`, `IOC_KNOWLEDGE_DB_PASSWORD`)
 > from `.env`.

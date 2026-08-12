@@ -64,21 +64,21 @@ services:
 
   # Mgmt. Plane Backend Service - FastAPI backend for workspaces, users, CFN nodes
   # Port Mapping: 9000:9000 (same port inside and outside container)
-  ioc-cfn-mgmt-plane-svc:
+  ioc-scale-cf-mgmt-svc:
     build:
       context: .
       dockerfile: Dockerfile
-    # Image Link: https://github.com/orgs/outshift-open/packages/container/package/ioc-cfn-mgmt-plane-svc
-    image: ghcr.io/outshift-open/ioc-cfn-mgmt-plane-svc:v0.2.0
+    # Image Link: https://github.com/orgs/cisco-eti/packages/container/package/ioc-scale-cf-mgmt-svc
+    image: ghcr.io/cisco-eti/ioc-scale-cf-mgmt-svc:v0.2.0
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
-    container_name: ioc-cfn-mgmt-plane-svc
+    container_name: ioc-scale-cf-mgmt-svc
     profiles:
       - full-stack
       - mgmt-plane
     ports:
       - "9000:9000"
     environment:
-      - SERVICE_NAME=ioc-cfn-mgmt-plane-svc
+      - SERVICE_NAME=ioc-scale-cf-mgmt-svc
       - APPLICATION_VERSION=dev
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - ADMIN_USER_PASSWORD=${ADMIN_USER_PASSWORD}
@@ -102,7 +102,7 @@ services:
           "CMD",
           "curl",
           "-f",
-          "http://ioc-cfn-mgmt-plane-svc:9000/api/internal/diagnostics/health",
+          "http://ioc-scale-cf-mgmt-svc:9000/api/internal/diagnostics/health",
         ]
       interval: 30s
       timeout: 10s
@@ -124,13 +124,13 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=9001
-      - CFN_UI_API_BASE_URL=http://ioc-cfn-mgmt-plane-svc:9000
+      - CFN_UI_API_BASE_URL=http://ioc-scale-cf-mgmt-svc:9000
       - NEXT_PUBLIC_CFN_UI_API_BASE_URL=http://localhost:9000
       - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:9001}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
     restart: unless-stopped
     depends_on:
-      ioc-cfn-mgmt-plane-svc:
+      ioc-scale-cf-mgmt-svc:
         condition: service_healthy
 
   # Knowledge Memory Service - Graph + Vector Memory Storage
@@ -149,7 +149,7 @@ services:
       - SERVICE_NAME=ioc-knowledge-memory-svc
       - APPLICATION_VERSION=dev
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - MEMORY_PROVIDER_REGISTRATION_URL=http://ioc-cfn-mgmt-plane-svc:9000
+      - MEMORY_PROVIDER_REGISTRATION_URL=http://ioc-scale-cf-mgmt-svc:9000
       - MEMORY_PROVIDER_ID=${MEMORY_PROVIDER_ID:-de54dacb-60ab-476a-9e83-64e09f867358}
       - IOC_KNOWLEDGE_DB_HOST=ioc-knowledge-memory-svc-db
       - IOC_KNOWLEDGE_DB=${IOC_KNOWLEDGE_DB:-ioc-knowledge-db}
@@ -191,7 +191,7 @@ services:
       - "9009:9001"
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
-      - MGMT_URL=${MGMT_URL:-http://ioc-cfn-mgmt-plane-svc:9000}
+      - MGMT_URL=${MGMT_URL:-http://ioc-scale-cf-mgmt-svc:9000}
       - CFN_NAME=${CFN_NAME:-cfn-new}
       - CFN_IP=${CFN_IP:-"Not Set"}
       - HEARTBEAT_INTERVAL_SECONDS=${HEARTBEAT_INTERVAL_SECONDS:-10}

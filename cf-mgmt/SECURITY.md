@@ -1,7 +1,7 @@
 # Security Policies and Procedures
 
 This document outlines security procedures and general policies for the
-`ioc-cfn-mgmt-plane-svc` project.
+`ioc-scale-cf-mgmt-svc` project.
 
 - [Disclosing a security issue](#disclosing-a-security-issue)
 - [Vulnerability management](#vulnerability-management)
@@ -9,12 +9,12 @@ This document outlines security procedures and general policies for the
 
 ## Disclosing a security issue
 
-The `ioc-cfn-mgmt-plane-svc` maintainers take all security issues in the project
-seriously. Thank you for improving the security of `ioc-cfn-mgmt-plane-svc`. We
+The `ioc-scale-cf-mgmt-svc` maintainers take all security issues in the project
+seriously. Thank you for improving the security of `ioc-scale-cf-mgmt-svc`. We
 appreciate your dedication to responsible disclosure and will make every effort
 to acknowledge your contributions.
 
-`ioc-cfn-mgmt-plane-svc` leverages GitHub's private vulnerability reporting.
+`ioc-scale-cf-mgmt-svc` leverages GitHub's private vulnerability reporting.
 
 To learn more about this feature and how to submit a vulnerability report,
 review [GitHub's documentation on private reporting](https://docs.github.com/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability).

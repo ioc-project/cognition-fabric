@@ -1,5 +1,5 @@
 [project]
-name = "ioc-cfn-mgmt-plane-svc"
+name = "ioc-scale-cf-mgmt-svc"
 version = "0.1.0"
 description = "IoC CFN Management Backend Service"
 readme = "README.md"

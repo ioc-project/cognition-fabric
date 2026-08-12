@@ -93,7 +93,7 @@ tasks:
   docker-run:
     desc: Run Docker container with docker-compose
     cmds:
-      - docker compose --env-file .env up ioc-cfn-mgmt-plane-svc
+      - docker compose --env-file .env up ioc-scale-cf-mgmt-svc
 
   docker-compose-full-stack-pull:
     desc: Pull latest images for all services with docker-compose

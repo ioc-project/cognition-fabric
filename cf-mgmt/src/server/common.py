@@ -9,7 +9,7 @@ import bcrypt
 # Get logger instance (logging is setup in main.py)
 logger = logging.getLogger(__name__)
 
-service_name = os.environ.get("SERVICE_NAME", "ioc-cfn-mgmt-plane-svc")
+service_name = os.environ.get("SERVICE_NAME", "ioc-scale-cf-mgmt-svc")
 
 
 def hash_password(password: str) -> str:

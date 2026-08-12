@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## User specific instructions
-- Make changes in backend service: ioc-cfn-mgmt-plane-svc only
+- Make changes in backend service: ioc-scale-cf-mgmt-svc only
 - Do not modify frontend service: ioc-cfn-mgmt-plane-ui
 
 ## Repository Overview
@@ -23,7 +23,7 @@ This is a multi-service platform with two main services:
            │
            ▼
 ┌────────────────────────┐
-│ ioc-cfn-mgmt-plane-svc  │  FastAPI + Python 3.10+
+│ ioc-scale-cf-mgmt-svc  │  FastAPI + Python 3.10+
 │      Port 9000         │  (Backend Service)
 └────────┬───────────────┘
          │
@@ -65,7 +65,7 @@ npm run build:clean   # Clean build
 
 **Test credentials:** Username: `admin`, Password: `admin`
 
-### ioc-cfn-mgmt-plane-svc(Backend Service)
+### ioc-scale-cf-mgmt-svc(Backend Service)
 
 Uses **Task** and **Poetry**. Requires PostgreSQL database.
 
@@ -726,10 +726,10 @@ task helm-lint
 task helm-template
 
 # Install
-helm install ioc-cfn-mgmt-plane-svc./deploy/charts/ioc-cfn-mgmt-plane-svc--namespace tkf-platform
+helm install ioc-scale-cf-mgmt-svc./deploy/charts/ioc-scale-cf-mgmt-svc--namespace tkf-platform
 
 # Upgrade
-helm upgrade ioc-cfn-mgmt-plane-svc./deploy/charts/ioc-cfn-mgmt-plane
+helm upgrade ioc-scale-cf-mgmt-svc./deploy/charts/ioc-cfn-mgmt-plane
 ```
 
 Configure health probes to use `/api/internal/diagnostics/health` endpoint.
@@ -932,7 +932,7 @@ cfn_config:
 
 **Step 1: Apply Database Migration**
 ```bash
-cd ioc-cfn-mgmt-plane-svc
+cd ioc-scale-cf-mgmt-svc
 task docker-compose-db-up
 task db-migrate-apply
 ```
