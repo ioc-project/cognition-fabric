@@ -15,18 +15,11 @@ permissions:
 jobs:
   validate:
     name: Validate
-    runs-on:
-      group: arc-runner-set
-    container:
-      image: ${{ vars.DEFAULT_CONTAINER_RUNNER }}
-      options: --user root
-      credentials:
-        username: x-access-token
-        password: ${{ secrets.GITHUB_TOKEN }}
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@83b7061638ee4956cf7545a6f7efe594e5ad0247 # v3.5.1
+        uses: actions/checkout@v4
 
       - name: Validate docs structure
         run: |
@@ -40,26 +33,9 @@ jobs:
           echo "Documentation structure valid."
 
   # TODO: Add these jobs back when code is implemented
-  # - checkout-unit-tests: Run unit tests
-  # - call-docker-build-push: Build and push Docker image
-  # - call-corona-blackduck-scan: Security scanning
-  # - call-sonar-scan: Code quality scanning
-  # - call-helm-publish: Publish Helm charts
-  # - call-trigger-cd: Trigger deployment
-
-  ci-status:
-    name: CI Status
-    needs: [validate]
-    if: always()
-    runs-on:
-      group: arc-runner-set
-    steps:
-      - name: Check status
-        if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
-        run: |
-          echo -e "\033[31m*** WORKFLOW FAILED ***\033[0m"
-          exit 1
-      - name: Report success
-        run: |
-          echo -e "\033[1;36m*** WORKFLOW SUCCEEDED ***\033[0m"
-          exit 0
+  # - unit-tests: Run unit tests
+  # - docker-build-push: Build and push Docker image
+  # - security-scan: Security scanning
+  # - sonar-scan: Code quality scanning
+  # - helm-publish: Publish Helm charts
+  # - trigger-cd: Trigger deployment
