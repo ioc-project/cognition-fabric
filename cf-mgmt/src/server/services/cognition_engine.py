@@ -25,9 +25,8 @@ from server.schemas.cognition_engine import (
 )
 
 from server.utils import generate_uuid
-from server.utils.encryption import process_config_for_storage
 
-_IMMUTABLE_CE_FIELDS = {"cfn_id", "version", "name", "kinds_subkinds", "subprotocols", "category"}
+_IMMUTABLE_CE_FIELDS = {"cfn_id", "ce_type"}
 
 
 class CognitionEngineService:
@@ -63,27 +62,21 @@ class CognitionEngineService:
                         detail=f"Cognition Fabric Node '{engine_data.cfn_id}' not found",
                     )
 
+                # Upsert by (cfn_id, ce_type) - each CE type can only have one active registration per CFN
                 existing = (
                     session.query(CognitionEngineModel)
                     .filter(
                         CognitionEngineModel.cfn_id == engine_data.cfn_id,
-                        CognitionEngineModel.name == engine_data.name,
-                        CognitionEngineModel.version == engine_data.version,
+                        CognitionEngineModel.ce_type == engine_data.ce_type.value,
                         CognitionEngineModel.deleted_at.is_(None),
                     )
                     .first()
                 )
 
                 if existing:
-                    existing.url = engine_data.url
-                    existing.kinds_subkinds = engine_data.kinds_subkinds  # Required field
-                    existing.subprotocols = engine_data.subprotocols or []
-                    existing.category = engine_data.category.value  # Store enum value as string
-                    existing.auth = _auth_for_storage(engine_data.auth)
-                    existing.capabilities = engine_data.capabilities or []
-                    existing.metrics = engine_data.metrics or []
+                    existing.base_url = engine_data.base_url
+                    existing.endpoint = engine_data.endpoint
                     existing.mas_auto_associate = engine_data.mas_auto_associate
-                    existing.config = engine_data.config or {}
                     existing.mas_config = engine_data.mas_config or {}
                     existing.updated_by = user_id
                     existing.updated_at = datetime.now(timezone.utc)
@@ -94,19 +87,12 @@ class CognitionEngineService:
                     engine = CognitionEngineModel(
                         id=generate_uuid(),
                         cfn_id=engine_data.cfn_id,
-                        name=engine_data.name,
-                        url=engine_data.url,
-                        version=engine_data.version,
-                        kinds_subkinds=engine_data.kinds_subkinds,  # Required field
-                        subprotocols=engine_data.subprotocols or [],
-                        category=engine_data.category.value,  # Store enum value as string
-                        auth=_auth_for_storage(engine_data.auth),
-                        capabilities=engine_data.capabilities or [],
-                        metrics=engine_data.metrics or [],
+                        ce_type=engine_data.ce_type.value,  # Store enum value as string
+                        base_url=engine_data.base_url,
+                        endpoint=engine_data.endpoint,
                         enabled=True,
                         mas_auto_associate=engine_data.mas_auto_associate,
                         status="offline",
-                        config=engine_data.config or {},
                         mas_config=engine_data.mas_config or {},
                         created_by=user_id,
                     )
@@ -119,11 +105,9 @@ class CognitionEngineService:
                     CognitionEngineResponse(
                         ce_id=engine.id,
                         cfn_id=engine.cfn_id,
-                        name=engine.name,
-                        version=engine.version,
-                        kinds_subkinds=engine.kinds_subkinds,
-                        subprotocols=engine.subprotocols,
-                        category=engine.category,
+                        ce_type=engine.ce_type,
+                        base_url=engine.base_url,
+                        endpoint=engine.endpoint,
                         enabled=engine.enabled,
                         mas_auto_associate=engine.mas_auto_associate,
                         status=engine.status,
@@ -216,17 +200,13 @@ class CognitionEngineService:
                         CognitionEngineListItem(
                             id=e.id,
                             cfn_id=e.cfn_id,
-                            name=e.name,
-                            version=e.version,
-                            kinds_subkinds=e.kinds_subkinds,
-                            subprotocols=e.subprotocols,
-                            category=e.category,
-                            url=e.url,
+                            ce_type=e.ce_type,
+                            base_url=e.base_url,
+                            endpoint=e.endpoint,
                             enabled=e.enabled,
                             mas_auto_associate=e.mas_auto_associate,
                             status=e.status,
                             last_seen=e.last_seen,
-                            config=e.config,
                             mas_config=e.mas_config,
                             created_at=e.created_at,
                         )
@@ -423,8 +403,10 @@ class CognitionEngineService:
 
                 _validate_cfn_active(session, engine.cfn_id)
 
-                if "url" in provided:
-                    engine.url = provided["url"]
+                if "base_url" in provided:
+                    engine.base_url = provided["base_url"]
+                if "endpoint" in provided:
+                    engine.endpoint = provided["endpoint"]
                 if "enabled" in provided:
                     if not provided["enabled"]:
                         from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
@@ -450,14 +432,6 @@ class CognitionEngineService:
                                 detail="CE cannot be disabled while it has attached MAS",
                             )
                     engine.enabled = provided["enabled"]
-                if "capabilities" in provided:
-                    engine.capabilities = provided["capabilities"]
-                if "metrics" in provided:
-                    engine.metrics = provided["metrics"]
-                if "config" in provided:
-                    engine.config = provided["config"]
-                if "auth" in provided:
-                    engine.auth = _auth_for_storage(provided["auth"])
                 if "mas_auto_associate" in provided:
                     engine.mas_auto_associate = provided["mas_auto_associate"]
 
@@ -726,20 +700,14 @@ class CognitionEngineService:
                 return [
                     {
                         "id": e.id,
-                        "name": e.name,
-                        "url": e.url,
-                        "kinds_subkinds": e.kinds_subkinds or {},
-                        "subprotocols": e.subprotocols or [],
-                        "category": e.category or "COG",
+                        "ce_type": e.ce_type,
+                        "base_url": e.base_url,
+                        "endpoint": e.endpoint,
                         "enabled": e.enabled,
                         "status": e.status,
                         "last_seen": e.last_seen.isoformat() if e.last_seen else None,
-                        "capabilities": e.capabilities or [],
-                        "metrics": e.metrics or [],
-                        "config": e.config or {},
                         "mas_config": e.mas_config or {},
                         "mas_auto_associate": e.mas_auto_associate,
-                        "auth": e.auth,
                     }
                     for e in engines
                 ]
@@ -868,30 +836,17 @@ def _to_detail(engine: CognitionEngineModel) -> CognitionEngineDetail:
     return CognitionEngineDetail(
         id=engine.id,
         cfn_id=engine.cfn_id,
-        name=engine.name,
-        version=engine.version,
-        kinds_subkinds=engine.kinds_subkinds,
-        subprotocols=engine.subprotocols,
-        category=engine.category,
-        url=engine.url,
+        ce_type=engine.ce_type,
+        base_url=engine.base_url,
+        endpoint=engine.endpoint,
         enabled=engine.enabled,
         mas_auto_associate=engine.mas_auto_associate,
-        capabilities=engine.capabilities,
-        metrics=engine.metrics,
         status=engine.status,
         last_seen=engine.last_seen,
-        config=engine.config,
         mas_config=engine.mas_config,
         created_at=engine.created_at,
         updated_at=engine.updated_at,
     )
-
-
-def _auth_for_storage(auth: Optional[dict]) -> Optional[dict]:
-    """Encrypt credentials inside an auth dict before DB storage."""
-    if not auth:
-        return auth
-    return process_config_for_storage({"auth": copy.deepcopy(auth)}).get("auth")
 
 
 # Singleton instance

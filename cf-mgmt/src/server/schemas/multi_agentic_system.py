@@ -128,11 +128,9 @@ class MasCognitionEngineItem(BaseModel):
     """Schema for a cognition engine associated with a MAS"""
 
     ce_id: str
-    name: str
-    kinds_subkinds: Optional[dict]
-    subprotocols: Optional[list]
-    category: Optional[str]
-    url: str
+    ce_type: str
+    base_url: str
+    endpoint: str
     enabled: bool
     status: str
     mas_config: Optional[dict]

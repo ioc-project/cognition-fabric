@@ -399,11 +399,9 @@ class MultiAgenticSystemService:
                         ce_by_mas.setdefault(junc.mas_id, []).append(
                             MasCognitionEngineItem(
                                 ce_id=junc.ce_id,
-                                name=ce.name,
-                                kinds_subkinds=ce.kinds_subkinds,
-                                subprotocols=ce.subprotocols,
-                                category=ce.category,
-                                url=ce.url,
+                                ce_type=ce.ce_type,
+                                base_url=ce.base_url,
+                                endpoint=ce.endpoint,
                                 enabled=ce.enabled,
                                 status=ce.status,
                                 mas_config=junc.mas_config,
@@ -486,11 +484,9 @@ class MultiAgenticSystemService:
                 ce_associations = [
                     MasCognitionEngineItem(
                         ce_id=junc.ce_id,
-                        name=ce.name,
-                        kinds_subkinds=ce.kinds_subkinds,
-                        subprotocols=ce.subprotocols,
-                        category=ce.category,
-                        url=ce.url,
+                        ce_type=ce.ce_type,
+                        base_url=ce.base_url,
+                        endpoint=ce.endpoint,
                         enabled=ce.enabled,
                         status=ce.status,
                         mas_config=junc.mas_config,
@@ -645,11 +641,9 @@ class MultiAgenticSystemService:
                 ce_associations = [
                     MasCognitionEngineItem(
                         ce_id=junc.ce_id,
-                        name=ce.name,
-                        kinds_subkinds=ce.kinds_subkinds,
-                        subprotocols=ce.subprotocols,
-                        category=ce.category,
-                        url=ce.url,
+                        ce_type=ce.ce_type,
+                        base_url=ce.base_url,
+                        endpoint=ce.endpoint,
                         enabled=ce.enabled,
                         status=ce.status,
                         mas_config=junc.mas_config,
@@ -768,11 +762,9 @@ class MultiAgenticSystemService:
                     ce_by_mas.setdefault(junc.mas_id, []).append(
                         MasCognitionEngineItem(
                             ce_id=junc.ce_id,
-                            name=ce.name,
-                            kinds_subkinds=ce.kinds_subkinds,
-                            subprotocols=ce.subprotocols,
-                            category=ce.category,
-                            url=ce.url,
+                            ce_type=ce.ce_type,
+                            base_url=ce.base_url,
+                            endpoint=ce.endpoint,
                             enabled=ce.enabled,
                             status=ce.status,
                             mas_config=junc.mas_config,

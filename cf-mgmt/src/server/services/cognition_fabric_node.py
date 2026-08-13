@@ -1124,18 +1124,12 @@ class CognitionFabricNodeService:
                 engines_payload = [
                     {
                         "id": e.id,
-                        "name": e.name,
-                        "url": e.url,
-                        "kinds_subkinds": e.kinds_subkinds or {},
-                        "subprotocols": e.subprotocols or [],
-                        "category": e.category,
+                        "ce_type": e.ce_type,
+                        "base_url": e.base_url,
+                        "endpoint": e.endpoint,
                         "enabled": e.enabled,
                         "status": e.status,
-                        "capabilities": e.capabilities or [],
-                        "metrics": e.metrics or [],
-                        "config": e.config or {},
                         "mas_config": e.mas_config or {},
-                        "auth": process_config_for_cfn({"auth": e.auth}).get("auth") if e.auth else None,
                     }
                     for e in ce_rows
                 ]
@@ -1189,12 +1183,12 @@ class CognitionFabricNodeService:
                                         agent["agentic_memory"]["config"]
                                     )
 
-                        # Embed minimal CE info per MAS: id, name, and effective mas_config
+                        # Embed minimal CE info per MAS: id, ce_type, and effective mas_config
                         # (junction override if set, otherwise CE factory default)
                         system_data["cognition_engines"] = [
                             {
                                 "id": row.ce_id,
-                                "name": ce_by_id[row.ce_id]["name"],
+                                "ce_type": ce_by_id[row.ce_id]["ce_type"],
                                 "mas_config": (
                                     row.mas_config if row.mas_config is not None else ce_by_id[row.ce_id]["mas_config"]
                                 ),
