@@ -1,5 +1,5 @@
 """
-CE registration logic for CASA Authorization CE.
+CE registration logic for CASA Cognition Engine.
 
 This module handles registration with the Cognition Fabric (CFN) on startup.
 Registration is idempotent - safe to run multiple times.
@@ -19,22 +19,30 @@ logger = logging.getLogger(__name__)
 
 
 # Constants
-CE_NAME = "CASA Authorization CE"
-CE_VERSION = os.getenv("CE_VERSION", "0.1.0")
+CE_TYPE = "CASA"  # CEType: CASA or DETECTIVE
+CE_ENDPOINT = "/authorize"  # API endpoint path for L9 enforcement
+
+
+class CEType(str, Enum):
+    """Type of Cognition Engine."""
+    CASA = "CASA"
+    DETECTIVE = "DETECTIVE"
 
 
 @dataclass
 class CERegistrationRequest:
     """
-    Minimal CE registration payload for CFN API.
+    CE registration payload matching ioc-scale-cf-mgmt-svc PR #7 schema.
 
-    Simplified payload for fake CE - only essentials.
-    Full L9 protocol fields (kinds_subkinds, subprotocols, etc.)
-    will be added once L9 refactor is finalized.
+    Simplified schema with predefined CE types (CASA, DETECTIVE) and
+    clearer separation of base_url + endpoint.
     """
-    name: str
-    url: str
-    version: str
+    cfn_id: str
+    ce_type: str  # "CASA" or "DETECTIVE"
+    base_url: str  # Base URL (e.g., "http://casa-ce:8000")
+    endpoint: str  # API endpoint path (e.g., "/authorize")
+    mas_auto_associate: bool = False
+    mas_config: Optional[dict] = None
 
 
 @dataclass
@@ -42,8 +50,9 @@ class CERegistrationResponse:
     """CE registration response from CFN."""
     ce_id: str
     cfn_id: str
-    name: str
-    version: str
+    ce_type: str
+    base_url: str
+    endpoint: str
     enabled: bool
     status: str
     created: bool
@@ -75,7 +84,7 @@ class CELifecycleClient:
         # Stored after successful registration
         self.ce_id: Optional[str] = None
         self.cfn_id: Optional[str] = None
-        self.name: Optional[str] = None
+        self.ce_type: Optional[str] = None
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create async HTTP client."""
@@ -112,14 +121,18 @@ class CELifecycleClient:
         """
         endpoint = f"{self.cfn_base_url}/api/cognition-engines"
         payload = {
-            "name": request.name,
-            "url": request.url,
-            "version": request.version,
+            "cfn_id": request.cfn_id,
+            "ce_type": request.ce_type,
+            "base_url": request.base_url,
+            "endpoint": request.endpoint,
+            "mas_auto_associate": request.mas_auto_associate,
         }
+        if request.mas_config:
+            payload["mas_config"] = request.mas_config
 
         try:
             client = await self._get_client()
-            logger.info(f"Registering CE '{request.name}' at {endpoint}")
+            logger.info(f"Registering CE type '{request.ce_type}' at {endpoint}")
 
             response = await client.post(
                 endpoint,
@@ -132,8 +145,9 @@ class CELifecycleClient:
                 result = CERegistrationResponse(
                     ce_id=data["ce_id"],
                     cfn_id=data["cfn_id"],
-                    name=data["name"],
-                    version=data["version"],
+                    ce_type=data["ce_type"],
+                    base_url=data["base_url"],
+                    endpoint=data["endpoint"],
                     enabled=data["enabled"],
                     status=data["status"],
                     created=data["created"],
@@ -142,11 +156,11 @@ class CELifecycleClient:
                 # Store for heartbeats
                 self.ce_id = result.ce_id
                 self.cfn_id = result.cfn_id
-                self.name = result.name
+                self.ce_type = result.ce_type
 
                 action = "created" if result.created else "updated"
                 logger.info(
-                    f"CE '{request.name}' {action}: ce_id={result.ce_id}, "
+                    f"CE type '{request.ce_type}' {action}: ce_id={result.ce_id}, "
                     f"status={result.status}, enabled={result.enabled}"
                 )
                 return result
@@ -191,7 +205,7 @@ class CELifecycleClient:
                     )
 
             except asyncio.CancelledError:
-                logger.info(f"Heartbeat task cancelled for CE '{self.name}'")
+                logger.info(f"Heartbeat task cancelled for CE type '{self.ce_type}'")
                 break
             except Exception as e:
                 logger.error(f"Heartbeat error: {e}")
@@ -204,7 +218,7 @@ _lifecycle_client: Optional[CELifecycleClient] = None
 
 async def register_casa_ce() -> None:
     """
-    Register CASA Authorization CE with CFN on startup.
+    Register CASA Cognition Engine with CFN on startup.
 
     This function:
     1. Checks CFN_URL environment variable
@@ -224,8 +238,10 @@ async def register_casa_ce() -> None:
 
     # Get configuration from environment
     cfn_url = os.getenv("CFN_URL", "").rstrip("/")
+    cfn_id = os.getenv("CFN_ID", "cfn-default")  # CFN ID this CE belongs to
     ce_host = os.getenv("COGNITION_ENGINE_HOST", "localhost")
     ce_port = os.getenv("COGNITION_ENGINE_PORT", "8000")
+    mas_auto_associate = os.getenv("MAS_AUTO_ASSOCIATE", "false").lower() == "true"
 
     if not cfn_url:
         logger.warning(
@@ -235,8 +251,8 @@ async def register_casa_ce() -> None:
         )
         return
 
-    ce_url = f"http://{ce_host}:{ce_port}"
-    logger.info(f"Starting CASA CE registration with cfn_url={cfn_url}, ce_url={ce_url}")
+    base_url = f"http://{ce_host}:{ce_port}"
+    logger.info(f"Starting CASA CE registration with cfn_url={cfn_url}, base_url={base_url}")
 
     # Create lifecycle client
     _lifecycle_client = CELifecycleClient(
@@ -245,11 +261,14 @@ async def register_casa_ce() -> None:
         timeout=10.0,
     )
 
-    # Define CASA CE configuration - minimal payload
+    # Define CASA CE configuration using new simplified schema
     ce_config = CERegistrationRequest(
-        name=CE_NAME,
-        url=ce_url,
-        version=CE_VERSION,
+        cfn_id=cfn_id,
+        ce_type=CE_TYPE,
+        base_url=base_url,
+        endpoint=CE_ENDPOINT,
+        mas_auto_associate=mas_auto_associate,
+        mas_config=None,
     )
 
     # Attempt registration

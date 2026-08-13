@@ -1,6 +1,6 @@
-# CASA Authorization API
+# CASA Cognition Engine
 
-Authorization API for CASA (Continuous Agent Semantic Authorization) Cognition Engine.
+CASA (Continuous Agent Semantic Authorization) Cognition Engine Service.
 
 **Note:** This is a **fake/mock CE** for testing and demonstration purposes.
 
@@ -29,14 +29,15 @@ Server runs on http://localhost:8000
 To register with Cognition Fabric (CFN):
 
 ```bash
-# Set CFN URL
+# Required: Set CFN URL and ID
 export CFN_URL="http://localhost:9002"
+export CFN_ID="cfn-default"
 
 # Optional: customize CE configuration
 export COGNITION_ENGINE_HOST="localhost"
 export COGNITION_ENGINE_PORT="8000"
-export CE_VERSION="0.1.0"
 export CE_HEARTBEAT_INTERVAL_SEC="30.0"
+export MAS_AUTO_ASSOCIATE="false"
 
 # Run server
 cd src
@@ -69,10 +70,11 @@ uv run pytest
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `CFN_URL` | CFN service base URL (e.g. "http://localhost:9002") | `""` (standalone) |
+| `CFN_ID` | CFN ID this CE belongs to | `"cfn-default"` |
 | `COGNITION_ENGINE_HOST` | Advertised host for this CE | `"localhost"` |
 | `COGNITION_ENGINE_PORT` | Advertised port for this CE | `"8000"` |
-| `CE_VERSION` | CE version for registration | `"0.1.0"` |
 | `CE_HEARTBEAT_INTERVAL_SEC` | Heartbeat interval in seconds | `"30.0"` |
+| `MAS_AUTO_ASSOCIATE` | Auto-associate CE with all MAS | `"false"` |
 | `LOG_LEVEL` | Logging level | `"INFO"` |
 
 ## Architecture
@@ -86,12 +88,12 @@ uv run pytest
 └────────┬────────┘
          │
          │ 1. POST /api/cognition-engines
-         │    {name, url, version}
+         │    {cfn_id, ce_type, base_url, endpoint}
          ▼
 ┌─────────────────┐
 │      CFN        │
-│  (injects       │
-│   cfn_id)       │
+│  (forwards to   │
+│  Mgmt Plane)    │
 └────────┬────────┘
          │
          │ 2. Forward to Management Plane
@@ -103,7 +105,7 @@ uv run pytest
 │   ce_id)        │
 └────────┬────────┘
          │
-         │ 3. Returns {ce_id, cfn_id, status, ...}
+         │ 3. Returns {ce_id, ce_type, status, ...}
          ▼
 ┌─────────────────┐
 │   CASA CE       │

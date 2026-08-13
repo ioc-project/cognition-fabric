@@ -16,8 +16,8 @@ from registration import (
     shutdown_lifecycle_client,
     get_ce_id,
     get_cfn_id,
-    CE_NAME,
-    CE_VERSION,
+    CE_TYPE,
+    CE_ENDPOINT,
 )
 
 
@@ -25,28 +25,33 @@ class TestCERegistrationRequest:
     """Test CERegistrationRequest dataclass."""
 
     def test_create_registration_request(self):
-        """Test creating a minimal registration request."""
+        """Test creating a registration request with new schema."""
         request = CERegistrationRequest(
-            name="Test CE",
-            url="http://localhost:8000",
-            version="0.1.0",
+            cfn_id="cfn-test",
+            ce_type="CASA",
+            base_url="http://localhost:8000",
+            endpoint="/authorize",
+            mas_auto_associate=False,
         )
 
-        assert request.name == "Test CE"
-        assert request.url == "http://localhost:8000"
-        assert request.version == "0.1.0"
+        assert request.cfn_id == "cfn-test"
+        assert request.ce_type == "CASA"
+        assert request.base_url == "http://localhost:8000"
+        assert request.endpoint == "/authorize"
+        assert request.mas_auto_associate is False
 
 
 class TestCERegistrationResponse:
     """Test CERegistrationResponse dataclass."""
 
     def test_create_registration_response(self):
-        """Test creating a registration response."""
+        """Test creating a registration response with new schema."""
         response = CERegistrationResponse(
             ce_id="ce-123",
             cfn_id="cfn-456",
-            name="Test CE",
-            version="0.1.0",
+            ce_type="CASA",
+            base_url="http://localhost:8000",
+            endpoint="/authorize",
             enabled=True,
             status="offline",
             created=True,
@@ -54,8 +59,9 @@ class TestCERegistrationResponse:
 
         assert response.ce_id == "ce-123"
         assert response.cfn_id == "cfn-456"
-        assert response.name == "Test CE"
-        assert response.version == "0.1.0"
+        assert response.ce_type == "CASA"
+        assert response.base_url == "http://localhost:8000"
+        assert response.endpoint == "/authorize"
         assert response.enabled is True
         assert response.status == "offline"
         assert response.created is True
@@ -104,7 +110,7 @@ class TestRegisterCasaCE:
         await register_casa_ce()
         assert "CFN_URL not set" in caplog.text
 
-    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"})
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002", "CFN_ID": "cfn-test"})
     @patch('registration.CELifecycleClient')
     async def test_successful_registration(self, mock_client_class):
         """Test successful CE registration."""
@@ -112,9 +118,10 @@ class TestRegisterCasaCE:
         mock_client = AsyncMock()
         mock_client.register = AsyncMock(return_value=CERegistrationResponse(
             ce_id="ce-123",
-            cfn_id="cfn-456",
-            name=CE_NAME,
-            version=CE_VERSION,
+            cfn_id="cfn-test",
+            ce_type=CE_TYPE,
+            base_url="http://localhost:8000",
+            endpoint=CE_ENDPOINT,
             enabled=True,
             status="offline",
             created=True,
@@ -134,16 +141,17 @@ class TestRegisterCasaCE:
         # Verify heartbeat was started
         mock_client.start_heartbeat.assert_called_once()
 
-    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002", "COGNITION_ENGINE_HOST": "example.com", "COGNITION_ENGINE_PORT": "9999"})
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002", "CFN_ID": "cfn-test", "COGNITION_ENGINE_HOST": "example.com", "COGNITION_ENGINE_PORT": "9999"})
     @patch('registration.CELifecycleClient')
     async def test_custom_ce_url(self, mock_client_class):
-        """Test CE URL constructed from environment variables."""
+        """Test CE base_url constructed from environment variables."""
         mock_client = AsyncMock()
         mock_client.register = AsyncMock(return_value=CERegistrationResponse(
             ce_id="ce-123",
-            cfn_id="cfn-456",
-            name=CE_NAME,
-            version=CE_VERSION,
+            cfn_id="cfn-test",
+            ce_type=CE_TYPE,
+            base_url="http://example.com:9999",
+            endpoint=CE_ENDPOINT,
             enabled=True,
             status="offline",
             created=True,
@@ -152,11 +160,11 @@ class TestRegisterCasaCE:
 
         await register_casa_ce()
 
-        # Verify register was called with correct CE URL
+        # Verify register was called with correct CE base_url
         register_call = mock_client.register.call_args[0][0]
-        assert register_call.url == "http://example.com:9999"
+        assert register_call.base_url == "http://example.com:9999"
 
-    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"})
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002", "CFN_ID": "cfn-test"})
     @patch('registration.CELifecycleClient')
     async def test_registration_failure(self, mock_client_class, caplog):
         """Test handling of registration failure."""
@@ -182,16 +190,17 @@ class TestShutdownLifecycleClient:
         # Should not raise
         await shutdown_lifecycle_client()
 
-    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"})
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002", "CFN_ID": "cfn-test"})
     @patch('registration.CELifecycleClient')
     async def test_shutdown_after_registration(self, mock_client_class):
         """Test shutdown after successful registration."""
         mock_client = AsyncMock()
         mock_client.register = AsyncMock(return_value=CERegistrationResponse(
             ce_id="ce-123",
-            cfn_id="cfn-456",
-            name=CE_NAME,
-            version=CE_VERSION,
+            cfn_id="cfn-test",
+            ce_type=CE_TYPE,
+            base_url="http://localhost:8000",
+            endpoint=CE_ENDPOINT,
             enabled=True,
             status="offline",
             created=True,
@@ -233,16 +242,17 @@ class TestHelperFunctions:
 class TestCasaCEConfiguration:
     """Test CASA CE specific configuration."""
 
-    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"})
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002", "CFN_ID": "cfn-test"})
     @patch('registration.CELifecycleClient')
     async def test_casa_ce_config_fields(self, mock_client_class):
         """Test that CASA CE registration includes correct fields."""
         mock_client = AsyncMock()
         mock_client.register = AsyncMock(return_value=CERegistrationResponse(
             ce_id="ce-123",
-            cfn_id="cfn-456",
-            name=CE_NAME,
-            version=CE_VERSION,
+            cfn_id="cfn-test",
+            ce_type=CE_TYPE,
+            base_url="http://localhost:8000",
+            endpoint=CE_ENDPOINT,
             enabled=True,
             status="offline",
             created=True,
@@ -255,6 +265,7 @@ class TestCasaCEConfiguration:
         register_call = mock_client.register.call_args[0][0]
 
         # Verify CASA CE registration fields
-        assert register_call.name == CE_NAME
-        assert register_call.version == CE_VERSION
-        assert register_call.url == "http://localhost:8000"
+        assert register_call.cfn_id == "cfn-test"
+        assert register_call.ce_type == CE_TYPE
+        assert register_call.base_url == "http://localhost:8000"
+        assert register_call.endpoint == CE_ENDPOINT

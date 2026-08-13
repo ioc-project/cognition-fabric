@@ -36,14 +36,14 @@ docker-compose down
 
 ## Available Engines
 
-### CASA Authorization
+### CASA Cognition Engine
 
 **Location:** `engines/casa/`  
 **Port:** 8001  
 **Docs:** http://localhost:8001/docs  
-**Type:** Gateway/Authorization CE (fake/mock for testing)
+**Type:** Gateway/Authorization CE (demo for testing)
 
-Authorization API for CASA (Continuous Agent Semantic Authorization) Cognition Engine.
+CASA (Continuous Agent Semantic Authorization) Cognition Engine Service.
 
 **Features:**
 - POST /authorize endpoint for authorization decisions
@@ -366,16 +366,16 @@ To release a new version of CASA CE:
    - Validates tag format (`vX.Y.Z`)
    - Verifies `pyproject.toml` version matches tag
    - Builds multi-platform Docker image (amd64, arm64)
-   - Pushes to `ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/casa-ce:v0.2.0`
+   - Pushes to `ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/ce-demo:v0.2.0`
 
 ### Docker Images
 
 Images are published to GitHub Container Registry:
 
 ```
-ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/casa-ce:latest          # Latest from main
-ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/casa-ce:2026-08-12-abc1234  # Timestamped
-ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/casa-ce:v0.1.0         # Version tag
+ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/ce-demo:latest          # Latest from main
+ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/ce-demo:2026-08-13-d2dcec7  # Timestamped
+ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/ce-demo:v0.1.0         # Version tag
 ```
 
 ## Contributing
