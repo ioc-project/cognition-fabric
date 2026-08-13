@@ -991,21 +991,16 @@ class TestCognitionFabricNodeConfigVersion:
 
 
 class TestCFNConfigCognitionEngines:
-    """cognition_engines appear in CFN config payload with auth decrypted."""
+    """cognition_engines appear in CFN config payload."""
 
-    _AUTH = {"type": "api_key", "credentials": {"api_key": "secret-key"}}
-
-    def _register_ce(self, client, cfn_id, name="test-ce"):
+    def _register_ce(self, client, cfn_id, ce_type="CASA"):
         resp = client.post(
             "/api/cognition-engines",
             json={
                 "cfn_id": cfn_id,
-                "name": name,
-                "url": "http://ce.internal:9004",
-                "version": "1.0.0",
-                "kinds_subkinds": {"knowledge": ["query"]},
-                "subprotocols": ["sab"],
-                "auth": self._AUTH,
+                "ce_type": ce_type,
+                "base_url": "http://ce.internal:9004",
+                "endpoint": "/api/l9/enforcement",
             },
         )
         assert resp.status_code == 201
@@ -1020,24 +1015,13 @@ class TestCFNConfigCognitionEngines:
         assert resp.status_code == 200
         assert "cognition_engines" in resp.json()
 
-    def test_workspaces_config_ce_auth_is_decrypted(self, client, created_cfn):
-        """auth.credentials is decrypted in the config payload."""
-        _, cfn_id = created_cfn
-        self._register_ce(client, cfn_id)
-
-        engines = client.get(f"/api/cognitive-fabric-node/{cfn_id}/workspaces").json()["cognition_engines"]
-        assert len(engines) == 1
-        auth = engines[0]["auth"]
-        assert auth["credentials"]["api_key"] == "secret-key"
-        assert "credentials_encrypted" not in auth
-
     def test_workspaces_config_ce_fields_present(self, client, created_cfn):
         """CE entry in config payload includes all expected fields."""
         _, cfn_id = created_cfn
         self._register_ce(client, cfn_id)
 
         engine = client.get(f"/api/cognitive-fabric-node/{cfn_id}/workspaces").json()["cognition_engines"][0]
-        for field in ("id", "name", "url", "kinds_subkinds", "subprotocols", "category", "enabled", "status", "capabilities", "metrics", "config", "mas_config", "auth"):
+        for field in ("id", "ce_type", "base_url", "endpoint", "enabled", "status", "mas_config"):
             assert field in engine
 
     def test_workspaces_config_no_ce_when_none_registered(self, client, created_cfn):
@@ -1055,7 +1039,7 @@ class TestCFNConfigCognitionEngines:
             "/api/cognition-fabric-nodes/register",
             json={"name": "other-cfn"},
         ).json()["id"]
-        self._register_ce(client, other_cfn_id, name="other-ce")
+        self._register_ce(client, other_cfn_id, ce_type="DETECTIVE")
 
         engines = client.get(f"/api/cognitive-fabric-node/{cfn_id}/workspaces").json()["cognition_engines"]
         assert engines == []
@@ -1078,11 +1062,9 @@ class TestCFNConfigCognitionEngines:
             "/api/cognition-engines",
             json={
                 "cfn_id": cfn_id,
-                "name": "auto-ce",
-                "url": "http://ce.internal:9004",
-                "version": "1.0.0",
-                "kinds_subkinds": {"knowledge": ["query"]},
-                "subprotocols": ["sab"],
+                "ce_type": "CASA",
+                "base_url": "http://ce.internal:9004",
+                "endpoint": "/api/l9/enforcement",
                 "mas_auto_associate": True,
             },
         ).json()["ce_id"]
