@@ -6,52 +6,32 @@
 
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
 
-class CECategory(str, Enum):
-    """Category of a Cognition Engine.
+class CEType(str, Enum):
+    """Type of Cognition Engine.
 
-    - UNKNOWN: Default/unspecified category
-    - GAT: Gateway CE (e.g., CASA)
-    - COG: Cognition Engines (all other CEs)
+    - CASA: Gateway CE for L9 enforcement
+    - DETECTIVE: Detective CE for investigation/analysis
     """
 
-    UNKNOWN = "UNKNOWN"
-    GAT = "GAT"
-    COG = "COG"
+    CASA = "CASA"
+    DETECTIVE = "DETECTIVE"
 
 
 class CognitionEngineRegisterRequest(BaseModel):
     """Schema for CE self-registration (idempotent upsert)"""
 
     cfn_id: str = Field(..., description="CFN this engine is registering under")
-    name: str = Field(..., description="Engine name")
-    url: str = Field(..., description="URL for the CFN to reach this engine")
-    version: str = Field(..., description="CE software version, e.g. '1.2.3'")
-    kinds_subkinds: Dict[str, List[str]] = Field(
-        ...,
-        description=(
-            "Map of kind -> list of subkinds, e.g. {'intent': ['mission'], 'exchange': ['team-formation']}. "
-            "All supported subkinds must be listed. Required for L9 routing."
-        ),
-    )
-    subprotocols: Optional[List[str]] = Field(
-        default=None, description="List of subprotocols supported by this CE, e.g. ['sab']."
-    )
-    category: CECategory = Field(
-        default=CECategory.COG,
-        description="CE category: 'UNKNOWN', 'GAT' (Gateway, e.g. CASA), or 'COG' (Cognition, default for most CEs)",
-    )
+    ce_type: CEType = Field(..., description="Type of Cognition Engine: CASA or DETECTIVE")
+    base_url: str = Field(..., description="Base URL for the CFN to reach this engine (e.g., 'http://casa-ce:8080')")
+    endpoint: str = Field(..., description="API endpoint path for request forwarding (e.g., '/api/l9/enforcement')")
     mas_auto_associate: bool = Field(
         False, description="If true, CE is auto-associated with all MAS under the same CFN's workspaces"
     )
-    auth: Optional[dict] = Field(None, description='Auth credentials, e.g. {"type": "api_key", "credentials": {...}}')
-    capabilities: Optional[List[str]] = Field(default_factory=list, description="Capability names")
-    metrics: Optional[List[str]] = Field(default_factory=list, description="Metric names the CE will publish")
-    config: Optional[dict] = Field(default_factory=dict, description="CE-level configuration")
     mas_config: Optional[dict] = Field(
         default_factory=dict,
         description="Factory defaults for per-MAS configuration (e.g. schedule). Copied to each MAS on association and overridable per MAS.",  # noqa: E501
@@ -63,11 +43,9 @@ class CognitionEngineResponse(BaseModel):
 
     ce_id: str
     cfn_id: str
-    name: str
-    version: str
-    kinds_subkinds: Optional[Dict[str, List[str]]]
-    subprotocols: Optional[List[str]]
-    category: CECategory
+    ce_type: CEType
+    base_url: str
+    endpoint: str
     enabled: bool
     mas_auto_associate: bool
     status: str
@@ -79,17 +57,13 @@ class CognitionEngineListItem(BaseModel):
 
     id: str
     cfn_id: str
-    name: str
-    version: str
-    kinds_subkinds: Optional[Dict[str, List[str]]]
-    subprotocols: Optional[List[str]]
-    category: CECategory
-    url: str
+    ce_type: CEType
+    base_url: str
+    endpoint: str
     enabled: bool
     mas_auto_associate: bool
     status: str
     last_seen: Optional[datetime]
-    config: Optional[dict]
     mas_config: Optional[dict]
     created_at: datetime
 
@@ -106,19 +80,13 @@ class CognitionEngineDetail(BaseModel):
 
     id: str
     cfn_id: str
-    name: str
-    version: str
-    kinds_subkinds: Optional[Dict[str, List[str]]]
-    subprotocols: Optional[List[str]]
-    category: CECategory
-    url: str
+    ce_type: CEType
+    base_url: str
+    endpoint: str
     enabled: bool
     mas_auto_associate: bool
-    capabilities: Optional[List[str]]
-    metrics: Optional[List[str]]
     status: str
     last_seen: Optional[datetime]
-    config: Optional[dict]
     mas_config: Optional[dict]
     created_at: datetime
     updated_at: Optional[datetime]
@@ -128,26 +96,19 @@ class CognitionEnginePatchRequest(BaseModel):
     """Schema for PATCH /cognition-engines/{id}.
 
     Only the fields listed here can be updated.
-    Attempting to update immutable fields (cfn_id, version, name, kinds_subkinds, subprotocols, category)
+    Attempting to update immutable fields (cfn_id, ce_type)
     will be rejected with 400.
     """
 
     # Mutable fields — all optional, only provided fields are updated
-    url: Optional[str] = Field(None, description="URL for the CFN to reach this engine")
+    base_url: Optional[str] = Field(None, description="Base URL for the CFN to reach this engine")
+    endpoint: Optional[str] = Field(None, description="API endpoint path for request forwarding")
     enabled: Optional[bool] = Field(None, description="Enable or disable the CE")
     mas_auto_associate: Optional[bool] = Field(None, description="Enable or disable auto-association to new MAS")
-    capabilities: Optional[List[str]] = Field(None, description="Capability names")
-    metrics: Optional[List[str]] = Field(None, description="Metric names")
-    config: Optional[dict] = Field(None, description="CE-level configuration")
-    auth: Optional[dict] = Field(None, description="Auth credentials")
 
     # Immutable fields — declared so callers get a 400 with a clear message rather than silent ignore
     cfn_id: Optional[str] = Field(None, description="Immutable — cannot be updated via PATCH")
-    version: Optional[str] = Field(None, description="Immutable — cannot be updated via PATCH")
-    name: Optional[str] = Field(None, description="Immutable — cannot be updated via PATCH")
-    kinds_subkinds: Optional[Dict[str, List[str]]] = Field(None, description="Immutable — cannot be updated via PATCH")
-    subprotocols: Optional[List[str]] = Field(None, description="Immutable — cannot be updated via PATCH")
-    category: Optional[CECategory] = Field(None, description="Immutable — cannot be updated via PATCH")
+    ce_type: Optional[CEType] = Field(None, description="Immutable — cannot be updated via PATCH")
 
 
 class CognitionEngineAssociateResponse(BaseModel):

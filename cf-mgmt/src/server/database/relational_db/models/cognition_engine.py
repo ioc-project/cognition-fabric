@@ -19,26 +19,13 @@ class CognitionEngine(Base):
 
     id = Column(String(255), primary_key=True, nullable=False)
     cfn_id = Column(String(255), ForeignKey("cognition_fabric_node.id"), nullable=False, index=True)
-    name = Column(String(255), nullable=False)
+
+    # CE type: CASA or DETECTIVE
+    ce_type = Column(String(20), nullable=False)
 
     # Connection info
-    url = Column(String(512), nullable=False)
-
-    # Authentication (optional - credentials for CFN to reach CE, encrypted)
-    auth = Column(JSONB, nullable=True)
-
-    # Type and capabilities
-    # kinds_subkinds: dict mapping kind -> list of subkinds
-    # e.g. {"intent": ["mission"], "exchange": ["team-formation"]}
-    kinds_subkinds = Column(JSONB, nullable=False)  # Required for L9 routing
-    subprotocols = Column(JSONB, nullable=True, default=list)  # Optional for GAT CEs
-    # category: CE category - 'UNKNOWN', 'GAT' (Gateway), or 'COG' (Cognition, default)
-    category = Column(String(20), nullable=False, default="COG")
-    capabilities = Column(JSONB, nullable=True, default=list)
-    metrics = Column(JSONB, nullable=True, default=list)
-
-    # Versioning
-    version = Column(String(50), nullable=False)
+    base_url = Column(String(512), nullable=False)  # Base URL (e.g., http://casa-ce:8080)
+    endpoint = Column(String(255), nullable=False)  # API endpoint path (e.g., /api/l9/enforcement)
 
     # Lifecycle
     enabled = Column(Boolean, nullable=False, default=True)
@@ -49,7 +36,6 @@ class CognitionEngine(Base):
     last_seen = Column(TIMESTAMP(timezone=True), nullable=True)
 
     # Configuration
-    config = Column(JSONB, nullable=True, default=dict)
     mas_config = Column(JSONB, nullable=True, default=dict)
 
     # Audit fields
@@ -60,4 +46,4 @@ class CognitionEngine(Base):
     updated_by = Column(String(36), nullable=True)
 
     def __repr__(self):
-        return f"<CognitionEngine(id={self.id}, cfn_id={self.cfn_id}, name={self.name})>"
+        return f"<CognitionEngine(id={self.id}, cfn_id={self.cfn_id}, ce_type={self.ce_type})>"
