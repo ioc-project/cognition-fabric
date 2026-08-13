@@ -620,16 +620,19 @@ class TestMASQueryByIdentity:
 class TestMASInlineCEAssociation:
     """Tests for cognition_engine_ids in MAS create and update payloads."""
 
+    _ce_counter = 0
+
     def _register_ce(self, client, cfn_id: str, name: str) -> str:
+        # Use alternating ce_type since (cfn_id, ce_type) is the upsert key
+        TestMASInlineCEAssociation._ce_counter += 1
+        ce_type = "CASA" if TestMASInlineCEAssociation._ce_counter % 2 == 1 else "DETECTIVE"
         resp = client.post(
             "/api/cognition-engines",
             json={
                 "cfn_id": cfn_id,
-                "name": name,
-                "url": "http://ce:8080",
-                "version": "1.0.0",
-                "kinds_subkinds": {"knowledge": ["query"]},
-                "subprotocols": ["sab"],
+                "ce_type": ce_type,
+                "base_url": f"http://{name}:8080",
+                "endpoint": "/api/l9/enforcement",
             },
         )
         assert resp.status_code == 201
@@ -775,8 +778,9 @@ class TestMASInlineCEAssociation:
         ces = get_resp.json()["cognition_engines"]
         assert len(ces) == 1
         assert ces[0]["ce_id"] == ce_id
-        assert ces[0]["name"] == "response-ce"
-        assert ces[0]["url"] == "http://ce:8080"
+        assert ces[0]["ce_type"] in ("CASA", "DETECTIVE")
+        assert ces[0]["base_url"] == "http://response-ce:8080"
+        assert ces[0]["endpoint"] == "/api/l9/enforcement"
         assert isinstance(ces[0]["enabled"], bool)
         assert "status" in ces[0]
         assert "mas_config" in ces[0]
