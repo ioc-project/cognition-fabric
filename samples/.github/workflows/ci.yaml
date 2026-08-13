@@ -1,17 +1,11 @@
-name: platform-demo CI workflow
+name: CASA CE CI workflow
 
 on:
-  # we want pull requests so we can build(test) but not push to image registry
   push:
     branches:
       - 'main'
-
-    # only build when important files change
-    #paths:
-    #  - 'app/**'
-    #  - '.github/workflows/ci.yaml'
-    #tags:
-    #  - "[0-9]+.[0-9]+.[0-9]+"
+    tags:
+      - "*"  # Trigger on any tag
   pull_request:
     branches:
       - 'main'
@@ -24,175 +18,160 @@ permissions:
   packages: write # needed to push docker image to gar or ecr
 
 jobs:
-  ################################## Code Checkout ##############################
-  ###############################################################################
-  checkout-unit-tests:
-    name: checkout & unit test
+  ################################## Validate Semantic Version ####################
+  #################################################################################
+  validate-semver:
+    name: Validate Semantic Version Tag
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on:
       group: ${{ vars.DEFAULT_ARC_RUNNERS }}
-    container:
-      image:  ${{ vars.DEFAULT_CONTAINER_RUNNER }}
-      options: --user root
-      credentials:
-        username: ${{ secrets.GHCR_USERNAME }}
-        password: ${{ secrets.GHCR_TOKEN }}
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          # The branch, tag or SHA to checkout, otherwise, uses the default branch.
-          ref: ${{ github.ref }}
-          # Relative path under $GITHUB_WORKSPACE to place the repository
-          path: ''
-          # Whether to execute `git clean -ffdx && git reset --hard HEAD` before fetching
-          # Default: true
-          clean: true
-          # Whether to download Git-LFS files
-          # Default: false
-          lfs: ''
-          # Whether to checkout submodules: `true` to checkout submodules or `recursive` to
-          # recursively checkout submodules.
-          # Default: false
-          submodules: ''
 
-  ################################## Unit Test ##################################
-  ###############################################################################
-
-      - name: Unit Tests
+      - name: Check tag format
         run: |
-          ls -l /usr/local/bin
-          #chmod +x scripts/unit-test.sh
-          bash scripts/unit-test.sh
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "Validating tag: $TAG"
+
+          # Semantic versioning pattern: vX.Y.Z or vX.Y.Z-prerelease
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?$ ]]; then
+            echo "❌ Error: Tag '$TAG' does not follow semantic versioning!"
+            echo "Expected format: v1.2.3 or v1.2.3-alpha.1"
+            exit 1
+          fi
+
+          echo "✅ Tag is valid semantic version: $TAG"
+
+      - name: Verify pyproject.toml version matches tag
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          TAG_VERSION=${TAG#v}  # Remove 'v' prefix
+
+          # Extract version from pyproject.toml
+          PYPROJECT_VERSION=$(grep -m1 '^version = ' engines/casa/pyproject.toml | cut -d'"' -f2)
+
+          echo "Tag version: $TAG_VERSION"
+          echo "pyproject.toml version: $PYPROJECT_VERSION"
+
+          if [[ "$TAG_VERSION" != "$PYPROJECT_VERSION" ]]; then
+            echo "❌ Error: Version mismatch!"
+            echo "Git tag: $TAG_VERSION"
+            echo "pyproject.toml: $PYPROJECT_VERSION"
+            echo "Please update engines/casa/pyproject.toml version to match the tag."
+            exit 1
+          fi
+
+          echo "✅ Version match confirmed!"
+
+  ################################## Code Checkout & Unit Tests ##################
+  ###############################################################################
+  checkout-unit-tests:
+    name: Unit Tests
+    runs-on:
+      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv and Run Unit Tests
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          export PATH="$HOME/.local/bin:$PATH"
+          uv --version
+          cd engines/casa
+          uv pip install --system -e ".[test]"
+          uv run --no-project pytest -v
 
   #################### Docker build & push ######################
   ###############################################################################
-  call-docker-build-push:
-    name: Call Docker Build Panoptica Scan & Push
-    needs: [ checkout-unit-tests ]
-    uses: cisco-eti/gh-reusable-workflows/.github/workflows/build-push-docker.yaml@production
+  docker-build-push:
+    name: Build & Push Docker Image
+    needs: [ validate-semver, checkout-unit-tests ]
+    # Skip if semver validation failed (for tag pushes)
+    # validate-semver is optional (only runs for tags)
+    if: |
+      always() &&
+      (needs.checkout-unit-tests.result == 'success') &&
+      (!startsWith(github.ref, 'refs/tags/') || needs.validate-semver.result == 'success')
+    runs-on:
+      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
 
-    secrets:
-      # Only needed if with:ecr-enabled or with:gar-enabled is true below
-      vault-approle-role-id: ${{ secrets.VAULT_APPROLE_ROLE_ID }}
-      vault-approle-secret-id: ${{ secrets.VAULT_APPROLE_SECRET_ID }}
-      # These two secrets are ONLY needed when you are trying to access GAR/GCR in a venture specific project (e.g. 'k8sec-dev' for example).
-      # The values should be consistent with the vault namespace (set by 'VAULT_VENTURE_NAMESPACE' var)
-      # vault-venture-approle-role-id: ${{secrets.VAULT_SECURECN_APPROLE_ROLE_ID}}
-      # vault-venture-approle-secret-id: ${{secrets.VAULT_SECURECN_APPROLE_SECRET_ID}}
-      #######
-      ghcr-username: ${{ secrets.GHCR_USERNAME }}
-      ghcr-token: ${{ secrets.GHCR_TOKEN }}
-      ghcr-org-token: ${{ secrets.GHCR_TOKEN }}
+    steps:
+      - name: Pre-cleanup Docker images
+        run: docker system prune -af || true
 
-    with:
-      ### REQUIRED
-      runner-group: ${{ vars.DEFAULT_ARC_RUNNERS }}
-      ### Docker image name
-      image-name: "${{ github.event.repository.name }}"
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      ### path to where docker should copy files into image
-      ### defaults to root of repository (.)
-      # context: .
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-      ### Dockerfile alternate name. Default is Dockerfile (relative to context path)
-      dockerfile: Dockerfile
-      ### REQUIRED
-      ### ENABLE ONE OR BOTH REGISTRIES
-      ### tell docker where to push.
-      ecr-enabled: true
-      ghcr-enabled: true
-      ghcr-org-registry: ${{ vars.GHCR_REGISTRY }}
+      - name: Generate metadata
+        id: meta
+        run: |
+          echo "tag_name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
+          echo "short_sha=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+          echo "build_date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
 
-  ################################# Corona & blackduck ###########################
-  ################################################################################
-  # call-corona-blackduck-scan:
-  #   name: Call Corona & Blackduck scan
-  #   if: github.ref == 'refs/heads/main'
-  #   needs: [ call-docker-build-push ]
-  #   uses: cisco-eti/gh-reusable-workflows/.github/workflows/corona-blackduck-scan.yaml@production
+      - name: Log in to GitHub Container Registry
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-  #   secrets:
-  #     vault-approle-role-id: ${{ secrets.VAULT_APPROLE_ROLE_ID }}
-  #     vault-approle-secret-id: ${{ secrets.VAULT_APPROLE_SECRET_ID }}
-  #     # GHCR Login for docker build runner
-  #     ghcr-username: ${{ secrets.GHCR_USERNAME }}
-  #     ghcr-token: ${{ secrets.GHCR_TOKEN }}
-  #     # GHCR Login for docker scan
-  #     ghcr-org-username: ${{ secrets.GHCR_USERNAME }}
-  #     ghcr-org-token: ${{ secrets.GHCR_TOKEN }}
+      - name: Build Docker image (PR - validation only)
+        if: github.event_name == 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: engines/casa
+          file: engines/casa/Dockerfile
+          push: false
+          platforms: linux/amd64
+          tags: |
+            ghcr.io/${{ github.repository }}/ce-demo:pr-${{ github.event.pull_request.number }}
+            ghcr.io/${{ github.repository }}/ce-demo:${{ steps.meta.outputs.build_date }}-${{ steps.meta.outputs.short_sha }}
+          cache-from: type=gha,scope=ce-demo
+          cache-to: type=gha,mode=max,scope=ce-demo
+          provenance: false
 
-  #   with:
-  #     runner: ${{ vars.DEFAULT_ARC_RUNNERS }}
-  #     runner-docker-image: ${{ vars.DEFAULT_CONTAINER_RUNNER }}
-  #     enable-corona: true
-  #     enable-blackduck: true
-  #     corona-product-name: ${{ vars.CORONA_PRODUCT_NAME }}
-  #     corona-product-id: ${{ vars.CORONA_PRODUCT_ID }}
-  #     corona-release-id: ${{ vars.CORONA_RELEASE_ID }}
-  #     corona-csdl-id: ${{ vars.CORONA_CSDL_ID }}
-  #     corona-security-contact: ${{ vars.CORONA_SECURITY_CONTACT }}
-  #     corona-engineering-contact: ${{ vars.CORONA_ENGINEERING_CONTACT }}
-  #     corona-image-admins: ${{ vars.CORONA_IMAGE_ADMINS }}
-  #     ghcr-org-registry: ${{ vars.GHCR_REGISTRY }}
-  #     # optional
-  #     image-name: "eti-sre/${{ github.event.repository.name }}"
-  #     #image-tag: ""
+      - name: Build and push Docker image (main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: engines/casa
+          file: engines/casa/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ github.repository }}/ce-demo:latest
+            ghcr.io/${{ github.repository }}/ce-demo:${{ steps.meta.outputs.build_date }}-${{ steps.meta.outputs.short_sha }}
+          cache-from: type=gha,scope=ce-demo
+          cache-to: type=gha,mode=max,scope=ce-demo
+          provenance: false
 
-  ################################## SonarQube  Scan ##############################
-  #################################################################################
-  #call-sonar-scan:
-  #  name: Call SonarQube scan
-  #  needs: [ call-corona-blackduck-scan ]
-  #  uses: cisco-eti/gh-reusable-workflows/.github/workflows/sonar-scan.yaml@production
-  #  with:
-  #    sonar-properties-file: "./build/sonar-project.properties"
-  #  secrets:
-  #    vault-approle-role-id: ${{ secrets.VAULT_APPROLE_ROLE_ID }}
-  #    vault-approle-secret-id: ${{ secrets.VAULT_APPROLE_SECRET_ID }}
-  #    ghcr-username: ${{ secrets.GHCR_USERNAME }}
-  #    ghcr-token: ${{ secrets.GHCR_TOKEN }}
-
-  ################################## Helm Publish #################################
-  #################################################################################
-  call-helm-publish:
-    name: Helm publish
-    needs: [ call-docker-build-push ]
-    uses: cisco-eti/gh-reusable-workflows/.github/workflows/helm-publish.yaml@production
-    with:
-      runner-group: ${{ vars.DEFAULT_ARC_RUNNERS }}
-      enable-private-ecr: false
-      enable-public-ecr: false
-      chart-path: "deploy/charts/${{ github.event.repository.name }}"
-      #ecr-public-registry-alias: ${{ vars.ECR_PUBLIC_REGISTRY_ALIAS}}
-      enable-chartmuseum: true
-    secrets:
-      # GHCR Login for docker build runner
-      ghcr-username: ${{ secrets.GHCR_USERNAME }}
-      ghcr-token: ${{ secrets.GHCR_TOKEN }}
-      vault-approle-role-id: ${{ secrets.VAULT_APPROLE_ROLE_ID }}
-      vault-approle-secret-id: ${{ secrets.VAULT_APPROLE_SECRET_ID }}
-
-  ################################## Trigger Deployment ###########################
-  #################################################################################
-  call-trigger-cd:
-    name: Trigger CD
-    needs: [ call-helm-publish ]
-    uses: cisco-eti/gh-reusable-workflows/.github/workflows/trigger-deploy.yaml@production
-    with:
-      deployment-repo: "${{ github.repository }}-deployment"
-      # Always we update "a" and "b" deployment values file, value is optional arg
-      client-payload: '{"app-repository": "${{ github.repository }}", "values-file-path": "applications/${{ github.event.repository.name }}", "property-path": "tagversion", "value": ""}'
-
-    secrets:
-      # GHCR Login for docker build runner
-      ghcr-username: ${{ secrets.GHCR_USERNAME }}
-      ghcr-token: ${{ secrets.GHCR_TOKEN }}
-      # GHCR Login for docker scan
-      ghcr-org-username: ${{ secrets.GHCR_USERNAME }}
-      ghcr-org-token: ${{ secrets.GHCR_TOKEN }}
-      vault-approle-role-id: ${{ secrets.VAULT_APPROLE_ROLE_ID }}
-      vault-approle-secret-id: ${{ secrets.VAULT_APPROLE_SECRET_ID }}
+      - name: Build and push Docker image (tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: docker/build-push-action@v6
+        with:
+          context: engines/casa
+          file: engines/casa/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ github.repository }}/ce-demo:${{ steps.meta.outputs.tag_name }}
+          cache-from: type=gha,scope=ce-demo
+          cache-to: type=gha,mode=max,scope=ce-demo
+          provenance: false
 
   ################################## Send Status for PR Checks ###########################
   ########################################################################################
@@ -200,7 +179,7 @@ jobs:
   reusable-workflow-ci-status:
     name: Reusable Workflow CI Status
     # This should be an array of ALL active jobs that are used/run
-    needs: [ checkout-unit-tests,call-docker-build-push, call-helm-publish, call-trigger-cd ]
+    needs: [ validate-semver, checkout-unit-tests, docker-build-push ]
     if: always()
     runs-on:
       group: ${{ vars.DEFAULT_ARC_RUNNERS }}

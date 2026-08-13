@@ -1,100 +1,392 @@
-# Outshift Platform Demo <!-- omit in TOC -->
+# IOC Scale CF - Cognition Engines
 
-This is a "demo" application source code repository. 
+Repository for Cognition Engines (CEs) - intelligent decision-making services for the IOC platform.
 
-It is a concrete implementation of a simple "Hello World" application designed to demonstrate the CI/CD pipeline for an application deployed to the ET&I Platform's [Shared Kubernetes Cluster](https://wwwin-github.cisco.com/eti/eti-platform-docs/blob/main/architecture/eti-shared-k8s/README.md).
+## Structure
 
-## [Click here for a quick start to create your own demo app](https://wwwin-github.cisco.com/pages/eti/eti-platform-docs/services/helloworld-apps/platform-demo/user-guide/create-new-python-demo)
+```
+ioc-scale-cf-cognition-engines/
+├── engines/              # All cognition engines
+│   └── casa/            # Example: CASA enforcement engine
+│       ├── src/         # Python source code
+│       ├── Dockerfile   # Container build
+│       └── README.md    # Engine-specific docs
+└── docker-compose.yml   # Run all services locally
+```
 
-💡 Please watch the [open-mic demo](https://sharevideo.cisco.com/#/videos/5b2fe4ee-caa2-4df5-9114-5f181fc1ecfb) for detailed explained of this demo
+## Quick Start
 
-## Overview
+### Run All Engines
 
-This repository was created to demonstrate a basic application source code repository that integrates with the [ETI Platform's CI/CD pipeline](https://wwwin-github.cisco.com/eti/eti-platform-docs/blob/main/guides/ci_cd/main.md). In accordance with the ["build, release, run" principle of Twelve-Factor Apps](https://12factor.net/build-release-run), Continuous Integration (i.e, "build" stage) is decoupled from Continuous Deployment (i.e., "release" phase).
+```bash
+docker-compose up
+```
 
-The CI pipeline builds two immutable artifacts from the application source code repo: the Docker image and Helm Chart that enables the application to run as a containerized service in a Kubernetes environment. A _separate_  repository manages deployment-related details, such as environment-specfic application configuration, which includes the version of the application to deploy to a specific environment. The diagram below summarizes the CI/CD pipeline:
+### Run Specific Engine
 
-![CI-CD-Overview](docs/resources/CI-CD-overview.png)
+```bash
+docker-compose up casa-enforcement
+```
 
-## Monitoring
+### Stop Services
 
-This demo application includes example implementations of a health endpoint, kubernetes liveness and readiness probes, and prometheus client instrumentation to emit health metrics for itself and its dependencies.
+```bash
+docker-compose down
+```
 
->**Note**: Since this is a _demo_ app, the "dependencies" it checks are actually _mock_ services (a `db` database and an upstream service named `foo`) implemented in `mock_services.py` to simulate responses with configurable reliability (`MOCK_DB_UPTIME` and `MOCK_FOO_UPTIME` in Helm values). I.e., `mock_services.py` is a utility module, _not_ part of the implementation examples.
+## Available Engines
 
-### Health Check and Metrics
+### CASA Authorization
 
-This demo app implements health checks that evaluates whether it is able to meet is functional requirements, i.e., whether it is in a "healthy state."
+**Location:** `engines/casa/`  
+**Port:** 8001  
+**Docs:** http://localhost:8001/docs  
+**Type:** Gateway/Authorization CE (fake/mock for testing)
 
-#### Service States
+Authorization API for CASA (Continuous Agent Semantic Authorization) Cognition Engine.
 
-Since services can be in "degraded" state, in addition to a clear "up" or "down" state, the following service states are defined in `health_check.py`:
+**Features:**
+- POST /authorize endpoint for authorization decisions
+- CFN registration on startup (idempotent)
+- Periodic heartbeats to maintain "online" status
+- Graceful degradation if CFN unavailable
+
+See [engines/casa/README.md](engines/casa/README.md) for details.
+
+## Adding a New Engine
+
+### 1. Create Directory Structure
+
+```bash
+mkdir -p engines/my-engine/src
+cd engines/my-engine
+```
+
+### 2. Add Python Code
+
+**`src/service.py`** - FastAPI application with CFN registration:
 
 ```python
-class HealthState(Enum):
-    UP = 0
-    UNKNOWN = 1
-    DEGRADED = 2
-    DOWN = 3
+import logging
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+
+logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan: register CE with CFN on startup."""
+    logger.info("Starting My Engine")
+
+    # Optional: Register with CFN (idempotent)
+    # from registration import register_my_ce, shutdown_lifecycle_client
+    # await register_my_ce()
+
+    yield
+
+    # Optional: Shutdown CFN client
+    # await shutdown_lifecycle_client()
+    logger.info("Shutting down My Engine")
+
+
+app = FastAPI(
+    title="My Engine API",
+    lifespan=lifespan,
+)
+
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
+
+
+@app.post("/process")
+async def process(data: dict):
+    # Your logic here
+    return {"result": "processed"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    logging.basicConfig(level=logging.INFO)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 ```
 
-#### Health Check Types
+**Optional: `src/registration.py`** - CFN registration (see `engines/casa/src/registration.py` for reference)
 
-A service often relies on other upstream services, such as databases or third-party services to successfully execute its function. Therefore, its own service health is tied to the health of such upstream dependencies. To distinguish the level of impact a down dependency may have on the service, the following types of dependencies are defined in `health_check.py`:
+**`src/models.py`** - Pydantic models (optional):
 
 ```python
-class HealthCheckType(Enum):
-    SELF = 0
-    UNKNOWN = 1
-    DEPENDENCY_OPTIONAL = 2
-    DEPENDENCY_CRITICAL = 3
+from pydantic import BaseModel
+
+class Request(BaseModel):
+    data: str
+
+class Response(BaseModel):
+    result: str
 ```
 
-* `SELF`: denotes that this health check captures the overall state of this service
-* `UNKNOWN`: a dependency whose full impact on this service is not fully understood
-* `DEPENDENCY_OPTIONAL`: a dependency that only impacts minor/non-critical functionalities of this service
-* `DEPENDENCY_CRITICAL`: a dependency that impacts major/critical functionalities of this service
+### 3. Add Dependencies
 
-These types can be used to label health metrics to enable filtering those metrics by service impact.
+**`requirements.txt`**:
 
-#### Health Check Implementation
-
-The platform-demo app includes an example implementation of its service health check in `health_check.py`, where it:
-
-* Verifies the state of its (mock) dependencies (please read the [**Note**](#monitoring) about the mocked dependencies)
-    * `db` - a database that is critical for `platform-demo` to function
-    * `foo` - an upstream service that is optional `platform-demo` for this service
-* Determines is own health, factoring in the health and criticality of its dependencies
-* Instruments the health check invocation logic to capture the result and execution duration as Prometheus metrics
-    * These metrics include the following labels:
-        * `service_name` - name of the service conducting these health checks (i.e., `platform-demo`)
-        * `health_check_type` - one the types described in [Health Check Types](#health-check-types)
-        * `health_check_name` - name of the service being evaluated by this check (e.g., `db`, `foo`, `platform-demo`)
-    * Consistent label attributes will help with correlating metrics across multiple services and dependencies when troubleshooting issues
-
-### Health Endpoint
-
-The `/healthz` endpoint shows the current state of the service, as determined by its health check implemented in `health_check.py`. The current health state of this service is returned as a JSON response:
-
-```
-{
-  "service_name": "platform-demo",
-  "service_state": "UP",
-  "last_updated": "2022-11-01T18:10:22.462197"
-}
+```txt
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
 ```
 
-This endpoint can be used for both k8s liveness probes and external monitoring tools, such as ThousandEyes.
+### 4. Add Dockerfile
 
-### Kubernetes Probes
+**`Dockerfile`**:
 
-The Helm Chart for this application specifies Kubernetes [liveness and readiness probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/) in `deploy/platform-demo/templates/deployment.yaml`.
+```dockerfile
+FROM python:3.11-slim
 
-#### Liveness Probe
+RUN useradd -u 1001 app
+RUN mkdir /home/app/ && chown -R app:app /home/app
 
-The liveness probe is pointed at the `/healthz` endpoint. This endpoint is implemented to return status code `200` to signal that the service is up or degraded (i.e., that restarting the service is not needed) and `500` to signal that the service is down or in an unknown state (i.e., that restarting the service may help to recover the service). 
-This logic is not foolproof (if the service is down because the database is down, restarting the service without restoring the database will not recover the service). Every service will have its own set of conditions for responding with the appropriate signal to these probes.
+WORKDIR /home/app
+USER app
 
-#### Readiness Probe
+COPY --chown=app:app requirements.txt .
+RUN pip3 install --user -r requirements.txt
 
-The readiness probe is pointed at the root endpoint, `/` to signal that it is able to serve traffic if that endpoint responds successfully with a `2xx` or `3xx` status code.
+COPY --chown=app:app src/ .
+
+EXPOSE 8000
+
+CMD ["python3", "-m", "uvicorn", "service:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+### 5. Add to docker-compose.yml
+
+Add your service to the root `docker-compose.yml`:
+
+```yaml
+services:
+  my-engine:
+    build:
+      context: ./engines/my-engine
+      dockerfile: Dockerfile
+    container_name: my-engine
+    ports:
+      - "8002:8000"  # Choose next available port
+    environment:
+      - LOG_LEVEL=INFO
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+```
+
+### 6. Add Documentation
+
+**`README.md`** - Document your engine:
+
+```markdown
+# My Engine
+
+Description of what this engine does.
+
+## API
+
+- POST /process - Main endpoint
+- GET /health - Health check
+
+## Usage
+
+[Add examples]
+```
+
+### 7. Test It
+
+```bash
+# Build and run
+docker-compose up my-engine
+
+# Test health
+curl http://localhost:8002/health
+
+# View docs
+open http://localhost:8002/docs
+```
+
+## Development
+
+### Run Locally (without Docker)
+
+```bash
+cd engines/my-engine
+pip install -r requirements.txt
+cd src
+python service.py
+```
+
+### Project Layout
+
+Each engine follows this pattern:
+
+```
+engines/<engine-name>/
+├── src/
+│   ├── service.py      # FastAPI app (required)
+│   ├── models.py       # Pydantic models (optional)
+│   └── ...             # Other modules
+├── Dockerfile          # Container build (required)
+├── requirements.txt    # Dependencies (required)
+└── README.md          # Documentation (required)
+```
+
+### Guidelines
+
+- Use **FastAPI** for consistency
+- Use **Pydantic** for data validation
+- Include `/health` endpoint for monitoring
+- Use port **8000** inside container (map to different external port)
+- Run as **non-root user** (use `app` user)
+- Add **comprehensive documentation**
+
+### Port Assignments
+
+Assign external ports sequentially:
+
+- 8001 - casa-enforcement
+- 8002 - your-next-engine
+- 8003 - another-engine
+- ...
+
+## API Documentation
+
+When services are running, each provides interactive docs at `/docs`:
+
+- http://localhost:8001/docs (CASA)
+- http://localhost:8002/docs (your engine)
+
+## Testing
+
+Each engine should include:
+- Unit tests for business logic
+- Integration tests for API endpoints
+- Health check validation
+
+Example test structure:
+
+```
+engines/my-engine/
+├── src/
+└── tests/
+    ├── test_service.py
+    └── test_models.py
+```
+
+## Troubleshooting
+
+### Port Already in Use
+
+```bash
+# Find what's using the port
+lsof -i :8001
+
+# Stop all services
+docker-compose down
+```
+
+### Container Won't Start
+
+```bash
+# Check logs
+docker-compose logs my-engine
+
+# Rebuild
+docker-compose build my-engine
+docker-compose up my-engine
+```
+
+### Import Errors
+
+Make sure your Dockerfile copies files correctly:
+
+```dockerfile
+COPY --chown=app:app src/ .  # Copies src/* to /home/app/
+```
+
+## CI/CD & Releases
+
+### Continuous Integration
+
+CI uses **matrix strategy** to build all CEs in parallel. When you add a new CE, update `.github/workflows/ci.yaml`:
+
+```yaml
+strategy:
+  matrix:
+    ce:
+      - name: casa-ce
+        path: engines/casa
+        dockerfile: engines/casa/Dockerfile
+        pyproject: engines/casa/pyproject.toml
+      - name: your-new-ce    # Add your CE here
+        path: engines/your-new-ce
+        dockerfile: engines/your-new-ce/Dockerfile
+        pyproject: engines/your-new-ce/pyproject.toml
+```
+
+CI automatically runs on:
+- **Pull Requests** → Build validation only (no push)
+- **Main branch** → Build + push `:latest` + `:YYYY-MM-DD-<sha>`
+- **Tags** → Build + push `:<tag-name>` (semantic version)
+
+All CEs are tested and built in parallel.
+
+### Release Process
+
+To release a new version of CASA CE:
+
+1. **Update version** in `engines/casa/pyproject.toml`:
+   ```toml
+   version = "0.2.0"
+   ```
+
+2. **Commit and push**:
+   ```bash
+   git commit -m "Bump CASA CE version to 0.2.0"
+   git push origin main
+   ```
+
+3. **Create and push tag**:
+   ```bash
+   git tag v0.2.0
+   git push origin v0.2.0
+   ```
+
+4. **CI validates and builds**:
+   - Validates tag format (`vX.Y.Z`)
+   - Verifies `pyproject.toml` version matches tag
+   - Builds multi-platform Docker image (amd64, arm64)
+   - Pushes to `ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/casa-ce:v0.2.0`
+
+### Docker Images
+
+Images are published to GitHub Container Registry:
+
+```
+ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/casa-ce:latest          # Latest from main
+ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/casa-ce:2026-08-12-abc1234  # Timestamped
+ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/casa-ce:v0.1.0         # Version tag
+```
+
+## Contributing
+
+1. Create your engine in `engines/<name>/`
+2. Follow the structure and guidelines above
+3. Add it to `docker-compose.yml`
+4. Document it in your engine's `README.md`
+5. Test locally
+6. Submit PR
+
+## Legacy Files
+
+The `app/` directory contains an older demo application. It's kept for reference and can be ignored when working on cognition engines.
