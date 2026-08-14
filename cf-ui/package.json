@@ -63,7 +63,8 @@
     "@uiw/codemirror-extensions-langs": "^4.23.6",
     "@uiw/react-codemirror": "^4.23.6",
     "autoprefixer": "^10.4.20",
-    "axios": "1.16.1",
+    "axios": "^1.19.0",
+    "brace-expansion": "^2.1.4",
     "buffer": "^6.0.3",
     "date-fns": "^4.1.0",
     "eslint": "^9.17.0",
@@ -96,10 +97,24 @@
   "overrides": {
     "preact": "^10.28.2",
     "js-cookie": "^3.0.8",
-    "brace-expansion": "^5.0.6",
     "lodash-es": "^4.18.1",
     "minimatch": {
-      "brace-expansion": "^2.0.1"
+      "brace-expansion": "2.1.4"
+    },
+    "@eslint/eslintrc": {
+      "minimatch": {
+        "brace-expansion": "2.1.4"
+      }
+    },
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": {
+        "brace-expansion": "2.1.4"
+      }
+    },
+    "@redocly/openapi-core": {
+      "minimatch": {
+        "brace-expansion": "2.1.4"
+      }
     },
     "next": {
       "postcss": "^8.5.10"
@@ -111,7 +126,7 @@
   "resolutions": {
     "preact": "^10.28.2",
     "js-cookie": "^3.0.8",
-    "brace-expansion": "^5.0.6",
+    "brace-expansion": "2.1.4",
     "lodash-es": "^4.18.1",
     "postcss": "^8.5.10",
     "uuid": "^11.1.1"
