@@ -1,10 +1,10 @@
 services:
   # Database - AgensGraph + PgVector + Postgres
   # Port Mapping: 5456:5432
-  ioc-knowledge-memory-svc-db:
+  ioc-scale-db:
     image: ghcr.io/outshift-open/ioc-knowledge-memory-svc-db:0.2.1
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
-    container_name: ioc-knowledge-memory-svc-db
+    container_name: ioc-scale-db
     environment:
       POSTGRES_DB: ${IOC_KNOWLEDGE_DB:-ioc-knowledge-db}
       POSTGRES_USER: ${IOC_KNOWLEDGE_DB_USER}
@@ -12,7 +12,7 @@ services:
     ports:
       - "${IOC_KNOWLEDGE_DB_PORT:-5456}:5432"
     volumes:
-      - ioc_knowledge_db_data:/var/lib/postgresql/data
+      - ioc_scale_db_data:/var/lib/postgresql/data
       - ./scripts/init-multi-db.sh:/docker-entrypoint-initdb.d/init-multi-db.sh:ro
     restart: unless-stopped
     healthcheck:
@@ -40,7 +40,7 @@ services:
       - APPLICATION_VERSION=dev
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - ADMIN_USER_PASSWORD=${ADMIN_USER_PASSWORD}
-      - POSTGRES_HOST=ioc-knowledge-memory-svc-db
+      - POSTGRES_HOST=ioc-scale-db
       - POSTGRES_PORT=5432
       - POSTGRES_DB=cfn_mgmt
       - POSTGRES_USER=${IOC_KNOWLEDGE_DB_USER}
@@ -52,7 +52,7 @@ services:
       - ./.secrets:/home/app/.secrets:ro
     restart: unless-stopped
     depends_on:
-      ioc-knowledge-memory-svc-db:
+      ioc-scale-db:
         condition: service_healthy
     healthcheck:
       test:
@@ -77,7 +77,6 @@ services:
     restart: unless-stopped
     ports:
       - "9002:9002"
-      - "9009:9001"
     environment:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - MGMT_URL=${MGMT_URL:-http://ioc-scale-cf-mgmt-svc:9000}
@@ -88,14 +87,10 @@ services:
       - DB_NAME=${DB_NAME:-cfn_cp}
       - DB_USER=${POSTGRES_USER}
       - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_HOST=ioc-knowledge-memory-svc-db
+      - DB_HOST=ioc-scale-db
       - DB_PORT=5432
-      - CALLBACK_URL=http://ioc-cfn-svc:9002
-      - LLM_PROVIDER=${LLM_PROVIDER:-azure-openai}
-      - COGNITION_ENGINE_SVC_URL=http://ioc-cfn-cognition-engines:9004
-      - MCP_PORT=9001
     depends_on:
-      ioc-knowledge-memory-svc-db:
+      ioc-scale-db:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-q", "--spider", "http://localhost:9002/api/internal/diagnostics/health"]
@@ -129,4 +124,4 @@ services:
         condition: service_healthy
 
 volumes:
-  ioc_knowledge_db_data:
+  ioc_scale_db_data:

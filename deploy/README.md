@@ -18,10 +18,10 @@ Deployment configurations for the IOC Cognition Fabric stack.
 
 | Service | Port | Description |
 |---------|------|-------------|
-| `ioc-knowledge-memory-svc-db` | 5456 | AgensGraph + PGVector database |
+| `ioc-scale-db` | 5456 | AgensGraph + PGVector database |
 | `ioc-scale-cf-mgmt-svc` | 9000 | Management backend API |
-| `ioc-cfn-svc` | 9002 (HTTP), 9009 (MCP) | Cognition Fabric Node |
-| `ioc-cfn-cognition-engines` | 9004 | Cognition engines |
+| `ioc-scale-cfn-svc` | 9002 (HTTP) | Cognition Fabric Node |
+| `ioc-scale-cfn-cognition-engine` | 9004 | Cognition engines |
 
 ## Configuration
 
