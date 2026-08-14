@@ -63,7 +63,9 @@ CF provides:
 
 ### Prerequisites
 
-- Go 1.24+
+- Go 1.23+
+- Docker (for building images)
+- [swag](https://github.com/swaggo/swag) (for API docs generation)
 
 ### Setup
 
@@ -72,9 +74,78 @@ CF provides:
 git clone git@github.com:cisco-eti/ioc-scale-cfn-svc.git
 cd ioc-scale-cfn-svc
 
-# Install git hooks
-ln -s $(pwd)/.github/githooks/pre-commit .git/hooks/pre-commit
+# Install dependencies
+go mod download
+
+# Install swag for API docs
+go install github.com/swaggo/swag/cmd/swag@latest
 ```
+
+### Make Commands
+
+| Command | Description |
+|---------|-------------|
+| `make test` | Run unit tests with coverage |
+| `make lint` | Check code formatting and run `go vet` |
+| `make fmt` | Auto-fix code formatting |
+| `make docs` | Generate OpenAPI docs from code annotations |
+| `make docs-check` | Verify API docs are up-to-date |
+| `make build` | Build Docker image |
+| `make run` | Run service locally |
+| `make clean` | Remove Docker image |
+
+### Running Locally
+
+```bash
+# Copy the sample env file and edit as needed
+cp .env.sample .env
+
+# Edit .env with your configuration
+# vim .env
+
+# Run the service (automatically loads .env)
+make run
+```
+
+### Environment Variables
+
+The service loads environment variables from a `.env` file if present. See [`.env.sample`](.env.sample) for a template.
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `MGMT_URL` | Management plane base URL | `http://localhost:9000` |
+| `CFN_NAME` | Name for this CFN instance | `cfn-local` |
+| `CFN_IP` | Advertised IP address (auto-detected if not set) | (auto) |
+| `APP_PORT` | HTTP server port | `9002` |
+| `HEARTBEAT_INTERVAL_SECONDS` | Interval between heartbeats to mgmt plane | `29` |
+
+### Project Structure
+
+```
+cmd/cfn/           # Application entrypoint
+pkg/
+  app/             # HTTP handlers and application logic
+    httpapi/       # Request/response DTOs
+  client/http/     # HTTP client with retries
+  tools/
+    easyhttp/      # HTTP router and helpers
+    logger/        # Structured logging (zap)
+docs/api/          # Generated OpenAPI specification
+```
+
+### Adding New Endpoints
+
+1. Add DTOs in `pkg/app/httpapi/<feature>/dto.go` with Swagger annotations
+2. Add handler in `pkg/app/handlers_<feature>.go` with Swagger annotations
+3. Register route in `pkg/app/app.go` `initializeRoutes()`
+4. Run `make docs` to regenerate API docs
+5. Add tests in `pkg/app/handlers_<feature>_test.go`
+
+### Code Style
+
+- Run `make fmt` before committing to fix formatting
+- Run `make lint` to check for issues
+- CI will fail if code is not properly formatted
 
 ## Team
 

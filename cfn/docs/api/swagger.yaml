@@ -1,0 +1,169 @@
+basePath: /
+definitions:
+  cognitionengine.ErrorResponse:
+    description: Error response payload.
+    properties:
+      error:
+        description: Error message
+        example: ce_type is required
+        type: string
+    type: object
+  cognitionengine.HeartbeatResponse:
+    description: CE heartbeat response.
+    properties:
+      last_seen:
+        description: Last seen timestamp (RFC3339)
+        example: "2026-08-14T10:30:00Z"
+        type: string
+      status:
+        description: CE status after heartbeat
+        example: online
+        type: string
+    type: object
+  cognitionengine.RegisterRequest:
+    description: CE registration request payload. The CE sends this to CFN, which
+      adds cfn_id and forwards to management plane.
+    properties:
+      base_url:
+        description: Base URL for the CE service
+        example: http://casa-ce:8080
+        type: string
+      ce_type:
+        description: CE type - must be "CASA" or "DETECTIVE"
+        enum:
+        - CASA
+        - DETECTIVE
+        example: CASA
+        type: string
+      endpoint:
+        description: API endpoint path
+        example: /authorize
+        type: string
+      mas_auto_associate:
+        description: Auto-associate with all MAS in the workspace
+        example: false
+        type: boolean
+      mas_config:
+        additionalProperties: {}
+        description: Factory defaults for per-MAS configuration
+        type: object
+    type: object
+  cognitionengine.RegisterResponse:
+    description: CE registration response from management plane.
+    properties:
+      base_url:
+        description: Base URL for the CE service
+        example: http://casa-ce:8080
+        type: string
+      ce_id:
+        description: Cognition Engine ID (UUID)
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      ce_type:
+        description: CE type
+        example: CASA
+        type: string
+      cfn_id:
+        description: Cognition Fabric Node ID (UUID)
+        example: 660e8400-e29b-41d4-a716-446655440001
+        type: string
+      created:
+        description: Whether this was a new registration (true) or update (false)
+        example: true
+        type: boolean
+      enabled:
+        description: Whether the CE is enabled
+        example: true
+        type: boolean
+      endpoint:
+        description: API endpoint path
+        example: /authorize
+        type: string
+      mas_auto_associate:
+        description: Auto-associate with all MAS
+        example: false
+        type: boolean
+      status:
+        description: CE status (online/offline)
+        example: offline
+        type: string
+    type: object
+host: localhost:9002
+info:
+  contact: {}
+  description: Cognition Fabric Node (CFN) service that connects Cognition Engines
+    to the management plane.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: IOC Cognition Fabric Node API
+  version: 0.1.0
+paths:
+  /api/cognition-engine:
+    post:
+      consumes:
+      - application/json
+      description: Register a CE with the CFN. The CFN adds cfn_id and forwards the
+        request to the management plane.
+      parameters:
+      - description: CE Registration Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/cognitionengine.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: CE registered successfully
+          schema:
+            $ref: '#/definitions/cognitionengine.RegisterResponse'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/cognitionengine.ErrorResponse'
+        "502":
+          description: Management plane error
+          schema:
+            $ref: '#/definitions/cognitionengine.ErrorResponse'
+        "503":
+          description: CFN not registered
+          schema:
+            $ref: '#/definitions/cognitionengine.ErrorResponse'
+      summary: Register a Cognition Engine
+      tags:
+      - cognition-engines
+  /api/cognition-engine/{ceId}/heartbeat:
+    put:
+      description: Send heartbeat to maintain CE online status. CFN forwards to management
+        plane.
+      parameters:
+      - description: Cognition Engine ID (UUID)
+        in: path
+        name: ceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Heartbeat acknowledged
+          schema:
+            $ref: '#/definitions/cognitionengine.HeartbeatResponse'
+        "400":
+          description: Invalid CE ID
+          schema:
+            $ref: '#/definitions/cognitionengine.ErrorResponse'
+        "502":
+          description: Management plane error
+          schema:
+            $ref: '#/definitions/cognitionengine.ErrorResponse'
+        "503":
+          description: CFN not registered
+          schema:
+            $ref: '#/definitions/cognitionengine.ErrorResponse'
+      summary: CE Heartbeat
+      tags:
+      - cognition-engines
+swagger: "2.0"
