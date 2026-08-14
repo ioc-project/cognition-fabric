@@ -96,7 +96,11 @@
   },
   "optionalDependencies": {
     "lightningcss-linux-x64-gnu": "1.30.2",
-    "lightningcss-linux-x64-musl": "1.30.2"
+    "lightningcss-linux-x64-musl": "1.30.2",
+    "@tailwindcss/oxide-linux-x64-gnu": "4.1.18",
+    "@tailwindcss/oxide-linux-x64-musl": "4.1.18",
+    "@next/swc-linux-x64-gnu": "16.3.1",
+    "@next/swc-linux-x64-musl": "16.3.1"
   },
   "overrides": {
     "preact": "^10.28.2",
