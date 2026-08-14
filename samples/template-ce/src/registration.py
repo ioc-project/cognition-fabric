@@ -228,7 +228,7 @@ async def register_casa_ce() -> None:
     4. Starts heartbeat background task
 
     Environment variables:
-        CFN_URL: Base URL of CFN service (e.g. "http://localhost:9001")
+        CFN_URL: Base URL of CFN service (e.g. "http://localhost:9002")
                  If not set, skips registration (CE runs standalone)
         COGNITION_ENGINE_HOST: Advertised host for this service (default: "localhost")
         COGNITION_ENGINE_PORT: Advertised port for this service (default: "8000")
