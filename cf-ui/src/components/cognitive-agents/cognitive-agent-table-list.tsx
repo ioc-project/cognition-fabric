@@ -57,9 +57,8 @@ export function CognitiveAgentTableList({
     <ResourceTable
       items={cognitiveAgents}
       headers={[
-        sortable('name', 'Name'),
+        sortable('ce_type', 'Type'),
         sortable('status', 'Status'),
-        {content: 'Version'},
         {content: 'Enabled'},
         sortable('created_at', 'Created'),
         {content: 'Actions', className: 'text-right'}
@@ -69,12 +68,11 @@ export function CognitiveAgentTableList({
       onRowClick={(r) => onRowClick(r)}
       renderRow={(r) => [
         {
-          content: <span className="font-medium">{r.name}</span>
+          content: <span className="font-medium font-mono">{r.ce_type}</span>
         },
         {
           content: <Badge variant={r.status === 'online' ? 'success' : 'inactive'}>{r.status === 'online' ? 'Online' : 'Offline'}</Badge>
         },
-        {content: <span className="font-mono text-xs">{r.version}</span>},
         {
           content: <Badge variant={r.enabled ? 'info' : 'inactive'}>{r.enabled ? 'Enabled' : 'Disabled'}</Badge>
         },

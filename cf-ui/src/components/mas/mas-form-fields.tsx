@@ -20,7 +20,6 @@ import {ChevronDown, ChevronUp, Plus, Unlink} from 'lucide-react';
 import type {MultiAgenticSystem} from '@/api/endpoints/mas';
 import type {CognitionEngineListItem} from '@/api/endpoints/cognition-engine';
 import type {FormValues} from './mas-form-schema';
-import {KindsSubkindsDisplay} from '@/components/ui/kinds-subkinds-display';
 
 interface MASFormFieldsProps {
   mas: MultiAgenticSystem | undefined;
@@ -267,7 +266,7 @@ export function MASFormFields({
                               className="flex items-center gap-2 flex-1 cursor-pointer"
                               onClick={() => setExpandedCEs((prev) => ({...prev, [ce.ce_id]: !prev[ce.ce_id]}))}
                             >
-                              <span className="text-sm font-medium">{ce.name}</span>
+                              <span className="text-sm font-medium font-mono">{ce.ce_type}</span>
                             </div>
                             <div className="flex items-center gap-2 ml-2">
                               <Badge variant={ce.status === 'online' ? 'success' : 'inactive'}>{ce.status === 'online' ? 'Online' : 'Offline'}</Badge>
@@ -278,7 +277,7 @@ export function MASFormFields({
                                 size="sm"
                                 className="gap-1 h-7 text-xs"
                                 disabled={disassociatingId === ce.ce_id}
-                                onClick={() => onDisassociateCE(ce.ce_id, ce.name)}
+                                onClick={() => onDisassociateCE(ce.ce_id, ce.ce_type)}
                               >
                                 <Unlink className="w-3 h-3" />
                                 {disassociatingId === ce.ce_id ? 'Removing...' : 'Disassociate'}
@@ -301,28 +300,13 @@ export function MASFormFields({
                                   <CopyableInput value={ce.ce_id} />
                                 </div>
                                 <div className="space-y-1">
-                                  <Label className="text-xs text-muted-foreground">URL</Label>
-                                  <ReadOnlyField value={ce.url || '-'} className="font-mono text-xs" />
+                                  <Label className="text-xs text-muted-foreground">Base URL</Label>
+                                  <ReadOnlyField value={ce.base_url || '-'} className="font-mono text-xs" />
                                 </div>
-                                <div className="space-y-1 md:col-span-2">
-                                  <Label className="text-xs text-muted-foreground">Kinds</Label>
-                                  <KindsSubkindsDisplay kindsSubkinds={ce.kinds_subkinds as Record<string, string[]>} />
+                                <div className="space-y-1">
+                                  <Label className="text-xs text-muted-foreground">Endpoint</Label>
+                                  <ReadOnlyField value={ce.endpoint || '-'} className="font-mono text-xs" />
                                 </div>
-                                {ce.subprotocols && (ce.subprotocols as unknown[]).length > 0 && (
-                                  <div className="space-y-1 md:col-span-2">
-                                    <Label className="text-xs text-muted-foreground">Subprotocols</Label>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {(ce.subprotocols as string[]).map((sp) => (
-                                        <span
-                                          key={sp}
-                                          className="inline-flex items-center font-mono text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded text-foreground"
-                                        >
-                                          {sp}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
                               </div>
                               {ce.mas_config && Object.keys(ce.mas_config).length > 0 && (
                                 <div className="space-y-1">

@@ -17,7 +17,7 @@ export type ToggleStep = 'disassociate' | 'confirm' | null;
 
 interface UseCEToggleFlowParams {
   cognitiveAgentId: string | undefined;
-  ce: Pick<CognitionEngineDetail, 'name' | 'enabled'> | undefined;
+  ce: Pick<CognitionEngineDetail, 'ce_type' | 'enabled'> | undefined;
   defaultWorkspaceId: string | undefined;
   mutate: KeyedMutator<CognitionEngineDetail>;
 }
@@ -84,7 +84,7 @@ export function useCEToggleFlow({cognitiveAgentId, ce, defaultWorkspaceId, mutat
     setIsTogglingEnabled(true);
     try {
       const updated = await cognitionEngineApi.patch(cognitiveAgentId, {enabled: !ce.enabled});
-      toast.success(`Cognition Engine "${ce.name}" ${ce.enabled ? 'disabled' : 'enabled'} successfully`);
+      toast.success(`CE ${ce.ce_type} ${ce.enabled ? 'disabled' : 'enabled'} successfully`);
       await mutate(updated, {revalidate: false});
       await globalMutate(swrKeys.cognitionEngines());
       setToggleStep(null);

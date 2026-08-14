@@ -106,7 +106,7 @@ function CfnCard({node, onOpenEdit}: {node: CognitionFabricNodeTopology; onOpenE
               {engines.slice(0, 4).map((ce) => (
                 <li key={ce.id} className="flex items-center gap-1.5">
                   <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${ce.status === 'online' ? 'bg-green-500' : 'bg-muted-foreground/40'}`} />
-                  <span className="text-xs text-foreground truncate">{ce.name}</span>
+                  <span className="text-xs text-foreground truncate font-mono">{ce.ce_type}</span>
                 </li>
               ))}
               {engines.length > 4 && <li className="text-xs text-muted-foreground pl-3">+{engines.length - 4} more</li>}

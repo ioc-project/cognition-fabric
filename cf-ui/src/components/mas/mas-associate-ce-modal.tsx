@@ -77,7 +77,7 @@ export function MASAssociateCEModal({
                   >
                     {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                   </div>
-                  <span className="text-sm font-medium">{ce.name}</span>
+                  <span className="text-sm font-medium font-mono">{ce.ce_type}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant={ce.status === 'online' ? 'success' : 'inactive'}>{ce.status === 'online' ? 'Online' : 'Offline'}</Badge>

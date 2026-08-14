@@ -41,7 +41,7 @@ export function CognitiveAgentCardList({
           <div className="pb-4 mb-5 border-b border-border/50 flex justify-between items-start">
             <div className="flex-1 mr-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">{r.name}</span>
+                <span className="text-sm font-medium text-foreground font-mono">{r.ce_type}</span>
                 <Badge variant={r.status === 'online' ? 'success' : 'inactive'}>{r.status === 'online' ? 'Online' : 'Offline'}</Badge>
               </div>
             </div>
@@ -104,10 +104,6 @@ export function CognitiveAgentCardList({
           </div>
 
           <div className="mb-6 flex gap-6">
-            <div className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-muted-foreground">Version</span>
-              <span className="text-sm text-foreground font-mono">{r.version}</span>
-            </div>
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium text-muted-foreground">Enabled</span>
               <Badge variant={r.enabled ? 'info' : 'inactive'}>{r.enabled ? 'Enabled' : 'Disabled'}</Badge>

@@ -208,9 +208,8 @@ function DetailPanel({sel, nodes, onClose}: {sel: NonNullable<Selected>; nodes: 
                 <span
                   style={{fontFamily: 'monospace', fontSize: 11, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
                 >
-                  {ce.name}
+                  {ce.ce_type}
                 </span>
-                <span style={{fontFamily: 'monospace', fontSize: 11, color: C.textSub, marginLeft: 'auto', flexShrink: 0}}>v{ce.version}</span>
               </div>
             ))}
           </>

@@ -1097,15 +1097,14 @@ export interface components {
             totalElements: number;
         };
         /**
-         * CECategory
-         * @description Category of a Cognition Engine.
+         * CEType
+         * @description Type of Cognition Engine.
          *
-         *     - UNKNOWN: Default/unspecified category
-         *     - GAT: Gateway CE (e.g., CASA)
-         *     - COG: Cognition Engines (all other CEs)
+         *     - CASA: Gateway CE for L9 enforcement
+         *     - DETECTIVE: Detective CE for investigation/analysis
          * @enum {string}
          */
-        CECategory: "UNKNOWN" | "GAT" | "COG";
+        CEType: "CASA" | "DETECTIVE";
         /**
          * CognitionEngineAssociateResponse
          * @description Schema for CE-MAS association response
@@ -1130,35 +1129,19 @@ export interface components {
             id: string;
             /** Cfn Id */
             cfn_id: string;
-            /** Name */
-            name: string;
-            /** Version */
-            version: string;
-            /** Kinds Subkinds */
-            kinds_subkinds: {
-                [key: string]: string[];
-            } | null;
-            /** Subprotocols */
-            subprotocols: string[] | null;
-            category: components["schemas"]["CECategory"];
-            /** Url */
-            url: string;
+            ce_type: components["schemas"]["CEType"];
+            /** Base Url */
+            base_url: string;
+            /** Endpoint */
+            endpoint: string;
             /** Enabled */
             enabled: boolean;
             /** Mas Auto Associate */
             mas_auto_associate: boolean;
-            /** Capabilities */
-            capabilities: string[] | null;
-            /** Metrics */
-            metrics: string[] | null;
             /** Status */
             status: string;
             /** Last Seen */
             last_seen: string | null;
-            /** Config */
-            config: {
-                [key: string]: unknown;
-            } | null;
             /** Mas Config */
             mas_config: {
                 [key: string]: unknown;
@@ -1203,19 +1186,11 @@ export interface components {
             id: string;
             /** Cfn Id */
             cfn_id: string;
-            /** Name */
-            name: string;
-            /** Version */
-            version: string;
-            /** Kinds Subkinds */
-            kinds_subkinds: {
-                [key: string]: string[];
-            } | null;
-            /** Subprotocols */
-            subprotocols: string[] | null;
-            category: components["schemas"]["CECategory"];
-            /** Url */
-            url: string;
+            ce_type: components["schemas"]["CEType"];
+            /** Base Url */
+            base_url: string;
+            /** Endpoint */
+            endpoint: string;
             /** Enabled */
             enabled: boolean;
             /** Mas Auto Associate */
@@ -1224,10 +1199,6 @@ export interface components {
             status: string;
             /** Last Seen */
             last_seen: string | null;
-            /** Config */
-            config: {
-                [key: string]: unknown;
-            } | null;
             /** Mas Config */
             mas_config: {
                 [key: string]: unknown;
@@ -1243,15 +1214,20 @@ export interface components {
          * @description Schema for PATCH /cognition-engines/{id}.
          *
          *     Only the fields listed here can be updated.
-         *     Attempting to update immutable fields (cfn_id, version, name, kinds_subkinds, subprotocols, category)
+         *     Attempting to update immutable fields (cfn_id, ce_type)
          *     will be rejected with 400.
          */
         CognitionEnginePatchRequest: {
             /**
-             * Url
-             * @description URL for the CFN to reach this engine
+             * Base Url
+             * @description Base URL for the CFN to reach this engine
              */
-            url?: string | null;
+            base_url?: string | null;
+            /**
+             * Endpoint
+             * @description API endpoint path for request forwarding
+             */
+            endpoint?: string | null;
             /**
              * Enabled
              * @description Enable or disable the CE
@@ -1263,58 +1239,12 @@ export interface components {
              */
             mas_auto_associate?: boolean | null;
             /**
-             * Capabilities
-             * @description Capability names
-             */
-            capabilities?: string[] | null;
-            /**
-             * Metrics
-             * @description Metric names
-             */
-            metrics?: string[] | null;
-            /**
-             * Config
-             * @description CE-level configuration
-             */
-            config?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Auth
-             * @description Auth credentials
-             */
-            auth?: {
-                [key: string]: unknown;
-            } | null;
-            /**
              * Cfn Id
              * @description Immutable — cannot be updated via PATCH
              */
             cfn_id?: string | null;
-            /**
-             * Version
-             * @description Immutable — cannot be updated via PATCH
-             */
-            version?: string | null;
-            /**
-             * Name
-             * @description Immutable — cannot be updated via PATCH
-             */
-            name?: string | null;
-            /**
-             * Kinds Subkinds
-             * @description Immutable — cannot be updated via PATCH
-             */
-            kinds_subkinds?: {
-                [key: string]: string[];
-            } | null;
-            /**
-             * Subprotocols
-             * @description Immutable — cannot be updated via PATCH
-             */
-            subprotocols?: string[] | null;
             /** @description Immutable — cannot be updated via PATCH */
-            category?: components["schemas"]["CECategory"] | null;
+            ce_type?: components["schemas"]["CEType"] | null;
         };
         /**
          * CognitionEngineRegisterRequest
@@ -1326,68 +1256,24 @@ export interface components {
              * @description CFN this engine is registering under
              */
             cfn_id: string;
+            /** @description Type of Cognition Engine: CASA or DETECTIVE */
+            ce_type: components["schemas"]["CEType"];
             /**
-             * Name
-             * @description Engine name
+             * Base Url
+             * @description Base URL for the CFN to reach this engine (e.g., 'http://casa-ce:8080')
              */
-            name: string;
+            base_url: string;
             /**
-             * Url
-             * @description URL for the CFN to reach this engine
+             * Endpoint
+             * @description API endpoint path for request forwarding (e.g., '/api/l9/enforcement')
              */
-            url: string;
-            /**
-             * Version
-             * @description CE software version, e.g. '1.2.3'
-             */
-            version: string;
-            /**
-             * Kinds Subkinds
-             * @description Map of kind -> list of subkinds, e.g. {'intent': ['mission'], 'exchange': ['team-formation']}. All supported subkinds must be listed. Required for L9 routing.
-             */
-            kinds_subkinds: {
-                [key: string]: string[];
-            };
-            /**
-             * Subprotocols
-             * @description List of subprotocols supported by this CE, e.g. ['sab'].
-             */
-            subprotocols?: string[] | null;
-            /**
-             * @description CE category: 'UNKNOWN', 'GAT' (Gateway, e.g. CASA), or 'COG' (Cognition, default for most CEs)
-             * @default COG
-             */
-            category: components["schemas"]["CECategory"];
+            endpoint: string;
             /**
              * Mas Auto Associate
              * @description If true, CE is auto-associated with all MAS under the same CFN's workspaces
              * @default false
              */
             mas_auto_associate: boolean;
-            /**
-             * Auth
-             * @description Auth credentials, e.g. {"type": "api_key", "credentials": {...}}
-             */
-            auth?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Capabilities
-             * @description Capability names
-             */
-            capabilities?: string[] | null;
-            /**
-             * Metrics
-             * @description Metric names the CE will publish
-             */
-            metrics?: string[] | null;
-            /**
-             * Config
-             * @description CE-level configuration
-             */
-            config?: {
-                [key: string]: unknown;
-            } | null;
             /**
              * Mas Config
              * @description Factory defaults for per-MAS configuration (e.g. schedule). Copied to each MAS on association and overridable per MAS.
@@ -1405,17 +1291,11 @@ export interface components {
             ce_id: string;
             /** Cfn Id */
             cfn_id: string;
-            /** Name */
-            name: string;
-            /** Version */
-            version: string;
-            /** Kinds Subkinds */
-            kinds_subkinds: {
-                [key: string]: string[];
-            } | null;
-            /** Subprotocols */
-            subprotocols: string[] | null;
-            category: components["schemas"]["CECategory"];
+            ce_type: components["schemas"]["CEType"];
+            /** Base Url */
+            base_url: string;
+            /** Endpoint */
+            endpoint: string;
             /** Enabled */
             enabled: boolean;
             /** Mas Auto Associate */
@@ -1791,18 +1671,12 @@ export interface components {
         MasCognitionEngineItem: {
             /** Ce Id */
             ce_id: string;
-            /** Name */
-            name: string;
-            /** Kinds Subkinds */
-            kinds_subkinds: {
-                [key: string]: unknown;
-            } | null;
-            /** Subprotocols */
-            subprotocols: unknown[] | null;
-            /** Category */
-            category: string | null;
-            /** Url */
-            url: string;
+            /** Ce Type */
+            ce_type: string;
+            /** Base Url */
+            base_url: string;
+            /** Endpoint */
+            endpoint: string;
             /** Enabled */
             enabled: boolean;
             /** Status */
