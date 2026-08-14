@@ -27,14 +27,12 @@ class TestCERegistrationRequest:
     def test_create_registration_request(self):
         """Test creating a registration request with new schema."""
         request = CERegistrationRequest(
-            cfn_id="cfn-test",
             ce_type="CASA",
             base_url="http://localhost:8000",
             endpoint="/authorize",
             mas_auto_associate=False,
         )
 
-        assert request.cfn_id == "cfn-test"
         assert request.ce_type == "CASA"
         assert request.base_url == "http://localhost:8000"
         assert request.endpoint == "/authorize"
@@ -110,7 +108,7 @@ class TestRegisterCasaCE:
         await register_casa_ce()
         assert "CFN_URL not set" in caplog.text
 
-    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002", "CFN_ID": "cfn-test"})
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"})
     @patch('registration.CELifecycleClient')
     async def test_successful_registration(self, mock_client_class):
         """Test successful CE registration."""
@@ -141,7 +139,7 @@ class TestRegisterCasaCE:
         # Verify heartbeat was started
         mock_client.start_heartbeat.assert_called_once()
 
-    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002", "CFN_ID": "cfn-test", "COGNITION_ENGINE_HOST": "example.com", "COGNITION_ENGINE_PORT": "9999"})
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002","COGNITION_ENGINE_HOST": "example.com", "COGNITION_ENGINE_PORT": "9999"})
     @patch('registration.CELifecycleClient')
     async def test_custom_ce_url(self, mock_client_class):
         """Test CE base_url constructed from environment variables."""
@@ -164,7 +162,7 @@ class TestRegisterCasaCE:
         register_call = mock_client.register.call_args[0][0]
         assert register_call.base_url == "http://example.com:9999"
 
-    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002", "CFN_ID": "cfn-test"})
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"})
     @patch('registration.CELifecycleClient')
     async def test_registration_failure(self, mock_client_class, caplog):
         """Test handling of registration failure."""
@@ -190,7 +188,7 @@ class TestShutdownLifecycleClient:
         # Should not raise
         await shutdown_lifecycle_client()
 
-    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002", "CFN_ID": "cfn-test"})
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"})
     @patch('registration.CELifecycleClient')
     async def test_shutdown_after_registration(self, mock_client_class):
         """Test shutdown after successful registration."""
@@ -242,7 +240,7 @@ class TestHelperFunctions:
 class TestCasaCEConfiguration:
     """Test CASA CE specific configuration."""
 
-    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002", "CFN_ID": "cfn-test"})
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"})
     @patch('registration.CELifecycleClient')
     async def test_casa_ce_config_fields(self, mock_client_class):
         """Test that CASA CE registration includes correct fields."""
@@ -264,8 +262,7 @@ class TestCasaCEConfiguration:
         # Get the registration request that was passed
         register_call = mock_client.register.call_args[0][0]
 
-        # Verify CASA CE registration fields
-        assert register_call.cfn_id == "cfn-test"
+        # Verify CASA CE registration fields (cfn_id is added by CFN, not CE)
         assert register_call.ce_type == CE_TYPE
         assert register_call.base_url == "http://localhost:8000"
         assert register_call.endpoint == CE_ENDPOINT
