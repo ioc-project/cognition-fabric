@@ -559,6 +559,33 @@
         }
       }
     },
+    "/api/cognition-fabric": {
+      "get": {
+        "tags": [
+          "cognition-fabric"
+        ],
+        "summary": "Get Cognition Fabric Topology",
+        "description": "Returns the full Cognition Fabric topology with nested CEs and memory providers per CFN.",
+        "operationId": "get_cognition_fabric_topology_api_cognition_fabric_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitionFabricTopologyResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/memory-providers": {
       "get": {
         "tags": [
@@ -1439,6 +1466,73 @@
       }
     },
     "/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}/cognition-engines/{ce_id}": {
+      "patch": {
+        "tags": [
+          "multi-agentic-systems"
+        ],
+        "summary": "Update CE mas_config for a specific MAS",
+        "description": "Override the mas_config for a single CE-MAS association.",
+        "operationId": "patch_mas_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines__ce_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          },
+          {
+            "name": "mas_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mas Id"
+            }
+          },
+          {
+            "name": "ce_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ce Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MasCognitionEnginePatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "tags": [
           "multi-agentic-systems"
@@ -2768,15 +2862,14 @@
         "title": "AuditCfnPageInfo",
         "description": "Pagination metadata matching the upstream cfn-svc response."
       },
-      "CECategory": {
+      "CEType": {
         "type": "string",
         "enum": [
-          "UNKNOWN",
-          "GAT",
-          "COG"
+          "CASA",
+          "DETECTIVE"
         ],
-        "title": "CECategory",
-        "description": "Category of a Cognition Engine.\n\n- UNKNOWN: Default/unspecified category\n- GAT: Gateway CE (e.g., CASA)\n- COG: Cognition Engines (all other CEs)"
+        "title": "CEType",
+        "description": "Type of Cognition Engine.\n\n- CASA: Gateway CE for L9 enforcement\n- DETECTIVE: Detective CE for investigation/analysis"
       },
       "CognitionEngineAssociateResponse": {
         "properties": {
@@ -2813,51 +2906,16 @@
             "type": "string",
             "title": "Cfn Id"
           },
-          "name": {
+          "ce_type": {
+            "$ref": "#/components/schemas/CEType"
+          },
+          "base_url": {
             "type": "string",
-            "title": "Name"
+            "title": "Base Url"
           },
-          "version": {
+          "endpoint": {
             "type": "string",
-            "title": "Version"
-          },
-          "kinds_subkinds": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Kinds Subkinds"
-          },
-          "subprotocols": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subprotocols"
-          },
-          "category": {
-            "$ref": "#/components/schemas/CECategory"
-          },
-          "url": {
-            "type": "string",
-            "title": "Url"
+            "title": "Endpoint"
           },
           "enabled": {
             "type": "boolean",
@@ -2866,34 +2924,6 @@
           "mas_auto_associate": {
             "type": "boolean",
             "title": "Mas Auto Associate"
-          },
-          "capabilities": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Capabilities"
-          },
-          "metrics": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metrics"
           },
           "status": {
             "type": "string",
@@ -2910,18 +2940,6 @@
               }
             ],
             "title": "Last Seen"
-          },
-          "config": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Config"
           },
           "mas_config": {
             "anyOf": [
@@ -2957,19 +2975,13 @@
         "required": [
           "id",
           "cfn_id",
-          "name",
-          "version",
-          "kinds_subkinds",
-          "subprotocols",
-          "category",
-          "url",
+          "ce_type",
+          "base_url",
+          "endpoint",
           "enabled",
           "mas_auto_associate",
-          "capabilities",
-          "metrics",
           "status",
           "last_seen",
-          "config",
           "mas_config",
           "created_at",
           "updated_at"
@@ -3029,51 +3041,16 @@
             "type": "string",
             "title": "Cfn Id"
           },
-          "name": {
+          "ce_type": {
+            "$ref": "#/components/schemas/CEType"
+          },
+          "base_url": {
             "type": "string",
-            "title": "Name"
+            "title": "Base Url"
           },
-          "version": {
+          "endpoint": {
             "type": "string",
-            "title": "Version"
-          },
-          "kinds_subkinds": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Kinds Subkinds"
-          },
-          "subprotocols": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subprotocols"
-          },
-          "category": {
-            "$ref": "#/components/schemas/CECategory"
-          },
-          "url": {
-            "type": "string",
-            "title": "Url"
+            "title": "Endpoint"
           },
           "enabled": {
             "type": "boolean",
@@ -3099,18 +3076,6 @@
             ],
             "title": "Last Seen"
           },
-          "config": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Config"
-          },
           "mas_config": {
             "anyOf": [
               {
@@ -3133,17 +3098,13 @@
         "required": [
           "id",
           "cfn_id",
-          "name",
-          "version",
-          "kinds_subkinds",
-          "subprotocols",
-          "category",
-          "url",
+          "ce_type",
+          "base_url",
+          "endpoint",
           "enabled",
           "mas_auto_associate",
           "status",
           "last_seen",
-          "config",
           "mas_config",
           "created_at"
         ],
@@ -3152,7 +3113,7 @@
       },
       "CognitionEnginePatchRequest": {
         "properties": {
-          "url": {
+          "base_url": {
             "anyOf": [
               {
                 "type": "string"
@@ -3161,8 +3122,20 @@
                 "type": "null"
               }
             ],
-            "title": "Url",
-            "description": "URL for the CFN to reach this engine"
+            "title": "Base Url",
+            "description": "Base URL for the CFN to reach this engine"
+          },
+          "endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endpoint",
+            "description": "API endpoint path for request forwarding"
           },
           "enabled": {
             "anyOf": [
@@ -3188,75 +3161,6 @@
             "title": "Mas Auto Associate",
             "description": "Enable or disable auto-association to new MAS"
           },
-          "capabilities": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Capabilities",
-            "description": "Capability names"
-          },
-          "metrics": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metrics",
-            "description": "Metric names"
-          },
-          "config": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Config",
-            "description": "CE-level configuration"
-          },
-          "mas_config": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Mas Config",
-            "description": "Factory defaults for per-MAS configuration"
-          },
-          "auth": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Auth",
-            "description": "Auth credentials"
-          },
           "cfn_id": {
             "anyOf": [
               {
@@ -3269,67 +3173,10 @@
             "title": "Cfn Id",
             "description": "Immutable \u2014 cannot be updated via PATCH"
           },
-          "version": {
+          "ce_type": {
             "anyOf": [
               {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Version",
-            "description": "Immutable \u2014 cannot be updated via PATCH"
-          },
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name",
-            "description": "Immutable \u2014 cannot be updated via PATCH"
-          },
-          "kinds_subkinds": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Kinds Subkinds",
-            "description": "Immutable \u2014 cannot be updated via PATCH"
-          },
-          "subprotocols": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subprotocols",
-            "description": "Immutable \u2014 cannot be updated via PATCH"
-          },
-          "category": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/CECategory"
+                "$ref": "#/components/schemas/CEType"
               },
               {
                 "type": "null"
@@ -3340,7 +3187,7 @@
         },
         "type": "object",
         "title": "CognitionEnginePatchRequest",
-        "description": "Schema for PATCH /cognition-engines/{id}.\n\nOnly the fields listed here can be updated.\nAttempting to update immutable fields (cfn_id, version, name, kinds_subkinds, subprotocols, category)\nwill be rejected with 400."
+        "description": "Schema for PATCH /cognition-engines/{id}.\n\nOnly the fields listed here can be updated.\nAttempting to update immutable fields (cfn_id, ce_type)\nwill be rejected with 400."
       },
       "CognitionEngineRegisterRequest": {
         "properties": {
@@ -3349,113 +3196,25 @@
             "title": "Cfn Id",
             "description": "CFN this engine is registering under"
           },
-          "name": {
+          "ce_type": {
+            "$ref": "#/components/schemas/CEType",
+            "description": "Type of Cognition Engine: CASA or DETECTIVE"
+          },
+          "base_url": {
             "type": "string",
-            "title": "Name",
-            "description": "Engine name"
+            "title": "Base Url",
+            "description": "Base URL for the CFN to reach this engine (e.g., 'http://casa-ce:8080')"
           },
-          "url": {
+          "endpoint": {
             "type": "string",
-            "title": "Url",
-            "description": "URL for the CFN to reach this engine"
-          },
-          "version": {
-            "type": "string",
-            "title": "Version",
-            "description": "CE software version, e.g. '1.2.3'"
-          },
-          "kinds_subkinds": {
-            "additionalProperties": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "type": "object",
-            "title": "Kinds Subkinds",
-            "description": "Map of kind -> list of subkinds, e.g. {'intent': ['mission'], 'exchange': ['team-formation']}. All supported subkinds must be listed. Required for L9 routing."
-          },
-          "subprotocols": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subprotocols",
-            "description": "List of subprotocols supported by this CE, e.g. ['sab']."
-          },
-          "category": {
-            "$ref": "#/components/schemas/CECategory",
-            "description": "CE category: 'UNKNOWN', 'GAT' (Gateway, e.g. CASA), or 'COG' (Cognition, default for most CEs)",
-            "default": "COG"
+            "title": "Endpoint",
+            "description": "API endpoint path for request forwarding (e.g., '/api/l9/enforcement')"
           },
           "mas_auto_associate": {
             "type": "boolean",
             "title": "Mas Auto Associate",
             "description": "If true, CE is auto-associated with all MAS under the same CFN's workspaces",
             "default": false
-          },
-          "auth": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Auth",
-            "description": "Auth credentials, e.g. {\"type\": \"api_key\", \"credentials\": {...}}"
-          },
-          "capabilities": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Capabilities",
-            "description": "Capability names"
-          },
-          "metrics": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metrics",
-            "description": "Metric names the CE will publish"
-          },
-          "config": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Config",
-            "description": "CE-level configuration"
           },
           "mas_config": {
             "anyOf": [
@@ -3474,10 +3233,9 @@
         "type": "object",
         "required": [
           "cfn_id",
-          "name",
-          "url",
-          "version",
-          "kinds_subkinds"
+          "ce_type",
+          "base_url",
+          "endpoint"
         ],
         "title": "CognitionEngineRegisterRequest",
         "description": "Schema for CE self-registration (idempotent upsert)"
@@ -3492,47 +3250,16 @@
             "type": "string",
             "title": "Cfn Id"
           },
-          "name": {
+          "ce_type": {
+            "$ref": "#/components/schemas/CEType"
+          },
+          "base_url": {
             "type": "string",
-            "title": "Name"
+            "title": "Base Url"
           },
-          "version": {
+          "endpoint": {
             "type": "string",
-            "title": "Version"
-          },
-          "kinds_subkinds": {
-            "anyOf": [
-              {
-                "additionalProperties": {
-                  "items": {
-                    "type": "string"
-                  },
-                  "type": "array"
-                },
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Kinds Subkinds"
-          },
-          "subprotocols": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subprotocols"
-          },
-          "category": {
-            "$ref": "#/components/schemas/CECategory"
+            "title": "Endpoint"
           },
           "enabled": {
             "type": "boolean",
@@ -3556,11 +3283,9 @@
         "required": [
           "ce_id",
           "cfn_id",
-          "name",
-          "version",
-          "kinds_subkinds",
-          "subprotocols",
-          "category",
+          "ce_type",
+          "base_url",
+          "endpoint",
           "enabled",
           "mas_auto_associate",
           "status",
@@ -3675,6 +3400,30 @@
             "type": "boolean",
             "title": "Enabled",
             "description": "Whether node is enabled"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address",
+            "description": "Node IP address"
+          },
+          "port": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port",
+            "description": "Node port"
           },
           "created_at": {
             "type": "string",
@@ -3923,6 +3672,88 @@
         "title": "CognitionFabricNodeStatus",
         "description": "Cognition Fabric Node status enumeration"
       },
+      "CognitionFabricNodeTopology": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "workspace_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Workspace Ids"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "last_seen": {
+            "type": "string",
+            "title": "Last Seen"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address"
+          },
+          "port": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port"
+          },
+          "created_at": {
+            "type": "string",
+            "title": "Created At"
+          },
+          "cognition_engines": {
+            "items": {
+              "$ref": "#/components/schemas/CognitionEngineListItem"
+            },
+            "type": "array",
+            "title": "Cognition Engines"
+          },
+          "memory_providers": {
+            "items": {
+              "$ref": "#/components/schemas/MemoryProviderListItem"
+            },
+            "type": "array",
+            "title": "Memory Providers"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "enabled",
+          "last_seen",
+          "created_at"
+        ],
+        "title": "CognitionFabricNodeTopology",
+        "description": "A CFN node with its nested cognition engines and memory providers"
+      },
       "CognitionFabricNodeUpdateRequest": {
         "properties": {
           "name": {
@@ -3992,6 +3823,29 @@
           "port": 8081
         }
       },
+      "CognitionFabricTopologyResponse": {
+        "properties": {
+          "cognition_fabric_nodes": {
+            "items": {
+              "$ref": "#/components/schemas/CognitionFabricNodeTopology"
+            },
+            "type": "array",
+            "title": "Cognition Fabric Nodes"
+          },
+          "counts": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Counts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cognition_fabric_nodes",
+          "counts"
+        ],
+        "title": "CognitionFabricTopologyResponse",
+        "description": "Aggregated view of the entire Cognition Fabric topology"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -4060,48 +3914,17 @@
             "type": "string",
             "title": "Ce Id"
           },
-          "name": {
+          "ce_type": {
             "type": "string",
-            "title": "Name"
+            "title": "Ce Type"
           },
-          "kinds_subkinds": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Kinds Subkinds"
-          },
-          "subprotocols": {
-            "anyOf": [
-              {
-                "items": {},
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Subprotocols"
-          },
-          "category": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Category"
-          },
-          "url": {
+          "base_url": {
             "type": "string",
-            "title": "Url"
+            "title": "Base Url"
+          },
+          "endpoint": {
+            "type": "string",
+            "title": "Endpoint"
           },
           "enabled": {
             "type": "boolean",
@@ -4127,17 +3950,31 @@
         "type": "object",
         "required": [
           "ce_id",
-          "name",
-          "kinds_subkinds",
-          "subprotocols",
-          "category",
-          "url",
+          "ce_type",
+          "base_url",
+          "endpoint",
           "enabled",
           "status",
           "mas_config"
         ],
         "title": "MasCognitionEngineItem",
         "description": "Schema for a cognition engine associated with a MAS"
+      },
+      "MasCognitionEnginePatchRequest": {
+        "properties": {
+          "mas_config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mas Config",
+            "description": "Per-MAS config override for this CE"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mas_config"
+        ],
+        "title": "MasCognitionEnginePatchRequest",
+        "description": "Schema for PATCH /workspaces/{ws}/mas/{mas_id}/cognition-engines/{ce_id}"
       },
       "MemoryProviderAuthConfig": {
         "properties": {
@@ -4421,6 +4258,61 @@
         ],
         "title": "MemoryProviderList",
         "description": "Schema for memory provider list response"
+      },
+      "MemoryProviderListItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "description",
+          "config",
+          "enabled",
+          "created_at"
+        ],
+        "title": "MemoryProviderListItem",
+        "description": "Schema for memory provider list item"
       },
       "MemoryProviderUpdate": {
         "properties": {
