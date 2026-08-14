@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 // @title           IOC Cognition Fabric Node API
-// @version         1.0
+// @version         0.1.0
 // @description     Cognition Fabric Node (CFN) service that connects Cognition Engines to the management plane.
 // @license.name    Apache 2.0
 // @license.url     http://www.apache.org/licenses/LICENSE-2.0.html

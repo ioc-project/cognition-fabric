@@ -97,7 +97,7 @@ info:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   title: IOC Cognition Fabric Node API
-  version: "1.0"
+  version: 0.1.0
 paths:
   /api/cognition-engine:
     post:
