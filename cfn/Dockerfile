@@ -32,7 +32,7 @@ RUN adduser -D -g '' appuser
 USER appuser
 
 # Expose the default port
-EXPOSE 9001
+EXPOSE 9002
 
 # Run the binary
 ENTRYPOINT ["/app/cfn"]

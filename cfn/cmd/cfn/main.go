@@ -7,7 +7,7 @@
 // @description     Cognition Fabric Node (CFN) service that connects Cognition Engines to the management plane.
 // @license.name    Apache 2.0
 // @license.url     http://www.apache.org/licenses/LICENSE-2.0.html
-// @host            localhost:9001
+// @host            localhost:9002
 // @BasePath        /
 
 package main
@@ -33,7 +33,7 @@ func main() {
 	// Get port from environment or use default
 	portStr := os.Getenv("APP_PORT")
 	if portStr == "" {
-		portStr = "9001"
+		portStr = "9002"
 	}
 	port, err := strconv.Atoi(portStr)
 	if err != nil {

@@ -88,7 +88,7 @@ definitions:
         example: offline
         type: string
     type: object
-host: localhost:9001
+host: localhost:9002
 info:
   contact: {}
   description: Cognition Fabric Node (CFN) service that connects Cognition Engines

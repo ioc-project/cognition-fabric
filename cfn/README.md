@@ -116,7 +116,7 @@ The service loads environment variables from a `.env` file if present. See [`.en
 | `MGMT_URL` | Management plane base URL | `http://localhost:9000` |
 | `CFN_NAME` | Name for this CFN instance | `cfn-local` |
 | `CFN_IP` | Advertised IP address (auto-detected if not set) | (auto) |
-| `APP_PORT` | HTTP server port | `9001` |
+| `APP_PORT` | HTTP server port | `9002` |
 | `HEARTBEAT_INTERVAL_SECONDS` | Interval between heartbeats to mgmt plane | `29` |
 
 ### Project Structure
