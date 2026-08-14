@@ -30,7 +30,6 @@ import {StatusDot} from '@/components/ui/status-dot';
 import {DetailTabs} from '@/components/ui/detail-tabs';
 import {IdHoverCard} from '@/components/ui/id-hover-card';
 import {CollapsibleJsonField} from '@/components/mas/collapsible-json-field';
-import {dtPanelHeader, dtSectionHeader} from '@/lib/detail-typography';
 import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import {MetaCard} from '@/components/ui/meta-card';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
@@ -234,7 +233,12 @@ export default function CognitiveAgentDetailsPage() {
                           render={({field}) => (
                             <FormItem className="flex-1 space-y-1">
                               <FormControl>
-                                <input {...field} className="h-8 text-sm font-mono w-full border rounded px-2" placeholder="https://..." autoComplete="off" />
+                                <input
+                                  {...field}
+                                  className="h-8 text-sm font-mono w-full border rounded px-2"
+                                  placeholder="https://..."
+                                  autoComplete="off"
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -252,7 +256,12 @@ export default function CognitiveAgentDetailsPage() {
                           render={({field}) => (
                             <FormItem className="flex-1 space-y-1">
                               <FormControl>
-                                <input {...field} className="h-8 text-sm font-mono w-full border rounded px-2" placeholder="/api/v1" autoComplete="off" />
+                                <input
+                                  {...field}
+                                  className="h-8 text-sm font-mono w-full border rounded px-2"
+                                  placeholder="/api/v1"
+                                  autoComplete="off"
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
