@@ -1,6 +1,6 @@
 # ioc-scale-cf-deployment
 
-Deployment configurations for the IOC Cognition Fabric stack.
+Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
 
 ## Quick Start
 
