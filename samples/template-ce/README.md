@@ -29,9 +29,8 @@ Server runs on http://localhost:8000
 To register with Cognition Fabric (CFN):
 
 ```bash
-# Required: Set CFN URL and ID
+# Required: Set CFN URL
 export CFN_URL="http://localhost:9002"
-export CFN_ID="cfn-default"
 
 # Optional: customize CE configuration
 export COGNITION_ENGINE_HOST="localhost"
@@ -70,7 +69,6 @@ uv run pytest
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `CFN_URL` | CFN service base URL (e.g. "http://localhost:9002") | `""` (standalone) |
-| `CFN_ID` | CFN ID this CE belongs to | `"cfn-default"` |
 | `COGNITION_ENGINE_HOST` | Advertised host for this CE | `"localhost"` |
 | `COGNITION_ENGINE_PORT` | Advertised port for this CE | `"8000"` |
 | `CE_HEARTBEAT_INTERVAL_SEC` | Heartbeat interval in seconds | `"30.0"` |

@@ -36,8 +36,10 @@ class CERegistrationRequest:
 
     Simplified schema with predefined CE types (CASA, DETECTIVE) and
     clearer separation of base_url + endpoint.
+
+    Note: cfn_id is NOT included here - the CFN adds it before forwarding
+    to the management plane.
     """
-    cfn_id: str
     ce_type: str  # "CASA" or "DETECTIVE"
     base_url: str  # Base URL (e.g., "http://casa-ce:8000")
     endpoint: str  # API endpoint path (e.g., "/authorize")
@@ -119,9 +121,8 @@ class CELifecycleClient:
         Returns:
             CERegistrationResponse if successful, None on failure.
         """
-        endpoint = f"{self.cfn_base_url}/api/cognition-engines"
+        endpoint = f"{self.cfn_base_url}/api/cognition-engine"
         payload = {
-            "cfn_id": request.cfn_id,
             "ce_type": request.ce_type,
             "base_url": request.base_url,
             "endpoint": request.endpoint,
@@ -184,21 +185,21 @@ class CELifecycleClient:
         """Start background heartbeat task."""
         if self._heartbeat_task is None and self.ce_id:
             self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
-            logger.info(f"Heartbeat task started for CE '{self.name}' (interval={self.heartbeat_interval_sec}s)")
+            logger.info(f"Heartbeat task started for CE type '{self.ce_type}' (interval={self.heartbeat_interval_sec}s)")
 
     async def _heartbeat_loop(self):
         """Background task that sends periodic heartbeats to CFN."""
-        endpoint = f"{self.cfn_base_url}/api/cognition-engines/{self.ce_id}/heartbeat"
+        endpoint = f"{self.cfn_base_url}/api/cognition-engine/{self.ce_id}/heartbeat"
 
         while True:
             try:
                 await asyncio.sleep(self.heartbeat_interval_sec)
 
                 client = await self._get_client()
-                response = await client.post(endpoint)
+                response = await client.put(endpoint)
 
                 if response.status_code == 200:
-                    logger.debug(f"Heartbeat sent for CE '{self.name}'")
+                    logger.debug(f"Heartbeat sent for CE type '{self.ce_type}'")
                 else:
                     logger.warning(
                         f"Heartbeat failed: {response.status_code} - {response.text[:100]}"
@@ -231,14 +232,13 @@ async def register_casa_ce() -> None:
                  If not set, skips registration (CE runs standalone)
         COGNITION_ENGINE_HOST: Advertised host for this service (default: "localhost")
         COGNITION_ENGINE_PORT: Advertised port for this service (default: "8000")
-        CE_VERSION: CE version for registration (default: "0.1.0")
+        MAS_AUTO_ASSOCIATE: Auto-associate with all MAS (default: "false")
         CE_HEARTBEAT_INTERVAL_SEC: Heartbeat interval in seconds (default: "30.0")
     """
     global _lifecycle_client
 
     # Get configuration from environment
     cfn_url = os.getenv("CFN_URL", "").rstrip("/")
-    cfn_id = os.getenv("CFN_ID", "cfn-default")  # CFN ID this CE belongs to
     ce_host = os.getenv("COGNITION_ENGINE_HOST", "localhost")
     ce_port = os.getenv("COGNITION_ENGINE_PORT", "8000")
     mas_auto_associate = os.getenv("MAS_AUTO_ASSOCIATE", "false").lower() == "true"
@@ -262,8 +262,8 @@ async def register_casa_ce() -> None:
     )
 
     # Define CASA CE configuration using new simplified schema
+    # Note: cfn_id is added by CFN before forwarding to management plane
     ce_config = CERegistrationRequest(
-        cfn_id=cfn_id,
         ce_type=CE_TYPE,
         base_url=base_url,
         endpoint=CE_ENDPOINT,
