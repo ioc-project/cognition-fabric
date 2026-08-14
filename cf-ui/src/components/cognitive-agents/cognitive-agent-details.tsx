@@ -10,7 +10,6 @@ import {useForm} from 'react-hook-form';
 import {zodResolver} from '@hookform/resolvers/zod';
 import {mutate as globalMutate} from 'swr';
 import {BasePage} from '@/components/ui/base-page';
-import {Textarea} from '@/components/ui/textarea';
 import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/ui/form';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
@@ -36,7 +35,6 @@ import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import {MetaCard} from '@/components/ui/meta-card';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
 import {Info} from 'lucide-react';
-import {KindsSubkindsDisplay} from '@/components/ui/kinds-subkinds-display';
 
 function ToggleDisplay({active, onClick}: {active: boolean; onClick?: () => void}) {
   return (
@@ -83,7 +81,7 @@ export default function CognitiveAgentDetailsPage() {
   const {data: cfn} = useSWR(ce?.cfn_id ? swrKeys.cfnDetails(ce.cfn_id) : null, () => cfnApi.get(ce!.cfn_id));
 
   const [isEditMode, setIsEditMode] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'capabilities' | 'config'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'config'>('overview');
   const toggleFlow = useCEToggleFlow({cognitiveAgentId, ce, defaultWorkspaceId, mutate});
   const deleteFlow = useCEDeleteFlow({
     cognitiveAgentId,
@@ -95,7 +93,7 @@ export default function CognitiveAgentDetailsPage() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(UpdateCEFormSchema),
-    defaultValues: {url: '', enabled: 'true', mas_auto_associate: 'false', capabilities: '', metrics: '', config: ''}
+    defaultValues: {base_url: '', endpoint: '', enabled: 'true', mas_auto_associate: 'false'}
   });
 
   useEffect(() => {
@@ -113,12 +111,10 @@ export default function CognitiveAgentDetailsPage() {
   useEffect(() => {
     if (ce) {
       form.reset({
-        url: ce.url || '',
+        base_url: ce.base_url || '',
+        endpoint: ce.endpoint || '',
         enabled: ce.enabled ? 'true' : 'false',
-        mas_auto_associate: ce.mas_auto_associate ? 'true' : 'false',
-        capabilities: ce.capabilities ? ce.capabilities.join('\n') : '',
-        metrics: ce.metrics ? ce.metrics.join('\n') : '',
-        config: ce.config && Object.keys(ce.config).length > 0 ? JSON.stringify(ce.config, null, 2) : ''
+        mas_auto_associate: ce.mas_auto_associate ? 'true' : 'false'
       });
     }
   }, [ce, form]);
@@ -126,28 +122,17 @@ export default function CognitiveAgentDetailsPage() {
   const crumbs = ce
     ? [
         {link: routes.cognitiveAgents.list, text: 'Cognition Engines'},
-        {link: '', text: ce.name, active: true}
+        {link: '', text: ce.ce_type, active: true}
       ]
     : undefined;
 
   const handleSave = async (values: FormValues) => {
     try {
-      const parseJsonField = (value?: string) => (!value?.trim() ? undefined : (JSON.parse(value) as Record<string, unknown>));
-      const parseArrayField = (value?: string) =>
-        value
-          ? value
-              .split('\n')
-              .map((s) => s.trim())
-              .filter(Boolean)
-          : undefined;
-
       const updated = await cognitionEngineApi.patch(cognitiveAgentId as string, {
-        url: values.url || undefined,
+        base_url: values.base_url || undefined,
+        endpoint: values.endpoint || undefined,
         enabled: values.enabled === 'true',
-        mas_auto_associate: values.mas_auto_associate === 'true',
-        capabilities: parseArrayField(values.capabilities),
-        metrics: parseArrayField(values.metrics),
-        config: parseJsonField(values.config)
+        mas_auto_associate: values.mas_auto_associate === 'true'
       });
 
       toast.success('Cognition Engine updated successfully');
@@ -163,12 +148,10 @@ export default function CognitiveAgentDetailsPage() {
     setIsEditMode(false);
     if (ce) {
       form.reset({
-        url: ce.url || '',
+        base_url: ce.base_url || '',
+        endpoint: ce.endpoint || '',
         enabled: ce.enabled ? 'true' : 'false',
-        mas_auto_associate: ce.mas_auto_associate ? 'true' : 'false',
-        capabilities: ce.capabilities ? ce.capabilities.join('\n') : '',
-        metrics: ce.metrics ? ce.metrics.join('\n') : '',
-        config: ce.config && Object.keys(ce.config).length > 0 ? JSON.stringify(ce.config, null, 2) : ''
+        mas_auto_associate: ce.mas_auto_associate ? 'true' : 'false'
       });
     }
   };
@@ -176,7 +159,7 @@ export default function CognitiveAgentDetailsPage() {
   return (
     <>
       <BasePage
-        title={ce?.name || 'Cognition Engine'}
+        title={ce?.ce_type || 'Cognition Engine'}
         customDescription={
           ce ? (
             <div className="flex items-center gap-3 flex-wrap">
@@ -192,7 +175,6 @@ export default function CognitiveAgentDetailsPage() {
             onTabChange={(id) => setActiveTab(id as typeof activeTab)}
             tabs={[
               {id: 'overview', label: 'Overview'},
-              {id: 'capabilities', label: 'Capabilities'},
               {id: 'config', label: 'Config'}
             ]}
           />
@@ -241,37 +223,44 @@ export default function CognitiveAgentDetailsPage() {
               {activeTab === 'overview' && (
                 <div className="space-y-4">
                   <InfoPanel>
-                    <InfoRow
-                      label={<span className="!text-sm !font-normal !text-muted-foreground">Kinds & Subkinds</span>}
-                      className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}
-                    >
-                      <KindsSubkindsDisplay
-                        kindsSubkinds={ce?.kinds_subkinds}
-                        emptyDisplay={<span className="text-sm text-foreground font-mono">-</span>}
-                        variant="D"
-                      />
+                    <InfoRow label="Type" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
+                      <span className="text-sm text-foreground font-mono">{ce?.ce_type || '-'}</span>
                     </InfoRow>
-                    {ce?.subprotocols && ce.subprotocols.length > 0 && (
-                      <InfoRow label="Subprotocols" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
-                        <div className="flex flex-wrap gap-1.5">
-                          {ce.subprotocols.map((sp) => (
-                            <span
-                              key={sp}
-                              className="inline-flex items-center font-mono text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 px-1.5 py-0.5 rounded text-foreground"
-                            >
-                              {sp}
-                            </span>
-                          ))}
-                        </div>
-                      </InfoRow>
-                    )}
-                    {ce?.category && ce.category !== 'UNKNOWN' && (
-                      <InfoRow label="Category" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
-                        <span className="text-sm text-foreground font-mono">{ce.category}</span>
-                      </InfoRow>
-                    )}
-                    <InfoRow label="Version" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
-                      <span className="text-sm text-foreground font-mono">{ce?.version || '-'}</span>
+                    <InfoRow label="Base URL">
+                      {isEditMode ? (
+                        <FormField
+                          control={form.control}
+                          name="base_url"
+                          render={({field}) => (
+                            <FormItem className="flex-1 space-y-1">
+                              <FormControl>
+                                <input {...field} className="h-8 text-sm font-mono w-full border rounded px-2" placeholder="https://..." autoComplete="off" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <span className="text-sm text-foreground font-mono">{ce?.base_url || '-'}</span>
+                      )}
+                    </InfoRow>
+                    <InfoRow label="Endpoint">
+                      {isEditMode ? (
+                        <FormField
+                          control={form.control}
+                          name="endpoint"
+                          render={({field}) => (
+                            <FormItem className="flex-1 space-y-1">
+                              <FormControl>
+                                <input {...field} className="h-8 text-sm font-mono w-full border rounded px-2" placeholder="/api/v1" autoComplete="off" />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      ) : (
+                        <span className="text-sm text-foreground font-mono">{ce?.endpoint || '-'}</span>
+                      )}
                     </InfoRow>
                     <InfoRow label="CFN" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
                       <span className="text-sm text-foreground">{cfn?.name || '-'}</span>
@@ -338,104 +327,8 @@ export default function CognitiveAgentDetailsPage() {
                 </div>
               )}
 
-              {activeTab === 'capabilities' && (
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
-                    <div className={dtPanelHeader}>
-                      <span className={dtSectionHeader}>Capabilities</span>
-                    </div>
-                    <div className="p-4">
-                      {isEditMode ? (
-                        <FormField
-                          control={form.control}
-                          name="capabilities"
-                          render={({field}) => (
-                            <FormItem>
-                              <FormControl>
-                                <Textarea {...field} placeholder="one capability per line" className="font-mono text-xs min-h-[120px] resize-none" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ) : (
-                        <div className="flex flex-wrap gap-1.5">
-                          {ce?.capabilities && ce.capabilities.length > 0 ? (
-                            ce.capabilities.map((cap) => (
-                              <span key={cap} className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5">
-                                {cap}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-sm text-muted-foreground">-</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
-                    <div className={dtPanelHeader}>
-                      <span className={dtSectionHeader}>Metrics</span>
-                    </div>
-                    <div className="p-4">
-                      {isEditMode ? (
-                        <FormField
-                          control={form.control}
-                          name="metrics"
-                          render={({field}) => (
-                            <FormItem>
-                              <FormControl>
-                                <Textarea {...field} placeholder="one metric per line" className="font-mono text-xs min-h-[120px] resize-none" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ) : (
-                        <div className="flex flex-wrap gap-1.5">
-                          {ce?.metrics && ce.metrics.length > 0 ? (
-                            ce.metrics.map((metric) => (
-                              <span
-                                key={metric}
-                                className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-0.5"
-                              >
-                                {metric}
-                              </span>
-                            ))
-                          ) : (
-                            <span className="text-sm text-muted-foreground">-</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {activeTab === 'config' && (
                 <div className="space-y-4">
-                  {isEditMode ? (
-                    <FormField
-                      control={form.control}
-                      name="config"
-                      render={({field}) => (
-                        <CollapsibleJsonField
-                          label="Config"
-                          value={field.value ?? ''}
-                          isEditMode={true}
-                          field={field}
-                          placeholder={'{\n  "key": "value"\n}'}
-                        />
-                      )}
-                    />
-                  ) : (
-                    <CollapsibleJsonField
-                      label="Config"
-                      value={ce?.config && Object.keys(ce.config).length > 0 ? JSON.stringify(ce.config, null, 2) : ''}
-                      isEditMode={false}
-                    />
-                  )}
                   <div className={`transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
                     <CollapsibleJsonField
                       label="Default MAS Config"
@@ -468,7 +361,7 @@ export default function CognitiveAgentDetailsPage() {
       </BasePage>
 
       <CognitionEngineDialogs
-        toggleCeName={ce?.name}
+        toggleCeName={ce?.ce_type}
         toggleCeEnabled={ce?.enabled}
         toggleStep={toggleFlow.toggleStep}
         setToggleStep={toggleFlow.setToggleStep}
@@ -479,7 +372,7 @@ export default function CognitiveAgentDetailsPage() {
         onToggleDisassociate={toggleFlow.handleToggleDisassociate}
         onConfirmToggle={toggleFlow.handleConfirmToggle}
         isTogglingEnabled={toggleFlow.isTogglingEnabled}
-        deleteCeName={ce?.name}
+        deleteCeName={ce?.ce_type}
         deleteStep={deleteFlow.deleteStep}
         setDeleteStep={deleteFlow.setDeleteStep}
         setDisableError={deleteFlow.setDisableError}

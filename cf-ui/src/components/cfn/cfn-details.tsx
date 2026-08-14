@@ -34,7 +34,6 @@ import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {ActionButton} from '@/components/ui/action-button';
 import {dtSectionHeader, dtPanelHeader} from '@/lib/detail-typography';
-import {KindsSubkindsDisplay} from '@/components/ui/kinds-subkinds-display';
 
 interface CfnMAS {
   id: string;
@@ -343,8 +342,7 @@ export default function CfnDetailsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Kinds & Subkinds</TableHead>
+                          <TableHead>Type</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Enabled</TableHead>
                         </TableRow>
@@ -352,10 +350,7 @@ export default function CfnDetailsPage() {
                       <TableBody>
                         {cognitionEngines.map((ce) => (
                           <TableRow key={ce.id}>
-                            <TableCell className="font-medium align-top py-3">{ce.name}</TableCell>
-                            <TableCell className="align-top py-3">
-                              <KindsSubkindsDisplay kindsSubkinds={ce.kinds_subkinds} compact />
-                            </TableCell>
+                            <TableCell className="font-medium align-top py-3 font-mono">{ce.ce_type}</TableCell>
                             <TableCell>
                               <StatusDot variant="health" active={ce.status === 'online'} />
                             </TableCell>

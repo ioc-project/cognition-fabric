@@ -30,7 +30,7 @@ export default function MASMetricsPage() {
   const cognitionEngines =
     mas?.cognition_engines?.map((ce) => ({
       ce_id: ce.ce_id,
-      name: ce.name ?? null
+      name: ce.ce_type ?? null
     })) ?? [];
 
   const agents =

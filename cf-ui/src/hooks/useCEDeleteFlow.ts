@@ -17,7 +17,7 @@ export type DeleteStep = 'disable' | 'disassociate' | 'delete' | null;
 
 interface UseCEDeleteFlowParams {
   cognitiveAgentId: string | undefined;
-  ce: Pick<CognitionEngineDetail, 'name' | 'enabled'> | undefined;
+  ce: Pick<CognitionEngineDetail, 'ce_type' | 'enabled'> | undefined;
   defaultWorkspaceId: string | undefined;
   mutate: KeyedMutator<CognitionEngineDetail>;
   onDeleted: () => void;
@@ -74,7 +74,7 @@ export function useCEDeleteFlow({cognitiveAgentId, ce, defaultWorkspaceId, mutat
       setHasDisabled(true);
       await mutate(updated, {revalidate: false});
       await globalMutate(swrKeys.cognitionEngines());
-      toast.success(`Cognition Engine "${ce?.name}" disabled successfully`);
+      toast.success(`CE ${ce?.ce_type} disabled successfully`);
 
       const mas = await fetchAssociatedMas();
       setAssociatedMas(mas);
@@ -111,7 +111,7 @@ export function useCEDeleteFlow({cognitiveAgentId, ce, defaultWorkspaceId, mutat
     setDeleteError(null);
     try {
       await cognitionEngineApi.delete(cognitiveAgentId);
-      toast.success(`Cognition Engine "${ce?.name}" deleted successfully`);
+      toast.success(`CE ${ce?.ce_type} deleted successfully`);
       await globalMutate(swrKeys.cognitionEngines());
       setDeleteStep(null);
       onDeleted();
