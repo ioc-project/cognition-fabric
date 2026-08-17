@@ -67,6 +67,27 @@ services:
       retries: 3
       start_period: 40s
 
+  # Mgmt. Plane UI - Next.js frontend for management plane
+  # Port Mapping: 9001:9001
+  ioc-cfn-mgmt-plane-ui:
+    # Image Link: https://github.com/cisco-eti/ioc-scale-cf-ui/pkgs/container/ioc-scale-cf-ui
+    image: ghcr.io/cisco-eti/ioc-scale-cf-ui:2026-08-14-52542ed
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-cfn-mgmt-plane-ui
+    ports:
+      - "9001:9001"
+    environment:
+      - NODE_ENV=production
+      - PORT=9001
+      - CFN_UI_API_BASE_URL=http://ioc-scale-cf-mgmt-svc:9000
+      - NEXT_PUBLIC_CFN_UI_API_BASE_URL=http://localhost:9000
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:9001}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+    restart: unless-stopped
+    depends_on:
+      ioc-scale-cf-mgmt-svc:
+        condition: service_healthy
+
   # CFN Service - Cognition Fabric Node
   # Port Mapping: 9002:9002 (HTTP)
   ioc-scale-cfn-svc:
@@ -93,7 +114,14 @@ services:
       ioc-scale-db:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9002/api/internal/diagnostics/health"]
+      test:
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "--spider",
+          "http://localhost:9002/api/internal/diagnostics/health",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
