@@ -30,7 +30,7 @@ func main() {
 	logger.Init()
 	log := logger.Default()
 
-	// Get port from environment or use default
+	// Get HTTP port from environment or use default
 	portStr := os.Getenv("APP_PORT")
 	if portStr == "" {
 		portStr = "9002"
@@ -40,8 +40,18 @@ func main() {
 		log.Fatalf("invalid APP_PORT: %v", err)
 	}
 
+	// Get gRPC port from environment or use default
+	grpcPortStr := os.Getenv("GRPC_PORT")
+	if grpcPortStr == "" {
+		grpcPortStr = "9003"
+	}
+	grpcPort, err := strconv.Atoi(grpcPortStr)
+	if err != nil {
+		log.Fatalf("invalid GRPC_PORT: %v", err)
+	}
+
 	// Create and start the application
-	application, err := app.New(port)
+	application, err := app.New(port, grpcPort)
 	if err != nil {
 		log.Fatalf("failed to create application: %v", err)
 	}

@@ -1,8 +1,8 @@
 # D1 — Enforcement API Contract
 
-**Status:** Initial agreement
+**Status:** Updated — workspace abstraction decision
 
-**Date:** 2026-08-11
+**Date:** 2026-08-17 (updated from 2026-08-11)
 
 **Parties:** CF T3, Enforcement Proxy T3
 
@@ -25,7 +25,6 @@ This discussion captures the initial agreement on the API shape between the two 
 {
   "extra": "TBD (for headers/metadata)",
   "payload": {
-    "workspace_id": "UUID4",
     "mas_id": "UUID4",
     "source_agent_id": "str",
     "destination_agent_id": "str",
@@ -35,7 +34,7 @@ This discussion captures the initial agreement on the API shape between the two 
 ```
 
 **Notes:**
-- `workspace_id` and `mas_id` semantics need IOC-level agreement, not just CF contract
+- `workspace_id` is **not** exposed to the Enforcement Proxy — CF/management-plane handles workspace resolution internally (see decision D1.1 below)
 - `trace_id` — Proxy needs to observe this ID to coordinate spans; sync with Pavan
 
 ### Response
@@ -52,6 +51,19 @@ This discussion captures the initial agreement on the API shape between the two 
 - `block` — deny the interaction
 - `modify` — (TBD) alter the interaction before forwarding
 
+## Decisions
+
+### D1.1 — Hide workspace from Enforcement Proxy
+
+**Decision:** The `workspace_id` concept is abstracted away from the Enforcement Proxy client. The proxy only provides `mas_id`; CF/management-plane is responsible for resolving the associated workspace internally.
+
+**Rationale:**
+- `mas_id` is sufficient for tenancy requirement for now
+- Simplifies the Enforcement Proxy contract — fewer concepts to understand and propagate
+- Workspace is a CF/management-plane concern, not an enforcement concern
+
+**Implication:** CF must maintain a `mas_id → workspace_id` mapping and perform the lookup on each enforcement request.
+
 ## Open questions
 
 | Item | Status | Owner |
@@ -59,7 +71,7 @@ This discussion captures the initial agreement on the API shape between the two 
 | `extra` field contents — what headers/metadata are needed? | TBD | CF + Proxy |
 | Timeout value — depends on CASA CE response characteristics | TBD | CF + CASA |
 | `modify` action semantics — what can be modified and how? | TBD | CF + Proxy |
-| `workspace_id` / `mas_id` semantics — needs IOC-level agreement | TBD | IOC |
+| `mas_id` semantics — needs IOC-level agreement | TBD | IOC |
 | `trace_id` format and coordination — sync with Pavan | TBD | CF + Proxy |
 
 ## Next steps

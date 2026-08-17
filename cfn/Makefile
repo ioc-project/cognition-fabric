@@ -35,6 +35,23 @@ fmt:
 docs:
 	swag init --parseDependency --parseInternal --dir ./cmd/cfn,./pkg/app,./pkg/app/httpapi/cognitionengine --output ./docs/api
 
+.PHONY: proto
+proto:
+	@echo "Generating gRPC code from proto files..."
+	protoc --go_out=. --go_opt=paths=source_relative \
+		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+		api/proto/enforcement/v1/enforcement.proto
+	mv api/proto/enforcement/v1/*.pb.go pkg/api/enforcement/v1/
+	@echo "Done. Generated files in pkg/api/enforcement/v1/"
+
+.PHONY: proto-check
+proto-check: proto
+	@if [ -n "$$(git diff pkg/api/enforcement)" ]; then \
+		echo "Generated gRPC code is out of date. Run 'make proto' and commit the changes."; \
+		git diff pkg/api/enforcement; \
+		exit 1; \
+	fi
+
 .PHONY: docs-check
 docs-check: docs
 	@if [ -n "$$(git diff docs/api)" ]; then \

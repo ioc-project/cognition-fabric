@@ -77,3 +77,27 @@ func (c *CfnConfigPayload) FindMAS(workspaceID, masID string) *MASCfg {
 	}
 	return nil
 }
+
+// FindMASByID finds a MAS by ID across all workspaces.
+// Returns the MAS config and its parent workspace ID.
+func (c *CfnConfigPayload) FindMASByID(masID string) (*MASCfg, string) {
+	for _, ws := range c.Workspaces {
+		for i := range ws.MASList {
+			if ws.MASList[i].ID == masID {
+				return &ws.MASList[i], ws.WorkspaceID
+			}
+		}
+	}
+	return nil, ""
+}
+
+// FindCASACEForMAS finds the CASA CE associated with a MAS.
+// Returns the full CE config with BaseURL/Endpoint, or nil if not found.
+func (c *CfnConfigPayload) FindCASACEForMAS(mas *MASCfg) *EngineCfg {
+	for _, masEngine := range mas.CognitionEngines {
+		if masEngine.CEType == "CASA" {
+			return c.FindCE(masEngine.ID)
+		}
+	}
+	return nil
+}

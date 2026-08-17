@@ -17,11 +17,13 @@ import (
 	"time"
 
 	_ "github.com/cisco-eti/ioc-scale-cfn-svc/docs/api" // Swagger docs
+	enforcementv1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
 	httpclient "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/http"
 	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/tools/easyhttp"
 	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/tools/logger"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 var (
@@ -109,20 +111,27 @@ func getOutboundIP() string {
 
 // App represents the CFN application.
 type App struct {
-	server   *easyhttp.EasyServer
-	stopChan chan struct{}
-	port     int
+	server     *easyhttp.EasyServer
+	grpcServer *grpc.Server
+	stopChan   chan struct{}
+	port       int
+	grpcPort   int
 }
 
 // New creates a new CFN application.
-func New(port int) (*App, error) {
+func New(port, grpcPort int) (*App, error) {
 	a := &App{
 		stopChan: make(chan struct{}),
 		port:     port,
+		grpcPort: grpcPort,
 	}
 
 	rtr := a.initializeRoutes()
 	a.server = easyhttp.NewServer(port, rtr)
+
+	// Initialize gRPC server
+	a.grpcServer = grpc.NewServer()
+	enforcementv1.RegisterEnforcementServiceServer(a.grpcServer, newEnforcementServer())
 
 	a.registerOnStartup()
 	return a, nil
@@ -320,7 +329,19 @@ func (a *App) startHeartbeat(mgmtURL string) {
 func (a *App) Run() error {
 	log := getLogger()
 
-	log.Infof("starting the server on port %d", a.port)
+	// Start gRPC server in a goroutine
+	go func() {
+		log.Infof("starting gRPC server on port %d", a.grpcPort)
+		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", a.grpcPort))
+		if err != nil {
+			log.Fatalf("failed to listen on gRPC port %d: %v", a.grpcPort, err)
+		}
+		if err := a.grpcServer.Serve(lis); err != nil {
+			log.Errorf("gRPC server error: %v", err)
+		}
+	}()
+
+	log.Infof("starting HTTP server on port %d", a.port)
 	return a.server.Start()
 }
 
@@ -330,7 +351,11 @@ func (a *App) Stop() error {
 
 	log.Infof("shutting down CFN service...")
 	close(a.stopChan)
-	log.Info("- stopping http server")
+
+	log.Info("- stopping gRPC server")
+	a.grpcServer.GracefulStop()
+
+	log.Info("- stopping HTTP server")
 	return a.server.Stop()
 }
 

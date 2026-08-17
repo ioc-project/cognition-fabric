@@ -1,0 +1,43 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package enforcement.v1;
+
+option go_package = "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1";
+
+// EnforcementService provides enforcement disposition for L9 interactions.
+service EnforcementService {
+  // Enforce returns the disposition (allow/block/modify) for an interaction.
+  rpc Enforce(EnforceRequest) returns (EnforceResponse);
+}
+
+// EnforceRequest contains the interaction details for enforcement.
+message EnforceRequest {
+  // MAS identifier (UUID format as string)
+  string mas_id = 1;
+  // Source agent identifier
+  string source_agent_id = 2;
+  // Destination agent identifier
+  string destination_agent_id = 3;
+  // Trace ID for span coordination
+  string trace_id = 4;
+  // Extra metadata (TBD)
+  map<string, string> extra = 5;
+}
+
+// EnforceResponse contains the enforcement disposition.
+message EnforceResponse {
+  // The enforcement action to take
+  Action action = 1;
+
+  // Action represents the enforcement disposition.
+  enum Action {
+    ACTION_UNSPECIFIED = 0;
+    ACTION_ALLOW = 1;
+    ACTION_BLOCK = 2;
+    ACTION_MODIFY = 3;
+  }
+}
