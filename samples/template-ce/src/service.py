@@ -53,7 +53,6 @@ async def authorize(request: EnforcementRequest) -> EnforcementResponse:
         logger.info(
             "Authorization request",
             extra={
-                "workspace_id": str(request.payload.workspace_id),
                 "mas_id": str(request.payload.mas_id),
                 "source_agent_id": request.payload.source_agent_id,
                 "destination_agent_id": request.payload.destination_agent_id,

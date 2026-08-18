@@ -14,7 +14,6 @@ class EnforcementAction(str, Enum):
 
 class EnforcementPayload(BaseModel):
     """Payload for enforcement request."""
-    workspace_id: UUID = Field(..., description="Workspace identifier")
     mas_id: UUID = Field(..., description="MAS identifier")
     source_agent_id: str = Field(..., description="Source agent identifier")
     destination_agent_id: str = Field(..., description="Destination agent identifier")

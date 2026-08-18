@@ -37,7 +37,6 @@ class TestEnforcementPayload:
     def test_valid_payload(self):
         """Test creating valid payload."""
         payload = EnforcementPayload(
-            workspace_id=uuid4(),
             mas_id=uuid4(),
             source_agent_id="agent-1",
             destination_agent_id="agent-2",
@@ -50,26 +49,22 @@ class TestEnforcementPayload:
 
     def test_uuid_validation(self):
         """Test UUID field validation."""
-        workspace_id = uuid4()
         mas_id = uuid4()
 
         payload = EnforcementPayload(
-            workspace_id=workspace_id,
             mas_id=mas_id,
             source_agent_id="agent-1",
             destination_agent_id="agent-2",
             trace_id="trace-123"
         )
 
-        assert payload.workspace_id == workspace_id
         assert payload.mas_id == mas_id
 
     def test_invalid_uuid(self):
         """Test invalid UUID fails validation."""
         with pytest.raises(ValidationError) as exc_info:
             EnforcementPayload(
-                workspace_id="not-a-uuid",
-                mas_id=uuid4(),
+                mas_id="not-a-uuid",
                 source_agent_id="agent-1",
                 destination_agent_id="agent-2",
                 trace_id="trace-123"
@@ -82,7 +77,6 @@ class TestEnforcementPayload:
         """Test missing required fields fails validation."""
         with pytest.raises(ValidationError) as exc_info:
             EnforcementPayload(
-                workspace_id=uuid4(),
                 mas_id=uuid4(),
                 # Missing other required fields
             )
@@ -93,7 +87,6 @@ class TestEnforcementPayload:
     def test_trace_id_string(self):
         """Test trace_id accepts string (not just UUID)."""
         payload = EnforcementPayload(
-            workspace_id=uuid4(),
             mas_id=uuid4(),
             source_agent_id="agent-1",
             destination_agent_id="agent-2",
@@ -111,7 +104,6 @@ class TestEnforcementRequest:
         request = EnforcementRequest(
             extra={"user_agent": "test", "timestamp": "2026-08-11"},
             payload=EnforcementPayload(
-                workspace_id=uuid4(),
                 mas_id=uuid4(),
                 source_agent_id="agent-1",
                 destination_agent_id="agent-2",
@@ -126,7 +118,6 @@ class TestEnforcementRequest:
         """Test creating valid request without extra metadata."""
         request = EnforcementRequest(
             payload=EnforcementPayload(
-                workspace_id=uuid4(),
                 mas_id=uuid4(),
                 source_agent_id="agent-1",
                 destination_agent_id="agent-2",
@@ -146,7 +137,6 @@ class TestEnforcementRequest:
                 "number": 123
             },
             payload=EnforcementPayload(
-                workspace_id=uuid4(),
                 mas_id=uuid4(),
                 source_agent_id="agent-1",
                 destination_agent_id="agent-2",
@@ -227,7 +217,6 @@ class TestModelSerialization:
         """Test request serialization to dict."""
         request = EnforcementRequest(
             payload=EnforcementPayload(
-                workspace_id=uuid4(),
                 mas_id=uuid4(),
                 source_agent_id="agent-1",
                 destination_agent_id="agent-2",
@@ -241,12 +230,10 @@ class TestModelSerialization:
 
     def test_request_from_dict(self):
         """Test request deserialization from dict."""
-        workspace_id = str(uuid4())
         mas_id = str(uuid4())
 
         data = {
             "payload": {
-                "workspace_id": workspace_id,
                 "mas_id": mas_id,
                 "source_agent_id": "agent-1",
                 "destination_agent_id": "agent-2",
@@ -256,7 +243,7 @@ class TestModelSerialization:
 
         request = EnforcementRequest(**data)
         assert request.payload.source_agent_id == "agent-1"
-        assert str(request.payload.workspace_id) == workspace_id
+        assert str(request.payload.mas_id) == mas_id
 
     def test_response_to_json(self):
         """Test response serialization to JSON."""

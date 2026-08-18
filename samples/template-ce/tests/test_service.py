@@ -24,7 +24,6 @@ class TestAuthorizeEndpoint:
         """Test authorize endpoint returns 200 for valid request."""
         request_data = {
             "payload": {
-                "workspace_id": str(uuid4()),
                 "mas_id": str(uuid4()),
                 "source_agent_id": "agent-1",
                 "destination_agent_id": "agent-2",
@@ -39,7 +38,6 @@ class TestAuthorizeEndpoint:
         """Test authorize endpoint returns action field."""
         request_data = {
             "payload": {
-                "workspace_id": str(uuid4()),
                 "mas_id": str(uuid4()),
                 "source_agent_id": "agent-1",
                 "destination_agent_id": "agent-2",
@@ -57,7 +55,6 @@ class TestAuthorizeEndpoint:
         """Test authorize endpoint defaults to allow (current implementation)."""
         request_data = {
             "payload": {
-                "workspace_id": str(uuid4()),
                 "mas_id": str(uuid4()),
                 "source_agent_id": "agent-1",
                 "destination_agent_id": "agent-2",
@@ -79,7 +76,6 @@ class TestAuthorizeEndpoint:
                 "request_timestamp": "2026-08-11T12:00:00Z"
             },
             "payload": {
-                "workspace_id": str(uuid4()),
                 "mas_id": str(uuid4()),
                 "source_agent_id": "agent-1",
                 "destination_agent_id": "agent-2",
@@ -94,7 +90,6 @@ class TestAuthorizeEndpoint:
         """Test authorize endpoint works without extra metadata."""
         request_data = {
             "payload": {
-                "workspace_id": str(uuid4()),
                 "mas_id": str(uuid4()),
                 "source_agent_id": "agent-1",
                 "destination_agent_id": "agent-2",
@@ -109,7 +104,6 @@ class TestAuthorizeEndpoint:
         """Test authorize endpoint accepts string trace_id."""
         request_data = {
             "payload": {
-                "workspace_id": str(uuid4()),
                 "mas_id": str(uuid4()),
                 "source_agent_id": "agent-1",
                 "destination_agent_id": "agent-2",
@@ -124,8 +118,7 @@ class TestAuthorizeEndpoint:
         """Test authorize endpoint returns 422 for invalid UUID."""
         request_data = {
             "payload": {
-                "workspace_id": "not-a-valid-uuid",
-                "mas_id": str(uuid4()),
+                "mas_id": "not-a-valid-uuid",
                 "source_agent_id": "agent-1",
                 "destination_agent_id": "agent-2",
                 "trace_id": str(uuid4())
@@ -139,7 +132,7 @@ class TestAuthorizeEndpoint:
         """Test authorize endpoint returns 422 for missing required fields."""
         request_data = {
             "payload": {
-                "workspace_id": str(uuid4()),
+                "mas_id": str(uuid4()),
                 # Missing other required fields
             }
         }
@@ -166,7 +159,6 @@ class TestAuthorizeEndpoint:
         """Test enforce response includes modify field."""
         request_data = {
             "payload": {
-                "workspace_id": str(uuid4()),
                 "mas_id": str(uuid4()),
                 "source_agent_id": "agent-1",
                 "destination_agent_id": "agent-2",
@@ -226,7 +218,7 @@ class TestErrorHandling:
         """Test wrong content type returns 422."""
         response = client.post(
             "/authorize",
-            data="workspace_id=test",
+            data="mas_id=test",
             headers={"Content-Type": "application/x-www-form-urlencoded"}
         )
         assert response.status_code == 422
@@ -244,7 +236,6 @@ class TestBlockingBehavior:
         """Test authorize endpoint waits for response (blocking)."""
         request_data = {
             "payload": {
-                "workspace_id": str(uuid4()),
                 "mas_id": str(uuid4()),
                 "source_agent_id": "agent-1",
                 "destination_agent_id": "agent-2",
@@ -263,7 +254,6 @@ class TestBlockingBehavior:
         """Test multiple requests can be handled (server-side async)."""
         request_data = {
             "payload": {
-                "workspace_id": str(uuid4()),
                 "mas_id": str(uuid4()),
                 "source_agent_id": "agent-1",
                 "destination_agent_id": "agent-2",
