@@ -30,13 +30,6 @@ cp .env.example .env
 vi .env  # or use your preferred editor
 ```
 
-### Provide LLM Credentials
-
-Provide the following env vars in `.env`:
-- `LLM_BASE_URL`
-- `LLM_API_KEY`
-- `LLM_MODEL`
-
 ### Dependencies for the Relational DB
 
 For details please refer to the [README](src/server/database/relational_db/README.md)
@@ -46,50 +39,30 @@ For details please refer to the [README](src/server/database/relational_db/READM
 
 ## Quick Start
 
-### Deployment Options
+### Full Stack Deployment
 
-**Option 1: I have deployed sql DB locally**
+For full stack deployment (all services), see [ioc-scale-cf-deployment](https://github.com/cisco-eti/ioc-scale-cf-deployment).
+
+### Local Development
+
+Requires PostgreSQL running locally. You can start one with Docker:
+
+```bash
+docker run -d --name postgres-cfn \
+  -e POSTGRES_USER=postgresUser \
+  -e POSTGRES_PASSWORD=postgresPW \
+  -e POSTGRES_DB=cfn_mgmt \
+  -p 5433:5432 \
+  postgres:17-alpine
+```
+
+Then run the service:
 
 ```bash
 task run    # installs deps, applies db migrations, then runs
 ```
 
-**Option 2: I don't have any db**
-
-```bash
-task docker-compose-db-up    # Start only databases (PostgreSQL) with db-only profile
-task run                     # installs deps, applies db migrations, then runs
-```
-
-**Option 3: Full stack deployment**
-
-Run the full stack (UI + Backend + DB + CFN Service) using docker-compose:
-
-```bash
-# Edit .env to set your configuration values (IMAGE_TAG, credentials, etc.)
-
-# Start services (pulls latest images)
-task docker-compose-full-stack-up
-
-# Stop services (preserves volumes)
-task docker-compose-full-stack-down
-
-# Stop services and remove volumes
-task docker-compose-full-stack-down-with-volumes
-```
-
-> **Note:** The full-stack profile includes `ioc-cfn-svc` (port 9002), which now depends on
-> `ioc-knowledge-db` (PostgreSQL), `ioc-scale-cf-mgmt-svc`,
-> and `ioc-knowledge-memory-svc`. Startup is gated on all services being healthy.
-> The service shares database credentials (`IOC_KNOWLEDGE_DB_USER`, `IOC_KNOWLEDGE_DB_PASSWORD`)
-> from `.env`.
->
-> LLM integration requires the following environment variables to be set:
-> `LLM_BASE_URL`, `LLM_API_KEY`, and `LLM_MODEL` in `.env`.
-
-### Alternative Quick Start Methods
-
-**Manual setup (if you have Poetry/Task already)**
+Or with Poetry directly:
 
 ```bash
 poetry install
@@ -102,30 +75,15 @@ task dev
 
 Memory provider credentials are encrypted using a Fernet key. The key is automatically generated on first run and stored in `.secrets/encryption.key` (gitignored). Each developer gets a unique key.
 
-## Service Endpoints
-
-Once all services are running (full-stack deployment), access them at:
-
-- **IoC Management UI**: http://localhost:9001 (username and password are defined in `.env`)
-- **IoC Management API**: http://localhost:9000/docs
-- **CFN Service**: http://localhost:9002
-- **Knowledge Memory Service**: http://localhost:9003
-- **AgensGraph Database**: localhost:5456
-- **AgensGraph Viewer**: http://localhost:5457
-- **Cognition Engine - Reasoning and Evidence Gathering**: Port 9004
-- **Cognition Engine - Semantic Alignment**: Port 9004
-
-To enable these services, uncomment their definitions in docker-compose.yml.
-
 ## Development
 
 **Using Task**
 
 ```bash
-task dev              # Start development server
+task dev              # Start development server with hot reload
 task test             # Run all tests
+task lint             # Fix linting issues
 task docker-build     # Build Docker image
-task docker-run       # Run Docker container
 ```
 
 **Using Poetry directly**
@@ -133,13 +91,6 @@ task docker-run       # Run Docker container
 ```bash
 cd src
 poetry run python -m server.main
-```
-
-**Using Docker**
-
-```bash
-task docker-compose-full-stack-up    # Full stack (mgmt-backend + cfn-svc + ui + databases)
-task docker-compose-db-up            # Databases only
 ```
 
 ## API Endpoints
