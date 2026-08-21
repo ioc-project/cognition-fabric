@@ -42,6 +42,10 @@ func getLogger() *zap.SugaredLogger {
 var (
 	// CfnID is the CFN identifier returned by the management plane on registration.
 	CfnID string
+	// WorkspaceID is the workspace this CFN is associated with (single workspace assumption).
+	WorkspaceID string
+	// MgmtURL is the management plane base URL.
+	MgmtURL string
 	// ParsedConfig is the typed config from the management plane.
 	ParsedConfig *CfnConfigPayload
 	// ConfigVersion tracks the config version for detecting changes.
@@ -151,6 +155,9 @@ func (a *App) registerOnStartup() {
 		log.Fatalf("MGMT_URL not set")
 	}
 
+	// Store management plane URL globally for later API calls
+	MgmtURL = mgmtURL
+
 	registerURL := mgmtURL + "/api/cognition-fabric-nodes/register"
 	log.Infof("registering CFN at %s", registerURL)
 
@@ -189,6 +196,14 @@ func (a *App) registerOnStartup() {
 	}
 	CfnID = id
 
+	// Store workspace_id from response (single workspace assumption)
+	if workspaceIDs, ok := result["workspace_ids"].([]any); ok && len(workspaceIDs) > 0 {
+		if wsID, ok := workspaceIDs[0].(string); ok {
+			WorkspaceID = wsID
+			log.Infof("workspace_id stored: %s", WorkspaceID)
+		}
+	}
+
 	// Parse config blob into typed struct
 	if cfgBlob, ok := result["config"].(map[string]any); ok {
 		cfgBytes, _ := json.Marshal(cfgBlob)
@@ -204,8 +219,8 @@ func (a *App) registerOnStartup() {
 	}
 
 	cfgJSON, _ := json.Marshal(ParsedConfig)
-	log.Infof("CFN registered successfully: cfn_id=%s cfn_name=%s ip_address=%s port=%d config_version=%d payload=%s",
-		CfnID, cfnName, appIP, appPort, ConfigVersion, cfgJSON)
+	log.Infof("CFN registered successfully: cfn_id=%s cfn_name=%s workspace_id=%s ip_address=%s port=%d config_version=%d payload=%s",
+		CfnID, cfnName, WorkspaceID, appIP, appPort, ConfigVersion, cfgJSON)
 
 	// Start periodic heartbeat
 	go a.startHeartbeat(mgmtURL)

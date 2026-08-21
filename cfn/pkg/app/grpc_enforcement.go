@@ -6,12 +6,14 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	enforcementv1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
 	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/casa"
+	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/mgmt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -42,38 +44,46 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 	log.Infof("enforcement request: mas_id=%s source=%s dest=%s trace_id=%s",
 		req.Payload.MasId, req.Payload.SourceAgentId, req.Payload.DestinationAgentId, req.Payload.TraceId)
 
-	// Get config (thread-safe read)
-	cfnConfigMutex.RLock()
-	config := ParsedConfig
-	cfnConfigMutex.RUnlock()
-
-	if config == nil {
-		log.Errorf("enforcement request failed: config not loaded")
-		return nil, status.Error(codes.Unavailable, "CFN config not loaded")
+	// Check workspace_id is available
+	if WorkspaceID == "" {
+		log.Errorf("enforcement request failed: workspace_id not set")
+		return nil, status.Error(codes.Unavailable, "workspace_id not configured")
 	}
 
-	// Find MAS by ID (resolves workspace_id internally)
-	mas, workspaceID := config.FindMASByID(req.Payload.MasId)
-	if mas == nil {
-		log.Warnf("enforcement request failed: MAS not found: mas_id=%s", req.Payload.MasId)
-		return nil, status.Errorf(codes.NotFound, "MAS not found: %s", req.Payload.MasId)
+	// Check management plane URL is available
+	if MgmtURL == "" {
+		log.Errorf("enforcement request failed: management plane URL not set")
+		return nil, status.Error(codes.Unavailable, "management plane URL not configured")
 	}
 
-	log.Debugf("resolved MAS: mas_id=%s workspace_id=%s mas_name=%s", req.Payload.MasId, workspaceID, mas.Name)
+	// Fetch MAS from management plane
+	mgmtClient := mgmt.New(MgmtURL, 30*time.Second)
+	mas, err := mgmtClient.GetMAS(ctx, WorkspaceID, req.Payload.MasId)
+	if err != nil {
+		if errors.Is(err, mgmt.ErrNotFound) {
+			log.Warnf("enforcement request failed: MAS not found: mas_id=%s", req.Payload.MasId)
+			return nil, status.Errorf(codes.NotFound, "MAS not found: %s", req.Payload.MasId)
+		}
+		log.Errorf("enforcement request failed: failed to fetch MAS: mas_id=%s error=%v", req.Payload.MasId, err)
+		return nil, status.Errorf(codes.Internal, "failed to fetch MAS: %v", err)
+	}
+
+	log.Debugf("fetched MAS from management plane: mas_id=%s workspace_id=%s mas_name=%s",
+		mas.ID, mas.WorkspaceID, mas.Name)
 
 	// Find CASA CE for this MAS
-	casaCE := config.FindCASACEForMAS(mas)
+	casaCE := mas.FindCASACE()
 	if casaCE == nil {
 		log.Warnf("enforcement request failed: no CASA CE associated with MAS: mas_id=%s", req.Payload.MasId)
 		return nil, status.Errorf(codes.NotFound, "no CASA CE associated with MAS: %s", req.Payload.MasId)
 	}
 
 	if !casaCE.Enabled {
-		log.Warnf("enforcement request failed: CASA CE is disabled: ce_id=%s", casaCE.ID)
-		return nil, status.Errorf(codes.Unavailable, "CASA CE is disabled: %s", casaCE.ID)
+		log.Warnf("enforcement request failed: CASA CE is disabled: ce_id=%s", casaCE.CEID)
+		return nil, status.Errorf(codes.Unavailable, "CASA CE is disabled: %s", casaCE.CEID)
 	}
 
-	log.Infof("calling CASA CE: ce_id=%s base_url=%s endpoint=%s", casaCE.ID, casaCE.BaseURL, casaCE.Endpoint)
+	log.Infof("calling CASA CE: ce_id=%s base_url=%s endpoint=%s", casaCE.CEID, casaCE.BaseURL, casaCE.Endpoint)
 
 	// Create CASA CE client and call authorize
 	casaClient := casa.New(casaCE.BaseURL, casaCE.Endpoint, 30*time.Second)
@@ -99,16 +109,16 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 
 	casaResp, err := casaClient.Authorize(ctx, casaReq)
 	if err != nil {
-		log.Errorf("CASA CE call failed: ce_id=%s error=%v", casaCE.ID, err)
+		log.Errorf("CASA CE call failed: ce_id=%s error=%v", casaCE.CEID, err)
 		return nil, status.Errorf(codes.Internal, "CASA CE call failed: %v", err)
 	}
 
-	log.Infof("CASA CE response: ce_id=%s action=%s", casaCE.ID, casaResp.Action)
+	log.Infof("CASA CE response: ce_id=%s action=%s", casaCE.CEID, casaResp.Action)
 
 	// Map CASA response to gRPC response
 	action, err := mapCASAActionToProto(casaResp.Action)
 	if err != nil {
-		log.Errorf("invalid CASA CE action: ce_id=%s action=%s error=%v", casaCE.ID, casaResp.Action, err)
+		log.Errorf("invalid CASA CE action: ce_id=%s action=%s error=%v", casaCE.CEID, casaResp.Action, err)
 		return nil, status.Errorf(codes.Internal, "invalid CASA CE action: %s", casaResp.Action)
 	}
 

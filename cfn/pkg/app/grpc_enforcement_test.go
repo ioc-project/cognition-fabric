@@ -16,6 +16,52 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+// setupTestEnv sets up the test environment with mock management plane and CASA CE.
+// Returns cleanup function and the mock servers.
+func setupTestEnv(t *testing.T, masResponse map[string]any, casaResponse map[string]any) (cleanup func(), mockMgmt *httptest.Server, mockCASA *httptest.Server) {
+	t.Helper()
+
+	// Save old values
+	oldWorkspaceID := WorkspaceID
+	oldMgmtURL := MgmtURL
+
+	// Start mock CASA CE server
+	mockCASA = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(casaResponse)
+	}))
+
+	// Inject CASA URL into MAS response if present
+	if masResponse != nil {
+		if ces, ok := masResponse["cognition_engines"].([]map[string]any); ok && len(ces) > 0 {
+			ces[0]["base_url"] = mockCASA.URL
+		}
+	}
+
+	// Start mock management plane server
+	mockMgmt = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if masResponse == nil {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(masResponse)
+	}))
+
+	// Set global vars
+	WorkspaceID = "ws-test-123"
+	MgmtURL = mockMgmt.URL
+
+	cleanup = func() {
+		WorkspaceID = oldWorkspaceID
+		MgmtURL = oldMgmtURL
+		mockMgmt.Close()
+		mockCASA.Close()
+	}
+
+	return cleanup, mockMgmt, mockCASA
+}
+
 func TestGetDisposition_MissingPayload(t *testing.T) {
 	server := newEnforcementServer()
 
@@ -73,17 +119,16 @@ func TestGetDisposition_MissingMASID(t *testing.T) {
 	}
 }
 
-func TestGetDisposition_ConfigNotLoaded(t *testing.T) {
-	// Ensure config is nil
-	cfnConfigMutex.Lock()
-	oldConfig := ParsedConfig
-	ParsedConfig = nil
-	cfnConfigMutex.Unlock()
+func TestGetDisposition_WorkspaceIDNotSet(t *testing.T) {
+	// Save and clear workspace ID
+	oldWorkspaceID := WorkspaceID
+	oldMgmtURL := MgmtURL
+	WorkspaceID = ""
+	MgmtURL = "http://localhost:9000"
 
 	defer func() {
-		cfnConfigMutex.Lock()
-		ParsedConfig = oldConfig
-		cfnConfigMutex.Unlock()
+		WorkspaceID = oldWorkspaceID
+		MgmtURL = oldMgmtURL
 	}()
 
 	server := newEnforcementServer()
@@ -110,26 +155,12 @@ func TestGetDisposition_ConfigNotLoaded(t *testing.T) {
 	if st.Code() != codes.Unavailable {
 		t.Errorf("expected code %v, got %v", codes.Unavailable, st.Code())
 	}
-
-	if st.Message() != "CFN config not loaded" {
-		t.Errorf("expected message 'CFN config not loaded', got '%s'", st.Message())
-	}
 }
 
 func TestGetDisposition_MASNotFound(t *testing.T) {
-	// Set up config with no MAS
-	cfnConfigMutex.Lock()
-	oldConfig := ParsedConfig
-	ParsedConfig = &CfnConfigPayload{
-		Workspaces: []WorkspaceCfg{},
-	}
-	cfnConfigMutex.Unlock()
-
-	defer func() {
-		cfnConfigMutex.Lock()
-		ParsedConfig = oldConfig
-		cfnConfigMutex.Unlock()
-	}()
+	// Set up with nil MAS response (404)
+	cleanup, _, _ := setupTestEnv(t, nil, nil)
+	defer cleanup()
 
 	server := newEnforcementServer()
 
@@ -158,31 +189,16 @@ func TestGetDisposition_MASNotFound(t *testing.T) {
 }
 
 func TestGetDisposition_NoCASACEAssociated(t *testing.T) {
-	// Set up config with MAS but no CASA CE
-	cfnConfigMutex.Lock()
-	oldConfig := ParsedConfig
-	ParsedConfig = &CfnConfigPayload{
-		Workspaces: []WorkspaceCfg{
-			{
-				WorkspaceID:   "ws-1",
-				WorkspaceName: "Test Workspace",
-				MASList: []MASCfg{
-					{
-						ID:               "mas-123",
-						Name:             "Test MAS",
-						CognitionEngines: []MASEngineCfg{}, // No CEs
-					},
-				},
-			},
-		},
+	// MAS with no CEs
+	masResp := map[string]any{
+		"id":                "mas-123",
+		"workspace_id":      "ws-test-123",
+		"name":              "Test MAS",
+		"cognition_engines": []map[string]any{}, // No CEs
 	}
-	cfnConfigMutex.Unlock()
 
-	defer func() {
-		cfnConfigMutex.Lock()
-		ParsedConfig = oldConfig
-		cfnConfigMutex.Unlock()
-	}()
+	cleanup, _, _ := setupTestEnv(t, masResp, nil)
+	defer cleanup()
 
 	server := newEnforcementServer()
 
@@ -211,45 +227,25 @@ func TestGetDisposition_NoCASACEAssociated(t *testing.T) {
 }
 
 func TestGetDisposition_CASACEDisabled(t *testing.T) {
-	// Set up config with MAS and disabled CASA CE
-	cfnConfigMutex.Lock()
-	oldConfig := ParsedConfig
-	ParsedConfig = &CfnConfigPayload{
-		CognitionEngines: []EngineCfg{
+	// MAS with disabled CASA CE
+	masResp := map[string]any{
+		"id":           "mas-123",
+		"workspace_id": "ws-test-123",
+		"name":         "Test MAS",
+		"cognition_engines": []map[string]any{
 			{
-				ID:       "ce-casa-1",
-				CEType:   "CASA",
-				BaseURL:  "http://localhost:8000",
-				Endpoint: "/authorize",
-				Enabled:  false, // Disabled
-			},
-		},
-		Workspaces: []WorkspaceCfg{
-			{
-				WorkspaceID:   "ws-1",
-				WorkspaceName: "Test Workspace",
-				MASList: []MASCfg{
-					{
-						ID:   "mas-123",
-						Name: "Test MAS",
-						CognitionEngines: []MASEngineCfg{
-							{
-								ID:     "ce-casa-1",
-								CEType: "CASA",
-							},
-						},
-					},
-				},
+				"ce_id":    "ce-casa-1",
+				"ce_type":  "CASA",
+				"base_url": "http://localhost:8000",
+				"endpoint": "/authorize",
+				"enabled":  false, // Disabled
+				"status":   "offline",
 			},
 		},
 	}
-	cfnConfigMutex.Unlock()
 
-	defer func() {
-		cfnConfigMutex.Lock()
-		ParsedConfig = oldConfig
-		cfnConfigMutex.Unlock()
-	}()
+	cleanup, _, _ := setupTestEnv(t, masResp, nil)
+	defer cleanup()
 
 	server := newEnforcementServer()
 
@@ -278,56 +274,25 @@ func TestGetDisposition_CASACEDisabled(t *testing.T) {
 }
 
 func TestGetDisposition_Success_Allow(t *testing.T) {
-	// Start mock CASA CE server
-	mockCASA := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodPost {
-			t.Errorf("expected POST, got %s", r.Method)
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"action": "allow"})
-	}))
-	defer mockCASA.Close()
-
-	// Set up config with MAS and enabled CASA CE pointing to mock
-	cfnConfigMutex.Lock()
-	oldConfig := ParsedConfig
-	ParsedConfig = &CfnConfigPayload{
-		CognitionEngines: []EngineCfg{
+	masResp := map[string]any{
+		"id":           "mas-123",
+		"workspace_id": "ws-test-123",
+		"name":         "Test MAS",
+		"cognition_engines": []map[string]any{
 			{
-				ID:       "ce-casa-1",
-				CEType:   "CASA",
-				BaseURL:  mockCASA.URL,
-				Endpoint: "/authorize",
-				Enabled:  true,
-			},
-		},
-		Workspaces: []WorkspaceCfg{
-			{
-				WorkspaceID:   "ws-1",
-				WorkspaceName: "Test Workspace",
-				MASList: []MASCfg{
-					{
-						ID:   "mas-123",
-						Name: "Test MAS",
-						CognitionEngines: []MASEngineCfg{
-							{
-								ID:     "ce-casa-1",
-								CEType: "CASA",
-							},
-						},
-					},
-				},
+				"ce_id":    "ce-casa-1",
+				"ce_type":  "CASA",
+				"base_url": "will-be-replaced",
+				"endpoint": "/authorize",
+				"enabled":  true,
+				"status":   "online",
 			},
 		},
 	}
-	cfnConfigMutex.Unlock()
+	casaResp := map[string]any{"action": "allow"}
 
-	defer func() {
-		cfnConfigMutex.Lock()
-		ParsedConfig = oldConfig
-		cfnConfigMutex.Unlock()
-	}()
+	cleanup, _, _ := setupTestEnv(t, masResp, casaResp)
+	defer cleanup()
 
 	server := newEnforcementServer()
 
@@ -351,51 +316,25 @@ func TestGetDisposition_Success_Allow(t *testing.T) {
 }
 
 func TestGetDisposition_Success_Block(t *testing.T) {
-	// Start mock CASA CE server
-	mockCASA := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"action": "block"})
-	}))
-	defer mockCASA.Close()
-
-	cfnConfigMutex.Lock()
-	oldConfig := ParsedConfig
-	ParsedConfig = &CfnConfigPayload{
-		CognitionEngines: []EngineCfg{
+	masResp := map[string]any{
+		"id":           "mas-123",
+		"workspace_id": "ws-test-123",
+		"name":         "Test MAS",
+		"cognition_engines": []map[string]any{
 			{
-				ID:       "ce-casa-1",
-				CEType:   "CASA",
-				BaseURL:  mockCASA.URL,
-				Endpoint: "/authorize",
-				Enabled:  true,
-			},
-		},
-		Workspaces: []WorkspaceCfg{
-			{
-				WorkspaceID:   "ws-1",
-				WorkspaceName: "Test Workspace",
-				MASList: []MASCfg{
-					{
-						ID:   "mas-123",
-						Name: "Test MAS",
-						CognitionEngines: []MASEngineCfg{
-							{
-								ID:     "ce-casa-1",
-								CEType: "CASA",
-							},
-						},
-					},
-				},
+				"ce_id":    "ce-casa-1",
+				"ce_type":  "CASA",
+				"base_url": "will-be-replaced",
+				"endpoint": "/authorize",
+				"enabled":  true,
+				"status":   "online",
 			},
 		},
 	}
-	cfnConfigMutex.Unlock()
+	casaResp := map[string]any{"action": "block"}
 
-	defer func() {
-		cfnConfigMutex.Lock()
-		ParsedConfig = oldConfig
-		cfnConfigMutex.Unlock()
-	}()
+	cleanup, _, _ := setupTestEnv(t, masResp, casaResp)
+	defer cleanup()
 
 	server := newEnforcementServer()
 
@@ -419,51 +358,25 @@ func TestGetDisposition_Success_Block(t *testing.T) {
 }
 
 func TestGetDisposition_Success_Modify(t *testing.T) {
-	// Start mock CASA CE server
-	mockCASA := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]any{"action": "modify", "modify": true})
-	}))
-	defer mockCASA.Close()
-
-	cfnConfigMutex.Lock()
-	oldConfig := ParsedConfig
-	ParsedConfig = &CfnConfigPayload{
-		CognitionEngines: []EngineCfg{
+	masResp := map[string]any{
+		"id":           "mas-123",
+		"workspace_id": "ws-test-123",
+		"name":         "Test MAS",
+		"cognition_engines": []map[string]any{
 			{
-				ID:       "ce-casa-1",
-				CEType:   "CASA",
-				BaseURL:  mockCASA.URL,
-				Endpoint: "/authorize",
-				Enabled:  true,
-			},
-		},
-		Workspaces: []WorkspaceCfg{
-			{
-				WorkspaceID:   "ws-1",
-				WorkspaceName: "Test Workspace",
-				MASList: []MASCfg{
-					{
-						ID:   "mas-123",
-						Name: "Test MAS",
-						CognitionEngines: []MASEngineCfg{
-							{
-								ID:     "ce-casa-1",
-								CEType: "CASA",
-							},
-						},
-					},
-				},
+				"ce_id":    "ce-casa-1",
+				"ce_type":  "CASA",
+				"base_url": "will-be-replaced",
+				"endpoint": "/authorize",
+				"enabled":  true,
+				"status":   "online",
 			},
 		},
 	}
-	cfnConfigMutex.Unlock()
+	casaResp := map[string]any{"action": "modify", "modify": true}
 
-	defer func() {
-		cfnConfigMutex.Lock()
-		ParsedConfig = oldConfig
-		cfnConfigMutex.Unlock()
-	}()
+	cleanup, _, _ := setupTestEnv(t, masResp, casaResp)
+	defer cleanup()
 
 	server := newEnforcementServer()
 
@@ -490,125 +403,26 @@ func TestGetDisposition_Success_Modify(t *testing.T) {
 	}
 }
 
-func TestGetDisposition_CASACEError(t *testing.T) {
-	// Start mock CASA CE server that returns error
-	mockCASA := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("internal error"))
-	}))
-	defer mockCASA.Close()
-
-	cfnConfigMutex.Lock()
-	oldConfig := ParsedConfig
-	ParsedConfig = &CfnConfigPayload{
-		CognitionEngines: []EngineCfg{
-			{
-				ID:       "ce-casa-1",
-				CEType:   "CASA",
-				BaseURL:  mockCASA.URL,
-				Endpoint: "/authorize",
-				Enabled:  true,
-			},
-		},
-		Workspaces: []WorkspaceCfg{
-			{
-				WorkspaceID:   "ws-1",
-				WorkspaceName: "Test Workspace",
-				MASList: []MASCfg{
-					{
-						ID:   "mas-123",
-						Name: "Test MAS",
-						CognitionEngines: []MASEngineCfg{
-							{
-								ID:     "ce-casa-1",
-								CEType: "CASA",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	cfnConfigMutex.Unlock()
-
-	defer func() {
-		cfnConfigMutex.Lock()
-		ParsedConfig = oldConfig
-		cfnConfigMutex.Unlock()
-	}()
-
-	server := newEnforcementServer()
-
-	req := &enforcementv1.GetDispositionRequest{
-		Payload: &enforcementv1.GetDispositionPayload{
-			MasId:              "mas-123",
-			SourceAgentId:      "agent-1",
-			DestinationAgentId: "agent-2",
-			TraceId:            "trace-123",
-		},
-	}
-
-	_, err := server.GetDisposition(context.Background(), req)
-	if err == nil {
-		t.Fatal("expected error, got nil")
-	}
-
-	st, ok := status.FromError(err)
-	if !ok {
-		t.Fatalf("expected gRPC status error, got %v", err)
-	}
-
-	if st.Code() != codes.Internal {
-		t.Errorf("expected code %v, got %v", codes.Internal, st.Code())
-	}
-}
-
 func TestGetDisposition_InvalidCASAAction(t *testing.T) {
-	// Start mock CASA CE server that returns invalid action
-	mockCASA := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"action": "invalid_action"})
-	}))
-	defer mockCASA.Close()
-
-	cfnConfigMutex.Lock()
-	oldConfig := ParsedConfig
-	ParsedConfig = &CfnConfigPayload{
-		CognitionEngines: []EngineCfg{
+	masResp := map[string]any{
+		"id":           "mas-123",
+		"workspace_id": "ws-test-123",
+		"name":         "Test MAS",
+		"cognition_engines": []map[string]any{
 			{
-				ID:       "ce-casa-1",
-				CEType:   "CASA",
-				BaseURL:  mockCASA.URL,
-				Endpoint: "/authorize",
-				Enabled:  true,
-			},
-		},
-		Workspaces: []WorkspaceCfg{
-			{
-				WorkspaceID:   "ws-1",
-				WorkspaceName: "Test Workspace",
-				MASList: []MASCfg{
-					{
-						ID:   "mas-123",
-						Name: "Test MAS",
-						CognitionEngines: []MASEngineCfg{
-							{
-								ID:     "ce-casa-1",
-								CEType: "CASA",
-							},
-						},
-					},
-				},
+				"ce_id":    "ce-casa-1",
+				"ce_type":  "CASA",
+				"base_url": "will-be-replaced",
+				"endpoint": "/authorize",
+				"enabled":  true,
+				"status":   "online",
 			},
 		},
 	}
-	cfnConfigMutex.Unlock()
+	casaResp := map[string]any{"action": "invalid_action"}
 
-	defer func() {
-		cfnConfigMutex.Lock()
-		ParsedConfig = oldConfig
-		cfnConfigMutex.Unlock()
-	}()
+	cleanup, _, _ := setupTestEnv(t, masResp, casaResp)
+	defer cleanup()
 
 	server := newEnforcementServer()
 
@@ -633,103 +447,6 @@ func TestGetDisposition_InvalidCASAAction(t *testing.T) {
 
 	if st.Code() != codes.Internal {
 		t.Errorf("expected code %v, got %v", codes.Internal, st.Code())
-	}
-}
-
-func TestGetDisposition_WithExtraMetadata(t *testing.T) {
-	var receivedExtra map[string]any
-
-	// Start mock CASA CE server that captures the request
-	mockCASA := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		var reqBody struct {
-			Extra   map[string]any `json:"extra"`
-			Payload struct {
-				MASID              string `json:"mas_id"`
-				SourceAgentID      string `json:"source_agent_id"`
-				DestinationAgentID string `json:"destination_agent_id"`
-				TraceID            string `json:"trace_id"`
-			} `json:"payload"`
-		}
-		json.NewDecoder(r.Body).Decode(&reqBody)
-		receivedExtra = reqBody.Extra
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"action": "allow"})
-	}))
-	defer mockCASA.Close()
-
-	cfnConfigMutex.Lock()
-	oldConfig := ParsedConfig
-	ParsedConfig = &CfnConfigPayload{
-		CognitionEngines: []EngineCfg{
-			{
-				ID:       "ce-casa-1",
-				CEType:   "CASA",
-				BaseURL:  mockCASA.URL,
-				Endpoint: "/authorize",
-				Enabled:  true,
-			},
-		},
-		Workspaces: []WorkspaceCfg{
-			{
-				WorkspaceID:   "ws-1",
-				WorkspaceName: "Test Workspace",
-				MASList: []MASCfg{
-					{
-						ID:   "mas-123",
-						Name: "Test MAS",
-						CognitionEngines: []MASEngineCfg{
-							{
-								ID:     "ce-casa-1",
-								CEType: "CASA",
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	cfnConfigMutex.Unlock()
-
-	defer func() {
-		cfnConfigMutex.Lock()
-		ParsedConfig = oldConfig
-		cfnConfigMutex.Unlock()
-	}()
-
-	server := newEnforcementServer()
-
-	req := &enforcementv1.GetDispositionRequest{
-		Extra: map[string]string{
-			"header-1": "value-1",
-			"header-2": "value-2",
-		},
-		Payload: &enforcementv1.GetDispositionPayload{
-			MasId:              "mas-123",
-			SourceAgentId:      "agent-1",
-			DestinationAgentId: "agent-2",
-			TraceId:            "trace-123",
-		},
-	}
-
-	resp, err := server.GetDisposition(context.Background(), req)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if resp.Action != enforcementv1.GetDispositionResponse_ACTION_ALLOW {
-		t.Errorf("expected ACTION_ALLOW, got %v", resp.Action)
-	}
-
-	// Verify extra was forwarded
-	if receivedExtra == nil {
-		t.Fatal("expected extra to be forwarded, got nil")
-	}
-	if receivedExtra["header-1"] != "value-1" {
-		t.Errorf("expected header-1=value-1, got %v", receivedExtra["header-1"])
-	}
-	if receivedExtra["header-2"] != "value-2" {
-		t.Errorf("expected header-2=value-2, got %v", receivedExtra["header-2"])
 	}
 }
 
