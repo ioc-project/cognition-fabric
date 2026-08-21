@@ -1,8 +1,8 @@
 # D1 — Enforcement API Contract
 
-**Status:** Updated — workspace abstraction decision
+**Status:** Implemented
 
-**Date:** 2026-08-17 (updated from 2026-08-11)
+**Date:** 2026-08-21 (updated from 2026-08-11)
 
 **Parties:** CF T3, Enforcement Proxy T3
 
@@ -13,43 +13,51 @@ This discussion captures the initial agreement on the API shape between the two 
 
 ## Current agreement
 
+**Contract:** `ioc.cf.enforcement.v1.Enforcement`
+
+**RPC:** `GetDisposition`
+
 **Protocol:** gRPC/Proto (preferred over REST for consistency between teams)
 
 **Behavior:**
 - Blocking — the Enforcement Proxy blocks until CF returns a disposition
 - Timeout — TBD, depends on CASA CE response time
 
-### Request
+### Request (`GetDispositionRequest`)
 
-```json
-{
-  "extra": "TBD (for headers/metadata)",
+```bash
+grpcurl -plaintext -d '{
+  "extra": { "key": "value" },
   "payload": {
-    "mas_id": "UUID4",
-    "source_agent_id": "str",
-    "destination_agent_id": "str",
-    "trace_id": "UUID4/str"
+    "mas_id": "550e8400-e29b-41d4-a716-446655440000",
+    "source_agent_id": "agent-1",
+    "destination_agent_id": "agent-2",
+    "trace_id": "trace-123"
   }
-}
+}' localhost:9003 ioc.cf.enforcement.v1.Enforcement/GetDisposition
 ```
 
 **Notes:**
 - `workspace_id` is **not** exposed to the Enforcement Proxy — CF/management-plane handles workspace resolution internally (see decision D1.1 below)
 - `trace_id` — Proxy needs to observe this ID to coordinate spans; sync with Pavan
+- `extra` — map of string key-value pairs for headers/metadata (contents TBD)
 
-### Response
+### Response (`GetDispositionResponse`)
 
 ```json
 {
-  "action": "allow | block | modify (TBD)",
-  "modify": "boolean (optional)"
+  "action": "allow",
+  "modify": false
 }
 ```
 
-**Actions:**
+**Actions (Dec 2026 scope):**
 - `allow` — permit the interaction to proceed unchanged
 - `block` — deny the interaction
-- `modify` — (TBD) alter the interaction before forwarding
+
+**Deferred actions (reserved in proto):**
+- `modify` — alter the interaction before forwarding
+- `inject` — inject content into the interaction
 
 ## Decisions
 
@@ -73,9 +81,4 @@ This discussion captures the initial agreement on the API shape between the two 
 | `modify` action semantics — what can be modified and how? | TBD | CF + Proxy |
 | `mas_id` semantics — needs IOC-level agreement | TBD | IOC |
 | `trace_id` format and coordination — sync with Pavan | TBD | CF + Proxy |
-
-## Next steps
-
-Once open questions are resolved, this discussion should be:
-1. Converted to an ADR capturing the decision rationale
-2. Formalized as a spec in `specs/enforcement-api.md`
+| Request payload and response — to be determined by L9 request spec | TBD | L9 |
