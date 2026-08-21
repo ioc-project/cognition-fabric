@@ -24,6 +24,7 @@ import (
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 var (
@@ -132,6 +133,7 @@ func New(port, grpcPort int) (*App, error) {
 	// Initialize gRPC server
 	a.grpcServer = grpc.NewServer()
 	enforcementv1.RegisterEnforcementServer(a.grpcServer, newEnforcementServer())
+	reflection.Register(a.grpcServer)
 
 	a.registerOnStartup()
 	return a, nil
