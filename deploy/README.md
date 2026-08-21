@@ -20,8 +20,9 @@ Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
 |---------|------|-------------|
 | `ioc-scale-db` | 5456 | AgensGraph + PGVector database |
 | `ioc-scale-cf-mgmt-svc` | 9000 | Management backend API |
-| `ioc-scale-cfn-svc` | 9002 (HTTP) | Cognition Fabric Node |
-| `ioc-scale-cfn-cognition-engine` | 9004 | Cognition engines |
+| `ioc-scale-cf-mgmt-plane-ui` | 9001 | Management plane UI (Next.js) |
+| `ioc-scale-cfn-svc` | 9002 (HTTP), 9003 (gRPC) | Cognition Fabric Node |
+| `ioc-scale-cf-cognition-engine` | 8000 | Cognition engines |
 
 ## Configuration
 
