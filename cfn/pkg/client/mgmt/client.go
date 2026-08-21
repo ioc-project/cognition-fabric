@@ -21,20 +21,20 @@ import (
 
 // MASResponse represents a Multi-Agentic System from the management plane.
 type MASResponse struct {
-	ID               string              `json:"id"`
-	WorkspaceID      string              `json:"workspace_id"`
-	Name             string              `json:"name"`
+	ID               string               `json:"id"`
+	WorkspaceID      string               `json:"workspace_id"`
+	Name             string               `json:"name"`
 	CognitionEngines []MASCognitionEngine `json:"cognition_engines"`
 }
 
 // MASCognitionEngine represents a CE associated with a MAS.
 type MASCognitionEngine struct {
-	CEID      string `json:"ce_id"`
-	CEType    string `json:"ce_type"`
-	BaseURL   string `json:"base_url"`
-	Endpoint  string `json:"endpoint"`
-	Enabled   bool   `json:"enabled"`
-	Status    string `json:"status"`
+	CEID     string `json:"ce_id"`
+	CEType   string `json:"ce_type"`
+	BaseURL  string `json:"base_url"`
+	Endpoint string `json:"endpoint"`
+	Enabled  bool   `json:"enabled"`
+	Status   string `json:"status"`
 }
 
 // ErrNotFound is returned when a resource is not found.
