@@ -43,37 +43,3 @@ type MASEngineCfg struct {
 	CEType    string         `json:"ce_type"`
 	MASConfig map[string]any `json:"mas_config"`
 }
-
-// FindCE finds a cognition engine by ID.
-func (c *CfnConfigPayload) FindCE(ceID string) *EngineCfg {
-	for i := range c.CognitionEngines {
-		if c.CognitionEngines[i].ID == ceID {
-			return &c.CognitionEngines[i]
-		}
-	}
-	return nil
-}
-
-// FindWorkspace finds a workspace by ID.
-func (c *CfnConfigPayload) FindWorkspace(workspaceID string) *WorkspaceCfg {
-	for i := range c.Workspaces {
-		if c.Workspaces[i].WorkspaceID == workspaceID {
-			return &c.Workspaces[i]
-		}
-	}
-	return nil
-}
-
-// FindMAS finds a MAS by workspace and MAS ID.
-func (c *CfnConfigPayload) FindMAS(workspaceID, masID string) *MASCfg {
-	ws := c.FindWorkspace(workspaceID)
-	if ws == nil {
-		return nil
-	}
-	for i := range ws.MASList {
-		if ws.MASList[i].ID == masID {
-			return &ws.MASList[i]
-		}
-	}
-	return nil
-}

@@ -24,8 +24,7 @@ CF provides:
 
 | Contract | Direction | Purpose |
 |----------|-----------|---------|
-| `ioc.ce.v1` | CF → Enforcement Proxy | Enforcement contract — dispositions (block/modify/inject) |
-| `ioc.cf.tracing.v1` | CF → Enforcement Proxy | Tracing contract — correlated traces into CF |
+| `ioc.cf.enforcement.v1` | CF → Enforcement Proxy | Enforcement contract — dispositions (allow/block) |
 | Analytics API | CEs → CF | Read-only observability queries |
 | Active API | CEs → CF | Direct MAS engagement |
 | Enforcing API | CEs → CF | Issue dispositions via Enforcement Proxy |
@@ -46,7 +45,7 @@ CF provides:
 - **Detective Investigations CE** — CE chaining, findings access
 - **GATS CEs** — Enforcing tier dispositions
 - **Security Detections CE** — Analytics tier queries
-- **Enforcement Proxy** — executes enforcement in-path via `ioc.ce.v1`
+- **Enforcement Proxy** — executes enforcement in-path via `ioc.cf.enforcement.v1`
 
 ## Documentation
 
@@ -63,9 +62,10 @@ CF provides:
 
 ### Prerequisites
 
-- Go 1.23+
+- Go 1.25+
 - Docker (for building images)
 - [swag](https://github.com/swaggo/swag) (for API docs generation)
+- [protoc](https://grpc.io/docs/protoc-installation/) (for regenerating gRPC code)
 
 ### Setup
 
@@ -90,6 +90,8 @@ go install github.com/swaggo/swag/cmd/swag@latest
 | `make fmt` | Auto-fix code formatting |
 | `make docs` | Generate OpenAPI docs from code annotations |
 | `make docs-check` | Verify API docs are up-to-date |
+| `make proto` | Generate gRPC code from proto files |
+| `make proto-check` | Verify gRPC code is up-to-date |
 | `make build` | Build Docker image |
 | `make run` | Run service locally |
 | `make clean` | Remove Docker image |
@@ -117,29 +119,74 @@ The service loads environment variables from a `.env` file if present. See [`.en
 | `CFN_NAME` | Name for this CFN instance | `cfn-local` |
 | `CFN_IP` | Advertised IP address (auto-detected if not set) | (auto) |
 | `APP_PORT` | HTTP server port | `9002` |
+| `GRPC_PORT` | gRPC server port (Enforcement API) | `9003` |
 | `HEARTBEAT_INTERVAL_SECONDS` | Interval between heartbeats to mgmt plane | `29` |
 
 ### Project Structure
 
 ```
+api/proto/         # Protocol Buffer definitions
 cmd/cfn/           # Application entrypoint
 pkg/
-  app/             # HTTP handlers and application logic
-    httpapi/       # Request/response DTOs
-  client/http/     # HTTP client with retries
+  api/enforcement/ # Generated gRPC code for Enforcement API
+  app/             # HTTP and gRPC handlers, application logic
+    httpapi/       # HTTP request/response DTOs
+  client/
+    casa/          # CASA CE HTTP client
+    http/          # Generic HTTP client with retries
   tools/
     easyhttp/      # HTTP router and helpers
     logger/        # Structured logging (zap)
 docs/api/          # Generated OpenAPI specification
 ```
 
-### Adding New Endpoints
+### Adding New HTTP Endpoints
 
 1. Add DTOs in `pkg/app/httpapi/<feature>/dto.go` with Swagger annotations
 2. Add handler in `pkg/app/handlers_<feature>.go` with Swagger annotations
 3. Register route in `pkg/app/app.go` `initializeRoutes()`
 4. Run `make docs` to regenerate API docs
 5. Add tests in `pkg/app/handlers_<feature>_test.go`
+
+### gRPC Enforcement API
+
+The CFN exposes a gRPC Enforcement API on port 9003 (configurable via `GRPC_PORT`).
+
+**Proto definition:** `api/proto/enforcement/v1/enforcement.proto`
+
+**Service:** `ioc.cf.enforcement.v1.Enforcement`
+
+| Method | Description |
+|--------|-------------|
+| `GetDisposition` | Returns disposition (allow/block) for an L9 interaction |
+
+**Testing with grpcurl:**
+
+```bash
+# Install grpcurl if needed
+brew install grpcurl
+
+# Call the GetDisposition endpoint
+grpcurl -plaintext -d '{
+  "payload": {
+    "mas_id": "your-mas-uuid",
+    "source_agent_id": "agent-1",
+    "destination_agent_id": "agent-2",
+    "trace_id": "trace-123"
+  }
+}' localhost:9003 ioc.cf.enforcement.v1.Enforcement/GetDisposition
+```
+
+**Regenerating gRPC code:**
+
+```bash
+# Install protoc plugins (one-time setup)
+go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+# Generate code
+make proto
+```
 
 ### Code Style
 
