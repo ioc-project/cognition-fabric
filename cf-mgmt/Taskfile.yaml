@@ -84,43 +84,11 @@ tasks:
       - find . -type d -name "__pycache__" -delete
       - find . -name "*.pyc" -delete
 
-  ## Docker and Docker-Compose Tasks ##
+  ## Docker Tasks ##
   docker-build:
-    desc: Build Docker image with docker-compose
+    desc: Build Docker image
     cmds:
       - docker build -t ${IMAGE_NAME} -f Dockerfile .
-
-  docker-run:
-    desc: Run Docker container with docker-compose
-    cmds:
-      - docker compose --env-file .env up ioc-scale-cf-mgmt-svc
-
-  docker-compose-full-stack-pull:
-    desc: Pull latest images for all services with docker-compose
-    cmds:
-      - docker compose --env-file .env --profile full-stack pull
-
-  docker-compose-full-stack-up:
-    desc: Start all services with docker-compose
-    cmds:
-      - docker compose --env-file .env --profile full-stack up -d
-      - docker compose --env-file .env --profile full-stack logs -f
-
-  docker-compose-full-stack-up-build:
-    desc: Start all services with docker-compose, rebuilding images
-    cmds:
-      - docker compose --env-file .env --profile full-stack up --build -d
-      - docker compose --env-file .env --profile full-stack logs -f
-
-  docker-compose-full-stack-down:
-    desc: Stop all services with docker-compose
-    cmds:
-      - docker compose --env-file .env --profile full-stack down
-
-  docker-compose-full-stack-down-with-volumes:
-    desc: Stop all services and remove volumes with docker-compose
-    cmds:
-      - docker compose --env-file .env --profile full-stack down -v
 
   # Database migration tasks (Alembic)
   db-migrate-apply:
