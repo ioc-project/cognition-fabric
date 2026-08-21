@@ -196,14 +196,6 @@ func (a *App) registerOnStartup() {
 	}
 	CfnID = id
 
-	// Store workspace_id from response (single workspace assumption)
-	if workspaceIDs, ok := result["workspace_ids"].([]any); ok && len(workspaceIDs) > 0 {
-		if wsID, ok := workspaceIDs[0].(string); ok {
-			WorkspaceID = wsID
-			log.Infof("workspace_id stored: %s", WorkspaceID)
-		}
-	}
-
 	// Parse config blob into typed struct
 	if cfgBlob, ok := result["config"].(map[string]any); ok {
 		cfgBytes, _ := json.Marshal(cfgBlob)
@@ -216,6 +208,23 @@ func (a *App) registerOnStartup() {
 			ConfigVersion = parsed.ConfigVersion
 			cfnConfigMutex.Unlock()
 		}
+	}
+
+	// Find and store the Default Workspace ID from config
+	cfnConfigMutex.RLock()
+	if ParsedConfig != nil {
+		for _, ws := range ParsedConfig.Workspaces {
+			if ws.WorkspaceName == "Default Workspace" {
+				WorkspaceID = ws.WorkspaceID
+				log.Infof("default workspace found and stored: workspace_id=%s", WorkspaceID)
+				break
+			}
+		}
+	}
+	cfnConfigMutex.RUnlock()
+
+	if WorkspaceID == "" {
+		log.Warnf("no Default Workspace found in config - enforcement requests will fail until a workspace is associated")
 	}
 
 	cfgJSON, _ := json.Marshal(ParsedConfig)
