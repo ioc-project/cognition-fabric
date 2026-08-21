@@ -24,8 +24,7 @@ CF provides:
 
 | Contract | Direction | Purpose |
 |----------|-----------|---------|
-| `ioc.ce.v1` | CF → Enforcement Proxy | Enforcement contract — dispositions (block/modify/inject) |
-| `ioc.cf.tracing.v1` | CF → Enforcement Proxy | Tracing contract — correlated traces into CF |
+| `ioc.cf.enforcement.v1` | CF → Enforcement Proxy | Enforcement contract — dispositions (allow/block) |
 | Analytics API | CEs → CF | Read-only observability queries |
 | Active API | CEs → CF | Direct MAS engagement |
 | Enforcing API | CEs → CF | Issue dispositions via Enforcement Proxy |
@@ -46,7 +45,7 @@ CF provides:
 - **Detective Investigations CE** — CE chaining, findings access
 - **GATS CEs** — Enforcing tier dispositions
 - **Security Detections CE** — Analytics tier queries
-- **Enforcement Proxy** — executes enforcement in-path via `ioc.ce.v1`
+- **Enforcement Proxy** — executes enforcement in-path via `ioc.cf.enforcement.v1`
 
 ## Documentation
 
@@ -155,11 +154,11 @@ The CFN exposes a gRPC Enforcement API on port 9003 (configurable via `GRPC_PORT
 
 **Proto definition:** `api/proto/enforcement/v1/enforcement.proto`
 
-**Service:** `enforcement.v1.EnforcementService`
+**Service:** `ioc.cf.enforcement.v1.Enforcement`
 
 | Method | Description |
 |--------|-------------|
-| `Enforce` | Returns disposition (allow/block/modify) for an L9 interaction |
+| `GetDisposition` | Returns disposition (allow/block) for an L9 interaction |
 
 **Testing with grpcurl:**
 
@@ -167,13 +166,15 @@ The CFN exposes a gRPC Enforcement API on port 9003 (configurable via `GRPC_PORT
 # Install grpcurl if needed
 brew install grpcurl
 
-# Call the Enforce endpoint
+# Call the GetDisposition endpoint
 grpcurl -plaintext -d '{
-  "mas_id": "your-mas-uuid",
-  "source_agent_id": "agent-1",
-  "destination_agent_id": "agent-2",
-  "trace_id": "trace-123"
-}' localhost:9003 enforcement.v1.EnforcementService/Enforce
+  "payload": {
+    "mas_id": "your-mas-uuid",
+    "source_agent_id": "agent-1",
+    "destination_agent_id": "agent-2",
+    "trace_id": "trace-123"
+  }
+}' localhost:9003 ioc.cf.enforcement.v1.Enforcement/GetDisposition
 ```
 
 **Regenerating gRPC code:**

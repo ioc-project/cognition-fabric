@@ -131,7 +131,7 @@ func New(port, grpcPort int) (*App, error) {
 
 	// Initialize gRPC server
 	a.grpcServer = grpc.NewServer()
-	enforcementv1.RegisterEnforcementServiceServer(a.grpcServer, newEnforcementServer())
+	enforcementv1.RegisterEnforcementServer(a.grpcServer, newEnforcementServer())
 
 	a.registerOnStartup()
 	return a, nil

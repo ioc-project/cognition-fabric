@@ -16,17 +16,45 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func TestEnforce_MissingMASID(t *testing.T) {
+func TestGetDisposition_MissingPayload(t *testing.T) {
 	server := newEnforcementServer()
 
-	req := &enforcementv1.EnforceRequest{
-		MasId:              "",
-		SourceAgentId:      "agent-1",
-		DestinationAgentId: "agent-2",
-		TraceId:            "trace-123",
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: nil,
 	}
 
-	_, err := server.Enforce(context.Background(), req)
+	_, err := server.GetDisposition(context.Background(), req)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("expected gRPC status error, got %v", err)
+	}
+
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("expected code %v, got %v", codes.InvalidArgument, st.Code())
+	}
+
+	if st.Message() != "payload is required" {
+		t.Errorf("expected message 'payload is required', got '%s'", st.Message())
+	}
+}
+
+func TestGetDisposition_MissingMASID(t *testing.T) {
+	server := newEnforcementServer()
+
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+		},
+	}
+
+	_, err := server.GetDisposition(context.Background(), req)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -45,7 +73,7 @@ func TestEnforce_MissingMASID(t *testing.T) {
 	}
 }
 
-func TestEnforce_ConfigNotLoaded(t *testing.T) {
+func TestGetDisposition_ConfigNotLoaded(t *testing.T) {
 	// Ensure config is nil
 	cfnConfigMutex.Lock()
 	oldConfig := ParsedConfig
@@ -60,14 +88,16 @@ func TestEnforce_ConfigNotLoaded(t *testing.T) {
 
 	server := newEnforcementServer()
 
-	req := &enforcementv1.EnforceRequest{
-		MasId:              "mas-123",
-		SourceAgentId:      "agent-1",
-		DestinationAgentId: "agent-2",
-		TraceId:            "trace-123",
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-123",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+		},
 	}
 
-	_, err := server.Enforce(context.Background(), req)
+	_, err := server.GetDisposition(context.Background(), req)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -86,7 +116,7 @@ func TestEnforce_ConfigNotLoaded(t *testing.T) {
 	}
 }
 
-func TestEnforce_MASNotFound(t *testing.T) {
+func TestGetDisposition_MASNotFound(t *testing.T) {
 	// Set up config with no MAS
 	cfnConfigMutex.Lock()
 	oldConfig := ParsedConfig
@@ -103,14 +133,16 @@ func TestEnforce_MASNotFound(t *testing.T) {
 
 	server := newEnforcementServer()
 
-	req := &enforcementv1.EnforceRequest{
-		MasId:              "non-existent-mas",
-		SourceAgentId:      "agent-1",
-		DestinationAgentId: "agent-2",
-		TraceId:            "trace-123",
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "non-existent-mas",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+		},
 	}
 
-	_, err := server.Enforce(context.Background(), req)
+	_, err := server.GetDisposition(context.Background(), req)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -125,7 +157,7 @@ func TestEnforce_MASNotFound(t *testing.T) {
 	}
 }
 
-func TestEnforce_NoCASACEAssociated(t *testing.T) {
+func TestGetDisposition_NoCASACEAssociated(t *testing.T) {
 	// Set up config with MAS but no CASA CE
 	cfnConfigMutex.Lock()
 	oldConfig := ParsedConfig
@@ -154,14 +186,16 @@ func TestEnforce_NoCASACEAssociated(t *testing.T) {
 
 	server := newEnforcementServer()
 
-	req := &enforcementv1.EnforceRequest{
-		MasId:              "mas-123",
-		SourceAgentId:      "agent-1",
-		DestinationAgentId: "agent-2",
-		TraceId:            "trace-123",
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-123",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+		},
 	}
 
-	_, err := server.Enforce(context.Background(), req)
+	_, err := server.GetDisposition(context.Background(), req)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -176,7 +210,7 @@ func TestEnforce_NoCASACEAssociated(t *testing.T) {
 	}
 }
 
-func TestEnforce_CASACEDisabled(t *testing.T) {
+func TestGetDisposition_CASACEDisabled(t *testing.T) {
 	// Set up config with MAS and disabled CASA CE
 	cfnConfigMutex.Lock()
 	oldConfig := ParsedConfig
@@ -219,14 +253,16 @@ func TestEnforce_CASACEDisabled(t *testing.T) {
 
 	server := newEnforcementServer()
 
-	req := &enforcementv1.EnforceRequest{
-		MasId:              "mas-123",
-		SourceAgentId:      "agent-1",
-		DestinationAgentId: "agent-2",
-		TraceId:            "trace-123",
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-123",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+		},
 	}
 
-	_, err := server.Enforce(context.Background(), req)
+	_, err := server.GetDisposition(context.Background(), req)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -241,7 +277,7 @@ func TestEnforce_CASACEDisabled(t *testing.T) {
 	}
 }
 
-func TestEnforce_Success_Allow(t *testing.T) {
+func TestGetDisposition_Success_Allow(t *testing.T) {
 	// Start mock CASA CE server
 	mockCASA := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -295,24 +331,26 @@ func TestEnforce_Success_Allow(t *testing.T) {
 
 	server := newEnforcementServer()
 
-	req := &enforcementv1.EnforceRequest{
-		MasId:              "mas-123",
-		SourceAgentId:      "agent-1",
-		DestinationAgentId: "agent-2",
-		TraceId:            "trace-123",
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-123",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+		},
 	}
 
-	resp, err := server.Enforce(context.Background(), req)
+	resp, err := server.GetDisposition(context.Background(), req)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if resp.Action != enforcementv1.EnforceResponse_ACTION_ALLOW {
+	if resp.Action != enforcementv1.GetDispositionResponse_ACTION_ALLOW {
 		t.Errorf("expected ACTION_ALLOW, got %v", resp.Action)
 	}
 }
 
-func TestEnforce_Success_Block(t *testing.T) {
+func TestGetDisposition_Success_Block(t *testing.T) {
 	// Start mock CASA CE server
 	mockCASA := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -361,28 +399,30 @@ func TestEnforce_Success_Block(t *testing.T) {
 
 	server := newEnforcementServer()
 
-	req := &enforcementv1.EnforceRequest{
-		MasId:              "mas-123",
-		SourceAgentId:      "agent-1",
-		DestinationAgentId: "agent-2",
-		TraceId:            "trace-123",
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-123",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+		},
 	}
 
-	resp, err := server.Enforce(context.Background(), req)
+	resp, err := server.GetDisposition(context.Background(), req)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if resp.Action != enforcementv1.EnforceResponse_ACTION_BLOCK {
+	if resp.Action != enforcementv1.GetDispositionResponse_ACTION_BLOCK {
 		t.Errorf("expected ACTION_BLOCK, got %v", resp.Action)
 	}
 }
 
-func TestEnforce_Success_Modify(t *testing.T) {
+func TestGetDisposition_Success_Modify(t *testing.T) {
 	// Start mock CASA CE server
 	mockCASA := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"action": "modify"})
+		json.NewEncoder(w).Encode(map[string]any{"action": "modify", "modify": true})
 	}))
 	defer mockCASA.Close()
 
@@ -427,24 +467,30 @@ func TestEnforce_Success_Modify(t *testing.T) {
 
 	server := newEnforcementServer()
 
-	req := &enforcementv1.EnforceRequest{
-		MasId:              "mas-123",
-		SourceAgentId:      "agent-1",
-		DestinationAgentId: "agent-2",
-		TraceId:            "trace-123",
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-123",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+		},
 	}
 
-	resp, err := server.Enforce(context.Background(), req)
+	resp, err := server.GetDisposition(context.Background(), req)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if resp.Action != enforcementv1.EnforceResponse_ACTION_MODIFY {
+	if resp.Action != enforcementv1.GetDispositionResponse_ACTION_MODIFY {
 		t.Errorf("expected ACTION_MODIFY, got %v", resp.Action)
+	}
+
+	if !resp.Modify {
+		t.Error("expected Modify to be true")
 	}
 }
 
-func TestEnforce_CASACEError(t *testing.T) {
+func TestGetDisposition_CASACEError(t *testing.T) {
 	// Start mock CASA CE server that returns error
 	mockCASA := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -493,14 +539,16 @@ func TestEnforce_CASACEError(t *testing.T) {
 
 	server := newEnforcementServer()
 
-	req := &enforcementv1.EnforceRequest{
-		MasId:              "mas-123",
-		SourceAgentId:      "agent-1",
-		DestinationAgentId: "agent-2",
-		TraceId:            "trace-123",
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-123",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+		},
 	}
 
-	_, err := server.Enforce(context.Background(), req)
+	_, err := server.GetDisposition(context.Background(), req)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -515,7 +563,7 @@ func TestEnforce_CASACEError(t *testing.T) {
 	}
 }
 
-func TestEnforce_InvalidCASAAction(t *testing.T) {
+func TestGetDisposition_InvalidCASAAction(t *testing.T) {
 	// Start mock CASA CE server that returns invalid action
 	mockCASA := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -564,14 +612,16 @@ func TestEnforce_InvalidCASAAction(t *testing.T) {
 
 	server := newEnforcementServer()
 
-	req := &enforcementv1.EnforceRequest{
-		MasId:              "mas-123",
-		SourceAgentId:      "agent-1",
-		DestinationAgentId: "agent-2",
-		TraceId:            "trace-123",
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-123",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+		},
 	}
 
-	_, err := server.Enforce(context.Background(), req)
+	_, err := server.GetDisposition(context.Background(), req)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -586,7 +636,7 @@ func TestEnforce_InvalidCASAAction(t *testing.T) {
 	}
 }
 
-func TestEnforce_WithExtraMetadata(t *testing.T) {
+func TestGetDisposition_WithExtraMetadata(t *testing.T) {
 	var receivedExtra map[string]any
 
 	// Start mock CASA CE server that captures the request
@@ -649,23 +699,25 @@ func TestEnforce_WithExtraMetadata(t *testing.T) {
 
 	server := newEnforcementServer()
 
-	req := &enforcementv1.EnforceRequest{
-		MasId:              "mas-123",
-		SourceAgentId:      "agent-1",
-		DestinationAgentId: "agent-2",
-		TraceId:            "trace-123",
+	req := &enforcementv1.GetDispositionRequest{
 		Extra: map[string]string{
 			"header-1": "value-1",
 			"header-2": "value-2",
 		},
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-123",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+		},
 	}
 
-	resp, err := server.Enforce(context.Background(), req)
+	resp, err := server.GetDisposition(context.Background(), req)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if resp.Action != enforcementv1.EnforceResponse_ACTION_ALLOW {
+	if resp.Action != enforcementv1.GetDispositionResponse_ACTION_ALLOW {
 		t.Errorf("expected ACTION_ALLOW, got %v", resp.Action)
 	}
 
@@ -684,18 +736,20 @@ func TestEnforce_WithExtraMetadata(t *testing.T) {
 func TestMapCASAActionToProto(t *testing.T) {
 	tests := []struct {
 		input    string
-		expected enforcementv1.EnforceResponse_Action
+		expected enforcementv1.GetDispositionResponse_Action
 		wantErr  bool
 	}{
-		{"allow", enforcementv1.EnforceResponse_ACTION_ALLOW, false},
-		{"ALLOW", enforcementv1.EnforceResponse_ACTION_ALLOW, false},
-		{"Allow", enforcementv1.EnforceResponse_ACTION_ALLOW, false},
-		{"block", enforcementv1.EnforceResponse_ACTION_BLOCK, false},
-		{"BLOCK", enforcementv1.EnforceResponse_ACTION_BLOCK, false},
-		{"modify", enforcementv1.EnforceResponse_ACTION_MODIFY, false},
-		{"MODIFY", enforcementv1.EnforceResponse_ACTION_MODIFY, false},
-		{"unknown", enforcementv1.EnforceResponse_ACTION_UNSPECIFIED, true},
-		{"", enforcementv1.EnforceResponse_ACTION_UNSPECIFIED, true},
+		{"allow", enforcementv1.GetDispositionResponse_ACTION_ALLOW, false},
+		{"ALLOW", enforcementv1.GetDispositionResponse_ACTION_ALLOW, false},
+		{"Allow", enforcementv1.GetDispositionResponse_ACTION_ALLOW, false},
+		{"block", enforcementv1.GetDispositionResponse_ACTION_BLOCK, false},
+		{"BLOCK", enforcementv1.GetDispositionResponse_ACTION_BLOCK, false},
+		{"modify", enforcementv1.GetDispositionResponse_ACTION_MODIFY, false},
+		{"MODIFY", enforcementv1.GetDispositionResponse_ACTION_MODIFY, false},
+		{"inject", enforcementv1.GetDispositionResponse_ACTION_INJECT, false},
+		{"INJECT", enforcementv1.GetDispositionResponse_ACTION_INJECT, false},
+		{"unknown", enforcementv1.GetDispositionResponse_ACTION_UNSPECIFIED, true},
+		{"", enforcementv1.GetDispositionResponse_ACTION_UNSPECIFIED, true},
 	}
 
 	for _, tt := range tests {

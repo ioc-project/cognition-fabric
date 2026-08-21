@@ -16,9 +16,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// enforcementServer implements the EnforcementServiceServer interface.
+// enforcementServer implements the EnforcementServer interface.
 type enforcementServer struct {
-	enforcementv1.UnimplementedEnforcementServiceServer
+	enforcementv1.UnimplementedEnforcementServer
 }
 
 // newEnforcementServer creates a new enforcement gRPC server.
@@ -26,17 +26,21 @@ func newEnforcementServer() *enforcementServer {
 	return &enforcementServer{}
 }
 
-// Enforce handles enforcement requests from the Enforcement Proxy.
-func (s *enforcementServer) Enforce(ctx context.Context, req *enforcementv1.EnforceRequest) (*enforcementv1.EnforceResponse, error) {
+// GetDisposition handles enforcement requests from the Enforcement Proxy.
+// This is a blocking/synchronous call on the live agent conversation path.
+func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcementv1.GetDispositionRequest) (*enforcementv1.GetDispositionResponse, error) {
 	log := getLogger()
 
 	// Validate request
-	if req.MasId == "" {
+	if req.Payload == nil {
+		return nil, status.Error(codes.InvalidArgument, "payload is required")
+	}
+	if req.Payload.MasId == "" {
 		return nil, status.Error(codes.InvalidArgument, "mas_id is required")
 	}
 
 	log.Infof("enforcement request: mas_id=%s source=%s dest=%s trace_id=%s",
-		req.MasId, req.SourceAgentId, req.DestinationAgentId, req.TraceId)
+		req.Payload.MasId, req.Payload.SourceAgentId, req.Payload.DestinationAgentId, req.Payload.TraceId)
 
 	// Get config (thread-safe read)
 	cfnConfigMutex.RLock()
@@ -49,19 +53,19 @@ func (s *enforcementServer) Enforce(ctx context.Context, req *enforcementv1.Enfo
 	}
 
 	// Find MAS by ID (resolves workspace_id internally)
-	mas, workspaceID := config.FindMASByID(req.MasId)
+	mas, workspaceID := config.FindMASByID(req.Payload.MasId)
 	if mas == nil {
-		log.Warnf("enforcement request failed: MAS not found: mas_id=%s", req.MasId)
-		return nil, status.Errorf(codes.NotFound, "MAS not found: %s", req.MasId)
+		log.Warnf("enforcement request failed: MAS not found: mas_id=%s", req.Payload.MasId)
+		return nil, status.Errorf(codes.NotFound, "MAS not found: %s", req.Payload.MasId)
 	}
 
-	log.Debugf("resolved MAS: mas_id=%s workspace_id=%s mas_name=%s", req.MasId, workspaceID, mas.Name)
+	log.Debugf("resolved MAS: mas_id=%s workspace_id=%s mas_name=%s", req.Payload.MasId, workspaceID, mas.Name)
 
 	// Find CASA CE for this MAS
 	casaCE := config.FindCASACEForMAS(mas)
 	if casaCE == nil {
-		log.Warnf("enforcement request failed: no CASA CE associated with MAS: mas_id=%s", req.MasId)
-		return nil, status.Errorf(codes.NotFound, "no CASA CE associated with MAS: %s", req.MasId)
+		log.Warnf("enforcement request failed: no CASA CE associated with MAS: mas_id=%s", req.Payload.MasId)
+		return nil, status.Errorf(codes.NotFound, "no CASA CE associated with MAS: %s", req.Payload.MasId)
 	}
 
 	if !casaCE.Enabled {
@@ -86,10 +90,10 @@ func (s *enforcementServer) Enforce(ctx context.Context, req *enforcementv1.Enfo
 	casaReq := &casa.AuthorizeRequest{
 		Extra: extra,
 		Payload: casa.AuthorizePayload{
-			MASID:              req.MasId,
-			SourceAgentID:      req.SourceAgentId,
-			DestinationAgentID: req.DestinationAgentId,
-			TraceID:            req.TraceId,
+			MASID:              req.Payload.MasId,
+			SourceAgentID:      req.Payload.SourceAgentId,
+			DestinationAgentID: req.Payload.DestinationAgentId,
+			TraceID:            req.Payload.TraceId,
 		},
 	}
 
@@ -108,21 +112,30 @@ func (s *enforcementServer) Enforce(ctx context.Context, req *enforcementv1.Enfo
 		return nil, status.Errorf(codes.Internal, "invalid CASA CE action: %s", casaResp.Action)
 	}
 
-	return &enforcementv1.EnforceResponse{
+	// Get modify flag from CASA response (defaults to false if not set)
+	modify := false
+	if casaResp.Modify != nil {
+		modify = *casaResp.Modify
+	}
+
+	return &enforcementv1.GetDispositionResponse{
 		Action: action,
+		Modify: modify,
 	}, nil
 }
 
 // mapCASAActionToProto maps CASA CE action string to proto enum.
-func mapCASAActionToProto(action string) (enforcementv1.EnforceResponse_Action, error) {
+func mapCASAActionToProto(action string) (enforcementv1.GetDispositionResponse_Action, error) {
 	switch strings.ToLower(action) {
 	case "allow":
-		return enforcementv1.EnforceResponse_ACTION_ALLOW, nil
+		return enforcementv1.GetDispositionResponse_ACTION_ALLOW, nil
 	case "block":
-		return enforcementv1.EnforceResponse_ACTION_BLOCK, nil
+		return enforcementv1.GetDispositionResponse_ACTION_BLOCK, nil
 	case "modify":
-		return enforcementv1.EnforceResponse_ACTION_MODIFY, nil
+		return enforcementv1.GetDispositionResponse_ACTION_MODIFY, nil
+	case "inject":
+		return enforcementv1.GetDispositionResponse_ACTION_INJECT, nil
 	default:
-		return enforcementv1.EnforceResponse_ACTION_UNSPECIFIED, fmt.Errorf("unknown action: %s", action)
+		return enforcementv1.GetDispositionResponse_ACTION_UNSPECIFIED, fmt.Errorf("unknown action: %s", action)
 	}
 }
