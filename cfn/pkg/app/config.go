@@ -43,4 +43,3 @@ type MASEngineCfg struct {
 	CEType    string         `json:"ce_type"`
 	MASConfig map[string]any `json:"mas_config"`
 }
-
