@@ -1,3 +1,48 @@
+# ---------------------------------------------------------------------------
+# OXP (Observability & Explainability Platform) worker environment
+# Workers run from prebuilt claris-lib images (GHCR) and are amd64-only.
+# ---------------------------------------------------------------------------
+# Workers assemble the AMQP URL from these parts, so no connection string with
+# embedded credentials is needed here.
+x-rabbitmq-env: &rabbitmq-env
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: 5672
+  RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest} # legit:ignore
+
+x-worker-env: &worker-env
+  <<: *rabbitmq-env
+  HOME: /claris
+  MPLCONFIGDIR: /claris/.config/matplotlib
+  API_BASE_URL: http://host.docker.internal:8081
+  NEO4J_HOST: neo4j:7687
+  NEO4J_URI: bolt://neo4j:7687
+  UV_LINK_MODE: copy
+  UV_PROJECT_ENVIRONMENT: /opt/venv
+  PYTHONUNBUFFERED: 1
+  MLFLOW_TRACKING_URI: http://${MLFLOW_HOST}:${MLFLOW_PORT}
+  CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-host.docker.internal}
+  CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
+  CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME:-admin}
+  CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin} # legit:ignore
+
+x-worker-base: &worker-base
+  platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
+  env_file:
+    - path: .env
+      required: false
+  depends_on:
+    rabbitmq:
+      condition: service_healthy
+    neo4j:
+      condition: service_healthy
+  volumes:
+    - type: bind
+      source: ${MCE_CONFIG_FILE:-./mce_config.yaml}
+      target: /claris/mce_config.yaml
+    - /dev/null:/app/workflows/.env
+  environment: *worker-env
+
 services:
   # Database - AgensGraph + PgVector + Postgres
   # Port Mapping: 5456:5432
@@ -154,5 +199,167 @@ services:
       ioc-scale-cfn-svc:
         condition: service_healthy
 
+  # ===========================================================================
+  # OXP (Observability & Explainability Platform) stack
+  # Message broker + Knowledge Graph store + claris-lib pipeline workers.
+  # ===========================================================================
+
+  # Message broker for OXP workers
+  # Port Mapping: 5672 (AMQP), 15672 (management UI)
+  # Erlang crashes on startup under x86 emulation, so this must match the host arch.
+  rabbitmq:
+    image: rabbitmq:3-management
+    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-oxp-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest} # legit:ignore
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Knowledge Graph store for OXP
+  # Port Mapping: 7474 (HTTP), 7687 (Bolt)
+  neo4j:
+    image: neo4j:latest
+    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-oxp-neo4j
+    volumes:
+      - oxp_neo4j_data:/data
+      - oxp_neo4j_logs:/logs
+      - oxp_neo4j_config:/config
+      - oxp_neo4j_plugins:/plugins
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    restart: unless-stopped
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-testpassword} # legit:ignore
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # OXP: normalization worker (pipeline entry point)
+  norm:
+    <<: *worker-base
+    image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/claris-worker-norm:${CLARIS_IMAGE_TAG:-latest}
+    container_name: ioc-scale-oxp-norm
+    command: ["--max-sessions", "-1"]
+    environment:
+      <<: *worker-env
+      MAX_INFLIGHT_MESSAGES: ${NORM_MAX_INFLIGHT_MESSAGES:-64}
+    restart: unless-stopped
+
+  # OXP: embedding worker
+  embedding:
+    <<: *worker-base
+    image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/claris-worker-embedding:${CLARIS_IMAGE_TAG:-latest}
+    container_name: ioc-scale-oxp-embedding
+    command: ["--embedder-type", "OpenAIEmbedder", "--embedding-model", "${EMBEDDING_MODEL:-azure/text-embedding-3-small}"]
+    environment:
+      <<: *worker-env
+      MAX_INFLIGHT_MESSAGES: ${EMBEDDING_MAX_INFLIGHT_MESSAGES:-16}
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      norm:
+        condition: service_started
+
+  # OXP: metrics computation engine worker
+  mce:
+    <<: *worker-base
+    image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/claris-worker-mce:${CLARIS_IMAGE_TAG:-latest}
+    container_name: ioc-scale-oxp-mce
+    command: ["--config-file", "/claris/mce_config.yaml"]
+    environment:
+      <<: *worker-env
+      MAX_INFLIGHT_MESSAGES: ${MCE_MAX_INFLIGHT_MESSAGES:-16}
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      norm:
+        condition: service_started
+
+  # OXP: semantic grouping worker
+  grouping:
+    <<: *worker-base
+    image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/claris-worker-grouping:${CLARIS_IMAGE_TAG:-latest}
+    container_name: ioc-scale-oxp-grouping
+    command: ["--embedding-model", "${EMBEDDING_MODEL:-azure/text-embedding-3-small}"]
+    environment:
+      <<: *worker-env
+      MAX_INFLIGHT_MESSAGES: ${GROUPING_MAX_INFLIGHT_MESSAGES:-16}
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      norm:
+        condition: service_started
+
+  # OXP: analysis worker (anomaly / consistency / normal-behaviour)
+  analysis:
+    <<: *worker-base
+    image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/claris-worker-analysis:${CLARIS_IMAGE_TAG:-latest}
+    container_name: ioc-scale-oxp-analysis
+    command:
+      - "--embedding-model"
+      - "${EMBEDDING_MODEL:-azure/text-embedding-3-small}"
+    environment:
+      <<: *worker-env
+      MAX_INFLIGHT_MESSAGES: ${ANALYSIS_MAX_INFLIGHT_MESSAGES:-3}
+      ANOMALY_CONFIG_FILE: ${ANOMALY_CONFIG_FILE:-}
+      CONSISTENCY_CONFIG_FILE: ${CONSISTENCY_CONFIG_FILE:-}
+      NORMAL_BEHAVIOUR_CONFIG_FILE: ${NORMAL_BEHAVIOUR_CONFIG_FILE:-}
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      norm:
+        condition: service_started
+
+  # OXP: hierarchical grouping worker
+  hierarchical-grouping:
+    <<: *worker-base
+    image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/claris-worker-hierarchical-grouping:${CLARIS_IMAGE_TAG:-latest}
+    container_name: ioc-scale-oxp-hierarchical-grouping
+    command:
+      - "--embedding-model"
+      - "${EMBEDDING_MODEL:-azure/text-embedding-3-small}"
+    environment:
+      <<: *worker-env
+      MAX_INFLIGHT_MESSAGES: ${HIERARCHICAL_GROUPING_MAX_INFLIGHT_MESSAGES:-1}
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      norm:
+        condition: service_started
+
 volumes:
   ioc_scale_db_data:
+  oxp_neo4j_data:
+  oxp_neo4j_logs:
+  oxp_neo4j_config:
+  oxp_neo4j_plugins:
