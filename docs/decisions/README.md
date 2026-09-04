@@ -14,9 +14,9 @@ ones they replace rather than editing history.
 
 ## Index
 
-| # | Decision | Status |
-|---|----------|--------|
-| — | *No decisions recorded yet* | — |
+| #    | Decision                                                                                 | Status   |
+| ---- | ---------------------------------------------------------------------------------------- | -------- |
+| 0001 | [Persist application_id as masId on the MAS node in the KG](0001-persist-masid-in-kg.md) | Accepted |
 
 ## Template
 
