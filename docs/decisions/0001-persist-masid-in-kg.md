@@ -20,3 +20,4 @@ add `get_all_mas_ids()` alongside the existing `get_all_application_ids()` — b
 
 - CF can query OXP using `mas_id`.
 - Both property names (`masName`, `masId`) coexist on the `MAS` node, holding the same value
+- Angelo (OXP team) will open a PR in claris-lib to implement the change.
