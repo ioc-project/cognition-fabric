@@ -17,11 +17,14 @@ Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
 All images are pulled from GHCR; nothing is built locally. The full stack is
 13 containers.
 
+The one image whose source lives in this repo is the database. See
+[`docker-db/`](docker-db/) for the Dockerfile and how to publish a new tag.
+
 ## Services
 
 | Service | Port | Description |
 |---------|------|-------------|
-| `ioc-scale-db` | 5456 | AgensGraph + PGVector database |
+| `ioc-scale-db` | 5456 | AgensGraph + pgvector + TimescaleDB database. Built from [`docker-db/`](docker-db/) in this repo |
 | `ioc-scale-cf-mgmt-svc` | 9000 | Management backend API |
 | `ioc-scale-cf-mgmt-plane-ui` | 9001 | Management plane UI (Next.js) |
 | `ioc-scale-cfn-svc` | 9002 (HTTP), 9003 (gRPC) | Cognition Fabric Node |
