@@ -40,8 +40,9 @@ definitions:
         example: /authorize
         type: string
       mas_auto_associate:
-        description: Auto-associate with all MAS in the workspace
-        example: false
+        description: Auto-associate with all MAS in the workspace (defaults to true
+          if not specified)
+        example: true
         type: boolean
       mas_config:
         additionalProperties: {}

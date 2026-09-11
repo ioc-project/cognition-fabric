@@ -215,9 +215,9 @@
                     "example": "/authorize"
                 },
                 "mas_auto_associate": {
-                    "description": "Auto-associate with all MAS in the workspace",
+                    "description": "Auto-associate with all MAS in the workspace (defaults to true if not specified)",
                     "type": "boolean",
-                    "example": false
+                    "example": true
                 },
                 "mas_config": {
                     "description": "Factory defaults for per-MAS configuration",
