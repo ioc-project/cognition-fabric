@@ -262,3 +262,97 @@ func (a *App) cognitionEngineHeartbeatHandler(w http.ResponseWriter, r *http.Req
 	// Return the successful response to the CE
 	return eh.RespondWithJSON(w, http.StatusOK, hbResp)
 }
+
+// deleteCognitionEngineHandler handles CE unregistration/deletion requests.
+//
+// @Summary      Unregister/Delete a Cognition Engine
+// @Description  Unregister (soft-delete) a CE by ID. CFN forwards the request to the management plane.
+// @Tags         cognition-engines
+// @Produce      json
+// @Param        ceId path string true "Cognition Engine ID (UUID)"
+// @Success      204 "CE deleted successfully"
+// @Failure      400 {object} cognitionengine.ErrorResponse "Invalid CE ID"
+// @Failure      404 {object} cognitionengine.ErrorResponse "CE not found"
+// @Failure      502 {object} cognitionengine.ErrorResponse "Management plane error"
+// @Failure      503 {object} cognitionengine.ErrorResponse "CFN not registered"
+// @Router       /api/cognition-engine/{ceId} [delete]
+func (a *App) deleteCognitionEngineHandler(w http.ResponseWriter, r *http.Request) (int, error) {
+	log := getLogger()
+
+	ceID := eh.PathParam(r, "ceId")
+	if ceID == "" {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "ce_id is required",
+		})
+	}
+
+	// Validate ceID is a valid UUID
+	if _, err := uuid.Parse(ceID); err != nil {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid ce_id format: must be a valid UUID",
+		})
+	}
+
+	// Check if this CFN is registered with the management plane
+	if CfnID == "" {
+		return eh.RespondWithJSON(w, http.StatusServiceUnavailable, map[string]string{
+			"error": "CFN not registered with management plane yet",
+		})
+	}
+
+	// Build the delete URL for management plane
+	mgmtURL := getEnvOrDefault("MGMT_URL", "http://localhost:9000")
+	deleteURL := fmt.Sprintf("%s/api/cognition-engines/%s", mgmtURL, ceID)
+
+	log.Infof("forwarding CE delete request to management plane: %s (ce_id=%s)", deleteURL, ceID)
+
+	// Forward the request to the management plane
+	client := httpclient.New(30 * time.Second)
+	headers := map[string]string{
+		"Accept": "application/json",
+	}
+
+	ctx := context.Background()
+	resp, err := client.Delete(ctx, deleteURL, nil, headers)
+	if err != nil {
+		return eh.RespondWithJSON(w, http.StatusBadGateway, map[string]string{
+			"error": fmt.Sprintf("failed to forward request to management plane: %v", err),
+		})
+	}
+	defer resp.Body.Close()
+
+	// Management plane returns 204 No Content on success
+	if resp.StatusCode == http.StatusNoContent {
+		log.Infof("CE deleted successfully: ce_id=%s", ceID)
+
+		// Trigger config refresh after deletion
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			mgmtURL := getEnvOrDefault("MGMT_URL", "http://localhost:9000")
+			if err := a.RefreshConfig(mgmtURL); err != nil {
+				log.Errorf("failed to refresh config after CE deletion: %v", err)
+			} else {
+				log.Infof("config refreshed after CE deletion: ce_id=%s", ceID)
+			}
+		}()
+
+		w.WriteHeader(http.StatusNoContent)
+		return http.StatusNoContent, nil
+	}
+
+	// Read error response
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Errorf("failed to read response body: %v", err)
+		return eh.RespondWithJSON(w, http.StatusBadGateway, map[string]string{
+			"error": "failed to process delete request",
+		})
+	}
+
+	var errorResp map[string]any
+	if err := json.Unmarshal(respBody, &errorResp); err != nil {
+		errorResp = map[string]any{"raw": string(respBody)}
+	}
+	log.Errorf("cognition engine delete failed: status=%d, body=%v", resp.StatusCode, errorResp)
+	return eh.RespondWithJSON(w, resp.StatusCode, errorResp)
+}

@@ -65,6 +65,56 @@
                 }
             }
         },
+        "/api/cognition-engine/{ceId}": {
+            "delete": {
+                "description": "Unregister (soft-delete) a CE by ID. CFN forwards the request to the management plane.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cognition-engines"
+                ],
+                "summary": "Unregister/Delete a Cognition Engine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Cognition Engine ID (UUID)",
+                        "name": "ceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "CE deleted successfully"
+                    },
+                    "400": {
+                        "description": "Invalid CE ID",
+                        "schema": {
+                            "$ref": "#/definitions/cognitionengine.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "CE not found",
+                        "schema": {
+                            "$ref": "#/definitions/cognitionengine.ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Management plane error",
+                        "schema": {
+                            "$ref": "#/definitions/cognitionengine.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "CFN not registered",
+                        "schema": {
+                            "$ref": "#/definitions/cognitionengine.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/cognition-engine/{ceId}/heartbeat": {
             "put": {
                 "description": "Send heartbeat to maintain CE online status. CFN forwards to management plane.",

@@ -263,3 +263,154 @@ func TestCognitionEngineHeartbeatHandler_CFNNotRegistered(t *testing.T) {
 		t.Errorf("unexpected error message: %s", resp["error"])
 	}
 }
+
+// DELETE handler tests
+
+func TestDeleteCognitionEngineHandler(t *testing.T) {
+	tests := []struct {
+		name               string
+		ceID               string
+		cfnRegistered      bool
+		mgmtPlaneStatus    int
+		mgmtPlaneResponse  string
+		expectedStatusCode int
+		expectError        bool
+	}{
+		{
+			name:               "successful deletion",
+			ceID:               "550e8400-e29b-41d4-a716-446655440000",
+			cfnRegistered:      true,
+			mgmtPlaneStatus:    http.StatusNoContent,
+			mgmtPlaneResponse:  "",
+			expectedStatusCode: http.StatusNoContent,
+			expectError:        false,
+		},
+		{
+			name:               "CE not found",
+			ceID:               "550e8400-e29b-41d4-a716-446655440001",
+			cfnRegistered:      true,
+			mgmtPlaneStatus:    http.StatusNotFound,
+			mgmtPlaneResponse:  `{"detail":"CE not found"}`,
+			expectedStatusCode: http.StatusNotFound,
+			expectError:        true,
+		},
+		{
+			name:               "invalid CE ID format",
+			ceID:               "invalid-uuid",
+			cfnRegistered:      true,
+			mgmtPlaneStatus:    0,
+			mgmtPlaneResponse:  "",
+			expectedStatusCode: http.StatusBadRequest,
+			expectError:        true,
+		},
+		{
+			name:               "CFN not registered",
+			ceID:               "550e8400-e29b-41d4-a716-446655440000",
+			cfnRegistered:      false,
+			mgmtPlaneStatus:    0,
+			mgmtPlaneResponse:  "",
+			expectedStatusCode: http.StatusServiceUnavailable,
+			expectError:        true,
+		},
+		{
+			name:               "CE must be disabled first",
+			ceID:               "550e8400-e29b-41d4-a716-446655440000",
+			cfnRegistered:      true,
+			mgmtPlaneStatus:    http.StatusConflict,
+			mgmtPlaneResponse:  `{"detail":"CE must be disabled before it can be deleted"}`,
+			expectedStatusCode: http.StatusConflict,
+			expectError:        true,
+		},
+		{
+			name:               "CE has active MAS associations",
+			ceID:               "550e8400-e29b-41d4-a716-446655440000",
+			cfnRegistered:      true,
+			mgmtPlaneStatus:    http.StatusConflict,
+			mgmtPlaneResponse:  `{"detail":"CE cannot be deleted while it has active MAS associations"}`,
+			expectedStatusCode: http.StatusConflict,
+			expectError:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup mock management plane
+			mockMgmtPlane := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodDelete {
+					t.Errorf("expected DELETE method, got %s", r.Method)
+				}
+				if tt.mgmtPlaneStatus == http.StatusNoContent {
+					w.WriteHeader(http.StatusNoContent)
+				} else {
+					w.Header().Set("Content-Type", "application/json")
+					w.WriteHeader(tt.mgmtPlaneStatus)
+					w.Write([]byte(tt.mgmtPlaneResponse))
+				}
+			}))
+			defer mockMgmtPlane.Close()
+
+			// Set environment
+			t.Setenv("MGMT_URL", mockMgmtPlane.URL)
+
+			// Setup app
+			app := &App{}
+
+			// Set CFN registration status
+			if tt.cfnRegistered {
+				CfnID = "test-cfn-id"
+			} else {
+				CfnID = ""
+			}
+
+			// Create request with router to handle path params
+			rtr := easyhttp.NewRouter()
+			rtr.Delete("/api/cognition-engine/{ceId}", app.deleteCognitionEngineHandler)
+
+			req := httptest.NewRequest(http.MethodDelete, "/api/cognition-engine/"+tt.ceID, nil)
+			w := httptest.NewRecorder()
+
+			// Execute handler
+			rtr.ServeHTTP(w, req)
+
+			// Verify status code
+			if w.Code != tt.expectedStatusCode {
+				t.Errorf("expected status code %d, got %d", tt.expectedStatusCode, w.Code)
+			}
+
+			// Verify error expectation
+			if tt.expectError && w.Body.Len() > 0 {
+				var response map[string]interface{}
+				if err := json.Unmarshal(w.Body.Bytes(), &response); err == nil {
+					if response["error"] == nil && response["detail"] == nil {
+						t.Error("expected error in response body")
+					}
+				}
+			}
+
+			if !tt.expectError && tt.expectedStatusCode == http.StatusNoContent {
+				// Success case should have no content
+				if w.Body.Len() > 0 {
+					t.Errorf("expected empty body for 204 response, got: %s", w.Body.String())
+				}
+			}
+		})
+	}
+}
+
+func TestDeleteCognitionEngineHandler_MissingCEID(t *testing.T) {
+	CfnID = "test-cfn-id"
+
+	a := &App{}
+	rtr := easyhttp.NewRouter()
+	rtr.Delete("/api/cognition-engine/{ceId}", a.deleteCognitionEngineHandler)
+
+	req := httptest.NewRequest(http.MethodDelete, "/api/cognition-engine/", nil)
+	w := httptest.NewRecorder()
+
+	rtr.ServeHTTP(w, req)
+
+	// Should get 404 because route doesn't match
+	if w.Code != http.StatusNotFound {
+		t.Errorf("expected status %d (route not found), got %d", http.StatusNotFound, w.Code)
+	}
+}
