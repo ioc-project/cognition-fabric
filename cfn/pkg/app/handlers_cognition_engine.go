@@ -96,12 +96,18 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 		masConfig = map[string]any{}
 	}
 
+	// Default mas_auto_associate to true if not specified
+	masAutoAssociate := true
+	if req.MASAutoAssociate != nil {
+		masAutoAssociate = *req.MASAutoAssociate
+	}
+
 	payload := map[string]any{
 		"cfn_id":             CfnID,
 		"ce_type":            req.CEType,
 		"base_url":           req.BaseURL,
 		"endpoint":           req.Endpoint,
-		"mas_auto_associate": req.MASAutoAssociate,
+		"mas_auto_associate": masAutoAssociate,
 		"mas_config":         masConfig,
 	}
 

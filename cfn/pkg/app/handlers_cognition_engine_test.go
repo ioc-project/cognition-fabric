@@ -196,6 +196,115 @@ func TestRegisterCognitionEngineHandler_InvalidJSON(t *testing.T) {
 	}
 }
 
+func TestRegisterCognitionEngineHandler_MASAutoAssociateDefault(t *testing.T) {
+	CfnID = "test-cfn-id"
+
+	// Track what was sent to management plane
+	var receivedPayload map[string]any
+
+	mockMgmtPlane := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&receivedPayload)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ce_id":"test-ce-id","cfn_id":"test-cfn-id","ce_type":"CASA","base_url":"http://localhost:8080","endpoint":"/api/test","enabled":true,"mas_auto_associate":true,"status":"offline","created":true}`))
+	}))
+	defer mockMgmtPlane.Close()
+
+	t.Setenv("MGMT_URL", mockMgmtPlane.URL)
+
+	a := &App{}
+	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
+
+	// Request without mas_auto_associate field
+	body := `{"ce_type": "CASA", "base_url": "http://localhost:8080", "endpoint": "/api/test"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	// Verify default value of true was sent to management plane
+	if receivedPayload["mas_auto_associate"] != true {
+		t.Errorf("expected mas_auto_associate to default to true, got %v", receivedPayload["mas_auto_associate"])
+	}
+}
+
+func TestRegisterCognitionEngineHandler_MASAutoAssociateExplicitFalse(t *testing.T) {
+	CfnID = "test-cfn-id"
+
+	var receivedPayload map[string]any
+
+	mockMgmtPlane := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&receivedPayload)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ce_id":"test-ce-id","cfn_id":"test-cfn-id","ce_type":"CASA","base_url":"http://localhost:8080","endpoint":"/api/test","enabled":true,"mas_auto_associate":false,"status":"offline","created":true}`))
+	}))
+	defer mockMgmtPlane.Close()
+
+	t.Setenv("MGMT_URL", mockMgmtPlane.URL)
+
+	a := &App{}
+	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
+
+	// Request with explicit mas_auto_associate: false
+	body := `{"ce_type": "CASA", "base_url": "http://localhost:8080", "endpoint": "/api/test", "mas_auto_associate": false}`
+	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	// Verify explicit false was sent to management plane
+	if receivedPayload["mas_auto_associate"] != false {
+		t.Errorf("expected mas_auto_associate to be false, got %v", receivedPayload["mas_auto_associate"])
+	}
+}
+
+func TestRegisterCognitionEngineHandler_MASAutoAssociateExplicitTrue(t *testing.T) {
+	CfnID = "test-cfn-id"
+
+	var receivedPayload map[string]any
+
+	mockMgmtPlane := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&receivedPayload)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ce_id":"test-ce-id","cfn_id":"test-cfn-id","ce_type":"CASA","base_url":"http://localhost:8080","endpoint":"/api/test","enabled":true,"mas_auto_associate":true,"status":"offline","created":true}`))
+	}))
+	defer mockMgmtPlane.Close()
+
+	t.Setenv("MGMT_URL", mockMgmtPlane.URL)
+
+	a := &App{}
+	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
+
+	// Request with explicit mas_auto_associate: true
+	body := `{"ce_type": "CASA", "base_url": "http://localhost:8080", "endpoint": "/api/test", "mas_auto_associate": true}`
+	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d", http.StatusOK, w.Code)
+	}
+
+	// Verify explicit true was sent to management plane
+	if receivedPayload["mas_auto_associate"] != true {
+		t.Errorf("expected mas_auto_associate to be true, got %v", receivedPayload["mas_auto_associate"])
+	}
+}
+
 func TestCognitionEngineHeartbeatHandler_MissingCEID(t *testing.T) {
 	CfnID = "test-cfn-id"
 

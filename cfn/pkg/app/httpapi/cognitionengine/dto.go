@@ -14,8 +14,8 @@ type RegisterRequest struct {
 	BaseURL string `json:"base_url" example:"http://casa-ce:8080"`
 	// API endpoint path
 	Endpoint string `json:"endpoint" example:"/authorize"`
-	// Auto-associate with all MAS in the workspace
-	MASAutoAssociate bool `json:"mas_auto_associate" example:"false"`
+	// Auto-associate with all MAS in the workspace (defaults to true if not specified)
+	MASAutoAssociate *bool `json:"mas_auto_associate,omitempty" example:"true"`
 	// Factory defaults for per-MAS configuration
 	MASConfig map[string]any `json:"mas_config,omitempty"`
 }
