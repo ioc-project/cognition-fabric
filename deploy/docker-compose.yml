@@ -225,6 +225,47 @@ services:
       retries: 5
       start_period: 30s
 
+
+  claris-api:
+    image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/claris-api:${CLARIS_IMAGE_TAG:-latest}
+    env_file: .env
+    container_name: ioc-scale-oxp-claris-api
+    environment:
+      CLARIS_API_RELOAD: "false"
+      CACHE_REDIS_URL: redis://redis:6379/0
+      CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-host.docker.internal}
+      CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
+      CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME:-admin}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE:-claris}
+      NEO4J_HOST: neo4j
+      NEO4J_PORT: ${NEO4J_PORT:-7687}
+      NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-}
+      NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
+    ports:
+      - "8081:8000"
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+
+  redis:
+    image: redis:7-alpine
+    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-oxp-redis
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
   # Knowledge Graph store for OXP
   # Port Mapping: 7474 (HTTP), 7687 (Bolt)
   neo4j:
