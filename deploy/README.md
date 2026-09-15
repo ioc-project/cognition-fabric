@@ -15,7 +15,7 @@ Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
    ```
 
 All images are pulled from GHCR; nothing is built locally. The full stack is
-13 containers.
+15 containers.
 
 The one image whose source lives in this repo is the database. See
 [`docker-db/`](docker-db/) for the Dockerfile and how to publish a new tag.
@@ -36,6 +36,30 @@ The one image whose source lives in this repo is the database. See
 |---------|------|-------------|
 | `rabbitmq` | 5672 (AMQP), 15672 (management UI) | Message broker for the worker pipeline |
 | `neo4j` | 7474 (HTTP), 7687 (Bolt) | Knowledge graph store |
+| `clickhouse-server` | 8123 (HTTP), 9009 (native TCP) | Raw telemetry store the workers read sessions from |
+| `otel-collector` | 4317 (OTLP gRPC), 4318 (OTLP HTTP) | Receives spans from instrumented apps and writes them to ClickHouse |
+
+ClickHouse publishes its native port on host `9009` rather than `9000`, which
+already belongs to `ioc-scale-cf-mgmt-svc`. Inside the compose network it is
+still reached on `9000`, which is what
+[`otel-collector-config.yaml`](otel-collector-config.yaml) points at.
+
+Point an instrumented application at `http://localhost:4318` (or
+`http://otel-collector:4318` from inside the network) to get its traces into
+the pipeline.
+
+#### Connecting ClickHouse to the workers
+
+The collector writes spans, but it does not know about the columns the workers
+read or about RabbitMQ. Those are added by hand, once, after the collector has
+received its first span: `session_id`, `application_id`, and `agent_id` as
+materialized columns on `otel_traces`, plus a materialized view that publishes
+each `session.end` span to the `claris` exchange with routing key
+`new_session_in` — the queue `norm` reads from. They persist in the
+`oxp_clickhouse_data` volume.
+
+See [`scripts/README.md`](scripts/README.md) for the statements and how to run
+them.
 
 ### OXP workers
 
@@ -63,6 +87,9 @@ See `.env.example` for all available configuration options. Key settings:
   The two are read by different workers and can hold the same gateway key.
 - `AI_GATEWAY_BASE_URL` - Endpoint the `embedding` worker calls. Set it when
   using a gateway; it otherwise defaults to `https://api.openai.com/v1`.
+- `CLICKHOUSE_*` - Read by the workers and the OTel collector. `CLICKHOUSE_HOST`
+  defaults to the bundled `clickhouse-server`; set it to `host.docker.internal`
+  to use an external instance instead.
 
 ### Architecture
 

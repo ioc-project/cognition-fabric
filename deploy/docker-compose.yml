@@ -21,7 +21,7 @@ x-worker-env: &worker-env
   UV_PROJECT_ENVIRONMENT: /opt/venv
   PYTHONUNBUFFERED: 1
   MLFLOW_TRACKING_URI: http://${MLFLOW_HOST}:${MLFLOW_PORT}
-  CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-host.docker.internal}
+  CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-clickhouse-server}
   CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
   CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME:-admin}
   CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin} # legit:ignore
@@ -35,6 +35,8 @@ x-worker-base: &worker-base
     rabbitmq:
       condition: service_healthy
     neo4j:
+      condition: service_healthy
+    clickhouse-server:
       condition: service_healthy
   volumes:
     - type: bind
@@ -289,6 +291,63 @@ services:
       retries: 10
       start_period: 30s
 
+  # Raw telemetry store for OXP. Workers read session spans from here.
+  # Port Mapping: 8123 (HTTP, used by the workers), 9009 -> 9000 (native TCP).
+  # The native port is published on 9009 because host 9000 is ioc-scale-cf-mgmt-svc.
+  # Inside the compose network the collector still reaches it on 9000.
+  clickhouse-server:
+    image: clickhouse/clickhouse-server:24.8
+    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-oxp-clickhouse
+    ports:
+      - "8123:8123"
+      - "9009:9000"
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USERNAME:-admin}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin} # legit:ignore
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - oxp_clickhouse_data:/var/lib/clickhouse
+      - oxp_clickhouse_logs:/var/log/clickhouse-server
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8123/ping",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  # OTLP ingest for instrumented apps; writes spans/metrics/logs to ClickHouse.
+  # Port Mapping: 4317 (gRPC), 4318 (HTTP)
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.121.0
+    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-oxp-otel-collector
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    command: ["--config", "/etc/otel-collector-config.yaml"]
+    environment:
+      CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME:-admin}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin} # legit:ignore
+    restart: unless-stopped
+    depends_on:
+      clickhouse-server:
+        condition: service_healthy
+
   # OXP: normalization worker (pipeline entry point)
   norm:
     <<: *worker-base
@@ -315,6 +374,8 @@ services:
         condition: service_healthy
       neo4j:
         condition: service_healthy
+      clickhouse-server:
+        condition: service_healthy
       norm:
         condition: service_started
 
@@ -333,6 +394,8 @@ services:
         condition: service_healthy
       neo4j:
         condition: service_healthy
+      clickhouse-server:
+        condition: service_healthy
       norm:
         condition: service_started
 
@@ -350,6 +413,8 @@ services:
       rabbitmq:
         condition: service_healthy
       neo4j:
+        condition: service_healthy
+      clickhouse-server:
         condition: service_healthy
       norm:
         condition: service_started
@@ -374,6 +439,8 @@ services:
         condition: service_healthy
       neo4j:
         condition: service_healthy
+      clickhouse-server:
+        condition: service_healthy
       norm:
         condition: service_started
 
@@ -394,11 +461,15 @@ services:
         condition: service_healthy
       neo4j:
         condition: service_healthy
+      clickhouse-server:
+        condition: service_healthy
       norm:
         condition: service_started
 
 volumes:
   ioc_scale_db_data:
+  oxp_clickhouse_data:
+  oxp_clickhouse_logs:
   oxp_neo4j_data:
   oxp_neo4j_logs:
   oxp_neo4j_config:
