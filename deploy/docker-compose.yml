@@ -226,12 +226,11 @@ services:
       start_period: 30s
 
 
-  claris-api:
+  oxp-api:
     image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/claris-api:${CLARIS_IMAGE_TAG:-latest}
     env_file: .env
-    container_name: ioc-scale-oxp-claris-api
+    container_name: ioc-scale-oxp-api
     environment:
-      CLARIS_API_RELOAD: "false"
       CACHE_REDIS_URL: redis://redis:6379/0
       CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-host.docker.internal}
       CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
