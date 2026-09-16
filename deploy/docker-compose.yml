@@ -53,11 +53,11 @@ services:
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-db
     environment:
-      POSTGRES_DB: ${IOC_KNOWLEDGE_DB:-ioc-knowledge-db}
-      POSTGRES_USER: ${IOC_KNOWLEDGE_DB_USER}
-      POSTGRES_PASSWORD: ${IOC_KNOWLEDGE_DB_PASSWORD}
+      POSTGRES_DB: ${IOC_SCALE_DB:-ioc-scale-db}
+      POSTGRES_USER: ${IOC_SCALE_DB_USER}
+      POSTGRES_PASSWORD: ${IOC_SCALE_DB_PASSWORD}
     ports:
-      - "${IOC_KNOWLEDGE_DB_PORT:-5456}:5432"
+      - "${IOC_SCALE_DB_PORT:-5456}:5432"
     volumes:
       - ioc_scale_db_data:/var/lib/postgresql/data
       - ./scripts/init-multi-db.sh:/docker-entrypoint-initdb.d/init-multi-db.sh:ro
@@ -65,8 +65,8 @@ services:
     healthcheck:
       test: [
           "CMD-SHELL",
-          "pg_isready -h localhost -p 5432 -U ${IOC_KNOWLEDGE_DB_USER} -d
-          ${IOC_KNOWLEDGE_DB:-ioc-knowledge-db}",
+          "pg_isready -h localhost -p 5432 -U ${IOC_SCALE_DB_USER} -d
+          ${IOC_SCALE_DB:-ioc-scale-db}",
         ]
       interval: 10s
       timeout: 5s
@@ -90,8 +90,8 @@ services:
       - POSTGRES_HOST=ioc-scale-db
       - POSTGRES_PORT=5432
       - POSTGRES_DB=cfn_mgmt
-      - POSTGRES_USER=${IOC_KNOWLEDGE_DB_USER}
-      - POSTGRES_PASSWORD=${IOC_KNOWLEDGE_DB_PASSWORD}
+      - POSTGRES_USER=${IOC_SCALE_DB_USER}
+      - POSTGRES_PASSWORD=${IOC_SCALE_DB_PASSWORD}
       - PORT=9000
       - CFN_DEV_MODE=${CFN_DEV_MODE}
       - CFN_SVC_URL=${CFN_SVC_URL:-http://ioc-cfn-svc:9002}
@@ -153,14 +153,7 @@ services:
       - CFN_IP=${CFN_IP:-"Not Set"}
       - HEARTBEAT_INTERVAL_SECONDS=${HEARTBEAT_INTERVAL_SECONDS:-10}
       - SERVICE_NAME=${SERVICE_NAME:-ioc-cfn-svc}
-      - DB_NAME=${DB_NAME:-cfn_cp}
-      - DB_USER=${POSTGRES_USER}
-      - DB_PASSWORD=${POSTGRES_PASSWORD}
-      - DB_HOST=ioc-scale-db
-      - DB_PORT=5432
     depends_on:
-      ioc-scale-db:
-        condition: service_healthy
       ioc-scale-cf-mgmt-svc:
         condition: service_healthy
     healthcheck:
