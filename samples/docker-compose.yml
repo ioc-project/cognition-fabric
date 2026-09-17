@@ -14,6 +14,8 @@ services:
       # Optional: CFN registration (uncomment to enable)
       # - CFN_URL=http://cfn:9002
       # - COGNITION_ENGINE_HOST=casa-ce
+      # - CE_HEARTBEAT_INTERVAL_SEC=30.0
+      # - MAS_AUTO_ASSOCIATE=false
       # Optional: Cognition Store (uncomment to enable)
       # - COGNITION_STORE_URL=http://cognition-store:8080
     restart: unless-stopped
