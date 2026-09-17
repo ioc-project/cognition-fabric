@@ -102,6 +102,7 @@ func TestRegisterCognitionEngineHandler_InvalidBaseURL(t *testing.T) {
 	a := &App{}
 	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
 
+	// "not-a-url" has no colon, so it's invalid for both gRPC (host:port) and HTTP formats
 	body := `{"ce_type": "CASA", "base_url": "not-a-url", "endpoint": "/api/test"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -118,7 +119,7 @@ func TestRegisterCognitionEngineHandler_InvalidBaseURL(t *testing.T) {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	if resp["error"] != "invalid base_url format: must be a valid URL with scheme and host (e.g., http://host:port)" {
+	if resp["error"] != "invalid base_url format: must be host:port (for gRPC) or http://host:port (for HTTP)" {
 		t.Errorf("unexpected error message: %s", resp["error"])
 	}
 }
