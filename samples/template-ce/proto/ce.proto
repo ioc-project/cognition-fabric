@@ -1,0 +1,180 @@
+// ioc.ce.v1 - Cognition Engine gRPC Contract
+//
+// Protocol Buffer definition for the CASA Cognition Engine service.
+// Based on the specification in ioc-governance-casa-ce/docs/specs/ce-grpc-contract.md
+//
+// The Enforcement Proxy dials a CE over this contract for authorization decisions.
+
+syntax = "proto3";
+
+package ioc.ce.v1;
+
+option go_package = "github.com/cisco-outshift/ioc-ce/api/v1;cev1";
+
+// CognitionEngine service - the contract CASA CE implements
+service CognitionEngine {
+  // Evaluate - the authorization decision for an in-scope action
+  // Returns ALLOW / DENY / MODIFY with reason
+  rpc Evaluate(EvaluateRequest) returns (EvaluateResponse);
+
+  // GetInfo - CASA CE capabilities/metadata
+  rpc GetInfo(GetInfoRequest) returns (GetInfoResponse);
+}
+
+// =============================================================================
+// Enums
+// =============================================================================
+
+// Decision outcome for authorization
+enum Decision {
+  DECISION_UNSPECIFIED = 0;
+  DECISION_ALLOW = 1;
+  DECISION_DENY = 2;
+  DECISION_MODIFY = 3;
+}
+
+// Type of action being evaluated
+enum ActionClass {
+  ACTION_CLASS_UNSPECIFIED = 0;
+  ACTION_CLASS_MCP_TOOL_CALL = 1;    // MCP tool call
+  ACTION_CLASS_A2A_DELEGATION = 2;   // A2A delegation (L9 message)
+  ACTION_CLASS_AGENT_RESPONSE = 3;   // Agent response
+}
+
+// Direction of the action being inspected
+enum Direction {
+  DIRECTION_UNSPECIFIED = 0;
+  DIRECTION_REQUEST = 1;   // Request direction (before callee sees it)
+  DIRECTION_RESPONSE = 2;  // Response direction (before caller sees it)
+}
+
+// Reason for DENIAL - every DENY must carry one
+enum DenialReason {
+  DENIAL_REASON_UNSPECIFIED = 0;
+  DENIAL_REASON_DEVIATES_FROM_INTENT = 1;  // Action inspected against sufficient context, out of intent
+  DENIAL_REASON_MISSING_CONTEXT = 2;       // Could not obtain required context within bounded wait
+}
+
+// Cause of MISSING_CONTEXT
+enum MissingContextCause {
+  MISSING_CONTEXT_CAUSE_UNSPECIFIED = 0;
+  MISSING_CONTEXT_CAUSE_GAP = 1;   // Signal not collected at all
+  MISSING_CONTEXT_CAUSE_RACE = 2;  // Signal exists but hadn't landed when call arrived
+}
+
+// Whether MAS-level context was complete
+enum ContextSufficiency {
+  CONTEXT_SUFFICIENCY_UNSPECIFIED = 0;
+  CONTEXT_SUFFICIENCY_COMPLETE = 1;         // Full MAS-level context available
+  CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC = 2;  // Fell back to atomic evidence
+}
+
+// =============================================================================
+// Action Details
+// =============================================================================
+
+// Details for MCP tool call actions
+message ToolCallDetails {
+  string tool_name = 1;                    // Name of the requested tool
+  map<string, string> args_classification = 2;  // Classification of tool arguments
+  string tool_description = 3;             // Stated purpose of the tool
+}
+
+// Details for A2A delegation actions
+message A2ADelegationDetails {
+  string target_agent_id = 1;    // Agent receiving the delegation
+  string delegated_task = 2;     // The task being delegated
+  string delegation_reason = 3;  // Why this delegation is being made
+}
+
+// Details for agent response actions
+message AgentResponseDetails {
+  string response_content = 1;    // The response content
+  repeated string claims = 2;     // Material claims for grounding check
+}
+
+// =============================================================================
+// Check Results
+// =============================================================================
+
+// Result of a single check
+message CheckResult {
+  string check_id = 1;   // Check identifier (e.g., DETERMINISTIC_TOOL_SELECTED)
+  bool passed = 2;       // Whether the check passed
+  string reason = 3;     // Explanation of check result
+}
+
+// =============================================================================
+// Evaluate RPC
+// =============================================================================
+
+// Request for the Evaluate RPC
+message EvaluateRequest {
+  // Core identifiers
+  string mas_id = 1;                  // MAS identifier (UUID)
+  string source_agent_id = 2;         // Source agent identifier
+  string destination_agent_id = 3;    // Destination agent identifier
+  string trace_id = 4;                // W3C trace correlation ID
+
+  // Action classification
+  ActionClass action_class = 5;       // Type of action being evaluated
+  Direction direction = 6;            // REQUEST or RESPONSE direction
+
+  // Context for semantic checks
+  string original_intent = 7;         // The input that opened the thread
+  string task_intent = 8;             // Extracted task from the conversation
+  repeated string delegation_path = 9; // Chain from original intent to this edge
+
+  // Action-specific details (one should be populated based on action_class)
+  ToolCallDetails tool_call = 10;
+  A2ADelegationDetails a2a_delegation = 11;
+  AgentResponseDetails agent_response = 12;
+
+  // Session context
+  string session_id = 13;             // User session identifier
+  string workspace_id = 14;           // Workspace identifier for tenant scoping
+
+  // LLM selections (for deterministic checks)
+  repeated string allowed_tools = 15;      // Tools allowed for this session
+  repeated string llm_selected_tools = 16; // Tools the LLM actually selected
+
+  // Additional metadata
+  map<string, string> extra = 17;     // Additional headers/metadata
+}
+
+// Response for the Evaluate RPC
+message EvaluateResponse {
+  // Decision
+  Decision outcome = 1;                      // Authorization decision
+
+  // Denial details (required when outcome is DENY)
+  DenialReason denial_reason = 2;            // Reason for denial
+  MissingContextCause missing_context_cause = 3;  // GAP or RACE cause
+  string reason = 4;                         // Human-readable explanation
+
+  // Check results
+  repeated CheckResult checks_run = 5;       // Results of checks that ran
+  ContextSufficiency context_sufficiency = 6; // Whether MAS-level context was complete
+
+  // Modification (for MODIFY outcomes)
+  map<string, string> modified_action = 7;   // The amended action
+
+  // Metadata
+  string timestamp = 8;                      // When the decision was made (ISO 8601)
+  string trace_id = 9;                       // Echo of request trace_id
+}
+
+// =============================================================================
+// GetInfo RPC
+// =============================================================================
+
+// Request for the GetInfo RPC
+message GetInfoRequest {}
+
+// Response for the GetInfo RPC
+message GetInfoResponse {
+  string ce_type = 1;                        // CE type (e.g., "CASA")
+  string version = 2;                        // CE version
+  repeated string enabled_checks = 3;        // Which checks are enabled
+  string matcher_strategy = 4;               // Matcher strategy in effect
+}

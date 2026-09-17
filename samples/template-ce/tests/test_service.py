@@ -1,272 +1,257 @@
-"""Tests for FastAPI service."""
+"""Tests for CASA Cognition Engine gRPC service.
+
+Tests the ioc.ce.v1.CognitionEngine service implementation.
+"""
 import pytest
 from uuid import uuid4
-from fastapi.testclient import TestClient
 from pathlib import Path
 import sys
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
-from service import app
+import grpc
+from concurrent import futures
+
+from generated import ce_pb2, ce_pb2_grpc
+from service import CognitionEngineServicer
 
 
 @pytest.fixture
-def client():
-    """Create test client."""
-    return TestClient(app)
+def grpc_server():
+    """Create a test gRPC server."""
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=2))
+    ce_pb2_grpc.add_CognitionEngineServicer_to_server(
+        CognitionEngineServicer(), server
+    )
+    port = server.add_insecure_port('[::]:0')  # Random available port
+    server.start()
+    yield f'localhost:{port}'
+    server.stop(grace=0)
 
 
-class TestAuthorizeEndpoint:
-    """Test /authorize endpoint."""
-
-    def test_authorize_returns_200_for_valid_request(self, client):
-        """Test authorize endpoint returns 200 for valid request."""
-        request_data = {
-            "payload": {
-                "mas_id": str(uuid4()),
-                "source_agent_id": "agent-1",
-                "destination_agent_id": "agent-2",
-                "trace_id": str(uuid4())
-            }
-        }
-
-        response = client.post("/authorize", json=request_data)
-        assert response.status_code == 200
-
-    def test_authorize_returns_action(self, client):
-        """Test authorize endpoint returns action field."""
-        request_data = {
-            "payload": {
-                "mas_id": str(uuid4()),
-                "source_agent_id": "agent-1",
-                "destination_agent_id": "agent-2",
-                "trace_id": str(uuid4())
-            }
-        }
-
-        response = client.post("/authorize", json=request_data)
-        data = response.json()
-
-        assert "action" in data
-        assert data["action"] in ["allow", "block", "modify"]
-
-    def test_authorize_default_action_is_allow(self, client):
-        """Test authorize endpoint defaults to allow (current implementation)."""
-        request_data = {
-            "payload": {
-                "mas_id": str(uuid4()),
-                "source_agent_id": "agent-1",
-                "destination_agent_id": "agent-2",
-                "trace_id": str(uuid4())
-            }
-        }
-
-        response = client.post("/authorize", json=request_data)
-        data = response.json()
-
-        # Current implementation defaults to allow
-        assert data["action"] == "allow"
-
-    def test_authorize_with_extra_metadata(self, client):
-        """Test authorize endpoint accepts extra metadata."""
-        request_data = {
-            "extra": {
-                "user_agent": "test-client/1.0",
-                "request_timestamp": "2026-08-11T12:00:00Z"
-            },
-            "payload": {
-                "mas_id": str(uuid4()),
-                "source_agent_id": "agent-1",
-                "destination_agent_id": "agent-2",
-                "trace_id": str(uuid4())
-            }
-        }
-
-        response = client.post("/authorize", json=request_data)
-        assert response.status_code == 200
-
-    def test_authorize_without_extra_metadata(self, client):
-        """Test authorize endpoint works without extra metadata."""
-        request_data = {
-            "payload": {
-                "mas_id": str(uuid4()),
-                "source_agent_id": "agent-1",
-                "destination_agent_id": "agent-2",
-                "trace_id": str(uuid4())
-            }
-        }
-
-        response = client.post("/authorize", json=request_data)
-        assert response.status_code == 200
-
-    def test_authorize_with_string_trace_id(self, client):
-        """Test authorize endpoint accepts string trace_id."""
-        request_data = {
-            "payload": {
-                "mas_id": str(uuid4()),
-                "source_agent_id": "agent-1",
-                "destination_agent_id": "agent-2",
-                "trace_id": "custom-trace-string-123"
-            }
-        }
-
-        response = client.post("/authorize", json=request_data)
-        assert response.status_code == 200
-
-    def test_authorize_returns_422_for_invalid_uuid(self, client):
-        """Test authorize endpoint returns 422 for invalid UUID."""
-        request_data = {
-            "payload": {
-                "mas_id": "not-a-valid-uuid",
-                "source_agent_id": "agent-1",
-                "destination_agent_id": "agent-2",
-                "trace_id": str(uuid4())
-            }
-        }
-
-        response = client.post("/authorize", json=request_data)
-        assert response.status_code == 422
-
-    def test_authorize_returns_422_for_missing_fields(self, client):
-        """Test authorize endpoint returns 422 for missing required fields."""
-        request_data = {
-            "payload": {
-                "mas_id": str(uuid4()),
-                # Missing other required fields
-            }
-        }
-
-        response = client.post("/authorize", json=request_data)
-        assert response.status_code == 422
-
-    def test_authorize_returns_422_for_missing_payload(self, client):
-        """Test authorize endpoint returns 422 for missing payload."""
-        request_data = {
-            "extra": {"test": "value"}
-            # No payload
-        }
-
-        response = client.post("/authorize", json=request_data)
-        assert response.status_code == 422
-
-    def test_authorize_returns_422_for_empty_body(self, client):
-        """Test authorize endpoint returns 422 for empty body."""
-        response = client.post("/authorize", json={})
-        assert response.status_code == 422
-
-    def test_authorize_includes_modify_field(self, client):
-        """Test enforce response includes modify field."""
-        request_data = {
-            "payload": {
-                "mas_id": str(uuid4()),
-                "source_agent_id": "agent-1",
-                "destination_agent_id": "agent-2",
-                "trace_id": str(uuid4())
-            }
-        }
-
-        response = client.post("/authorize", json=request_data)
-        data = response.json()
-
-        # modify field should be present (even if None)
-        assert "modify" in data
+@pytest.fixture
+def grpc_channel(grpc_server):
+    """Create a gRPC channel to the test server."""
+    channel = grpc.insecure_channel(grpc_server)
+    yield channel
+    channel.close()
 
 
-class TestAPIDocumentation:
-    """Test API documentation endpoints."""
-
-    def test_openapi_json_available(self, client):
-        """Test OpenAPI JSON schema is available."""
-        response = client.get("/openapi.json")
-        assert response.status_code == 200
-
-    def test_openapi_includes_authorize_endpoint(self, client):
-        """Test OpenAPI schema includes /authorize endpoint."""
-        response = client.get("/openapi.json")
-        data = response.json()
-
-        assert "paths" in data
-        assert "/authorize" in data["paths"]
-        assert "post" in data["paths"]["/authorize"]
-
-    def test_openapi_includes_models(self, client):
-        """Test OpenAPI schema includes Pydantic models."""
-        response = client.get("/openapi.json")
-        data = response.json()
-
-        assert "components" in data
-        assert "schemas" in data["components"]
-
-        schemas = data["components"]["schemas"]
-        assert "EnforcementRequest" in schemas or any("Request" in s for s in schemas)
+@pytest.fixture
+def stub(grpc_channel):
+    """Create a CognitionEngine stub."""
+    return ce_pb2_grpc.CognitionEngineStub(grpc_channel)
 
 
-class TestErrorHandling:
-    """Test error handling."""
+def make_evaluate_request(
+    action_class=ce_pb2.ACTION_CLASS_A2A_DELEGATION,
+    direction=ce_pb2.DIRECTION_REQUEST,
+    **kwargs
+) -> ce_pb2.EvaluateRequest:
+    """Helper to create valid EvaluateRequest messages."""
+    request = ce_pb2.EvaluateRequest(
+        mas_id=str(uuid4()),
+        source_agent_id="orchestrator",
+        destination_agent_id="crm-agent",
+        trace_id=f"trace-{uuid4().hex[:8]}",
+        action_class=action_class,
+        direction=direction,
+    )
+    # Apply any overrides
+    for key, value in kwargs.items():
+        if hasattr(request, key):
+            setattr(request, key, value)
+    return request
 
-    def test_invalid_json_returns_422(self, client):
-        """Test invalid JSON returns 422."""
-        response = client.post(
-            "/authorize",
-            data="not valid json",
-            headers={"Content-Type": "application/json"}
+
+class TestEvaluateRPC:
+    """Test the Evaluate RPC."""
+
+    def test_evaluate_returns_response(self, stub):
+        """Test Evaluate RPC returns a response."""
+        request = make_evaluate_request()
+        response = stub.Evaluate(request)
+
+        assert response is not None
+        assert isinstance(response, ce_pb2.EvaluateResponse)
+
+    def test_evaluate_returns_allow_by_default(self, stub):
+        """Test Evaluate RPC returns ALLOW (stub implementation)."""
+        request = make_evaluate_request()
+        response = stub.Evaluate(request)
+
+        assert response.outcome == ce_pb2.DECISION_ALLOW
+
+    def test_evaluate_echoes_trace_id(self, stub):
+        """Test Evaluate RPC echoes the trace_id."""
+        trace_id = "test-trace-12345"
+        request = make_evaluate_request(trace_id=trace_id)
+        response = stub.Evaluate(request)
+
+        assert response.trace_id == trace_id
+
+    def test_evaluate_includes_timestamp(self, stub):
+        """Test Evaluate RPC includes timestamp."""
+        request = make_evaluate_request()
+        response = stub.Evaluate(request)
+
+        assert response.timestamp != ""
+
+    def test_evaluate_includes_context_sufficiency(self, stub):
+        """Test Evaluate RPC includes context_sufficiency."""
+        request = make_evaluate_request()
+        response = stub.Evaluate(request)
+
+        assert response.context_sufficiency == ce_pb2.CONTEXT_SUFFICIENCY_COMPLETE
+
+
+class TestEvaluateActionClasses:
+    """Test Evaluate RPC with different action classes."""
+
+    def test_mcp_tool_call_action(self, stub):
+        """Test Evaluate with MCP_TOOL_CALL action class."""
+        request = make_evaluate_request(
+            action_class=ce_pb2.ACTION_CLASS_MCP_TOOL_CALL,
+            direction=ce_pb2.DIRECTION_REQUEST,
         )
-        assert response.status_code == 422
+        request.tool_call.tool_name = "customers_list"
+        request.tool_call.tool_description = "List all customers"
 
-    def test_wrong_content_type_returns_422(self, client):
-        """Test wrong content type returns 422."""
-        response = client.post(
-            "/authorize",
-            data="mas_id=test",
-            headers={"Content-Type": "application/x-www-form-urlencoded"}
+        response = stub.Evaluate(request)
+        assert response.outcome == ce_pb2.DECISION_ALLOW
+
+    def test_a2a_delegation_action(self, stub):
+        """Test Evaluate with A2A_DELEGATION action class."""
+        request = make_evaluate_request(
+            action_class=ce_pb2.ACTION_CLASS_A2A_DELEGATION,
+            direction=ce_pb2.DIRECTION_REQUEST,
         )
-        assert response.status_code == 422
+        request.a2a_delegation.target_agent_id = "crm-agent"
+        request.a2a_delegation.delegated_task = "Find complaint for Swiss Federal Railways"
 
-    def test_404_for_unknown_endpoint(self, client):
-        """Test 404 for unknown endpoint."""
-        response = client.get("/unknown")
-        assert response.status_code == 404
+        response = stub.Evaluate(request)
+        assert response.outcome == ce_pb2.DECISION_ALLOW
+
+    def test_agent_response_action(self, stub):
+        """Test Evaluate with AGENT_RESPONSE action class."""
+        request = make_evaluate_request(
+            action_class=ce_pb2.ACTION_CLASS_AGENT_RESPONSE,
+            direction=ce_pb2.DIRECTION_RESPONSE,
+        )
+        request.agent_response.response_content = "The complaint is assigned to emp_035"
+        request.agent_response.claims.append("Complaint is assigned to emp_035")
+
+        response = stub.Evaluate(request)
+        assert response.outcome == ce_pb2.DECISION_ALLOW
 
 
-class TestBlockingBehavior:
-    """Test that API is synchronous/blocking."""
+class TestEvaluateDirections:
+    """Test Evaluate RPC with different directions."""
 
-    def test_authorize_is_synchronous(self, client):
-        """Test authorize endpoint waits for response (blocking)."""
-        request_data = {
-            "payload": {
-                "mas_id": str(uuid4()),
-                "source_agent_id": "agent-1",
-                "destination_agent_id": "agent-2",
-                "trace_id": str(uuid4())
-            }
-        }
+    def test_request_direction(self, stub):
+        """Test Evaluate with REQUEST direction."""
+        request = make_evaluate_request(direction=ce_pb2.DIRECTION_REQUEST)
+        response = stub.Evaluate(request)
+        assert response.outcome == ce_pb2.DECISION_ALLOW
 
-        # Client waits for response - this is blocking
-        response = client.post("/authorize", json=request_data)
+    def test_response_direction(self, stub):
+        """Test Evaluate with RESPONSE direction."""
+        request = make_evaluate_request(
+            action_class=ce_pb2.ACTION_CLASS_AGENT_RESPONSE,
+            direction=ce_pb2.DIRECTION_RESPONSE,
+        )
+        response = stub.Evaluate(request)
+        assert response.outcome == ce_pb2.DECISION_ALLOW
 
-        # Response is immediate (within test client timeout)
-        assert response.status_code == 200
-        assert "action" in response.json()
 
-    def test_multiple_concurrent_requests(self, client):
-        """Test multiple requests can be handled (server-side async)."""
-        request_data = {
-            "payload": {
-                "mas_id": str(uuid4()),
-                "source_agent_id": "agent-1",
-                "destination_agent_id": "agent-2",
-                "trace_id": str(uuid4())
-            }
-        }
+class TestEvaluateCheckResults:
+    """Test check results in Evaluate response."""
 
-        # Make multiple requests
-        responses = [
-            client.post("/authorize", json=request_data)
-            for _ in range(5)
-        ]
+    def test_response_includes_checks_run(self, stub):
+        """Test response includes checks_run."""
+        request = make_evaluate_request(
+            action_class=ce_pb2.ACTION_CLASS_MCP_TOOL_CALL,
+            direction=ce_pb2.DIRECTION_REQUEST,
+        )
+        response = stub.Evaluate(request)
 
-        # All should succeed
-        assert all(r.status_code == 200 for r in responses)
-        assert all("action" in r.json() for r in responses)
+        # Should have run checks for tool calls
+        assert len(response.checks_run) > 0
+
+    def test_check_results_have_correct_structure(self, stub):
+        """Test check results have check_id, passed, and reason."""
+        request = make_evaluate_request(
+            action_class=ce_pb2.ACTION_CLASS_MCP_TOOL_CALL,
+            direction=ce_pb2.DIRECTION_REQUEST,
+        )
+        response = stub.Evaluate(request)
+
+        for check in response.checks_run:
+            assert check.check_id != ""
+            assert isinstance(check.passed, bool)
+
+    def test_all_checks_pass_in_stub(self, stub):
+        """Test all stub checks pass."""
+        request = make_evaluate_request(
+            action_class=ce_pb2.ACTION_CLASS_MCP_TOOL_CALL,
+            direction=ce_pb2.DIRECTION_REQUEST,
+        )
+        response = stub.Evaluate(request)
+
+        assert all(check.passed for check in response.checks_run)
+
+
+class TestGetInfoRPC:
+    """Test the GetInfo RPC."""
+
+    def test_get_info_returns_response(self, stub):
+        """Test GetInfo RPC returns a response."""
+        request = ce_pb2.GetInfoRequest()
+        response = stub.GetInfo(request)
+
+        assert response is not None
+        assert isinstance(response, ce_pb2.GetInfoResponse)
+
+    def test_get_info_returns_ce_type(self, stub):
+        """Test GetInfo returns CE type."""
+        request = ce_pb2.GetInfoRequest()
+        response = stub.GetInfo(request)
+
+        assert response.ce_type == "CASA"
+
+    def test_get_info_returns_version(self, stub):
+        """Test GetInfo returns version."""
+        request = ce_pb2.GetInfoRequest()
+        response = stub.GetInfo(request)
+
+        assert response.version != ""
+
+    def test_get_info_returns_enabled_checks(self, stub):
+        """Test GetInfo returns enabled checks."""
+        request = ce_pb2.GetInfoRequest()
+        response = stub.GetInfo(request)
+
+        assert len(response.enabled_checks) > 0
+        # Should include deterministic and semantic checks
+        check_ids = list(response.enabled_checks)
+        assert any("DETERMINISTIC" in c for c in check_ids)
+        assert any("SEMANTIC" in c for c in check_ids)
+
+    def test_get_info_returns_matcher_strategy(self, stub):
+        """Test GetInfo returns matcher strategy."""
+        request = ce_pb2.GetInfoRequest()
+        response = stub.GetInfo(request)
+
+        assert response.matcher_strategy != ""
+
+
+class TestConcurrentRequests:
+    """Test concurrent request handling."""
+
+    def test_multiple_concurrent_requests(self, stub):
+        """Test multiple requests can be handled concurrently."""
+        requests = [make_evaluate_request() for _ in range(5)]
+        responses = [stub.Evaluate(req) for req in requests]
+
+        assert all(r.outcome == ce_pb2.DECISION_ALLOW for r in responses)

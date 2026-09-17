@@ -20,11 +20,14 @@ USER app
 # Install dependencies using uv
 RUN uv sync --frozen --no-dev
 
-# Copy the source code to the working directory (not in subdirectory)
-COPY --chown=app:app src/ .
+# Copy the source code to the working directory
+COPY --chown=app:app src/ ./src/
 
-# Expose port
-EXPOSE 8000
+# Copy proto files and generated code
+COPY --chown=app:app proto/ ./proto/
 
-# Command to run on container start
-CMD ["uv", "run", "--no-project", "uvicorn", "service:app", "--host", "0.0.0.0", "--port", "8000"]
+# Expose gRPC port
+EXPOSE 50051
+
+# Command to run gRPC server on container start
+CMD ["uv", "run", "python", "-m", "src.service"]

@@ -20,7 +20,8 @@ logger = logging.getLogger(__name__)
 
 # Constants
 CE_TYPE = "CASA"  # CEType: CASA or DETECTIVE
-CE_ENDPOINT = "/authorize"  # API endpoint path for L9 enforcement
+CE_ENDPOINT = "ioc.ce.v1.CognitionEngine"  # gRPC service name
+DEFAULT_GRPC_PORT = "50051"  # Default gRPC port
 
 
 class CEType(str, Enum):
@@ -41,8 +42,8 @@ class CERegistrationRequest:
     to the management plane.
     """
     ce_type: str  # "CASA" or "DETECTIVE"
-    base_url: str  # Base URL (e.g., "http://casa-ce:8000")
-    endpoint: str  # API endpoint path (e.g., "/authorize")
+    base_url: str  # gRPC address (e.g., "casa-ce:50051")
+    endpoint: str  # gRPC service name (e.g., "ioc.ce.v1.CognitionEngine")
     mas_auto_associate: bool = False
     mas_config: Optional[dict] = None
 
@@ -231,7 +232,7 @@ async def register_casa_ce() -> None:
         CFN_URL: Base URL of CFN service (e.g. "http://localhost:9002")
                  If not set, skips registration (CE runs standalone)
         COGNITION_ENGINE_HOST: Advertised host for this service (default: "localhost")
-        COGNITION_ENGINE_PORT: Advertised port for this service (default: "8000")
+        GRPC_PORT: Advertised gRPC port for this service (default: "50051")
         MAS_AUTO_ASSOCIATE: Auto-associate with all MAS (default: "false")
         CE_HEARTBEAT_INTERVAL_SEC: Heartbeat interval in seconds (default: "30.0")
     """
@@ -240,7 +241,7 @@ async def register_casa_ce() -> None:
     # Get configuration from environment
     cfn_url = os.getenv("CFN_URL", "").rstrip("/")
     ce_host = os.getenv("COGNITION_ENGINE_HOST", "localhost")
-    ce_port = os.getenv("COGNITION_ENGINE_PORT", "8000")
+    grpc_port = os.getenv("GRPC_PORT", DEFAULT_GRPC_PORT)
     mas_auto_associate = os.getenv("MAS_AUTO_ASSOCIATE", "false").lower() == "true"
 
     if not cfn_url:
@@ -251,8 +252,9 @@ async def register_casa_ce() -> None:
         )
         return
 
-    base_url = f"http://{ce_host}:{ce_port}"
-    logger.info(f"Starting CASA CE registration with cfn_url={cfn_url}, base_url={base_url}")
+    # gRPC endpoint format: host:port (no http:// prefix)
+    base_url = f"{ce_host}:{grpc_port}"
+    logger.info(f"Starting CASA CE registration with cfn_url={cfn_url}, grpc_endpoint={base_url}")
 
     # Create lifecycle client
     _lifecycle_client = CELifecycleClient(
