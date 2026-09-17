@@ -28,15 +28,13 @@ class TestCERegistrationRequest:
         """Test creating a registration request with new schema."""
         request = CERegistrationRequest(
             ce_type="CASA",
-            base_url="http://localhost:8000",
-            endpoint="/authorize",
-            mas_auto_associate=False,
+            base_url="localhost:50051",
+            endpoint="ioc.ce.v1.CognitionEngine",
         )
 
         assert request.ce_type == "CASA"
-        assert request.base_url == "http://localhost:8000"
-        assert request.endpoint == "/authorize"
-        assert request.mas_auto_associate is False
+        assert request.base_url == "localhost:50051"
+        assert request.endpoint == "ioc.ce.v1.CognitionEngine"
 
 
 class TestCERegistrationResponse:
