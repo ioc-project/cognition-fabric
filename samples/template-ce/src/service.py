@@ -68,6 +68,9 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
             else:
                 logger.info("[Evaluate] Cognition Store not configured, skipping prior findings fetch")
 
+            # TODO: Query Analytics APIs (from OXP) for context (once ready):
+            # - Original intent, LLM traces, tool selections, trajectories, knowledge graph
+
             # 2. Make decision (stub: always ALLOW)
             logger.info("[Evaluate] Making authorization decision...")
             response = ce_pb2.EvaluateResponse(
