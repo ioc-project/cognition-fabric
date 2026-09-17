@@ -39,13 +39,12 @@ class CERegistrationRequest:
     clearer separation of base_url + endpoint.
 
     Note: cfn_id is NOT included here - the CFN adds it before forwarding
-    to the management plane.
+    to the management plane. mas_auto_associate is also not included -
+    CFN defaults it to true.
     """
     ce_type: str  # "CASA" or "DETECTIVE"
     base_url: str  # gRPC address (e.g., "casa-ce:50051")
     endpoint: str  # gRPC service name (e.g., "ioc.ce.v1.CognitionEngine")
-    mas_auto_associate: bool = False
-    mas_config: Optional[dict] = None
 
 
 @dataclass
@@ -127,10 +126,7 @@ class CELifecycleClient:
             "ce_type": request.ce_type,
             "base_url": request.base_url,
             "endpoint": request.endpoint,
-            "mas_auto_associate": request.mas_auto_associate,
         }
-        if request.mas_config:
-            payload["mas_config"] = request.mas_config
 
         try:
             client = await self._get_client()
@@ -242,7 +238,6 @@ async def register_casa_ce() -> None:
     cfn_url = os.getenv("CFN_URL", "").rstrip("/")
     ce_host = os.getenv("COGNITION_ENGINE_HOST", "localhost")
     grpc_port = os.getenv("GRPC_PORT", DEFAULT_GRPC_PORT)
-    mas_auto_associate = os.getenv("MAS_AUTO_ASSOCIATE", "false").lower() == "true"
 
     if not cfn_url:
         logger.warning(
@@ -252,9 +247,10 @@ async def register_casa_ce() -> None:
         )
         return
 
-    # gRPC endpoint format: host:port (no http:// prefix)
+    # base_url format for registration (CFN expects URL with scheme)
+    # For gRPC services, we use the host:port that CFN will dial
     base_url = f"{ce_host}:{grpc_port}"
-    logger.info(f"Starting CASA CE registration with cfn_url={cfn_url}, grpc_endpoint={base_url}")
+    logger.info(f"Starting CASA CE registration with cfn_url={cfn_url}, base_url={base_url}")
 
     # Create lifecycle client
     _lifecycle_client = CELifecycleClient(
@@ -264,13 +260,11 @@ async def register_casa_ce() -> None:
     )
 
     # Define CASA CE configuration using new simplified schema
-    # Note: cfn_id is added by CFN before forwarding to management plane
+    # Note: cfn_id and mas_auto_associate are added by CFN before forwarding to management plane
     ce_config = CERegistrationRequest(
         ce_type=CE_TYPE,
         base_url=base_url,
         endpoint=CE_ENDPOINT,
-        mas_auto_associate=mas_auto_associate,
-        mas_config=None,
     )
 
     # Attempt registration
