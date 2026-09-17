@@ -4,12 +4,10 @@ version = "0.1.0"
 description = "CASA Cognition Engine Service - ioc.ce.v1 gRPC implementation"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi>=0.104.0",
-    "uvicorn[standard]>=0.24.0",
     "grpcio>=1.60.0",
     "grpcio-tools>=1.60.0",
+    "grpcio-reflection>=1.60.0",
     "protobuf>=4.25.0",
-    "pydantic>=2.5.0",
     "httpx>=0.25.0",
 ]
 

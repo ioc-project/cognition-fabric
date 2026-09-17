@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 import uuid
 
 import grpc
+from grpc_reflection.v1alpha import reflection
 
 from generated import ce_pb2, ce_pb2_grpc
 from cognition_store import (
@@ -48,20 +49,27 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
         """
         try:
             logger.info(
-                f"Evaluate: mas_id={request.mas_id} trace_id={request.trace_id} "
+                f"[Evaluate] Received request: mas_id={request.mas_id} "
+                f"source={request.source_agent_id} -> dest={request.destination_agent_id} "
                 f"action_class={ce_pb2.ActionClass.Name(request.action_class)} "
-                f"direction={ce_pb2.Direction.Name(request.direction)}"
+                f"direction={ce_pb2.Direction.Name(request.direction)} "
+                f"trace_id={request.trace_id}"
             )
 
             # 1. Read prior findings from Cognition Store
             client = get_cognition_store_client()
             if client:
+                logger.info(f"[Evaluate] Fetching prior findings from Cognition Store for mas_id={request.mas_id}")
                 prior_findings = self._run_async(
                     client.get_prior_findings(request.mas_id, request.trace_id)
                 )
-                logger.debug(f"Prior findings: {len(prior_findings.findings) if prior_findings else 0}")
+                num_findings = len(prior_findings.findings) if prior_findings else 0
+                logger.info(f"[Evaluate] Retrieved {num_findings} prior findings, context_complete={prior_findings.context_complete if prior_findings else 'N/A'}")
+            else:
+                logger.info("[Evaluate] Cognition Store not configured, skipping prior findings fetch")
 
             # 2. Make decision (stub: always ALLOW)
+            logger.info("[Evaluate] Making authorization decision...")
             response = ce_pb2.EvaluateResponse(
                 outcome=ce_pb2.DECISION_ALLOW,
                 context_sufficiency=ce_pb2.CONTEXT_SUFFICIENCY_COMPLETE,
@@ -69,6 +77,7 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
                 trace_id=request.trace_id,
                 timestamp=datetime.now(timezone.utc).isoformat(),
             )
+            logger.info(f"[Evaluate] Decision: {ce_pb2.Decision.Name(response.outcome)} - {response.reason}")
 
             # 3. Store finding in Cognition Store
             if client:
@@ -84,9 +93,13 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
                     direction=ce_pb2.Direction.Name(request.direction),
                     timestamp=response.timestamp,
                 )
+                logger.info(f"[Evaluate] Storing finding in Cognition Store: finding_id={finding.finding_id}")
                 self._run_async(client.store_finding(finding))
+                logger.info("[Evaluate] Finding stored successfully")
+            else:
+                logger.info("[Evaluate] Cognition Store not configured, skipping finding storage")
 
-            logger.info(f"Evaluate result: {ce_pb2.Decision.Name(response.outcome)}")
+            logger.info(f"[Evaluate] Complete: outcome={ce_pb2.Decision.Name(response.outcome)} trace_id={request.trace_id}")
             return response
 
         except Exception as e:
@@ -108,6 +121,14 @@ def serve(port: int = DEFAULT_PORT, max_workers: int = 10):
     """Start the gRPC server."""
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
     ce_pb2_grpc.add_CognitionEngineServicer_to_server(CognitionEngineServicer(), server)
+
+    # Enable reflection for grpcurl/grpcui
+    SERVICE_NAMES = (
+        ce_pb2.DESCRIPTOR.services_by_name['CognitionEngine'].full_name,
+        reflection.SERVICE_NAME,
+    )
+    reflection.enable_server_reflection(SERVICE_NAMES, server)
+
     server.add_insecure_port(f"[::]:{port}")
     server.start()
     logger.info(f"CASA CE gRPC server started on port {port}")
@@ -131,15 +152,3 @@ async def serve_async(port: int = DEFAULT_PORT):
         await shutdown_cognition_store_client()
         server.stop(grace=5)
         logger.info("CASA CE stopped")
-
-
-if __name__ == "__main__":
-    import os
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
-
-    port = int(os.getenv("GRPC_PORT", DEFAULT_PORT))
-    asyncio.run(serve_async(port))

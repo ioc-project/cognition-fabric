@@ -30,4 +30,4 @@ COPY --chown=app:app proto/ ./proto/
 EXPOSE 50051
 
 # Command to run gRPC server on container start
-CMD ["uv", "run", "python", "-m", "src.service"]
+CMD ["uv", "run", "python", "-m", "src"]

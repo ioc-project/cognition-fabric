@@ -70,8 +70,12 @@ class CognitionStoreClient:
         TODO: Implement actual API call:
         GET {base_url}/api/cognition-store/findings?mas_id={mas_id}
         """
-        logger.info(f"get_prior_findings: mas_id={mas_id} (PLACEHOLDER)")
-        return PriorFindingsResult(mas_id=mas_id, findings=[], context_complete=True)
+        logger.info(f"[CognitionStore] GET prior findings: mas_id={mas_id} trace_id={trace_id} limit={limit}")
+        logger.info(f"[CognitionStore] Would call: GET {self.base_url}/api/cognition-store/findings?mas_id={mas_id}")
+        # PLACEHOLDER: Return empty findings
+        result = PriorFindingsResult(mas_id=mas_id, findings=[], context_complete=True)
+        logger.info(f"[CognitionStore] Returning {len(result.findings)} findings (PLACEHOLDER)")
+        return result
 
     async def store_finding(self, finding: CEFinding) -> bool:
         """
@@ -80,7 +84,11 @@ class CognitionStoreClient:
         TODO: Implement actual API call:
         POST {base_url}/api/cognition-store/findings
         """
-        logger.info(f"store_finding: mas_id={finding.mas_id} outcome={finding.outcome} (PLACEHOLDER)")
+        logger.info(f"[CognitionStore] POST finding: finding_id={finding.finding_id} mas_id={finding.mas_id} outcome={finding.outcome}")
+        logger.info(f"[CognitionStore] Would call: POST {self.base_url}/api/cognition-store/findings")
+        logger.info(f"[CognitionStore] Payload: trace_id={finding.trace_id} action={finding.action_class} direction={finding.direction}")
+        # PLACEHOLDER: Always succeed
+        logger.info("[CognitionStore] Finding stored (PLACEHOLDER)")
         return True
 
 
