@@ -1,7 +1,8 @@
 # `scripts/`
 
 [`init-multi-db.sh`](init-multi-db.sh) runs automatically on the first init of
-`ioc-scale-db` and creates the `cfn_mgmt` and `cfn_cp` databases. Nothing to do.
+`ioc-scale-db` and creates the `cfn_mgmt` and `cognition_store` databases.
+Nothing to do.
 
 The rest of this page is the end-to-end run: app → ClickHouse → RabbitMQ →
 Neo4j.
@@ -18,21 +19,27 @@ app --OTLP--> otel-collector --> ClickHouse.otel_traces
                               norm --> Neo4j
 ```
 
-Steps 2 and 3 are manual. The stack does not create them. Do both before
-running the app, or the session will not reach Neo4j.
+Steps 2 and 3 are manual. The stack does not create them. Do both before asking
+the app anything, or the session will not reach Neo4j.
 
-Both are temporary. Automating them is tracked in
-[#11](https://github.com/cisco-eti/ioc-scale-cf-deployment/issues/11), and
-running the sample app from its published image in
-[#12](https://github.com/cisco-eti/ioc-scale-cf-deployment/issues/12). Those
-steps will be removed from this page once they land.
+They are temporary — automating them is tracked in
+[#11](https://github.com/cisco-eti/ioc-scale-cf-deployment/issues/11), and will
+be removed from this page once that lands.
 
 ## 1. Start the stack
 
 ```bash
 set -a; source .env; set +a    # credentials for the commands below
-docker compose up -d
+docker compose --profile full-mas up -d
 ```
+
+The profile adds the NOA trip planner, which needs `AI_GATEWAY_API_KEY` in
+`.env` with the chat model on its allow-list. The other 15 containers start
+either way — leave the profile off if you are pointing your own instrumented
+app at `http://localhost:4318` instead.
+
+Having the app up now is fine — it starts tracing on its first request, not at
+startup, so it emits nothing until step 4.
 
 Wait until `ioc-scale-oxp-clickhouse` and `ioc-scale-oxp-rabbitmq` are healthy.
 The workers restart a few times while RabbitMQ comes up; that is expected.
@@ -135,15 +142,10 @@ docker exec ioc-scale-oxp-rabbitmq rabbitmqadmin -u guest -p guest \
 This is broker runtime state, not volume state — redo it whenever the RabbitMQ
 container is recreated.
 
-## 4. Run the app
+## 4. Ask the app something
 
-From `claris-sample-apps/noa-trip-planner/src/noa_trip_planner`:
-change app port from 8000 to 8125, since it collides with docker stack containers.
-```bash
-uv run --env-file .env python api.py
-```
-
-In another shell, ask it something:
+The wiring exists now, so this is the point where a session can make it all the
+way through:
 
 ```bash
 curl -X POST http://localhost:8125/ask \
@@ -151,16 +153,31 @@ curl -X POST http://localhost:8125/ask \
   -d '{"question":"Plan a 1-day trip to Celestia"}'
 ```
 
-The app sends spans to the collector at `OTLP_HTTP_ENDPOINT` in its `.env`
-(`http://localhost:4318`).
+Port 8125 rather than 8000, which belongs to `ioc-scale-cf-cognition-engine`.
+`NOA_API_PORT` in `.env` moves the published port; the app always listens on
+8125 inside the container.
 
 **Then wait about five minutes.** The request returning is not the end of the
 session. `ioa-observe-sdk` emits the `session.end` span — the one that triggers
 the whole pipeline — from a background watcher, 5 minutes after the session's
 last activity (`SESSION_IDLE_TIMEOUT_SECONDS = 300`, checked every 30s). Until
 then the spans sit in ClickHouse and Neo4j stays empty, which is expected, not
-a fault. Stopping the app flushes it immediately instead, via its `atexit`
-handler.
+a fault.
+
+To flush it immediately instead, stop the app — its `atexit` handler emits the
+span on the way out:
+
+```bash
+docker stop ioc-scale-noa-trip-planner
+```
+
+To run from a local checkout instead, skip the profile and start it by hand
+from `claris-sample-apps/noa-trip-planner`, with `OTLP_HTTP_ENDPOINT` set to
+`http://localhost:4318`:
+
+```bash
+uv run --env-file .env python api.py
+```
 
 ## 5. Verify
 
@@ -273,7 +290,8 @@ the graph completes; it does not mean the run failed.
 ## Replaying
 
 If a session ran while step 2 or step 3 was missing, it was never delivered —
-but the spans are still in ClickHouse. Fix the missing piece, then republish
+but the spans are still in ClickHouse. The easy way to end up here is calling
+`/ask` before finishing steps 2 and 3. Fix the missing piece, then republish
 instead of re-running the app:
 
 ```sql
@@ -320,3 +338,13 @@ statements must be present and above the `ALTER`s.
 
 **`application_id` / `agent_id` empty** — harmless. Not every app emits those
 attributes; only `session_id` matters here.
+
+**No spans at all after calling `/ask`** — check the app itself:
+
+```bash
+docker logs ioc-scale-noa-trip-planner --tail 30
+```
+
+A missing or unauthorised `AI_GATEWAY_API_KEY` fails the request before any
+span is emitted. `docker compose down` also leaves this container running,
+since it is profiled — use `docker compose --profile full-mas down`.

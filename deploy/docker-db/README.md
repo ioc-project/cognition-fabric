@@ -49,7 +49,7 @@ Expect 15-20 minutes; most of it is compiling AgensGraph and TimescaleDB.
 ## Verifying
 
 ```bash
-docker exec -it ioc-scale-db psql -U "$IOC_KNOWLEDGE_DB_USER" -d ioc-knowledge-db
+docker exec -it ioc-scale-db psql -U "$IOC_SCALE_DB_USER" -d "$IOC_SCALE_DB"
 ```
 
 ```sql
