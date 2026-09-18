@@ -7,10 +7,9 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
-	"strings"
 	"time"
 
+	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 	enforcementv1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
 	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/casa"
 	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/mgmt"
@@ -85,48 +84,42 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 
 	log.Infof("calling CASA CE: ce_id=%s base_url=%s endpoint=%s", casaCE.CEID, casaCE.BaseURL, casaCE.Endpoint)
 
-	// Create CASA CE client and call authorize
+	// Create CASA CE gRPC client
+	// BaseURL is the gRPC address (e.g., "casa-ce:50051")
+	// Endpoint is the gRPC service name (e.g., "ioc.ce.v1.CognitionEngine") - reserved for future use
 	casaClient := casa.New(casaCE.BaseURL, casaCE.Endpoint, 30*time.Second)
 
-	// Convert map[string]string to map[string]any for CASA client
-	var extra map[string]any
-	if req.Extra != nil {
-		extra = make(map[string]any, len(req.Extra))
-		for k, v := range req.Extra {
-			extra[k] = v
-		}
+	// Connect to CASA CE
+	if err := casaClient.Connect(ctx); err != nil {
+		log.Errorf("failed to connect to CASA CE: ce_id=%s error=%v", casaCE.CEID, err)
+		return nil, status.Errorf(codes.Unavailable, "failed to connect to CASA CE: %v", err)
+	}
+	defer casaClient.Close()
+
+	// Build Evaluate request
+	casaReq := &cev1.EvaluateRequest{
+		MasId:              req.Payload.MasId,
+		SourceAgentId:      req.Payload.SourceAgentId,
+		DestinationAgentId: req.Payload.DestinationAgentId,
+		TraceId:            req.Payload.TraceId,
+		WorkspaceId:        WorkspaceID,
+		Extra:              req.Extra,
 	}
 
-	casaReq := &casa.AuthorizeRequest{
-		Extra: extra,
-		Payload: casa.AuthorizePayload{
-			MASID:              req.Payload.MasId,
-			SourceAgentID:      req.Payload.SourceAgentId,
-			DestinationAgentID: req.Payload.DestinationAgentId,
-			TraceID:            req.Payload.TraceId,
-		},
-	}
-
-	casaResp, err := casaClient.Authorize(ctx, casaReq)
+	// Call CASA CE Evaluate RPC
+	casaResp, err := casaClient.Evaluate(ctx, casaReq)
 	if err != nil {
-		log.Errorf("CASA CE call failed: ce_id=%s error=%v", casaCE.CEID, err)
-		return nil, status.Errorf(codes.Internal, "CASA CE call failed: %v", err)
+		log.Errorf("CASA CE Evaluate failed: ce_id=%s error=%v", casaCE.CEID, err)
+		return nil, status.Errorf(codes.Internal, "CASA CE Evaluate failed: %v", err)
 	}
 
-	log.Infof("CASA CE response: ce_id=%s action=%s", casaCE.CEID, casaResp.Action)
+	log.Infof("CASA CE response: ce_id=%s outcome=%s reason=%s", casaCE.CEID, casaResp.Outcome, casaResp.Reason)
 
-	// Map CASA response to gRPC response
-	action, err := mapCASAActionToProto(casaResp.Action)
-	if err != nil {
-		log.Errorf("invalid CASA CE action: ce_id=%s action=%s error=%v", casaCE.CEID, casaResp.Action, err)
-		return nil, status.Errorf(codes.Internal, "invalid CASA CE action: %s", casaResp.Action)
-	}
+	// Map CASA CE decision to enforcement action
+	action := mapCEDecisionToAction(casaResp.Outcome)
 
-	// Get modify flag from CASA response (defaults to false if not set)
-	modify := false
-	if casaResp.Modify != nil {
-		modify = *casaResp.Modify
-	}
+	// Determine modify flag based on outcome
+	modify := casaResp.Outcome == cev1.Decision_DECISION_MODIFY
 
 	return &enforcementv1.GetDispositionResponse{
 		Action: action,
@@ -134,18 +127,16 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 	}, nil
 }
 
-// mapCASAActionToProto maps CASA CE action string to proto enum.
-func mapCASAActionToProto(action string) (enforcementv1.GetDispositionResponse_Action, error) {
-	switch strings.ToLower(action) {
-	case "allow":
-		return enforcementv1.GetDispositionResponse_ACTION_ALLOW, nil
-	case "block":
-		return enforcementv1.GetDispositionResponse_ACTION_BLOCK, nil
-	case "modify":
-		return enforcementv1.GetDispositionResponse_ACTION_MODIFY, nil
-	case "inject":
-		return enforcementv1.GetDispositionResponse_ACTION_INJECT, nil
+// mapCEDecisionToAction maps CASA CE decision enum to enforcement action enum.
+func mapCEDecisionToAction(decision cev1.Decision) enforcementv1.GetDispositionResponse_Action {
+	switch decision {
+	case cev1.Decision_DECISION_ALLOW:
+		return enforcementv1.GetDispositionResponse_ACTION_ALLOW
+	case cev1.Decision_DECISION_DENY:
+		return enforcementv1.GetDispositionResponse_ACTION_BLOCK
+	case cev1.Decision_DECISION_MODIFY:
+		return enforcementv1.GetDispositionResponse_ACTION_MODIFY
 	default:
-		return enforcementv1.GetDispositionResponse_ACTION_UNSPECIFIED, fmt.Errorf("unknown action: %s", action)
+		return enforcementv1.GetDispositionResponse_ACTION_UNSPECIFIED
 	}
 }

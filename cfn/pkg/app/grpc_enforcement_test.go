@@ -7,36 +7,73 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 	enforcementv1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-// setupTestEnv sets up the test environment with mock management plane and CASA CE.
+// mockCASACEServer is a mock gRPC server for CASA CE.
+type mockCASACEServer struct {
+	cev1.UnimplementedCognitionEngineServer
+	evaluateResponse *cev1.EvaluateResponse
+	evaluateError    error
+}
+
+func (m *mockCASACEServer) Evaluate(ctx context.Context, req *cev1.EvaluateRequest) (*cev1.EvaluateResponse, error) {
+	if m.evaluateError != nil {
+		return nil, m.evaluateError
+	}
+	return m.evaluateResponse, nil
+}
+
+func (m *mockCASACEServer) GetInfo(ctx context.Context, req *cev1.GetInfoRequest) (*cev1.GetInfoResponse, error) {
+	return &cev1.GetInfoResponse{
+		CeType:  "CASA",
+		Version: "0.1.0",
+	}, nil
+}
+
+// startMockCASACE starts a mock CASA CE gRPC server and returns the address and cleanup function.
+func startMockCASACE(t *testing.T, response *cev1.EvaluateResponse, err error) (addr string, cleanup func()) {
+	t.Helper()
+
+	lis, lisErr := net.Listen("tcp", "localhost:0")
+	if lisErr != nil {
+		t.Fatalf("failed to listen: %v", lisErr)
+	}
+
+	server := grpc.NewServer()
+	mockServer := &mockCASACEServer{
+		evaluateResponse: response,
+		evaluateError:    err,
+	}
+	cev1.RegisterCognitionEngineServer(server, mockServer)
+
+	go func() {
+		_ = server.Serve(lis)
+	}()
+
+	return lis.Addr().String(), func() {
+		server.Stop()
+		lis.Close()
+	}
+}
+
+// setupTestEnv sets up the test environment with mock management plane.
 // Returns cleanup function and the mock servers.
-func setupTestEnv(t *testing.T, masResponse map[string]any, casaResponse map[string]any) (cleanup func(), mockMgmt *httptest.Server, mockCASA *httptest.Server) {
+func setupTestEnv(t *testing.T, masResponse map[string]any) (cleanup func(), mockMgmt *httptest.Server) {
 	t.Helper()
 
 	// Save old values
 	oldWorkspaceID := WorkspaceID
 	oldMgmtURL := MgmtURL
-
-	// Start mock CASA CE server
-	mockCASA = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(casaResponse)
-	}))
-
-	// Inject CASA URL into MAS response if present
-	if masResponse != nil {
-		if ces, ok := masResponse["cognition_engines"].([]map[string]any); ok && len(ces) > 0 {
-			ces[0]["base_url"] = mockCASA.URL
-		}
-	}
 
 	// Start mock management plane server
 	mockMgmt = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -56,10 +93,32 @@ func setupTestEnv(t *testing.T, masResponse map[string]any, casaResponse map[str
 		WorkspaceID = oldWorkspaceID
 		MgmtURL = oldMgmtURL
 		mockMgmt.Close()
-		mockCASA.Close()
 	}
 
-	return cleanup, mockMgmt, mockCASA
+	return cleanup, mockMgmt
+}
+
+// setupTestEnvWithCASA sets up test environment with both mock mgmt plane and mock CASA CE.
+func setupTestEnvWithCASA(t *testing.T, masResponse map[string]any, casaResponse *cev1.EvaluateResponse, casaErr error) (cleanup func()) {
+	t.Helper()
+
+	// Start mock CASA CE gRPC server
+	casaAddr, casaCleanup := startMockCASACE(t, casaResponse, casaErr)
+
+	// Inject CASA address into MAS response
+	if masResponse != nil {
+		if ces, ok := masResponse["cognition_engines"].([]map[string]any); ok && len(ces) > 0 {
+			ces[0]["base_url"] = casaAddr
+		}
+	}
+
+	// Setup management plane mock
+	mgmtCleanup, _ := setupTestEnv(t, masResponse)
+
+	return func() {
+		mgmtCleanup()
+		casaCleanup()
+	}
 }
 
 func TestGetDisposition_MissingPayload(t *testing.T) {
@@ -159,7 +218,7 @@ func TestGetDisposition_WorkspaceIDNotSet(t *testing.T) {
 
 func TestGetDisposition_MASNotFound(t *testing.T) {
 	// Set up with nil MAS response (404)
-	cleanup, _, _ := setupTestEnv(t, nil, nil)
+	cleanup, _ := setupTestEnv(t, nil)
 	defer cleanup()
 
 	server := newEnforcementServer()
@@ -197,7 +256,7 @@ func TestGetDisposition_NoCASACEAssociated(t *testing.T) {
 		"cognition_engines": []map[string]any{}, // No CEs
 	}
 
-	cleanup, _, _ := setupTestEnv(t, masResp, nil)
+	cleanup, _ := setupTestEnv(t, masResp)
 	defer cleanup()
 
 	server := newEnforcementServer()
@@ -236,15 +295,15 @@ func TestGetDisposition_CASACEDisabled(t *testing.T) {
 			{
 				"ce_id":    "ce-casa-1",
 				"ce_type":  "CASA",
-				"base_url": "http://localhost:8000",
-				"endpoint": "/authorize",
+				"base_url": "localhost:50051",
+				"endpoint": "ioc.ce.v1.CognitionEngine",
 				"enabled":  false, // Disabled
 				"status":   "offline",
 			},
 		},
 	}
 
-	cleanup, _, _ := setupTestEnv(t, masResp, nil)
+	cleanup, _ := setupTestEnv(t, masResp)
 	defer cleanup()
 
 	server := newEnforcementServer()
@@ -283,15 +342,18 @@ func TestGetDisposition_Success_Allow(t *testing.T) {
 				"ce_id":    "ce-casa-1",
 				"ce_type":  "CASA",
 				"base_url": "will-be-replaced",
-				"endpoint": "/authorize",
+				"endpoint": "ioc.ce.v1.CognitionEngine",
 				"enabled":  true,
 				"status":   "online",
 			},
 		},
 	}
-	casaResp := map[string]any{"action": "allow"}
+	casaResp := &cev1.EvaluateResponse{
+		Outcome: cev1.Decision_DECISION_ALLOW,
+		Reason:  "All checks passed",
+	}
 
-	cleanup, _, _ := setupTestEnv(t, masResp, casaResp)
+	cleanup := setupTestEnvWithCASA(t, masResp, casaResp, nil)
 	defer cleanup()
 
 	server := newEnforcementServer()
@@ -315,7 +377,7 @@ func TestGetDisposition_Success_Allow(t *testing.T) {
 	}
 }
 
-func TestGetDisposition_Success_Block(t *testing.T) {
+func TestGetDisposition_Success_Deny(t *testing.T) {
 	masResp := map[string]any{
 		"id":           "mas-123",
 		"workspace_id": "ws-test-123",
@@ -325,15 +387,19 @@ func TestGetDisposition_Success_Block(t *testing.T) {
 				"ce_id":    "ce-casa-1",
 				"ce_type":  "CASA",
 				"base_url": "will-be-replaced",
-				"endpoint": "/authorize",
+				"endpoint": "ioc.ce.v1.CognitionEngine",
 				"enabled":  true,
 				"status":   "online",
 			},
 		},
 	}
-	casaResp := map[string]any{"action": "block"}
+	casaResp := &cev1.EvaluateResponse{
+		Outcome:      cev1.Decision_DECISION_DENY,
+		DenialReason: cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT,
+		Reason:       "Tool call deviates from original intent",
+	}
 
-	cleanup, _, _ := setupTestEnv(t, masResp, casaResp)
+	cleanup := setupTestEnvWithCASA(t, masResp, casaResp, nil)
 	defer cleanup()
 
 	server := newEnforcementServer()
@@ -367,15 +433,22 @@ func TestGetDisposition_Success_Modify(t *testing.T) {
 				"ce_id":    "ce-casa-1",
 				"ce_type":  "CASA",
 				"base_url": "will-be-replaced",
-				"endpoint": "/authorize",
+				"endpoint": "ioc.ce.v1.CognitionEngine",
 				"enabled":  true,
 				"status":   "online",
 			},
 		},
 	}
-	casaResp := map[string]any{"action": "modify", "modify": true}
+	casaResp := &cev1.EvaluateResponse{
+		Outcome: cev1.Decision_DECISION_MODIFY,
+		Reason:  "Modifying tool arguments",
+		ModifiedAction: map[string]string{
+			"tool_name": "read_file",
+			"path":      "/safe/path/file.txt",
+		},
+	}
 
-	cleanup, _, _ := setupTestEnv(t, masResp, casaResp)
+	cleanup := setupTestEnvWithCASA(t, masResp, casaResp, nil)
 	defer cleanup()
 
 	server := newEnforcementServer()
@@ -403,7 +476,7 @@ func TestGetDisposition_Success_Modify(t *testing.T) {
 	}
 }
 
-func TestGetDisposition_InvalidCASAAction(t *testing.T) {
+func TestGetDisposition_CASACEError(t *testing.T) {
 	masResp := map[string]any{
 		"id":           "mas-123",
 		"workspace_id": "ws-test-123",
@@ -413,15 +486,15 @@ func TestGetDisposition_InvalidCASAAction(t *testing.T) {
 				"ce_id":    "ce-casa-1",
 				"ce_type":  "CASA",
 				"base_url": "will-be-replaced",
-				"endpoint": "/authorize",
+				"endpoint": "ioc.ce.v1.CognitionEngine",
 				"enabled":  true,
 				"status":   "online",
 			},
 		},
 	}
-	casaResp := map[string]any{"action": "invalid_action"}
 
-	cleanup, _, _ := setupTestEnv(t, masResp, casaResp)
+	// Return an error from CASA CE
+	cleanup := setupTestEnvWithCASA(t, masResp, nil, status.Error(codes.Internal, "internal error"))
 	defer cleanup()
 
 	server := newEnforcementServer()
@@ -450,34 +523,22 @@ func TestGetDisposition_InvalidCASAAction(t *testing.T) {
 	}
 }
 
-func TestMapCASAActionToProto(t *testing.T) {
+func TestMapCEDecisionToAction(t *testing.T) {
 	tests := []struct {
-		input    string
+		input    cev1.Decision
 		expected enforcementv1.GetDispositionResponse_Action
-		wantErr  bool
 	}{
-		{"allow", enforcementv1.GetDispositionResponse_ACTION_ALLOW, false},
-		{"ALLOW", enforcementv1.GetDispositionResponse_ACTION_ALLOW, false},
-		{"Allow", enforcementv1.GetDispositionResponse_ACTION_ALLOW, false},
-		{"block", enforcementv1.GetDispositionResponse_ACTION_BLOCK, false},
-		{"BLOCK", enforcementv1.GetDispositionResponse_ACTION_BLOCK, false},
-		{"modify", enforcementv1.GetDispositionResponse_ACTION_MODIFY, false},
-		{"MODIFY", enforcementv1.GetDispositionResponse_ACTION_MODIFY, false},
-		{"inject", enforcementv1.GetDispositionResponse_ACTION_INJECT, false},
-		{"INJECT", enforcementv1.GetDispositionResponse_ACTION_INJECT, false},
-		{"unknown", enforcementv1.GetDispositionResponse_ACTION_UNSPECIFIED, true},
-		{"", enforcementv1.GetDispositionResponse_ACTION_UNSPECIFIED, true},
+		{cev1.Decision_DECISION_ALLOW, enforcementv1.GetDispositionResponse_ACTION_ALLOW},
+		{cev1.Decision_DECISION_DENY, enforcementv1.GetDispositionResponse_ACTION_BLOCK},
+		{cev1.Decision_DECISION_MODIFY, enforcementv1.GetDispositionResponse_ACTION_MODIFY},
+		{cev1.Decision_DECISION_UNSPECIFIED, enforcementv1.GetDispositionResponse_ACTION_UNSPECIFIED},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			result, err := mapCASAActionToProto(tt.input)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("mapCASAActionToProto(%q) error = %v, wantErr %v", tt.input, err, tt.wantErr)
-				return
-			}
+		t.Run(tt.input.String(), func(t *testing.T) {
+			result := mapCEDecisionToAction(tt.input)
 			if result != tt.expected {
-				t.Errorf("mapCASAActionToProto(%q) = %v, want %v", tt.input, result, tt.expected)
+				t.Errorf("mapCEDecisionToAction(%v) = %v, want %v", tt.input, result, tt.expected)
 			}
 		})
 	}

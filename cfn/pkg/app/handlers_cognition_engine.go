@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/app/httpapi/cognitionengine"
@@ -71,12 +72,24 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 		})
 	}
 
-	// Validate URL format
-	parsedURL, err := url.Parse(req.BaseURL)
-	if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
-		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid base_url format: must be a valid URL with scheme and host (e.g., http://host:port)",
-		})
+	// Validate base_url format
+	// Accept either URL format (http://host:port) or gRPC address format (host:port)
+	baseURL := req.BaseURL
+	if !strings.Contains(baseURL, "://") {
+		// Assume gRPC address format (host:port), validate it has host and port
+		if !strings.Contains(baseURL, ":") {
+			return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "invalid base_url format: must be host:port (for gRPC) or http://host:port (for HTTP)",
+			})
+		}
+	} else {
+		// URL format - validate scheme and host
+		parsedURL, err := url.Parse(baseURL)
+		if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+			return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "invalid base_url format: must be host:port (for gRPC) or http://host:port (for HTTP)",
+			})
+		}
 	}
 
 	// Check if this CFN is registered with the management plane

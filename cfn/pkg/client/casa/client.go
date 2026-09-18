@@ -2,88 +2,93 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-// Package casa provides a client for the CASA Cognition Engine.
+// Package casa provides a gRPC client for the CASA Cognition Engine.
 package casa
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"io"
 	"time"
 
-	httpclient "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/http"
+	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
-// AuthorizeRequest is the request body for the CASA CE /authorize endpoint.
-type AuthorizeRequest struct {
-	Extra   map[string]any   `json:"extra,omitempty"`
-	Payload AuthorizePayload `json:"payload"`
-}
-
-// AuthorizePayload contains the enforcement request details.
-type AuthorizePayload struct {
-	MASID              string `json:"mas_id"`
-	SourceAgentID      string `json:"source_agent_id"`
-	DestinationAgentID string `json:"destination_agent_id"`
-	TraceID            string `json:"trace_id"`
-}
-
-// AuthorizeResponse is the response from the CASA CE /authorize endpoint.
-type AuthorizeResponse struct {
-	Action string `json:"action"` // "allow", "block", "modify"
-	Modify *bool  `json:"modify,omitempty"`
-}
-
-// Client is an HTTP client for the CASA Cognition Engine.
+// Client is a gRPC client for the CASA Cognition Engine.
 type Client struct {
-	httpClient *httpclient.Client
-	baseURL    string
-	endpoint   string
+	conn    *grpc.ClientConn
+	client  cev1.CognitionEngineClient
+	target  string
+	timeout time.Duration
 }
 
-// New creates a new CASA CE client.
-func New(baseURL, endpoint string, timeout time.Duration) *Client {
+// New creates a new CASA CE gRPC client.
+// target is the gRPC address (e.g., "localhost:50051")
+// serviceName is the gRPC service name (e.g., "ioc.ce.v1.CognitionEngine") - reserved for future use
+func New(target, serviceName string, timeout time.Duration) *Client {
 	return &Client{
-		httpClient: httpclient.New(timeout),
-		baseURL:    baseURL,
-		endpoint:   endpoint,
+		target:  target,
+		timeout: timeout,
 	}
 }
 
-// Authorize calls the CASA CE /authorize endpoint.
-func (c *Client) Authorize(ctx context.Context, req *AuthorizeRequest) (*AuthorizeResponse, error) {
-	url := c.baseURL + c.endpoint
+// Connect establishes the gRPC connection.
+func (c *Client) Connect(ctx context.Context) error {
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
 
-	body, err := json.Marshal(req)
+	conn, err := grpc.DialContext(ctx, c.target,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithBlock(),
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to marshal request: %w", err)
+		return fmt.Errorf("failed to connect to CASA CE at %s: %w", c.target, err)
 	}
 
-	headers := map[string]string{
-		"Content-Type": "application/json",
-		"Accept":       "application/json",
+	c.conn = conn
+	c.client = cev1.NewCognitionEngineClient(conn)
+	return nil
+}
+
+// Close closes the gRPC connection.
+func (c *Client) Close() error {
+	if c.conn != nil {
+		return c.conn.Close()
+	}
+	return nil
+}
+
+// Evaluate calls the CASA CE Evaluate RPC.
+func (c *Client) Evaluate(ctx context.Context, req *cev1.EvaluateRequest) (*cev1.EvaluateResponse, error) {
+	if c.client == nil {
+		return nil, fmt.Errorf("client not connected")
 	}
 
-	resp, err := c.httpClient.Post(ctx, url, body, headers)
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+
+	resp, err := c.client.Evaluate(ctx, req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to call CASA CE: %w", err)
+		return nil, fmt.Errorf("CASA CE Evaluate failed: %w", err)
 	}
-	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
+	return resp, nil
+}
+
+// GetInfo calls the CASA CE GetInfo RPC.
+func (c *Client) GetInfo(ctx context.Context) (*cev1.GetInfoResponse, error) {
+	if c.client == nil {
+		return nil, fmt.Errorf("client not connected")
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+
+	resp, err := c.client.GetInfo(ctx, &cev1.GetInfoRequest{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("CASA CE GetInfo failed: %w", err)
 	}
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("CASA CE returned error: status=%d body=%s", resp.StatusCode, string(respBody))
-	}
-
-	var authResp AuthorizeResponse
-	if err := json.Unmarshal(respBody, &authResp); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
-	}
-
-	return &authResp, nil
+	return resp, nil
 }
