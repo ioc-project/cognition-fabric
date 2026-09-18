@@ -27,8 +27,7 @@ import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {useMemoryProviders} from '@/hooks/useMemoryProviders';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {toast} from 'sonner';
-import {Network, BarChart3, Bot, BrainCircuit, Unlink, Plus, Settings2, MoreHorizontal} from 'lucide-react';
-import {ActionButton} from '@/components/ui/action-button';
+import {Bot, BrainCircuit, Unlink, Plus, Settings2, MoreHorizontal} from 'lucide-react';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
 import {useCognitionEngines} from '@/hooks/useCognitionEngines';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
@@ -290,8 +289,6 @@ export default function MASDetailsPage() {
         callToAction={
           mas && (
             <div className="flex items-center gap-0.5">
-              <ActionButton icon={BarChart3} label="Metrics" onClick={() => router.push(routes.mas.metrics(masId!))} />
-              <ActionButton icon={Network} label="Knowledge Graph" onClick={() => router.push(routes.mas.knowledgeGraph(masId!))} />
               <MASAuditLog masId={masId!} workspaceId={workspaceId!} masName={mas.name} agents={mas.agents || undefined} />
               {activeTab !== 'cognition-engines' && (
                 <>

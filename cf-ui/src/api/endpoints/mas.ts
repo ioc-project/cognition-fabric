@@ -69,26 +69,6 @@ export const masApi = {
     return response;
   },
 
-  knowledgeGraph: async (workspaceId: string, masId: string): Promise<unknown> => {
-    try {
-      const {data, error} = await apiClient.GET('/api/workspaces/{workspaceId}/multi-agentic-systems/{masId}/knowledge-graph', {
-        params: {
-          path: {workspaceId, masId}
-        }
-      });
-
-      if (error) {
-        throw error;
-      }
-      return data;
-    } catch (err) {
-      if (err instanceof Error && 'status' in err && (err as {status: number}).status === 404) {
-        return null;
-      }
-      throw err;
-    }
-  },
-
   associateCE: async (workspaceId: string, masId: string, ceId: string): Promise<CognitionEngineAssociateResponse> => {
     const {data, error} = await apiClient.POST('/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}/cognition-engines', {
       params: {

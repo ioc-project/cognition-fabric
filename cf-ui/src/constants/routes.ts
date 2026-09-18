@@ -32,9 +32,7 @@ export const routes = {
   mas: {
     list: '/mas',
     create: '/mas/create',
-    details: (masId: string) => `/mas/${masId}`,
-    knowledgeGraph: (masId: string) => `/mas/${masId}/knowledge-graph`,
-    metrics: (masId: string) => `/mas/${masId}/metrics`
+    details: (masId: string) => `/mas/${masId}`
   },
 
   cognitiveAgents: {
@@ -61,9 +59,7 @@ export const routes = {
 
   apiKeys: '/api-keys',
 
-  invitations: '/invitations',
-
-  audits: '/audits'
+  invitations: '/invitations'
 } as const;
 
 export const apiRoutes = {
@@ -209,15 +205,5 @@ export const breadcrumbs = {
   createMemoryProvider: (): BreadcrumbItem[] => [
     {link: routes.memoryProviders.list, text: 'Memory Providers'},
     {link: '', text: 'Create', active: true}
-  ],
-
-  auditsList: (): BreadcrumbItem[] => [
-    {link: routes.home, text: 'Home'},
-    {link: '', text: 'Audits', active: true}
-  ],
-
-  masMetrics: (masName: string): BreadcrumbItem[] => [
-    {link: routes.mas.list, text: 'Multi-Agentic Systems'},
-    {link: '', text: masName, active: true}
   ]
 } as const;
