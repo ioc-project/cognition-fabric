@@ -23,6 +23,7 @@ class CEFinding:
     finding_id: str = ""
     mas_id: str = ""
     trace_id: str = ""
+    session_id: str = ""  # Identifies a specific session within a trace
     outcome: str = ""  # ALLOW, DENY, MODIFY
     reason: str = ""
     source_agent_id: str = ""
@@ -62,16 +63,17 @@ class CognitionStoreClient:
         self,
         mas_id: str,
         trace_id: Optional[str] = None,
+        session_id: Optional[str] = None,
         limit: int = 100,
     ) -> PriorFindingsResult:
         """
         Fetch prior CE findings for a MAS.
 
         TODO: Implement actual API call:
-        GET {base_url}/api/cognition-store/findings?mas_id={mas_id}
+        GET {base_url}/api/cognition-store/findings?mas_id={mas_id}&session_id={session_id}
         """
-        logger.info(f"[CognitionStore] GET prior findings: mas_id={mas_id} trace_id={trace_id} limit={limit}")
-        logger.info(f"[CognitionStore] Would call: GET {self.base_url}/api/cognition-store/findings?mas_id={mas_id}")
+        logger.info(f"[CognitionStore] GET prior findings: mas_id={mas_id} trace_id={trace_id} session_id={session_id} limit={limit}")
+        logger.info(f"[CognitionStore] Would call: GET {self.base_url}/api/cognition-store/findings?mas_id={mas_id}&session_id={session_id}")
         # PLACEHOLDER: Return empty findings
         result = PriorFindingsResult(mas_id=mas_id, findings=[], context_complete=True)
         logger.info(f"[CognitionStore] Returning {len(result.findings)} findings (PLACEHOLDER)")
@@ -86,7 +88,7 @@ class CognitionStoreClient:
         """
         logger.info(f"[CognitionStore] POST finding: finding_id={finding.finding_id} mas_id={finding.mas_id} outcome={finding.outcome}")
         logger.info(f"[CognitionStore] Would call: POST {self.base_url}/api/cognition-store/findings")
-        logger.info(f"[CognitionStore] Payload: trace_id={finding.trace_id} action={finding.action_class} direction={finding.direction}")
+        logger.info(f"[CognitionStore] Payload: trace_id={finding.trace_id} session_id={finding.session_id} action={finding.action_class} direction={finding.direction}")
         # PLACEHOLDER: Always succeed
         logger.info("[CognitionStore] Finding stored (PLACEHOLDER)")
         return True

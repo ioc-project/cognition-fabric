@@ -53,15 +53,15 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
                 f"source={request.source_agent_id} -> dest={request.destination_agent_id} "
                 f"action_class={ce_pb2.ActionClass.Name(request.action_class)} "
                 f"direction={ce_pb2.Direction.Name(request.direction)} "
-                f"trace_id={request.trace_id}"
+                f"trace_id={request.trace_id} session_id={request.session_id}"
             )
 
             # 1. Read prior findings from Cognition Store
             client = get_cognition_store_client()
             if client:
-                logger.info(f"[Evaluate] Fetching prior findings from Cognition Store for mas_id={request.mas_id}")
+                logger.info(f"[Evaluate] Fetching prior findings from Cognition Store for mas_id={request.mas_id} session_id={request.session_id}")
                 prior_findings = self._run_async(
-                    client.get_prior_findings(request.mas_id, request.trace_id)
+                    client.get_prior_findings(request.mas_id, request.trace_id, request.session_id)
                 )
                 num_findings = len(prior_findings.findings) if prior_findings else 0
                 logger.info(f"[Evaluate] Retrieved {num_findings} prior findings, context_complete={prior_findings.context_complete if prior_findings else 'N/A'}")
@@ -88,6 +88,7 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
                     finding_id=str(uuid.uuid4()),
                     mas_id=request.mas_id,
                     trace_id=request.trace_id,
+                    session_id=request.session_id,
                     outcome=ce_pb2.Decision.Name(response.outcome),
                     reason=response.reason,
                     source_agent_id=request.source_agent_id,
