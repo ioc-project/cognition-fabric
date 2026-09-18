@@ -28,15 +28,13 @@ class TestCERegistrationRequest:
         """Test creating a registration request with new schema."""
         request = CERegistrationRequest(
             ce_type="CASA",
-            base_url="http://localhost:8000",
-            endpoint="/authorize",
-            mas_auto_associate=False,
+            base_url="localhost:50051",
+            endpoint="ioc.ce.v1.CognitionEngine",
         )
 
         assert request.ce_type == "CASA"
-        assert request.base_url == "http://localhost:8000"
-        assert request.endpoint == "/authorize"
-        assert request.mas_auto_associate is False
+        assert request.base_url == "localhost:50051"
+        assert request.endpoint == "ioc.ce.v1.CognitionEngine"
 
 
 class TestCERegistrationResponse:
@@ -160,7 +158,8 @@ class TestRegisterCasaCE:
 
         # Verify register was called with correct CE base_url
         register_call = mock_client.register.call_args[0][0]
-        assert register_call.base_url == "http://example.com:9999"
+        # gRPC endpoint format: host:port (no http:// prefix)
+        assert register_call.base_url == "example.com:50051"
 
     @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"})
     @patch('registration.CELifecycleClient')
@@ -264,5 +263,6 @@ class TestCasaCEConfiguration:
 
         # Verify CASA CE registration fields (cfn_id is added by CFN, not CE)
         assert register_call.ce_type == CE_TYPE
-        assert register_call.base_url == "http://localhost:8000"
+        # gRPC endpoint format: host:port (no http:// prefix)
+        assert register_call.base_url == "localhost:50051"
         assert register_call.endpoint == CE_ENDPOINT

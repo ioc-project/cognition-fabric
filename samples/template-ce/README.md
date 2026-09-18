@@ -1,145 +1,94 @@
 # CASA Cognition Engine
 
-CASA (Continuous Agent Semantic Authorization) Cognition Engine Service.
+CASA (Continuous Agent Semantic Authorization) Cognition Engine implementing the `ioc.ce.v1.CognitionEngine` gRPC contract.
 
-**Note:** This is a **fake/mock CE** for testing and demonstration purposes.
+## Overview
 
-## Features
+CASA CE provides authorization decisions (ALLOW / DENY / MODIFY) for in-scope MAS actions. It integrates with:
 
-- **POST /authorize** - Authorization endpoint that returns allow/block/modify decisions
-- **CE Registration** - Automatically registers with CFN on startup (idempotent)
-- **Heartbeat** - Sends periodic heartbeats to CFN to maintain "online" status
-- **Graceful Degradation** - Runs standalone if CFN is unavailable
+- **CFN** - Receives `Evaluate` requests via gRPC
+- **Cognition Store (OXP)** - Reads prior findings, stores current finding
 
 ## Run Locally
 
 ```bash
-# Install dependencies
-uv pip install -e .
-
-# Run server (standalone mode - no CFN registration)
-cd src
-python service.py
+uv sync
+uv run python -m src.service
 ```
 
-Server runs on http://localhost:8000
+Server runs on `localhost:50051` (gRPC)
 
-### Run with CFN Registration
-
-To register with Cognition Fabric (CFN):
+### With CFN Registration
 
 ```bash
-# Required: Set CFN URL
 export CFN_URL="http://localhost:9002"
-
-# Optional: customize CE configuration
 export COGNITION_ENGINE_HOST="localhost"
-export COGNITION_ENGINE_PORT="8000"
-export CE_HEARTBEAT_INTERVAL_SEC="30.0"
-export MAS_AUTO_ASSOCIATE="false"
-
-# Run server
-cd src
-python service.py
+uv run python -m src.service
 ```
 
-On startup, the CE will:
-1. Register with CFN at `$CFN_URL/api/cognition-engines`
-2. Receive a `ce_id` (idempotent - same ID on subsequent starts)
-3. Start heartbeat background task (every 30s by default)
-4. Appear as "online" in Management Plane
+### With Cognition Store
+
+```bash
+export COGNITION_STORE_URL="http://localhost:8080"
+uv run python -m src.service
+```
 
 ## Test
 
 ```bash
-# Install with test dependencies
-uv pip install -e ".[test]"
-
-# Run tests
-uv run pytest
+uv run pytest -v
 ```
 
-## API
+## gRPC API
 
-- `POST /authorize` - Authorization endpoint
-- `GET /docs` - API documentation
+### `Evaluate` RPC
+
+Authorization decision for an in-scope MAS action.
+
+**Request:** `EvaluateRequest`
+- `mas_id`, `source_agent_id`, `destination_agent_id`, `trace_id`
+- `action_class` - MCP_TOOL_CALL, A2A_DELEGATION, AGENT_RESPONSE
+- `direction` - REQUEST, RESPONSE
+
+**Response:** `EvaluateResponse`
+- `outcome` - ALLOW, DENY, MODIFY
+- `reason` - Human-readable explanation
+- `trace_id` - Echo of request
+
+### `GetInfo` RPC
+
+Returns CE metadata.
 
 ## Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `CFN_URL` | CFN service base URL (e.g. "http://localhost:9002") | `""` (standalone) |
-| `COGNITION_ENGINE_HOST` | Advertised host for this CE | `"localhost"` |
-| `COGNITION_ENGINE_PORT` | Advertised port for this CE | `"8000"` |
-| `CE_HEARTBEAT_INTERVAL_SEC` | Heartbeat interval in seconds | `"30.0"` |
-| `MAS_AUTO_ASSOCIATE` | Auto-associate CE with all MAS | `"false"` |
-| `LOG_LEVEL` | Logging level | `"INFO"` |
+| `GRPC_PORT` | gRPC server port | `50051` |
+| `CFN_URL` | CFN service URL for registration | (disabled) |
+| `COGNITION_ENGINE_HOST` | Advertised host for this CE | `localhost` |
+| `CE_HEARTBEAT_INTERVAL_SEC` | Heartbeat interval | `30.0` |
+| `COGNITION_STORE_URL` | Cognition Store API URL | (disabled) |
 
 ## Architecture
 
-### Registration Flow
-
 ```
-┌─────────────────┐
-│   CASA CE       │
-│  (startup)      │
-└────────┬────────┘
-         │
-         │ 1. POST /api/cognition-engines
-         │    {cfn_id, ce_type, base_url, endpoint}
-         ▼
-┌─────────────────┐
-│      CFN        │
-│  (forwards to   │
-│  Mgmt Plane)    │
-└────────┬────────┘
-         │
-         │ 2. Forward to Management Plane
-         ▼
-┌─────────────────┐
-│  Management     │
-│    Plane        │
-│  (generates     │
-│   ce_id)        │
-└────────┬────────┘
-         │
-         │ 3. Returns {ce_id, ce_type, status, ...}
-         ▼
-┌─────────────────┐
-│   CASA CE       │
-│  (stores ce_id, │
-│   starts        │
-│   heartbeat)    │
-└─────────────────┘
+┌───────────────┐   Evaluate    ┌─────────┐    read/write     ┌─────────────────┐
+│      CFN      │──────────────▶│ CASA CE │◀────────────────▶│  Cognition      │
+│               │◀──────────────│  gRPC   │                   │  Store (OXP)    │
+└───────────────┘   decision    └─────────┘                   └─────────────────┘
 ```
-
-### Idempotency
-
-Registration is **idempotent**:
-- First call: Management Plane creates new CE entry, returns `created: true`
-- Subsequent calls: Management Plane returns existing `ce_id`, returns `created: false`
-- Safe to restart CE multiple times - always gets the same `ce_id`
-
-### Heartbeat
-
-After successful registration, CASA CE sends periodic heartbeats:
-- Endpoint: `POST /api/cognition-engines/{ce_id}/heartbeat`
-- Interval: 30 seconds (configurable via `CE_HEARTBEAT_INTERVAL_SEC`)
-- Keeps CE status as "online" in Management Plane
-- Fire-and-forget (logs errors, never crashes)
-
-### Graceful Degradation
-
-If CFN is unavailable:
-- Registration fails with warning log (not an error)
-- CE continues to run in standalone mode
-- `/authorize` endpoint works normally
-- No heartbeats sent
-- CE does not appear in Management Plane
 
 ## Files
 
-- `src/service.py` - FastAPI app with `/authorize` endpoint
-- `src/models.py` - Pydantic models for request/response
-- `src/registration.py` - CE registration and lifecycle management
-- `tests/` - Unit tests (40 tests covering models, API, registration)
+```
+engines/casa/
+├── proto/ce.proto           # ioc.ce.v1 Protocol Buffer definition
+├── src/
+│   ├── generated/           # Generated gRPC stubs
+│   ├── service.py           # gRPC server
+│   ├── registration.py      # CFN registration
+│   └── cognition_store.py   # Cognition Store client
+├── tests/
+├── pyproject.toml
+└── Dockerfile
+```

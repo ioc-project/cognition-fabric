@@ -1,12 +1,13 @@
 [project]
 name = "casa-cognition-engine"
 version = "0.1.0"
-description = "CASA Cognition Engine Service - Demo CE for testing"
+description = "CASA Cognition Engine Service - ioc.ce.v1 gRPC implementation"
 requires-python = ">=3.11"
 dependencies = [
-    "fastapi>=0.104.0",
-    "uvicorn[standard]>=0.24.0",
-    "pydantic>=2.5.0",
+    "grpcio>=1.60.0",
+    "grpcio-tools>=1.60.0",
+    "grpcio-reflection>=1.60.0",
+    "protobuf>=4.25.0",
     "httpx>=0.25.0",
 ]
 
@@ -14,7 +15,7 @@ dependencies = [
 test = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
-    "httpx2>=0.0.1",
+    "grpcio-testing>=1.60.0",
 ]
 
 [build-system]

@@ -1,19 +1,21 @@
 version: '3.8'
 
 services:
-  casa-enforcement:
+  casa-ce:
     build:
       context: ./engines/casa
       dockerfile: Dockerfile
-    container_name: casa-enforcement
+    container_name: casa-ce
     ports:
-      - "8001:8000"
+      - "50051:50051"
     environment:
       - LOG_LEVEL=INFO
+      - GRPC_PORT=50051
       # Optional: CFN registration (uncomment to enable)
-      # - CFN_URL=http://localhost:9002
-      # - COGNITION_ENGINE_HOST=localhost
-      # - COGNITION_ENGINE_PORT=8001
-      # - CE_VERSION=0.1.0
+      # - CFN_URL=http://cfn:9002
+      # - COGNITION_ENGINE_HOST=casa-ce
       # - CE_HEARTBEAT_INTERVAL_SEC=30.0
+      # - MAS_AUTO_ASSOCIATE=false
+      # Optional: Cognition Store (uncomment to enable)
+      # - COGNITION_STORE_URL=http://cognition-store:8080
     restart: unless-stopped
