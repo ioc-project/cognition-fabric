@@ -61,7 +61,7 @@
           "cognition-fabric-nodes"
         ],
         "summary": "Create Cfn Node",
-        "description": "Register a new CFN node\n\n- **id**: Persistent CFN identifier (provided by CFN, immutable)\n- **name**: Human-readable CFN name (globally unique, can be updated later)\n- **cfn_config**: Optional current CFN configuration\n\nCFN identifies to the management plane.\nRegistration creates the CFN record without workspace association.\nWorkspace association happens during workspace creation.\n\n**Response includes:**\n- **id**: The CFN identifier\n- **name**: The CFN name\n- **status**: Current status (offline)\n- **config**: Configuration for the CFN to apply locally\n  - cognition_fabric_node: CFN-specific operational settings (non-workspace scoped)\n  - memory_providers: Global memory providers (non-workspace scoped)\n  - workspaces: Associated workspaces with MAS, cognitive agents, engines\n\nCFN must send heartbeat to change status from offline to online.",
+        "description": "Register a new CFN node\n\n- **id**: Persistent CFN identifier (provided by CFN, immutable)\n- **name**: Human-readable CFN name (globally unique, can be updated later)\n- **cfn_config**: Optional current CFN configuration\n\nCFN identifies to the management plane.\nRegistration creates the CFN record without workspace association.\nWorkspace association happens during workspace creation.\n\n**Response includes:**\n- **id**: The CFN identifier\n- **name**: The CFN name\n- **status**: Current status (offline)\n- **config**: Configuration for the CFN to apply locally\n  - cognition_fabric_node: CFN-specific operational settings (non-workspace scoped)\n  - workspaces: Associated workspaces with MAS, cognitive agents, engines\n\nCFN must send heartbeat to change status from offline to online.",
         "operationId": "create_cfn_node_api_cognition_fabric_nodes_register_post",
         "requestBody": {
           "content": {
@@ -108,7 +108,7 @@
           "cognition-fabric-nodes"
         ],
         "summary": "Create Cfn Node",
-        "description": "Register a new CFN node\n\n- **id**: Persistent CFN identifier (provided by CFN, immutable)\n- **name**: Human-readable CFN name (globally unique, can be updated later)\n- **cfn_config**: Optional current CFN configuration\n\nCFN identifies to the management plane.\nRegistration creates the CFN record without workspace association.\nWorkspace association happens during workspace creation.\n\n**Response includes:**\n- **id**: The CFN identifier\n- **name**: The CFN name\n- **status**: Current status (offline)\n- **config**: Configuration for the CFN to apply locally\n  - cognition_fabric_node: CFN-specific operational settings (non-workspace scoped)\n  - memory_providers: Global memory providers (non-workspace scoped)\n  - workspaces: Associated workspaces with MAS, cognitive agents, engines\n\nCFN must send heartbeat to change status from offline to online.",
+        "description": "Register a new CFN node\n\n- **id**: Persistent CFN identifier (provided by CFN, immutable)\n- **name**: Human-readable CFN name (globally unique, can be updated later)\n- **cfn_config**: Optional current CFN configuration\n\nCFN identifies to the management plane.\nRegistration creates the CFN record without workspace association.\nWorkspace association happens during workspace creation.\n\n**Response includes:**\n- **id**: The CFN identifier\n- **name**: The CFN name\n- **status**: Current status (offline)\n- **config**: Configuration for the CFN to apply locally\n  - cognition_fabric_node: CFN-specific operational settings (non-workspace scoped)\n  - workspaces: Associated workspaces with MAS, cognitive agents, engines\n\nCFN must send heartbeat to change status from offline to online.",
         "operationId": "create_cfn_node_api_cognition_fabric_nodes_post",
         "security": [
           {
@@ -228,7 +228,7 @@
           "cognition-fabric-nodes"
         ],
         "summary": "Update Cfn Node",
-        "description": "Update CFN node information\n\n- **id**: CFN identifier (immutable)\n- **name**: Optional updated CFN name (globally unique)\n- **cfn_config**: Optional updated CFN configuration\n\n**Response includes:**\n- Full CFN details (id, workspace_ids, name, cfn_config, status, last_seen, enabled, timestamps)\n- **config**: Regenerated configuration for the CFN to apply\n  - cognition_fabric_node: CFN-specific operational settings\n  - memory_providers: Global memory providers\n  - workspaces: List of workspace details with MAS, cognitive agents, engines\n\nThe config is automatically regenerated with each update to ensure CFN has the latest configuration.",
+        "description": "Update CFN node information\n\n- **id**: CFN identifier (immutable)\n- **name**: Optional updated CFN name (globally unique)\n- **cfn_config**: Optional updated CFN configuration\n\n**Response includes:**\n- Full CFN details (id, workspace_ids, name, cfn_config, status, last_seen, enabled, timestamps)\n- **config**: Regenerated configuration for the CFN to apply\n  - cognition_fabric_node: CFN-specific operational settings\n  - workspaces: List of workspace details with MAS, cognitive agents, engines\n\nThe config is automatically regenerated with each update to ensure CFN has the latest configuration.",
         "operationId": "update_cfn_node_api_cognition_fabric_nodes__id__put",
         "security": [
           {
@@ -371,7 +371,7 @@
           "cognition-fabric-nodes"
         ],
         "summary": "Enable Cfn Node",
-        "description": "Enable a disabled CFN node\n\n- **id**: CFN identifier\n\nThis is an admin operation to re-enable a disabled CFN.\nAfter enabling, the CFN can call /register to reconnect and resume operations.\n\n**Response includes:**\n- Full CFN details with enabled=True and status=offline (until heartbeat is sent)\n- **config**: Configuration for the CFN to apply when it reconnects\n  - cognition_fabric_node: CFN-specific operational settings\n  - memory_providers: Global memory providers\n  - workspaces: List of workspace details with MAS, cognitive agents, engines",
+        "description": "Enable a disabled CFN node\n\n- **id**: CFN identifier\n\nThis is an admin operation to re-enable a disabled CFN.\nAfter enabling, the CFN can call /register to reconnect and resume operations.\n\n**Response includes:**\n- Full CFN details with enabled=True and status=offline (until heartbeat is sent)\n- **config**: Configuration for the CFN to apply when it reconnects\n  - cognition_fabric_node: CFN-specific operational settings\n  - workspaces: List of workspace details with MAS, cognitive agents, engines",
         "operationId": "enable_cfn_node_api_cognition_fabric_nodes__id__enable_patch",
         "security": [
           {
@@ -515,7 +515,7 @@
           "cognition-fabric-nodes"
         ],
         "summary": "Get Cfn Workspaces Config",
-        "description": "Get aggregated workspace configuration for a CFN node\n\nThis endpoint returns the consolidated configuration document that aggregates\nworkspace-scoped and global resources for the CFN service to apply.\n\n- **id**: CFN identifier\n\nReturns configuration with:\n- **version**: Configuration schema version (0.1.0)\n- **cognition_fabric_node**: List of CFN-specific operational settings (non-workspace scoped)\n- **memory_providers**: List of global memory providers (non-workspace scoped)\n- **workspaces**: List of workspaces with their resources:\n  - workspace_id: Workspace identifier\n  - workspace_name: Workspace name\n  - multi_agentic_systems: MAS available in this workspace\n  - cognition_engines: Cognition engines in this workspace (not included for March 2026)\n  - policies: Policies in this workspace (not included for March 2026)",
+        "description": "Get aggregated workspace configuration for a CFN node\n\nThis endpoint returns the consolidated configuration document that aggregates\nworkspace-scoped and global resources for the CFN service to apply.\n\n- **id**: CFN identifier\n\nReturns configuration with:\n- **version**: Configuration schema version (0.1.0)\n- **cognition_fabric_node**: List of CFN-specific operational settings (non-workspace scoped)\n- **workspaces**: List of workspaces with their resources:\n  - workspace_id: Workspace identifier\n  - workspace_name: Workspace name\n  - multi_agentic_systems: MAS available in this workspace\n  - cognition_engines: Cognition engines in this workspace (not included for March 2026)\n  - policies: Policies in this workspace (not included for March 2026)",
         "operationId": "get_cfn_workspaces_config_api_cognitive_fabric_node__id__workspaces_get",
         "security": [
           {
@@ -565,7 +565,7 @@
           "cognition-fabric"
         ],
         "summary": "Get Cognition Fabric Topology",
-        "description": "Returns the full Cognition Fabric topology with nested CEs and memory providers per CFN.",
+        "description": "Returns the full Cognition Fabric topology with nested CEs per CFN.",
         "operationId": "get_cognition_fabric_topology_api_cognition_fabric_get",
         "responses": {
           "200": {
@@ -584,232 +584,6 @@
             "HTTPBearer": []
           }
         ]
-      }
-    },
-    "/api/memory-providers": {
-      "get": {
-        "tags": [
-          "memory-providers"
-        ],
-        "summary": "List Memory Providers",
-        "description": "Get list of all memory providers (shared across workspaces)",
-        "operationId": "list_memory_providers_api_memory_providers_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MemoryProviderList"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      },
-      "post": {
-        "tags": [
-          "memory-providers"
-        ],
-        "summary": "Create Memory Provider",
-        "description": "Create a new memory provider (shared across workspaces)",
-        "operationId": "create_memory_provider_api_memory_providers_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MemoryProviderCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MemoryProviderDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      }
-    },
-    "/api/memory-providers/{id}": {
-      "get": {
-        "tags": [
-          "memory-providers"
-        ],
-        "summary": "Get Memory Provider",
-        "description": "Get details of a specific memory provider",
-        "operationId": "get_memory_provider_api_memory_providers__id__get",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MemoryProviderDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "patch": {
-        "tags": [
-          "memory-providers"
-        ],
-        "summary": "Update Memory Provider",
-        "description": "Update an existing memory provider",
-        "operationId": "update_memory_provider_api_memory_providers__id__patch",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/MemoryProviderUpdate"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/MemoryProviderDetail"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "memory-providers"
-        ],
-        "summary": "Delete Memory Provider",
-        "description": "Delete a memory provider (soft delete)",
-        "operationId": "delete_memory_provider_api_memory_providers__id__delete",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Delete Memory Provider Api Memory Providers  Id  Delete"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
       }
     },
     "/api/workspaces/create": {
@@ -2389,18 +2163,6 @@
             ],
             "description": "Identity provider configuration"
           },
-          "agentic_memory_provider_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Agentic Memory Provider Id",
-            "description": "Memory provider ID for agent's private memory"
-          },
           "config": {
             "anyOf": [
               {
@@ -2419,31 +2181,7 @@
         "title": "AgentConfig",
         "description": "Schema for individual agent configuration in MAS (input)"
       },
-      "AgentIdentity": {
-        "properties": {
-          "type": {
-            "type": "string",
-            "title": "Type",
-            "description": "Identity provider type (e.g. openclaw, claude_code, or any custom type)"
-          },
-          "identifiers": {
-            "additionalProperties": {
-              "type": "string"
-            },
-            "type": "object",
-            "title": "Identifiers",
-            "description": "Provider-specific identifiers (varies by type)"
-          }
-        },
-        "type": "object",
-        "required": [
-          "type",
-          "identifiers"
-        ],
-        "title": "AgentIdentity",
-        "description": "Schema for agent identity provider configuration"
-      },
-      "AgentWithMemory": {
+      "AgentDetail": {
         "properties": {
           "agent_id": {
             "type": "string",
@@ -2485,17 +2223,6 @@
             ],
             "description": "Identity provider configuration"
           },
-          "agentic_memory": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/MemoryProviderDetail"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Full memory provider configuration for agent's private memory"
-          },
           "config": {
             "anyOf": [
               {
@@ -2514,8 +2241,32 @@
         "required": [
           "agent_id"
         ],
-        "title": "AgentWithMemory",
-        "description": "Schema for agent with full memory provider details (output)"
+        "title": "AgentDetail",
+        "description": "Schema for agent details (output)"
+      },
+      "AgentIdentity": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Identity provider type (e.g. openclaw, claude_code, or any custom type)"
+          },
+          "identifiers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Identifiers",
+            "description": "Provider-specific identifiers (varies by type)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "identifiers"
+        ],
+        "title": "AgentIdentity",
+        "description": "Schema for agent identity provider configuration"
       },
       "AuditCfnEventListResponse": {
         "properties": {
@@ -3465,7 +3216,6 @@
         "description": "Schema for Cognition Fabric Node response (common response format)",
         "example": {
           "config": {
-            "memory_providers": [],
             "workspaces": []
           },
           "created_at": "2026-02-19T19:46:49.102012",
@@ -3549,13 +3299,6 @@
             },
             "type": "array",
             "title": "Cognition Engines"
-          },
-          "memory_providers": {
-            "items": {
-              "$ref": "#/components/schemas/MemoryProviderListItem"
-            },
-            "type": "array",
-            "title": "Memory Providers"
           }
         },
         "type": "object",
@@ -3568,7 +3311,7 @@
           "created_at"
         ],
         "title": "CognitionFabricNodeTopology",
-        "description": "A CFN node with its nested cognition engines and memory providers"
+        "description": "A CFN node with its nested cognition engines"
       },
       "CognitionFabricNodeUpdateRequest": {
         "properties": {
@@ -3792,398 +3535,6 @@
         "title": "MasCognitionEnginePatchRequest",
         "description": "Schema for PATCH /workspaces/{ws}/mas/{mas_id}/cognition-engines/{ce_id}"
       },
-      "MemoryProviderAuthConfig": {
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "none",
-              "token",
-              "bearer",
-              "basic",
-              "custom"
-            ],
-            "title": "Type",
-            "description": "Auth type: none, token, bearer, basic, custom",
-            "default": "none"
-          },
-          "credentials": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/MemoryProviderAuthCredentials"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Auth credentials (will be encrypted in database)"
-          }
-        },
-        "type": "object",
-        "title": "MemoryProviderAuthConfig",
-        "description": "Authentication configuration for memory provider"
-      },
-      "MemoryProviderAuthCredentials": {
-        "properties": {
-          "api_key": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Api Key",
-            "description": "API key for token-based auth"
-          },
-          "access_token": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Access Token",
-            "description": "Access token for bearer auth"
-          },
-          "username": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Username",
-            "description": "Username for basic auth"
-          },
-          "password": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Password",
-            "description": "Password for basic auth"
-          },
-          "header_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Header Name",
-            "description": "Custom header name"
-          },
-          "header_value": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Header Value",
-            "description": "Custom header value"
-          }
-        },
-        "type": "object",
-        "title": "MemoryProviderAuthCredentials",
-        "description": "Auth credentials - structure varies by auth type"
-      },
-      "MemoryProviderConfig": {
-        "properties": {
-          "url": {
-            "type": "string",
-            "title": "Url",
-            "description": "Provider URL (e.g., http://localhost:8765)"
-          },
-          "auth": {
-            "$ref": "#/components/schemas/MemoryProviderAuthConfig",
-            "description": "Authentication configuration"
-          },
-          "shared": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Shared",
-            "description": "Whether provider is shared",
-            "default": false
-          }
-        },
-        "type": "object",
-        "required": [
-          "url"
-        ],
-        "title": "MemoryProviderConfig",
-        "description": "Memory Provider configuration"
-      },
-      "MemoryProviderCreate": {
-        "properties": {
-          "name": {
-            "type": "string",
-            "title": "Name",
-            "description": "Memory provider name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "Description of the memory provider"
-          },
-          "config": {
-            "$ref": "#/components/schemas/MemoryProviderConfig",
-            "description": "Provider configuration"
-          }
-        },
-        "type": "object",
-        "required": [
-          "name",
-          "config"
-        ],
-        "title": "MemoryProviderCreate",
-        "description": "Schema for creating a memory provider"
-      },
-      "MemoryProviderDetail": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "config": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Config"
-          },
-          "enabled": {
-            "type": "boolean",
-            "title": "Enabled"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          },
-          "updated_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "date-time"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated At"
-          },
-          "created_by": {
-            "type": "string",
-            "title": "Created By"
-          },
-          "updated_by": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Updated By"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "description",
-          "config",
-          "enabled",
-          "created_at",
-          "updated_at",
-          "created_by",
-          "updated_by"
-        ],
-        "title": "MemoryProviderDetail",
-        "description": "Schema for detailed memory provider information"
-      },
-      "MemoryProviderList": {
-        "properties": {
-          "providers": {
-            "items": {
-              "$ref": "#/components/schemas/MemoryProviderDetail"
-            },
-            "type": "array",
-            "title": "Providers",
-            "description": "List of memory providers"
-          },
-          "total": {
-            "type": "integer",
-            "title": "Total",
-            "description": "Total number of providers"
-          }
-        },
-        "type": "object",
-        "required": [
-          "providers",
-          "total"
-        ],
-        "title": "MemoryProviderList",
-        "description": "Schema for memory provider list response"
-      },
-      "MemoryProviderListItem": {
-        "properties": {
-          "id": {
-            "type": "string",
-            "title": "Id"
-          },
-          "name": {
-            "type": "string",
-            "title": "Name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "config": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Config"
-          },
-          "enabled": {
-            "type": "boolean",
-            "title": "Enabled"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Created At"
-          }
-        },
-        "type": "object",
-        "required": [
-          "id",
-          "name",
-          "description",
-          "config",
-          "enabled",
-          "created_at"
-        ],
-        "title": "MemoryProviderListItem",
-        "description": "Schema for memory provider list item"
-      },
-      "MemoryProviderUpdate": {
-        "properties": {
-          "name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Name",
-            "description": "Memory provider name"
-          },
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description",
-            "description": "Description of the memory provider"
-          },
-          "config": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/MemoryProviderConfig"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Provider configuration"
-          },
-          "enabled": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Enabled",
-            "description": "Whether provider is enabled"
-          }
-        },
-        "type": "object",
-        "title": "MemoryProviderUpdate",
-        "description": "Schema for updating a memory provider"
-      },
       "MultiAgenticSystem": {
         "properties": {
           "id": {
@@ -4209,22 +3560,11 @@
             ],
             "title": "Description"
           },
-          "shared_memory": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/MemoryProviderDetail"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "description": "Full configuration of shared memory provider for all agents"
-          },
           "agents": {
             "anyOf": [
               {
                 "items": {
-                  "$ref": "#/components/schemas/AgentWithMemory"
+                  "$ref": "#/components/schemas/AgentDetail"
                 },
                 "type": "array"
               },
@@ -4233,7 +3573,7 @@
               }
             ],
             "title": "Agents",
-            "description": "List of agents with their memory provider configurations"
+            "description": "List of agents in the system"
           },
           "config": {
             "anyOf": [
@@ -4314,14 +3654,6 @@
           "agents": [
             {
               "agent_id": "agent-1",
-              "agentic_memory": {
-                "config": {
-                  "host": "ioc-mem0",
-                  "port": 8765
-                },
-                "id": "mem-provider-2",
-                "name": "ioc-mem0"
-              },
               "config": {
                 "type": "planner"
               },
@@ -4345,14 +3677,6 @@
           "description": "A system for collaborative AI agents",
           "id": "550e8400-e29b-41d4-a716-446655440000",
           "name": "unique-name-within-a-workspace",
-          "shared_memory": {
-            "config": {
-              "host": "ioc-knowledge-memory-svc",
-              "port": 9003
-            },
-            "id": "mem-provider-1",
-            "name": "ioc-knowledge-memory-svc"
-          },
           "updated_at": "2024-12-11T10:30:00Z",
           "workspace_id": "660e8400-e29b-41d4-a716-446655440000"
         }
@@ -4377,18 +3701,6 @@
             ],
             "title": "Description",
             "description": "Description of the multi-agentic system"
-          },
-          "shared_memory_provider_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Shared Memory Provider Id",
-            "description": "Memory provider ID for shared memory across all agents in MAS"
           },
           "agents": {
             "anyOf": [
@@ -4493,18 +3805,6 @@
             ],
             "title": "Description",
             "description": "Updated description of the multi-agentic system"
-          },
-          "shared_memory_provider_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Shared Memory Provider Id",
-            "description": "Updated memory provider ID for shared memory"
           },
           "agents": {
             "anyOf": [

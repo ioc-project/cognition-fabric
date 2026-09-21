@@ -6,8 +6,6 @@ from pydantic import BaseModel, Field, ConfigDict, model_validator
 from datetime import datetime
 from typing import Optional, Dict, Any, List
 
-from server.schemas.memory_provider import MemoryProviderDetail
-
 
 class AgentIdentity(BaseModel):
     """Schema for agent identity provider configuration"""
@@ -25,20 +23,16 @@ class AgentConfig(BaseModel):
     name: Optional[str] = Field(None, description="Human-readable agent name")
     url: Optional[str] = Field(None, description="Agent endpoint URL")
     identity: Optional[AgentIdentity] = Field(None, description="Identity provider configuration")
-    agentic_memory_provider_id: Optional[str] = Field(None, description="Memory provider ID for agent's private memory")
     config: Optional[Dict[str, Any]] = Field(None, description="Agent-specific configuration")
 
 
-class AgentWithMemory(BaseModel):
-    """Schema for agent with full memory provider details (output)"""
+class AgentDetail(BaseModel):
+    """Schema for agent details (output)"""
 
     agent_id: str = Field(..., description="Unique identifier for the agent")
     name: Optional[str] = Field(None, description="Human-readable agent name")
     url: Optional[str] = Field(None, description="Agent endpoint URL")
     identity: Optional[AgentIdentity] = Field(None, description="Identity provider configuration")
-    agentic_memory: Optional[MemoryProviderDetail] = Field(
-        None, description="Full memory provider configuration for agent's private memory"
-    )
     config: Optional[Dict[str, Any]] = Field(None, description="Agent-specific configuration")
 
 
@@ -54,10 +48,6 @@ class MultiAgenticSystemRequest(BaseModel):
     description: Optional[str] = Field(
         None,
         description="Description of the multi-agentic system",
-    )
-    shared_memory_provider_id: Optional[str] = Field(
-        None,
-        description="Memory provider ID for shared memory across all agents in MAS",
     )
     agents: Optional[List[AgentConfig]] = Field(
         None,
@@ -85,10 +75,6 @@ class MultiAgenticSystemUpdate(BaseModel):
     description: Optional[str] = Field(
         None,
         description="Updated description of the multi-agentic system",
-    )
-    shared_memory_provider_id: Optional[str] = Field(
-        None,
-        description="Updated memory provider ID for shared memory",
     )
     agents: Optional[List[AgentConfig]] = Field(
         None,
@@ -146,11 +132,6 @@ class MultiAgenticSystem(BaseModel):
                 "workspace_id": "660e8400-e29b-41d4-a716-446655440000",
                 "name": "unique-name-within-a-workspace",
                 "description": "A system for collaborative AI agents",
-                "shared_memory": {
-                    "id": "mem-provider-1",
-                    "name": "ioc-knowledge-memory-svc",
-                    "config": {"host": "ioc-knowledge-memory-svc", "port": 9003},
-                },
                 "agents": [
                     {
                         "agent_id": "agent-1",
@@ -159,11 +140,6 @@ class MultiAgenticSystem(BaseModel):
                         "identity": {
                             "type": "openclaw",
                             "identifiers": {"url": "main::agents::agent-1"},
-                        },
-                        "agentic_memory": {
-                            "id": "mem-provider-2",
-                            "name": "ioc-mem0",
-                            "config": {"host": "ioc-mem0", "port": 8765},
                         },
                         "config": {"type": "planner"},
                     }
@@ -179,12 +155,7 @@ class MultiAgenticSystem(BaseModel):
     workspace_id: str
     name: str
     description: Optional[str] = None
-    shared_memory: Optional[MemoryProviderDetail] = Field(
-        None, description="Full configuration of shared memory provider for all agents"
-    )
-    agents: Optional[List[AgentWithMemory]] = Field(
-        None, description="List of agents with their memory provider configurations"
-    )
+    agents: Optional[List[AgentDetail]] = Field(None, description="List of agents in the system")
     config: Optional[Dict[str, Any]] = None
     cognition_engines: Optional[List[MasCognitionEngineItem]] = None
     created_at: datetime

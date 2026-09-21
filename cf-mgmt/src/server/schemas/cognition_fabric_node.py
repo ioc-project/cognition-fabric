@@ -101,7 +101,6 @@ class CognitionFabricNodeResponse(BaseModel):
                 "name": "cfn-node-prod-1",
                 "config": {
                     "workspaces": [],
-                    "memory_providers": [],
                 },
                 "status": "offline",
                 "last_seen": "2026-02-19T19:46:49.185773",

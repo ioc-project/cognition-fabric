@@ -19,9 +19,6 @@ class Agent(Base):
     url = Column(Text, nullable=True)
     identity_type = Column(String(50), nullable=True)
     identity_identifiers = Column(JSONB, nullable=True)
-    agentic_memory_provider_id = Column(
-        String(255), ForeignKey("memory_provider.id", ondelete="SET NULL"), nullable=True
-    )
     config = Column(JSONB, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
     updated_at = Column(DateTime, nullable=True, server_default=text("CURRENT_TIMESTAMP"))
@@ -31,7 +28,6 @@ class Agent(Base):
     __table_args__ = (
         Index("idx_agent_mas_id", "mas_id"),
         Index("idx_agent_identity_type", "identity_type"),
-        Index("idx_agent_agentic_memory", "agentic_memory_provider_id"),
         UniqueConstraint("mas_id", "name", name="uq_agent_mas_name"),
     )
 
