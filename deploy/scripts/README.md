@@ -19,12 +19,13 @@ app --OTLP--> otel-collector --> ClickHouse.otel_traces
                               norm --> Neo4j
 ```
 
-Steps 2 and 3 are manual. The stack does not create them. Do both before asking
-the app anything, or the session will not reach Neo4j.
+The stack configures the ClickHouse-to-RabbitMQ path automatically. Two
+one-shot services appear as `Exited (0)` after successful initialization:
 
-They are temporary — automating them is tracked in
-[#11](https://github.com/cisco-eti/ioc-scale-cf-deployment/issues/11), and will
-be removed from this page once that lands.
+- `oxp-clickhouse-init` waits five seconds, polls for the collector-created
+  `otel_traces` table, and applies [`init-oxp-clickhouse.sql`](init-oxp-clickhouse.sql).
+- `oxp-rabbitmq-init` waits for `norm` to declare `new_session_in`, then binds
+  that queue to the `claris` exchange.
 
 ## 1. Start the stack
 
@@ -41,108 +42,28 @@ app at `http://localhost:4318` instead.
 Having the app up now is fine — it starts tracing on its first request, not at
 startup, so it emits nothing until step 4.
 
-Wait until `ioc-scale-oxp-clickhouse` and `ioc-scale-oxp-rabbitmq` are healthy.
-The workers restart a few times while RabbitMQ comes up; that is expected.
+Wait until `ioc-scale-oxp-clickhouse` and `ioc-scale-oxp-rabbitmq` are healthy
+and both initializer services have exited successfully. The workers restart a
+few times while RabbitMQ comes up; that is expected.
 
 The collector creates `default.otel_traces` on startup, so it is there as soon
 as the stack is up — you do not need to send a span first.
 
-## 2. Set up ClickHouse
-
-Adds the columns the workers read, plus the view that publishes each finished
-session to RabbitMQ.
+Check initialization status:
 
 ```bash
-docker exec -it ioc-scale-oxp-clickhouse clickhouse-client
+docker compose ps -a oxp-clickhouse-init oxp-rabbitmq-init
+docker compose logs oxp-clickhouse-init oxp-rabbitmq-init
 ```
 
-```sql
-DROP TABLE IF EXISTS default.mv_otel_traces_end;
-DROP TABLE IF EXISTS default.otel_traces_end_rmq;
-
-ALTER TABLE default.otel_traces DROP COLUMN IF EXISTS session_id;
-ALTER TABLE default.otel_traces DROP COLUMN IF EXISTS application_id;
-ALTER TABLE default.otel_traces DROP COLUMN IF EXISTS agent_id;
-
-ALTER TABLE default.otel_traces
-ADD COLUMN session_id String MATERIALIZED
-    multiIf(
-        position(SpanAttributes['session.id'], '_') > 0,
-        substring(
-            SpanAttributes['session.id'],
-            position(SpanAttributes['session.id'], '_') + 1
-        ),
-        SpanAttributes['session.id']
-    );
-
-ALTER TABLE default.otel_traces
-ADD COLUMN application_id String MATERIALIZED SpanAttributes['application_id'];
-
-ALTER TABLE default.otel_traces
-ADD COLUMN agent_id String MATERIALIZED SpanAttributes['agent_id'];
-
-CREATE TABLE default.otel_traces_end_rmq
-(
-    session_id String
-)
-ENGINE = RabbitMQ
-SETTINGS
-    rabbitmq_host_port = 'host.docker.internal:5672',
-    rabbitmq_username = 'guest',
-    rabbitmq_password = 'guest',
-    rabbitmq_vhost = '/',
-    rabbitmq_exchange_name = 'claris',
-    rabbitmq_exchange_type = 'direct',
-    rabbitmq_routing_key_list = 'new_session_in',
-    rabbitmq_format = 'JSONEachRow',
-    rabbitmq_persistent = 1;
-
-CREATE MATERIALIZED VIEW default.mv_otel_traces_end
-TO default.otel_traces_end_rmq
-AS
-SELECT session_id
-FROM default.otel_traces
-WHERE SpanName = 'session.end';
-```
-
-The credentials must match `RABBITMQ_USER` / `RABBITMQ_PASSWORD` in `.env`.
-
-The client stops at the first error, so a failure part way through leaves the
-view uncreated and the pipeline silently dead. Check both rows come back:
-
-```sql
-SELECT name, engine FROM system.tables
-WHERE database = 'default'
-  AND name IN ('otel_traces_end_rmq', 'mv_otel_traces_end');
-```
-
-Safe to re-run. Lives in the `oxp_clickhouse_data` volume, so it survives
-restarts — only redo it after `docker compose down -v`.
-
-## 3. Bind the queue in RabbitMQ
-
-Required — the pipeline cannot work without it.
-
-The workers all publish through the default exchange with the routing key set
-to the queue name, so `new_session_in` is bound only there. ClickHouse cannot
-join that convention: its RabbitMQ engine always declares the exchange it is
-configured with, and AMQP forbids declaring the default exchange
-(`ACCESS_REFUSED`), so it must publish to a named one. A named exchange with no
-binding routes nowhere — messages end up in ClickHouse's own bridge queue,
-`default_otel_traces_end_rmq`, which nothing consumes. This binding is what
-connects the two.
+Both scripts are idempotent. If either service fails because a dependency took
+longer than its retry window, rerun them after the stack settles:
 
 ```bash
-docker exec ioc-scale-oxp-rabbitmq rabbitmqadmin -u guest -p guest \
-  declare binding \
-  source=claris destination_type=queue destination=new_session_in \
-  routing_key=new_session_in
+docker compose up oxp-clickhouse-init oxp-rabbitmq-init
 ```
 
-This is broker runtime state, not volume state — redo it whenever the RabbitMQ
-container is recreated.
-
-## 4. Ask the app something
+## 2. Ask the app something
 
 The wiring exists now, so this is the point where a session can make it all the
 way through:
@@ -179,7 +100,7 @@ from `claris-sample-apps/noa-trip-planner`, with `OTLP_HTTP_ENDPOINT` set to
 uv run --env-file .env python api.py
 ```
 
-## 5. Verify
+## 3. Verify
 
 Walk the hops in order to see where it stopped.
 

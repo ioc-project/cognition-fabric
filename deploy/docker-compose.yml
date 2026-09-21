@@ -258,6 +258,8 @@ services:
     environment:
       CLICKHOUSE_USER: ${CLICKHOUSE_USERNAME:-admin}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin} # legit:ignore
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest} # legit:ignore
     ulimits:
       nofile:
         soft: 262144
@@ -265,6 +267,7 @@ services:
     volumes:
       - oxp_clickhouse_data:/var/lib/clickhouse
       - oxp_clickhouse_logs:/var/log/clickhouse-server
+      - ./clickhouse-rabbitmq-config.xml:/etc/clickhouse-server/config.d/rabbitmq.xml:ro
     restart: unless-stopped
     healthcheck:
       test:
@@ -300,6 +303,53 @@ services:
     depends_on:
       clickhouse-server:
         condition: service_healthy
+
+  # Creates the materialized columns and RabbitMQ-backed view after the
+  # collector has created its trace table.
+  oxp-clickhouse-init:
+    image: clickhouse/clickhouse-server:24.8
+    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-oxp-clickhouse-init
+    entrypoint: ["/bin/sh", "/scripts/init-oxp-clickhouse.sh"]
+    environment:
+      CLICKHOUSE_HOST: clickhouse-server
+      CLICKHOUSE_NATIVE_PORT: 9000
+      CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME:-admin}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin} # legit:ignore
+      OXP_INIT_DELAY_SECONDS: ${OXP_INIT_DELAY_SECONDS:-5}
+    volumes:
+      - ./scripts/init-oxp-clickhouse.sh:/scripts/init-oxp-clickhouse.sh:ro
+      - ./scripts/init-oxp-clickhouse.sql:/scripts/init-oxp-clickhouse.sql:ro
+    restart: "no"
+    depends_on:
+      clickhouse-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+
+  # Connects the ClickHouse exchange to the queue declared by norm.
+  oxp-rabbitmq-init:
+    image: rabbitmq:3-management
+    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-oxp-rabbitmq-init
+    entrypoint: ["/bin/sh", "/scripts/init-oxp-rabbitmq.sh"]
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_MANAGEMENT_PORT: 15672
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest} # legit:ignore
+    volumes:
+      - ./scripts/init-oxp-rabbitmq.sh:/scripts/init-oxp-rabbitmq.sh:ro
+    restart: "no"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      norm:
+        condition: service_started
+      oxp-clickhouse-init:
+        condition: service_completed_successfully
 
   # OXP: normalization worker (pipeline entry point)
   norm:

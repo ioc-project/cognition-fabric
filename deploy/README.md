@@ -52,15 +52,14 @@ the pipeline.
 #### Connecting ClickHouse to the workers
 
 The collector writes spans, but it does not know about the columns the workers
-read or about RabbitMQ. Those are added by hand, once, after the collector has
-received its first span: `session_id`, `application_id`, and `agent_id` as
-materialized columns on `otel_traces`, plus a materialized view that publishes
-each `session.end` span to the `claris` exchange with routing key
-`new_session_in` — the queue `norm` reads from. They persist in the
-`oxp_clickhouse_data` volume.
+read or about RabbitMQ. Two one-shot services configure that connection on
+startup. `oxp-clickhouse-init` waits five seconds, adds the materialized trace
+columns, and creates the RabbitMQ-backed view. `oxp-rabbitmq-init` then binds
+the `claris` exchange to the `new_session_in` queue declared by `norm`.
 
-See [`scripts/README.md`](scripts/README.md) for the statements and how to run
-them.
+The operations are idempotent and run automatically with `docker compose up`.
+Set `OXP_INIT_DELAY_SECONDS` to change the initial grace period. See
+[`scripts/README.md`](scripts/README.md) for verification and recovery commands.
 
 ### OXP workers
 
@@ -114,6 +113,8 @@ See `.env.example` for all available configuration options. Key settings:
 - `CLICKHOUSE_*` - Read by the workers and the OTel collector. `CLICKHOUSE_HOST`
   defaults to the bundled `clickhouse-server`; set it to `host.docker.internal`
   to use an external instance instead.
+- `OXP_INIT_DELAY_SECONDS` - Grace period before automatic ClickHouse/RabbitMQ
+  bridge initialization starts. Defaults to 5 seconds.
 - `NOA_*` - The sample app. It reuses `AI_GATEWAY_BASE_URL` and
   `AI_GATEWAY_API_KEY`, so that key needs the chat model on its allow-list too.
   `NOA_API_PORT` moves the host port only; the app always listens on 8125 inside
