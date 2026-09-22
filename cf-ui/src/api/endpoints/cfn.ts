@@ -10,8 +10,6 @@ type CognitionFabricTopologyResponse = components['schemas']['CognitionFabricTop
 export type {CognitionFabricTopologyResponse};
 export type CognitionFabricNodeTopology = components['schemas']['CognitionFabricNodeTopology'];
 
-export type MemoryProviderListItem = components['schemas']['MemoryProviderListItem'];
-
 export const cfnApi = {
   list: async (workspaceId?: string): Promise<ListCfnResponse> => {
     const {data, error} = await apiClient.GET('/api/cognition-fabric-nodes', {

@@ -4,7 +4,7 @@
 
 'use client';
 
-import {Zap, Database, ArrowRight, MoreVertical, Eye, Edit} from 'lucide-react';
+import {Zap, ArrowRight, MoreVertical, Eye, Edit} from 'lucide-react';
 import Link from 'next/link';
 import {useRouter} from 'next/navigation';
 import {Card} from '@/components/ui/card';
@@ -32,7 +32,6 @@ function CfnCard({node, onOpenEdit}: {node: CognitionFabricNodeTopology; onOpenE
   const router = useRouter();
   const online = node.status === 'online';
   const engines = node.cognition_engines ?? [];
-  const memProviders = node.memory_providers ?? [];
   const lastSeen = node.last_seen
     ? new Date(node.last_seen).toLocaleString('en-US', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false})
     : null;
@@ -93,45 +92,24 @@ function CfnCard({node, onOpenEdit}: {node: CognitionFabricNodeTopology; onOpenE
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 flex-1">
-        <div>
-          <div className="flex items-center gap-1.5 mb-2">
-            <Zap className="w-3 h-3 text-amber-500" />
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Cognition Engines ({engines.length})</span>
-          </div>
-          {engines.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic">None</p>
-          ) : (
-            <ul className="space-y-1">
-              {engines.slice(0, 4).map((ce) => (
-                <li key={ce.id} className="flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${ce.status === 'online' ? 'bg-green-500' : 'bg-muted-foreground/40'}`} />
-                  <span className="text-xs text-foreground truncate font-mono">{ce.ce_type}</span>
-                </li>
-              ))}
-              {engines.length > 4 && <li className="text-xs text-muted-foreground pl-3">+{engines.length - 4} more</li>}
-            </ul>
-          )}
+      <div className="flex-1">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Zap className="w-3 h-3 text-amber-500" />
+          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Cognition Engines ({engines.length})</span>
         </div>
-
-        <div>
-          <div className="flex items-center gap-1.5 mb-2">
-            <Database className="w-3 h-3 text-purple-500" />
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Memory ({memProviders.length})</span>
-          </div>
-          {memProviders.length === 0 ? (
-            <p className="text-xs text-muted-foreground italic">None</p>
-          ) : (
-            <ul className="space-y-1">
-              {memProviders.slice(0, 3).map((mp) => (
-                <li key={mp.id} className="text-xs text-foreground truncate">
-                  · {mp.name}
-                </li>
-              ))}
-              {memProviders.length > 3 && <li className="text-xs text-muted-foreground">+{memProviders.length - 3} more</li>}
-            </ul>
-          )}
-        </div>
+        {engines.length === 0 ? (
+          <p className="text-xs text-muted-foreground italic">None</p>
+        ) : (
+          <ul className="space-y-1">
+            {engines.slice(0, 4).map((ce) => (
+              <li key={ce.id} className="flex items-center gap-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${ce.status === 'online' ? 'bg-green-500' : 'bg-muted-foreground/40'}`} />
+                <span className="text-xs text-foreground truncate font-mono">{ce.ce_type}</span>
+              </li>
+            ))}
+            {engines.length > 4 && <li className="text-xs text-muted-foreground pl-3">+{engines.length - 4} more</li>}
+          </ul>
+        )}
       </div>
 
       <div className="flex items-center justify-between pt-3 mt-4 border-t border-border/50">

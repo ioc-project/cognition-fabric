@@ -29,7 +29,7 @@ import {InlineId} from '@/components/ui/inline-id';
 import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import {MetaCard} from '@/components/ui/meta-card';
 import {Badge} from '@/components/ui/badge';
-import {BrainCircuit, Database, Network} from 'lucide-react';
+import {BrainCircuit, Network} from 'lucide-react';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {ActionButton} from '@/components/ui/action-button';
@@ -39,20 +39,11 @@ interface CfnMAS {
   id: string;
   name: string;
   agents?: {agent_id: string; name?: string}[];
-  shared_memory?: {id: string; name: string} | null;
   cognition_engines?: {id: string; name: string}[];
-}
-
-interface CfnMemoryProvider {
-  id: string;
-  name: string;
-  enabled: boolean;
-  description?: string | null;
 }
 
 interface CfnConfig {
   cognition_engines?: CognitionEngineListItem[];
-  memory_providers?: CfnMemoryProvider[];
   workspaces?: {workspace_id: string; workspace_name?: string; multi_agentic_systems?: CfnMAS[]}[];
   config_version?: number;
 }
@@ -83,7 +74,7 @@ export default function CfnDetailsPage() {
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [isToggling, setIsToggling] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'cognition-engines' | 'memory-providers' | 'workspaces'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'cognition-engines' | 'workspaces'>('overview');
   const deleteDialog = useConfirmDialog<{id: string; name: string}>();
 
   const {data: cfn, error, isLoading, mutate} = useSWR<Cfn>(cfnId ? swrKeys.cfnDetails(cfnId) : null, () => cfnApi.get(cfnId as string));
@@ -178,7 +169,6 @@ export default function CfnDetailsPage() {
 
   const cfnConfig: CfnConfig = cfn?.config !== null && typeof cfn?.config === 'object' ? (cfn.config as CfnConfig) : {};
   const cognitionEngines = cfnConfig.cognition_engines ?? [];
-  const memoryProviders = cfnConfig.memory_providers ?? [];
   const allMAS = (cfnConfig.workspaces ?? []).flatMap((w) => w.multi_agentic_systems ?? []);
 
   return (
@@ -208,7 +198,6 @@ export default function CfnDetailsPage() {
             tabs={[
               {id: 'overview', label: 'Overview'},
               {id: 'cognition-engines', label: 'Cognition Engines', count: cognitionEngines.length || undefined},
-              {id: 'memory-providers', label: 'Memory Providers', count: memoryProviders.length || undefined},
               {id: 'workspaces', label: 'Multi-Agentic Systems', count: allMAS.length || undefined}
             ]}
           />
@@ -367,46 +356,6 @@ export default function CfnDetailsPage() {
                 </div>
               )}
 
-              {activeTab === 'memory-providers' && (
-                <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
-                  <div className={dtPanelHeader}>
-                    <div className="flex items-center gap-0.5">
-                      <Database size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
-                      <span className={dtSectionHeader}>Memory Providers</span>
-                      {memoryProviders.length > 0 && (
-                        <Badge variant="accent" className="rounded px-1.5">
-                          {memoryProviders.length}
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  {memoryProviders.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Enabled</TableHead>
-                          <TableHead>Description</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {memoryProviders.map((mp) => (
-                          <TableRow key={mp.id}>
-                            <TableCell className="font-medium">{mp.name}</TableCell>
-                            <TableCell>
-                              <StatusDot variant="state" active={mp.enabled} />
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">{mp.description || '-'}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <p className="px-5 py-4 text-sm text-muted-foreground">No memory providers registered.</p>
-                  )}
-                </div>
-              )}
-
               {activeTab === 'workspaces' && (
                 <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
                   <div className={dtPanelHeader}>
@@ -426,7 +375,6 @@ export default function CfnDetailsPage() {
                         <TableRow>
                           <TableHead>Name</TableHead>
                           <TableHead>Agents</TableHead>
-                          <TableHead>Shared Memory</TableHead>
                           <TableHead>Attached Cognition Engines</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -435,7 +383,6 @@ export default function CfnDetailsPage() {
                           <TableRow key={mas.id}>
                             <TableCell className="font-medium">{mas.name}</TableCell>
                             <TableCell className="text-muted-foreground">{mas.agents?.length ?? 0}</TableCell>
-                            <TableCell className="text-muted-foreground">{mas.shared_memory?.name || '-'}</TableCell>
                             <TableCell className="text-muted-foreground">{mas.cognition_engines?.length ?? 0}</TableCell>
                           </TableRow>
                         ))}

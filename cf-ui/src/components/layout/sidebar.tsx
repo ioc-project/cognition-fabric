@@ -5,10 +5,31 @@
 'use client';
 
 import React, {useEffect, useMemo} from 'react';
-import {BrainCircuit, HardDrive, Network, Workflow, type LucideIcon} from 'lucide-react';
+import {BrainCircuit, Network, Workflow, type LucideIcon} from 'lucide-react';
 import Link from 'next/link';
 import {usePathname, useSelectedLayoutSegments, useRouter} from 'next/navigation';
 import {routes} from '@/constants/routes';
+
+const NavItem = React.memo(function NavItem({href, icon: Icon, label, active}: {href: string; icon: LucideIcon; label: string; active: boolean}) {
+  return (
+    <Link
+      href={href}
+      className={`group flex items-center pl-3 h-9 gap-3 rounded-lg transition-colors focus-visible:outline-none ${
+        active
+          ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))]'
+          : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))]'
+      }`}
+    >
+      <Icon
+        strokeWidth={1.33}
+        className={`w-4 h-4 transition-colors flex-shrink-0 ${
+          active ? 'text-[hsl(var(--sidebar-icon-active))]' : 'text-[hsl(var(--sidebar-icon))] group-hover:text-[hsl(var(--sidebar-icon-active))]'
+        }`}
+      />
+      <span className="sidebar-text">{label}</span>
+    </Link>
+  );
+});
 
 export function Sidebar() {
   const router = useRouter();
@@ -16,7 +37,7 @@ export function Sidebar() {
   const segments = useSelectedLayoutSegments();
 
   useEffect(() => {
-    const hrefs: string[] = [routes.cfn.list, routes.memoryProviders.list, routes.mas.list, routes.cognitiveAgents.list];
+    const hrefs: string[] = [routes.cfn.list, routes.mas.list, routes.cognitiveAgents.list];
     hrefs.forEach((h) => {
       try {
         router.prefetch(h);
@@ -36,13 +57,6 @@ export function Sidebar() {
         isActive: () => segments[0] === 'fabric'
       },
       {
-        id: 'memory-providers',
-        href: routes.memoryProviders.list,
-        icon: HardDrive,
-        label: 'Memory Providers',
-        isActive: () => segments[0] === 'memory-providers'
-      },
-      {
         id: 'mas',
         href: routes.mas.list,
         icon: Workflow,
@@ -59,27 +73,6 @@ export function Sidebar() {
     ],
     [segments, pathname]
   );
-
-  const NavItem = React.memo(function NavItem({href, icon: Icon, label, active}: {href: string; icon: LucideIcon; label: string; active: boolean}) {
-    return (
-      <Link
-        href={href}
-        className={`group flex items-center pl-3 h-9 gap-3 rounded-lg transition-colors focus-visible:outline-none ${
-          active
-            ? 'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-text-active))]'
-            : 'text-[hsl(var(--sidebar-text))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-text-hover))]'
-        }`}
-      >
-        <Icon
-          strokeWidth={1.33}
-          className={`w-4 h-4 transition-colors flex-shrink-0 ${
-            active ? 'text-[hsl(var(--sidebar-icon-active))]' : 'text-[hsl(var(--sidebar-icon))] group-hover:text-[hsl(var(--sidebar-icon-active))]'
-          }`}
-        />
-        <span className="sidebar-text">{label}</span>
-      </Link>
-    );
-  });
 
   return (
     <div className="w-72 bg-[hsl(var(--navbar-background))] border-r border-[hsl(var(--sidebar-border))] flex flex-col">

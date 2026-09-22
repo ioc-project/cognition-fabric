@@ -11,7 +11,7 @@ type MultiAgenticSystemResponse = components['schemas']['MultiAgenticSystemRespo
 type MultiAgenticSystemUpdate = components['schemas']['MultiAgenticSystemUpdate'];
 type MultiAgenticSystems = components['schemas']['MultiAgenticSystems'];
 type AgentConfig = components['schemas']['AgentConfig'];
-type AgentWithMemory = components['schemas']['AgentWithMemory'];
+type AgentDetail = components['schemas']['AgentDetail'];
 type CognitionEngineAssociateResponse = components['schemas']['CognitionEngineAssociateResponse'];
 
 export const masApi = {
@@ -128,6 +128,6 @@ export type {
   MultiAgenticSystemUpdate,
   MultiAgenticSystems,
   AgentConfig,
-  AgentWithMemory,
+  AgentDetail,
   CognitionEngineAssociateResponse
 };

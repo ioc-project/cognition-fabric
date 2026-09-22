@@ -9,8 +9,6 @@ import {InlineId} from '@/components/ui/inline-id';
 import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
-import {CopyableInput} from '@/components/ui/copyable-input';
 import {validateJSON, formatJson} from '@/lib/utils';
 import {dtLabel, dtValue, dtRow} from '@/lib/detail-typography';
 import type {Control} from 'react-hook-form';
@@ -23,14 +21,11 @@ interface AgentCardProps {
   agentUrl?: string;
   identityType?: string;
   identityIdentifiers?: Record<string, string>;
-  agenticMemoryProviderId?: string;
-  agenticMemoryProviderName?: string;
   isExpanded: boolean;
   isEditMode: boolean;
   control: Control<any>;
   onToggleExpand: () => void;
   onRemove?: () => void;
-  userMemoryProviders?: Array<{id: string; provider_name: string}>;
 }
 
 export function AgentCard({
@@ -41,14 +36,11 @@ export function AgentCard({
   agentUrl,
   identityType,
   identityIdentifiers,
-  agenticMemoryProviderId,
-  agenticMemoryProviderName,
   isExpanded,
   isEditMode,
   control,
   onToggleExpand,
-  onRemove,
-  userMemoryProviders = []
+  onRemove
 }: AgentCardProps) {
   const headerLabel = agentName || agentIdValue || `Agent ${index + 1}`;
 
@@ -91,16 +83,9 @@ export function AgentCard({
       {isExpanded && (
         <div className="px-4 pb-4 border-t border-border bg-card">
           {isEditMode ? (
-            <EditModeFields index={index} control={control} userMemoryProviders={userMemoryProviders} />
+            <EditModeFields index={index} control={control} />
           ) : (
-            <ViewModeFields
-              agentName={agentName}
-              agentUrl={agentUrl}
-              identityType={identityType}
-              identityIdentifiers={identityIdentifiers}
-              agenticMemoryProviderId={agenticMemoryProviderId}
-              agenticMemoryProviderName={agenticMemoryProviderName}
-            />
+            <ViewModeFields agentName={agentName} agentUrl={agentUrl} identityType={identityType} identityIdentifiers={identityIdentifiers} />
           )}
         </div>
       )}
@@ -108,15 +93,7 @@ export function AgentCard({
   );
 }
 
-function EditModeFields({
-  index,
-  control,
-  userMemoryProviders
-}: {
-  index: number;
-  control: Control<any>;
-  userMemoryProviders: Array<{id: string; provider_name: string}>;
-}) {
+function EditModeFields({index, control}: {index: number; control: Control<any>}) {
   return (
     <div className="space-y-4 pt-4">
       <FormField
@@ -188,35 +165,6 @@ function EditModeFields({
           </FormItem>
         )}
       />
-
-      <FormField
-        control={control}
-        name={`agents.${index}.agentic_memory_provider_id`}
-        render={({field}) => (
-          <FormItem>
-            <FormLabel>Memory Provider</FormLabel>
-            <Select onValueChange={field.onChange} value={field.value}>
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a memory provider" />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {userMemoryProviders.length === 0 ? (
-                  <div className="py-2 px-2 text-sm text-muted-foreground">No memory providers available</div>
-                ) : (
-                  userMemoryProviders.map((provider) => (
-                    <SelectItem key={provider.id} value={provider.id}>
-                      {provider.provider_name}
-                    </SelectItem>
-                  ))
-                )}
-              </SelectContent>
-            </Select>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
     </div>
   );
 }
@@ -225,16 +173,12 @@ function ViewModeFields({
   agentName,
   agentUrl,
   identityType,
-  identityIdentifiers,
-  agenticMemoryProviderId,
-  agenticMemoryProviderName
+  identityIdentifiers
 }: {
   agentName?: string;
   agentUrl?: string;
   identityType?: string;
   identityIdentifiers?: Record<string, string>;
-  agenticMemoryProviderId?: string;
-  agenticMemoryProviderName?: string;
 }) {
   const rowClass = dtRow;
   const labelClass = dtLabel;
@@ -265,16 +209,6 @@ function ViewModeFields({
             : '{\n  "url": "main::agents::retrieval-agent-1"\n}'}
         </pre>
       </div>
-
-      {agenticMemoryProviderId && (
-        <div className={rowClass}>
-          <span className={labelClass}>Memory Provider</span>
-          <div className="space-y-1">
-            <span className={valueClass}>{agenticMemoryProviderName || agenticMemoryProviderId}</span>
-            <CopyableInput value={agenticMemoryProviderId} />
-          </div>
-        </div>
-      )}
     </div>
   );
 }

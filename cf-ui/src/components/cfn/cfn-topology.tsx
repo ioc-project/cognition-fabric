@@ -8,7 +8,7 @@ import {useState, useMemo, useRef, useCallback, useEffect} from 'react';
 import {motion, AnimatePresence} from 'framer-motion';
 import {X, ArrowUpRight, Copy, Check, Plus, Minus, Maximize2, Network} from 'lucide-react';
 import Link from 'next/link';
-import type {CognitionFabricNodeTopology, MemoryProviderListItem} from '@/api/endpoints/cfn';
+import type {CognitionFabricNodeTopology} from '@/api/endpoints/cfn';
 import {routes} from '@/constants/routes';
 
 const W = 1200;
@@ -25,13 +25,11 @@ const C = {
   cfnOnline: '#22c55e',
   cfnOffline: '#ef4444',
   engine: '#38bdf8',
-  memory: '#a855f7',
   text: '#e2e8f0',
   textSub: '#64748b',
   textDim: '#334155'
 };
 
-type MPNode = MemoryProviderListItem;
 type Selected = {id: string} | null;
 
 function ago(iso: string) {
@@ -214,21 +212,6 @@ function DetailPanel({sel, nodes, onClose}: {sel: NonNullable<Selected>; nodes: 
             ))}
           </>
         )}
-        {(node.memory_providers ?? []).length > 0 && (
-          <>
-            <SectionLabel>Memory Providers ({node.memory_providers?.length})</SectionLabel>
-            {node.memory_providers?.map((mp) => (
-              <div key={mp.id} style={{display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4}}>
-                <div style={{width: 6, height: 6, background: C.memory, transform: 'rotate(45deg)', flexShrink: 0}} />
-                <span
-                  style={{fontFamily: 'monospace', fontSize: 11, color: C.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}
-                >
-                  {mp.name}
-                </span>
-              </div>
-            ))}
-          </>
-        )}
         <Link
           href={routes.cfn.details(node.id)}
           style={{
@@ -343,18 +326,6 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
   useEffect(() => {
     setPositions(nodePositions(nodes.length));
   }, [nodes.length]);
-
-  const allMPs = useMemo(() => {
-    const mpMap = new Map<string, MPNode>();
-    for (const node of nodes) {
-      for (const mp of node.memory_providers ?? []) {
-        if (!mpMap.has(mp.id)) {
-          mpMap.set(mp.id, mp);
-        }
-      }
-    }
-    return Array.from(mpMap.values());
-  }, [nodes]);
 
   const allCEs = useMemo(() => {
     const seen = new Set<string>();
@@ -483,7 +454,6 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
         <div style={{display: 'flex', gap: 32}}>
           <StatGroup label="CFN Nodes" total={nodes.length} online={onlineCFNs} offline={nodes.length - onlineCFNs} />
           <StatGroup label="Cognition Engines" total={allCEs.length} online={onlineCEs} offline={allCEs.length - onlineCEs} />
-          <StatGroup label="Mem Providers" total={allMPs.length} sub="global" subColor="#818cf8" />
         </div>
       </div>
 
@@ -594,7 +564,6 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
             const engines = node.cognition_engines ?? [];
             const onlineCEs = engines.filter((e) => e.status === 'online').length;
             const offlineCEs = engines.length - onlineCEs;
-            const memCount = (node.memory_providers ?? []).length;
             const [line1, line2] = splitName(node.name, 17);
             const nameY = line2 ? -26 : -19;
 
@@ -662,20 +631,6 @@ export function CfnTopology({nodes}: CfnTopologyProps) {
                     Cognition Engines
                   </text>
                 )}
-
-                <line x1={-40} y1={21} x2={40} y2={21} stroke="#2e4060" strokeWidth="0.7" opacity="0.8" />
-
-                <text textAnchor="middle" y={32} fontSize="9" fontFamily="monospace">
-                  {memCount > 0 ? (
-                    <>
-                      <tspan fill={C.memory}>◆</tspan>
-                      <tspan fill={C.text}> {memCount}</tspan>
-                      <tspan fill={C.textSub}> {memCount === 1 ? 'Memory Provider' : 'Memory Providers'}</tspan>
-                    </>
-                  ) : (
-                    <tspan fill={C.textDim}>-</tspan>
-                  )}
-                </text>
               </g>
             );
           })}

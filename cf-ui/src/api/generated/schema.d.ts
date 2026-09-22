@@ -89,7 +89,6 @@ export interface paths {
          *     - **status**: Current status (offline)
          *     - **config**: Configuration for the CFN to apply locally
          *       - cognition_fabric_node: CFN-specific operational settings (non-workspace scoped)
-         *       - memory_providers: Global memory providers (non-workspace scoped)
          *       - workspaces: Associated workspaces with MAS, cognitive agents, engines
          *
          *     CFN must send heartbeat to change status from offline to online.
@@ -137,7 +136,6 @@ export interface paths {
          *     - **status**: Current status (offline)
          *     - **config**: Configuration for the CFN to apply locally
          *       - cognition_fabric_node: CFN-specific operational settings (non-workspace scoped)
-         *       - memory_providers: Global memory providers (non-workspace scoped)
          *       - workspaces: Associated workspaces with MAS, cognitive agents, engines
          *
          *     CFN must send heartbeat to change status from offline to online.
@@ -187,7 +185,6 @@ export interface paths {
          *     - Full CFN details (id, workspace_ids, name, cfn_config, status, last_seen, enabled, timestamps)
          *     - **config**: Regenerated configuration for the CFN to apply
          *       - cognition_fabric_node: CFN-specific operational settings
-         *       - memory_providers: Global memory providers
          *       - workspaces: List of workspace details with MAS, cognitive agents, engines
          *
          *     The config is automatically regenerated with each update to ensure CFN has the latest configuration.
@@ -246,7 +243,6 @@ export interface paths {
          *     - Full CFN details with enabled=True and status=offline (until heartbeat is sent)
          *     - **config**: Configuration for the CFN to apply when it reconnects
          *       - cognition_fabric_node: CFN-specific operational settings
-         *       - memory_providers: Global memory providers
          *       - workspaces: List of workspace details with MAS, cognitive agents, engines
          */
         patch: operations["enable_cfn_node_api_cognition_fabric_nodes__id__enable_patch"];
@@ -336,7 +332,6 @@ export interface paths {
          *     Returns configuration with:
          *     - **version**: Configuration schema version (0.1.0)
          *     - **cognition_fabric_node**: List of CFN-specific operational settings (non-workspace scoped)
-         *     - **memory_providers**: List of global memory providers (non-workspace scoped)
          *     - **workspaces**: List of workspaces with their resources:
          *       - workspace_id: Workspace identifier
          *       - workspace_name: Workspace name
@@ -362,7 +357,7 @@ export interface paths {
         };
         /**
          * Get Cognition Fabric Topology
-         * @description Returns the full Cognition Fabric topology with nested CEs and memory providers per CFN.
+         * @description Returns the full Cognition Fabric topology with nested CEs per CFN.
          */
         get: operations["get_cognition_fabric_topology_api_cognition_fabric_get"];
         put?: never;
@@ -371,58 +366,6 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
-        trace?: never;
-    };
-    "/api/memory-providers": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Memory Providers
-         * @description Get list of all memory providers (shared across workspaces)
-         */
-        get: operations["list_memory_providers_api_memory_providers_get"];
-        put?: never;
-        /**
-         * Create Memory Provider
-         * @description Create a new memory provider (shared across workspaces)
-         */
-        post: operations["create_memory_provider_api_memory_providers_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/memory-providers/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Memory Provider
-         * @description Get details of a specific memory provider
-         */
-        get: operations["get_memory_provider_api_memory_providers__id__get"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete Memory Provider
-         * @description Delete a memory provider (soft delete)
-         */
-        delete: operations["delete_memory_provider_api_memory_providers__id__delete"];
-        options?: never;
-        head?: never;
-        /**
-         * Update Memory Provider
-         * @description Update an existing memory provider
-         */
-        patch: operations["update_memory_provider_api_memory_providers__id__patch"];
         trace?: never;
     };
     "/api/workspaces/create": {
@@ -882,10 +825,35 @@ export interface components {
             /** @description Identity provider configuration */
             identity?: components["schemas"]["AgentIdentity"] | null;
             /**
-             * Agentic Memory Provider Id
-             * @description Memory provider ID for agent's private memory
+             * Config
+             * @description Agent-specific configuration
              */
-            agentic_memory_provider_id?: string | null;
+            config?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * AgentDetail
+         * @description Schema for agent details (output)
+         */
+        AgentDetail: {
+            /**
+             * Agent Id
+             * @description Unique identifier for the agent
+             */
+            agent_id: string;
+            /**
+             * Name
+             * @description Human-readable agent name
+             */
+            name?: string | null;
+            /**
+             * Url
+             * @description Agent endpoint URL
+             */
+            url?: string | null;
+            /** @description Identity provider configuration */
+            identity?: components["schemas"]["AgentIdentity"] | null;
             /**
              * Config
              * @description Agent-specific configuration
@@ -911,38 +879,6 @@ export interface components {
             identifiers: {
                 [key: string]: string;
             };
-        };
-        /**
-         * AgentWithMemory
-         * @description Schema for agent with full memory provider details (output)
-         */
-        AgentWithMemory: {
-            /**
-             * Agent Id
-             * @description Unique identifier for the agent
-             */
-            agent_id: string;
-            /**
-             * Name
-             * @description Human-readable agent name
-             */
-            name?: string | null;
-            /**
-             * Url
-             * @description Agent endpoint URL
-             */
-            url?: string | null;
-            /** @description Identity provider configuration */
-            identity?: components["schemas"]["AgentIdentity"] | null;
-            /** @description Full memory provider configuration for agent's private memory */
-            agentic_memory?: components["schemas"]["MemoryProviderDetail"] | null;
-            /**
-             * Config
-             * @description Agent-specific configuration
-             */
-            config?: {
-                [key: string]: unknown;
-            } | null;
         };
         /**
          * AuditCfnEventListResponse
@@ -1426,7 +1362,6 @@ export interface components {
          * @description Schema for Cognition Fabric Node response (common response format)
          * @example {
          *       "config": {
-         *         "memory_providers": [],
          *         "workspaces": []
          *       },
          *       "created_at": "2026-02-19T19:46:49.102012",
@@ -1516,7 +1451,7 @@ export interface components {
         CognitionFabricNodeStatus: "online" | "offline";
         /**
          * CognitionFabricNodeTopology
-         * @description A CFN node with its nested cognition engines and memory providers
+         * @description A CFN node with its nested cognition engines
          */
         CognitionFabricNodeTopology: {
             /** Id */
@@ -1539,8 +1474,6 @@ export interface components {
             created_at: string;
             /** Cognition Engines */
             cognition_engines?: components["schemas"]["CognitionEngineListItem"][];
-            /** Memory Providers */
-            memory_providers?: components["schemas"]["MemoryProviderListItem"][];
         };
         /**
          * CognitionFabricNodeUpdateRequest
@@ -1660,199 +1593,12 @@ export interface components {
             };
         };
         /**
-         * MemoryProviderAuthConfig
-         * @description Authentication configuration for memory provider
-         */
-        MemoryProviderAuthConfig: {
-            /**
-             * Type
-             * @description Auth type: none, token, bearer, basic, custom
-             * @default none
-             * @enum {string}
-             */
-            type: "none" | "token" | "bearer" | "basic" | "custom";
-            /** @description Auth credentials (will be encrypted in database) */
-            credentials?: components["schemas"]["MemoryProviderAuthCredentials"] | null;
-        };
-        /**
-         * MemoryProviderAuthCredentials
-         * @description Auth credentials - structure varies by auth type
-         */
-        MemoryProviderAuthCredentials: {
-            /**
-             * Api Key
-             * @description API key for token-based auth
-             */
-            api_key?: string | null;
-            /**
-             * Access Token
-             * @description Access token for bearer auth
-             */
-            access_token?: string | null;
-            /**
-             * Username
-             * @description Username for basic auth
-             */
-            username?: string | null;
-            /**
-             * Password
-             * @description Password for basic auth
-             */
-            password?: string | null;
-            /**
-             * Header Name
-             * @description Custom header name
-             */
-            header_name?: string | null;
-            /**
-             * Header Value
-             * @description Custom header value
-             */
-            header_value?: string | null;
-        };
-        /**
-         * MemoryProviderConfig
-         * @description Memory Provider configuration
-         */
-        MemoryProviderConfig: {
-            /**
-             * Url
-             * @description Provider URL (e.g., http://localhost:8765)
-             */
-            url: string;
-            /** @description Authentication configuration */
-            auth?: components["schemas"]["MemoryProviderAuthConfig"];
-            /**
-             * Shared
-             * @description Whether provider is shared
-             * @default false
-             */
-            shared: boolean | null;
-        };
-        /**
-         * MemoryProviderCreate
-         * @description Schema for creating a memory provider
-         */
-        MemoryProviderCreate: {
-            /**
-             * Name
-             * @description Memory provider name
-             */
-            name: string;
-            /**
-             * Description
-             * @description Description of the memory provider
-             */
-            description?: string | null;
-            /** @description Provider configuration */
-            config: components["schemas"]["MemoryProviderConfig"];
-        };
-        /**
-         * MemoryProviderDetail
-         * @description Schema for detailed memory provider information
-         */
-        MemoryProviderDetail: {
-            /** Id */
-            id: string;
-            /** Name */
-            name: string;
-            /** Description */
-            description: string | null;
-            /** Config */
-            config: {
-                [key: string]: unknown;
-            } | null;
-            /** Enabled */
-            enabled: boolean;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** Updated At */
-            updated_at: string | null;
-            /** Created By */
-            created_by: string;
-            /** Updated By */
-            updated_by: string | null;
-        };
-        /**
-         * MemoryProviderList
-         * @description Schema for memory provider list response
-         */
-        MemoryProviderList: {
-            /**
-             * Providers
-             * @description List of memory providers
-             */
-            providers: components["schemas"]["MemoryProviderDetail"][];
-            /**
-             * Total
-             * @description Total number of providers
-             */
-            total: number;
-        };
-        /**
-         * MemoryProviderListItem
-         * @description Schema for memory provider list item
-         */
-        MemoryProviderListItem: {
-            /** Id */
-            id: string;
-            /** Name */
-            name: string;
-            /** Description */
-            description: string | null;
-            /** Config */
-            config: {
-                [key: string]: unknown;
-            } | null;
-            /** Enabled */
-            enabled: boolean;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /**
-         * MemoryProviderUpdate
-         * @description Schema for updating a memory provider
-         */
-        MemoryProviderUpdate: {
-            /**
-             * Name
-             * @description Memory provider name
-             */
-            name?: string | null;
-            /**
-             * Description
-             * @description Description of the memory provider
-             */
-            description?: string | null;
-            /** @description Provider configuration */
-            config?: components["schemas"]["MemoryProviderConfig"] | null;
-            /**
-             * Enabled
-             * @description Whether provider is enabled
-             */
-            enabled?: boolean | null;
-        };
-        /**
          * MultiAgenticSystem
          * @description Schema for detailed multi-agentic system information
          * @example {
          *       "agents": [
          *         {
          *           "agent_id": "agent-1",
-         *           "agentic_memory": {
-         *             "config": {
-         *               "host": "ioc-mem0",
-         *               "port": 8765
-         *             },
-         *             "id": "mem-provider-2",
-         *             "name": "ioc-mem0"
-         *           },
          *           "config": {
          *             "type": "planner"
          *           },
@@ -1876,14 +1622,6 @@ export interface components {
          *       "description": "A system for collaborative AI agents",
          *       "id": "550e8400-e29b-41d4-a716-446655440000",
          *       "name": "unique-name-within-a-workspace",
-         *       "shared_memory": {
-         *         "config": {
-         *           "host": "ioc-knowledge-memory-svc",
-         *           "port": 9003
-         *         },
-         *         "id": "mem-provider-1",
-         *         "name": "ioc-knowledge-memory-svc"
-         *       },
          *       "updated_at": "2024-12-11T10:30:00Z",
          *       "workspace_id": "660e8400-e29b-41d4-a716-446655440000"
          *     }
@@ -1897,13 +1635,11 @@ export interface components {
             name: string;
             /** Description */
             description?: string | null;
-            /** @description Full configuration of shared memory provider for all agents */
-            shared_memory?: components["schemas"]["MemoryProviderDetail"] | null;
             /**
              * Agents
-             * @description List of agents with their memory provider configurations
+             * @description List of agents in the system
              */
-            agents?: components["schemas"]["AgentWithMemory"][] | null;
+            agents?: components["schemas"]["AgentDetail"][] | null;
             /** Config */
             config?: {
                 [key: string]: unknown;
@@ -1937,11 +1673,6 @@ export interface components {
              * @description Description of the multi-agentic system
              */
             description?: string | null;
-            /**
-             * Shared Memory Provider Id
-             * @description Memory provider ID for shared memory across all agents in MAS
-             */
-            shared_memory_provider_id?: string | null;
             /**
              * Agents
              * @description List of agents in the system with their configurations
@@ -1995,11 +1726,6 @@ export interface components {
              * @description Updated description of the multi-agentic system
              */
             description?: string | null;
-            /**
-             * Shared Memory Provider Id
-             * @description Updated memory provider ID for shared memory
-             */
-            shared_memory_provider_id?: string | null;
             /**
              * Agents
              * @description Updated list of agents in the system
@@ -2729,158 +2455,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CognitionFabricTopologyResponse"];
-                };
-            };
-        };
-    };
-    list_memory_providers_api_memory_providers_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemoryProviderList"];
-                };
-            };
-        };
-    };
-    create_memory_provider_api_memory_providers_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MemoryProviderCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemoryProviderDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_memory_provider_api_memory_providers__id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemoryProviderDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_memory_provider_api_memory_providers__id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_memory_provider_api_memory_providers__id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["MemoryProviderUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MemoryProviderDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

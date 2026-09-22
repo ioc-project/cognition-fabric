@@ -15,14 +15,12 @@ import {Card, CardContent} from '@/components/ui/card';
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {routes} from '@/constants/routes';
 import {parseError} from '@/lib/utils';
 import {toast} from 'sonner';
 import {BasePage} from '@/components/ui/base-page';
 import {breadcrumbs} from '@/constants/routes';
 import {useMAS} from '@/hooks/useMAS';
-import {useMemoryProviders} from '@/hooks/useMemoryProviders';
 import {useCognitionEngines} from '@/hooks/useCognitionEngines';
 import {MultiSelect} from '@/components/ui/multi-select';
 import {AgentsList} from './agents-list';
@@ -32,7 +30,6 @@ import {FormSectionHeader} from '@/components/ui/form-section-header';
 const AgentFormSchema = z.object({
   name: z.string().optional(),
   url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  agentic_memory_provider_id: z.string().optional(),
   identity_type: z.string().optional(),
   identity_identifiers: z
     .string()
@@ -57,7 +54,6 @@ const formSchema = z
   .object({
     name: z.string().min(1, 'Multi-Agentic System name is required').min(3, 'Name must be at least 3 characters'),
     description: z.string().optional(),
-    shared_memory_provider_id: z.string().optional(),
     cognition_engine_ids: z.array(z.string()).optional().default([]),
     agents: z.array(AgentFormSchema).optional().default([]),
     config: z
@@ -109,7 +105,6 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
   const [masConfigExpanded, setMasConfigExpanded] = useState(true);
   const [agentExpandedState, setAgentExpandedState] = useState<Record<string, boolean>>({});
   const {addMAS} = useMAS(workspaceId);
-  const {providers} = useMemoryProviders();
   const {cognitionEngines = []} = useCognitionEngines();
 
   const form = useForm<FormValues>({
@@ -117,16 +112,11 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
     defaultValues: {
       name: '',
       description: '',
-      shared_memory_provider_id: '',
       cognition_engine_ids: [],
       agents: [],
       config: ''
     }
   });
-
-  const userMemoryProviders = providers || [];
-
-  const sharedMemoryProviders = userMemoryProviders.filter((p) => p.name === 'ioc-memory-provider');
 
   const {
     fields: agentFields,
@@ -154,7 +144,6 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
         .map((agent) => ({
           name: agent.name!.trim(),
           ...(agent.url?.trim() && {url: agent.url.trim()}),
-          ...(agent.agentic_memory_provider_id && {agentic_memory_provider_id: agent.agentic_memory_provider_id}),
           ...(agent.identity_type?.trim() && {
             identity: {
               type: agent.identity_type.trim(),
@@ -166,7 +155,6 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
       const response = await addMAS({
         name: values.name,
         description: values.description,
-        ...(values.shared_memory_provider_id && {shared_memory_provider_id: values.shared_memory_provider_id}),
         ...(values.cognition_engine_ids && values.cognition_engine_ids.length > 0 && {cognition_engine_ids: values.cognition_engine_ids}),
         ...(agentsPayload.length > 0 && {agents: agentsPayload}),
         ...(values.config && {config: parseJsonField(values.config)})
@@ -252,42 +240,6 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
             <Card className="w-full">
               <CardContent className="pt-8 px-8 pb-1">
                 <div className="flex flex-col gap-4 mb-6">
-                  <FormSectionHeader title="Memory Configuration" description="Configure shared memory access" />
-                  <FormField
-                    control={form.control}
-                    name="shared_memory_provider_id"
-                    render={({field}) => (
-                      <FormItem>
-                        <FormLabel>Shared Memory Provider</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a memory provider" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {sharedMemoryProviders.length === 0 ? (
-                              <div className="py-2 px-2 text-sm text-muted-foreground">No shared memory providers available</div>
-                            ) : (
-                              sharedMemoryProviders.map((provider) => (
-                                <SelectItem key={provider.id} value={provider.id}>
-                                  {provider.name}
-                                </SelectItem>
-                              ))
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="w-full">
-              <CardContent className="pt-8 px-8 pb-1">
-                <div className="flex flex-col gap-4 mb-6">
                   <FormSectionHeader title="Cognition Engines" description="Attach cognition engines to this multi-agentic system" />
                   <FormField
                     control={form.control}
@@ -328,9 +280,8 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                     isEditMode={true}
                     agentExpandedState={agentExpandedState}
                     onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
-                    onAddAgent={() => appendAgent({name: '', url: '', agentic_memory_provider_id: '', identity_type: '', identity_identifiers: ''})}
+                    onAddAgent={() => appendAgent({name: '', url: '', identity_type: '', identity_identifiers: ''})}
                     onRemoveAgent={removeAgent}
-                    userMemoryProviders={userMemoryProviders.map((p) => ({id: p.id, provider_name: p.name}))}
                   />
                 </div>
               </CardContent>

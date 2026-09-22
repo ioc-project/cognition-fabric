@@ -74,7 +74,6 @@ export function CfnTableList({nodes, onRowClick, onOpenEdit}: CfnTableListProps)
               <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">IP / Port</th>
               <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</th>
               <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Engines</th>
-              <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Memory</th>
               <th className="text-left px-3 py-2.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Last Seen</th>
               <th className="w-10 px-3 py-2.5" />
             </tr>
@@ -83,7 +82,6 @@ export function CfnTableList({nodes, onRowClick, onOpenEdit}: CfnTableListProps)
             {filtered.map((node) => {
               const online = node.status === 'online';
               const engines = node.cognition_engines ?? [];
-              const memProviders = node.memory_providers ?? [];
               const onlineEngines = engines.filter((e) => e.status === 'online').length;
               const offlineEngines = engines.length - onlineEngines;
               const lastSeen = node.last_seen
@@ -133,15 +131,6 @@ export function CfnTableList({nodes, onRowClick, onOpenEdit}: CfnTableListProps)
                       <span className="text-xs text-muted-foreground">-</span>
                     )}
                   </td>
-                  <td className="px-3 py-3">
-                    {memProviders.length > 0 ? (
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
-                        {memProviders.length} shared
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">-</span>
-                    )}
-                  </td>
                   <td className={cn('px-3 py-3 text-xs', online ? 'text-muted-foreground' : 'text-red-500 dark:text-red-400')}>{lastSeen ?? '-'}</td>
                   <td className="px-3 py-3 text-right">
                     <DropdownMenu>
@@ -174,7 +163,7 @@ export function CfnTableList({nodes, onRowClick, onOpenEdit}: CfnTableListProps)
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-3 py-8 text-center text-sm text-muted-foreground">
+                <td colSpan={6} className="px-3 py-8 text-center text-sm text-muted-foreground">
                   No nodes match the current filters.
                 </td>
               </tr>

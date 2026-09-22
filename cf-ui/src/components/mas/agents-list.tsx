@@ -8,13 +8,12 @@ import {Plus, Users} from 'lucide-react';
 import {Button} from '@/components/ui/button';
 import {AgentCard} from './agent-card';
 import type {Control, UseFormWatch} from 'react-hook-form';
-import type {AgentWithMemory} from '@/api/endpoints/mas';
+import type {AgentDetail} from '@/api/endpoints/mas';
 
 interface Agent {
   agent_id?: string;
   name?: string;
   url?: string;
-  agentic_memory_provider_id?: string;
   identity_type?: string;
   identity_identifiers?: string | Record<string, string>;
 }
@@ -28,8 +27,7 @@ interface AgentsListProps {
   onToggleExpand: (id: string) => void;
   onAddAgent?: () => void;
   onRemoveAgent?: (index: number) => void;
-  masAgentsData?: AgentWithMemory[];
-  userMemoryProviders?: Array<{id: string; provider_name: string}>;
+  masAgentsData?: AgentDetail[];
 }
 
 export function AgentsList({
@@ -41,16 +39,13 @@ export function AgentsList({
   onToggleExpand,
   onAddAgent,
   onRemoveAgent,
-  masAgentsData,
-  userMemoryProviders = []
+  masAgentsData
 }: AgentsListProps) {
   const viewModeAgents = masAgentsData
     ? masAgentsData.map((agent) => ({
         agent_id: agent.agent_id,
         name: agent.name || '',
         url: agent.url || '',
-        agentic_memory_provider_id: agent.agentic_memory?.id || '',
-        agentic_memory_provider_name: agent.agentic_memory?.name || '',
         identity_type: agent.identity?.type || '',
         identity_identifiers: agent.identity?.identifiers || {}
       }))
@@ -80,7 +75,6 @@ export function AgentsList({
             agents.map((agent, index) => {
               const isExpanded = agentExpandedState[agent.id] ?? true;
               const agentName = watch(`agents.${index}.name`);
-              const agenticMemoryProviderId = watch(`agents.${index}.agentic_memory_provider_id`);
 
               return (
                 <AgentCard
@@ -88,13 +82,11 @@ export function AgentsList({
                   index={index}
                   agentId={agent.id}
                   agentName={agentName}
-                  agenticMemoryProviderId={agenticMemoryProviderId}
                   isExpanded={isExpanded}
                   isEditMode={isEditMode}
                   control={control}
                   onToggleExpand={() => onToggleExpand(agent.id)}
                   onRemove={onRemoveAgent ? () => onRemoveAgent(index) : undefined}
-                  userMemoryProviders={userMemoryProviders}
                 />
               );
             })
@@ -113,13 +105,10 @@ export function AgentsList({
                 agentUrl={agent.url}
                 identityType={agent.identity_type}
                 identityIdentifiers={agent.identity_identifiers}
-                agenticMemoryProviderId={agent.agentic_memory_provider_id}
-                agenticMemoryProviderName={agent.agentic_memory_provider_name}
                 isExpanded={agentExpandedState[agent.agent_id] ?? true}
                 isEditMode={false}
                 control={control}
                 onToggleExpand={() => onToggleExpand(agent.agent_id)}
-                userMemoryProviders={userMemoryProviders}
               />
             ))
           ) : (

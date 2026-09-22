@@ -8,7 +8,6 @@ const AgentFormSchema = z.object({
   agent_id: z.string().optional(),
   name: z.string().optional(),
   url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  agentic_memory_provider_id: z.string().optional(),
   identity_type: z.string().optional(),
   identity_identifiers: z
     .string()
@@ -33,7 +32,6 @@ export const UpdateMASFormSchema = z
   .object({
     name: z.string().min(1, 'Name is required').min(3, 'Name must be at least 3 characters'),
     description: z.string().optional(),
-    shared_memory_provider_id: z.string().optional(),
     agents: z.array(AgentFormSchema).optional().default([]),
     config: z
       .string()

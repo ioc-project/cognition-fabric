@@ -71,10 +71,6 @@ function parseAgentChanges(currentEvent: ParsedAuditEvent, previousEvent?: Parse
     if (previousAgent) {
       const agentChanges: string[] = [];
 
-      if (currentAgent.agentic_memory_provider_id !== previousAgent.agentic_memory_provider_id) {
-        agentChanges.push('Memory provider changed');
-      }
-
       if (JSON.stringify(currentAgent.config) !== JSON.stringify(previousAgent.config)) {
         agentChanges.push('Config updated');
       }
@@ -108,10 +104,6 @@ function parseMASChanges(currentEvent: ParsedAuditEvent, previousEvent?: ParsedA
 
   if (current.description !== previous.description) {
     changes.push('Description updated');
-  }
-
-  if (current.shared_memory_provider_id !== previous.shared_memory_provider_id) {
-    changes.push('Shared memory provider changed');
   }
 
   if (JSON.stringify(current.config) !== JSON.stringify(previous.config)) {

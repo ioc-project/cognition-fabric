@@ -15,7 +15,6 @@ import type {MultiAgenticSystem, MultiAgenticSystemUpdate} from '@/api/endpoints
 import {Button} from '@/components/ui/button';
 import {BasePage} from '@/components/ui/base-page';
 import {Input} from '@/components/ui/input';
-import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/ui/form';
 import {Badge} from '@/components/ui/badge';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
@@ -24,7 +23,6 @@ import {parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
-import {useMemoryProviders} from '@/hooks/useMemoryProviders';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {toast} from 'sonner';
 import {Bot, BrainCircuit, Unlink, Plus, Settings2, MoreHorizontal} from 'lucide-react';
@@ -79,17 +77,14 @@ export default function MASDetailsPage() {
   } = useSWR<MultiAgenticSystem>(workspaceId && masId ? swrKeys.masDetails(workspaceId, masId) : null, () =>
     masApi.get(workspaceId as string, masId as string)
   );
-  const {providers = []} = useMemoryProviders();
   const {cognitionEngines = []} = useCognitionEngines();
 
-  const userMemoryProviders = providers.map((p) => ({id: p.id, provider_name: p.name}));
-  const sharedMemoryProviders = userMemoryProviders.filter((p) => p.provider_name === 'ioc-memory-provider');
   const associatedCeIds = new Set(mas?.cognition_engines?.map((ce) => ce.ce_id) ?? []);
   const availableCEs = cognitionEngines.filter((ce) => !associatedCeIds.has(ce.id));
 
   const form = useForm<FormValues>({
     resolver: zodResolver(UpdateMASFormSchema),
-    defaultValues: {name: '', description: '', shared_memory_provider_id: '', agents: [], config: ''}
+    defaultValues: {name: '', description: '', agents: [], config: ''}
   });
 
   const {fields: agentFields, append: appendAgent, remove: removeAgent} = useFieldArray({control: form.control, name: 'agents'});
@@ -99,12 +94,10 @@ export default function MASDetailsPage() {
     return {
       name: m?.name || '',
       description: m?.description || '',
-      shared_memory_provider_id: m?.shared_memory?.id || '',
       agents: (m?.agents || []).map((agent) => ({
         agent_id: agent.agent_id,
         name: agent.name || '',
         url: agent.url || '',
-        agentic_memory_provider_id: agent.agentic_memory?.id || '',
         identity_type: agent.identity?.type || '',
         identity_identifiers: agent.identity?.identifiers ? JSON.stringify(agent.identity.identifiers, null, 2) : ''
       })),
@@ -162,7 +155,6 @@ export default function MASDetailsPage() {
           ...(agent.agent_id && {agent_id: agent.agent_id}),
           name: agent.name!.trim(),
           ...(agent.url?.trim() && {url: agent.url.trim()}),
-          ...(agent.agentic_memory_provider_id && {agentic_memory_provider_id: agent.agentic_memory_provider_id}),
           ...(agent.identity_type?.trim() && {
             identity: {
               type: agent.identity_type.trim(),
@@ -175,7 +167,6 @@ export default function MASDetailsPage() {
       const payload: MultiAgenticSystemUpdate = {
         name: values.name,
         description: values.description,
-        ...(values.shared_memory_provider_id && {shared_memory_provider_id: values.shared_memory_provider_id}),
         agents: agentsPayload,
         ...(Object.keys(configPayload).length > 0 && {config: configPayload})
       };
@@ -356,39 +347,6 @@ export default function MASDetailsPage() {
                         <span className="text-sm text-foreground">{mas?.description || '-'}</span>
                       )}
                     </InfoRow>
-                    <InfoRow label="Shared Memory">
-                      {isEditMode ? (
-                        <FormField
-                          control={form.control}
-                          name="shared_memory_provider_id"
-                          render={({field}) => (
-                            <FormItem className="flex-1 space-y-1">
-                              <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                  <SelectTrigger className="h-8 text-sm">
-                                    <SelectValue placeholder="Select provider" />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  {sharedMemoryProviders.length === 0 ? (
-                                    <div className="py-2 px-2 text-sm text-muted-foreground">No providers available</div>
-                                  ) : (
-                                    sharedMemoryProviders.map((provider) => (
-                                      <SelectItem key={provider.id} value={provider.id}>
-                                        {provider.provider_name}
-                                      </SelectItem>
-                                    ))
-                                  )}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ) : (
-                        <span className="text-sm text-foreground">{mas?.shared_memory?.name || '-'}</span>
-                      )}
-                    </InfoRow>
                   </InfoPanel>
 
                   {isEditMode ? (
@@ -446,9 +404,7 @@ export default function MASDetailsPage() {
                         variant="sidebar"
                         size="sm"
                         className="gap-2"
-                        onClick={() =>
-                          appendAgent({agent_id: '', name: '', url: '', agentic_memory_provider_id: '', identity_type: '', identity_identifiers: ''})
-                        }
+                        onClick={() => appendAgent({agent_id: '', name: '', url: '', identity_type: '', identity_identifiers: ''})}
                       >
                         <Plus className="w-4 h-4" />
                         Add Agent
@@ -470,7 +426,6 @@ export default function MASDetailsPage() {
                                 agent_id: '',
                                 name: '',
                                 url: '',
-                                agentic_memory_provider_id: '',
                                 identity_type: '',
                                 identity_identifiers: ''
                               })
@@ -478,7 +433,6 @@ export default function MASDetailsPage() {
                       }
                       onRemoveAgent={isEditMode ? removeAgent : undefined}
                       masAgentsData={!isEditMode && mas?.agents ? mas.agents : undefined}
-                      userMemoryProviders={userMemoryProviders}
                     />
                   </div>
                 </div>

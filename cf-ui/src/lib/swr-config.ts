@@ -24,9 +24,6 @@ export const swrKeys = {
   cfn: (workspaceId?: string) => (workspaceId ? (['cfn-list', workspaceId] as const) : (['cfn-list'] as const)),
   cfnDetails: (cfnId: string) => ['cfn-details', cfnId] as const,
 
-  memoryProviders: () => ['memory-providers'] as const,
-  memoryProviderDetails: (providerId: string) => ['memory-provider-details', providerId] as const,
-
   workspaceInvitations: (workspaceId: string) => ['workspace-invitations', workspaceId] as const,
   workspaceMembers: (workspaceId: string) => ['workspace-members', workspaceId] as const,
   myPendingInvitations: () => ['my-pending-invitations'] as const,

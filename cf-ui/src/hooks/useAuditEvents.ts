@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
+import {useCallback} from 'react';
 import useSWR from 'swr';
 import useSWRInfinite from 'swr/infinite';
 import {auditApi, type AuditEventFilters, type AuditEventListResponse} from '@/api/endpoints/audit';
@@ -55,12 +56,15 @@ export function useAuditEvents(filters?: Omit<AuditEventFilters, 'page' | 'pageS
   const hasMore = auditEvents.length < totalElements;
   const isLoadingMore = isLoading || (size > 0 && data !== undefined && typeof data[size - 1] === 'undefined');
 
+  const loadMore = useCallback(() => setSize((prev) => prev + 1), [setSize]);
+  const reset = useCallback(() => setSize(1), [setSize]);
+
   return {
     auditEvents,
     total: totalElements,
     hasMore,
-    loadMore: () => setSize(size + 1),
-    reset: () => setSize(1),
+    loadMore,
+    reset,
     mutate,
     isLoading: isLoadingMore,
     error
