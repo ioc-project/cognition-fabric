@@ -53,7 +53,6 @@ def create_cfn_node(
     - **status**: Current status (offline)
     - **config**: Configuration for the CFN to apply locally
       - cognition_fabric_node: CFN-specific operational settings (non-workspace scoped)
-      - memory_providers: Global memory providers (non-workspace scoped)
       - workspaces: Associated workspaces with MAS, cognitive agents, engines
 
     CFN must send heartbeat to change status from offline to online.
@@ -82,7 +81,6 @@ def update_cfn_node(
     - Full CFN details (id, workspace_ids, name, cfn_config, status, last_seen, enabled, timestamps)
     - **config**: Regenerated configuration for the CFN to apply
       - cognition_fabric_node: CFN-specific operational settings
-      - memory_providers: Global memory providers
       - workspaces: List of workspace details with MAS, cognitive agents, engines
 
     The config is automatically regenerated with each update to ensure CFN has the latest configuration.
@@ -111,7 +109,6 @@ def enable_cfn_node(
     - Full CFN details with enabled=True and status=offline (until heartbeat is sent)
     - **config**: Configuration for the CFN to apply when it reconnects
       - cognition_fabric_node: CFN-specific operational settings
-      - memory_providers: Global memory providers
       - workspaces: List of workspace details with MAS, cognitive agents, engines
     """
     authz_service.require_permission(auth_user, "enable", "cognition_fabric_node")
@@ -274,7 +271,6 @@ def get_cfn_workspaces_config(
     Returns configuration with:
     - **version**: Configuration schema version (0.1.0)
     - **cognition_fabric_node**: List of CFN-specific operational settings (non-workspace scoped)
-    - **memory_providers**: List of global memory providers (non-workspace scoped)
     - **workspaces**: List of workspaces with their resources:
       - workspace_id: Workspace identifier
       - workspace_name: Workspace name

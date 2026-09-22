@@ -14,42 +14,24 @@ from server.schemas.cognition_fabric import (
     CognitionFabricNodeTopology,
     CognitionFabricTopologyResponse,
 )
-from server.schemas.memory_provider import MemoryProviderListItem
 from server.services import cognition_fabric_node_service
 from server.services.cognition_engine import cognition_engine_service
-from server.services.memory_provider import memory_provider_service
 
 router = APIRouter()
 
 
 @router.get("", response_model=CognitionFabricTopologyResponse)
 def get_cognition_fabric_topology(auth_user: dict = Depends(get_auth_user)):
-    """Returns the full Cognition Fabric topology with nested CEs and memory providers per CFN."""
+    """Returns the full Cognition Fabric topology with nested CEs per CFN."""
     authz_service.require_permission(auth_user, "list", "cognition_fabric_node")
 
     cfn_list = cognition_fabric_node_service.list()
     ce_list = cognition_engine_service.list()
-    mp_list = memory_provider_service.list()
 
     # Group CEs by parent CFN
     ce_by_cfn = defaultdict(list)
     for ce in ce_list.cognition_engines:
         ce_by_cfn[ce.cfn_id].append(ce)
-
-    # All enabled memory providers are global (broadcast to every CFN).
-    # Project MemoryProviderDetail down to the slim list-item shape.
-    enabled_providers = [
-        MemoryProviderListItem(
-            id=p.id,
-            name=p.name,
-            description=p.description,
-            config=p.config,
-            enabled=p.enabled,
-            created_at=p.created_at,
-        )
-        for p in mp_list.providers
-        if p.enabled
-    ]
 
     cfn_nodes = [
         CognitionFabricNodeTopology(
@@ -63,7 +45,6 @@ def get_cognition_fabric_topology(auth_user: dict = Depends(get_auth_user)):
             port=getattr(node, "port", None),
             created_at=str(node.created_at),
             cognition_engines=ce_by_cfn.get(node.id, []),
-            memory_providers=enabled_providers,
         )
         for node in cfn_list.nodes
     ]
@@ -81,6 +62,5 @@ def get_cognition_fabric_topology(auth_user: dict = Depends(get_auth_user)):
             "total_cognition_engines": len(all_ces),
             "online_cognition_engines": online_ce,
             "offline_cognition_engines": len(all_ces) - online_ce,
-            "total_memory_providers": len(enabled_providers),
         },
     )

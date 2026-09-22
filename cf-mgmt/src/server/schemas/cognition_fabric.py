@@ -9,11 +9,10 @@ from typing import List
 from pydantic import BaseModel, Field
 
 from server.schemas.cognition_engine import CognitionEngineListItem
-from server.schemas.memory_provider import MemoryProviderListItem
 
 
 class CognitionFabricNodeTopology(BaseModel):
-    """A CFN node with its nested cognition engines and memory providers"""
+    """A CFN node with its nested cognition engines"""
 
     id: str
     name: str
@@ -25,7 +24,6 @@ class CognitionFabricNodeTopology(BaseModel):
     port: int | None = None
     created_at: str
     cognition_engines: List[CognitionEngineListItem] = Field(default_factory=list)
-    memory_providers: List[MemoryProviderListItem] = Field(default_factory=list)
 
 
 class CognitionFabricTopologyResponse(BaseModel):

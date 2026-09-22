@@ -15,41 +15,22 @@ from server.schemas.multi_agentic_system import (
     MultiAgenticSystemResponse,
     MultiAgenticSystem as MultiAgenticSystemSchema,
     MultiAgenticSystems,
-    AgentWithMemory,
+    AgentDetail,
     AgentIdentity,
     MASQueryByIdentity,
     MasCognitionEngineItem,
 )
 from server.database.relational_db.models.multi_agentic_system import MultiAgenticSystem as MultiAgenticSystemModel
 from server.database.relational_db.models.agent import Agent as AgentModel
-from server.database.relational_db.models.memory_provider import MemoryProvider as MemoryProviderModel
 from server.database.relational_db.db import RelationalDB
 from server.services.workspace import workspace_service
-from server.schemas.memory_provider import MemoryProviderDetail
 from server.utils import generate_uuid
 
 
 class MultiAgenticSystemService:
     """Service layer for MAS business logic"""
 
-    def _build_memory_detail(self, provider) -> MemoryProviderDetail:
-        return MemoryProviderDetail(
-            id=provider.id,
-            name=provider.name,
-            description=provider.description,
-            config=provider.config,
-            enabled=provider.enabled,
-            created_at=provider.created_at,
-            updated_at=provider.updated_at,
-            created_by=provider.created_by,
-            updated_by=provider.updated_by,
-        )
-
-    def _agent_row_to_schema(self, agent_row: AgentModel, provider_map: dict) -> AgentWithMemory:
-        agentic_memory = None
-        if agent_row.agentic_memory_provider_id and agent_row.agentic_memory_provider_id in provider_map:
-            agentic_memory = self._build_memory_detail(provider_map[agent_row.agentic_memory_provider_id])
-
+    def _agent_row_to_schema(self, agent_row: AgentModel) -> AgentDetail:
         identity = None
         if agent_row.identity_type:
             identity = AgentIdentity(
@@ -57,12 +38,11 @@ class MultiAgenticSystemService:
                 identifiers=agent_row.identity_identifiers or {},
             )
 
-        return AgentWithMemory(
+        return AgentDetail(
             agent_id=agent_row.agent_id,
             name=agent_row.name,
             url=agent_row.url,
             identity=identity,
-            agentic_memory=agentic_memory,
             config=agent_row.config,
         )
 
@@ -70,21 +50,15 @@ class MultiAgenticSystemService:
         self,
         mas: MultiAgenticSystemModel,
         agents: list,
-        provider_map: dict,
         ce_associations: list = None,
     ) -> MultiAgenticSystemSchema:
-        shared_memory = None
-        if mas.shared_memory_provider_id and mas.shared_memory_provider_id in provider_map:
-            shared_memory = self._build_memory_detail(provider_map[mas.shared_memory_provider_id])
-
-        enriched_agents = [self._agent_row_to_schema(a, provider_map) for a in agents] if agents is not None else None
+        enriched_agents = [self._agent_row_to_schema(a) for a in agents] if agents is not None else None
 
         return MultiAgenticSystemSchema(
             id=mas.id,
             workspace_id=mas.workspace_id,
             name=mas.name,
             description=mas.description,
-            shared_memory=shared_memory,
             agents=enriched_agents,
             config=mas.config,
             cognition_engines=ce_associations or [],
@@ -140,7 +114,6 @@ class MultiAgenticSystemService:
                 url=agent_cfg.url,
                 identity_type=identity_type,
                 identity_identifiers=identity_identifiers,
-                agentic_memory_provider_id=agent_cfg.agentic_memory_provider_id,
                 config=agent_cfg.config,
             )
             session.add(row)
@@ -197,7 +170,6 @@ class MultiAgenticSystemService:
                 row.url = agent_cfg.url
                 row.identity_type = identity_type
                 row.identity_identifiers = identity_identifiers
-                row.agentic_memory_provider_id = agent_cfg.agentic_memory_provider_id
                 row.config = agent_cfg.config
                 row.updated_at = now
             else:
@@ -208,7 +180,6 @@ class MultiAgenticSystemService:
                     url=agent_cfg.url,
                     identity_type=identity_type,
                     identity_identifiers=identity_identifiers,
-                    agentic_memory_provider_id=agent_cfg.agentic_memory_provider_id,
                     config=agent_cfg.config,
                 )
                 session.add(row)
@@ -252,7 +223,6 @@ class MultiAgenticSystemService:
                     workspace_id=workspace_id,
                     name=mas_data.name,
                     description=mas_data.description,
-                    shared_memory_provider_id=mas_data.shared_memory_provider_id,
                     agents=None,
                     config=mas_data.config,
                 )
@@ -361,27 +331,6 @@ class MultiAgenticSystemService:
                 for agent in all_agents:
                     agents_by_mas.setdefault(agent.mas_id, []).append(agent)
 
-                # Collect all unique memory provider IDs
-                provider_ids = set()
-                for mas in systems:
-                    if mas.shared_memory_provider_id:
-                        provider_ids.add(mas.shared_memory_provider_id)
-                for agent in all_agents:
-                    if agent.agentic_memory_provider_id:
-                        provider_ids.add(agent.agentic_memory_provider_id)
-
-                provider_map = {}
-                if provider_ids:
-                    providers = (
-                        session.query(MemoryProviderModel)
-                        .filter(
-                            MemoryProviderModel.id.in_(provider_ids),
-                            MemoryProviderModel.deleted_at.is_(None),
-                        )
-                        .all()
-                    )
-                    provider_map = {p.id: p for p in providers}
-
                 from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
                 from server.database.relational_db.models.cognition_engine import (
                     CognitionEngine as CognitionEngineModel,
@@ -409,8 +358,7 @@ class MultiAgenticSystemService:
                         )
 
                 system_responses = [
-                    self._enrich_mas(mas, agents_by_mas.get(mas.id, []), provider_map, ce_by_mas.get(mas.id, []))
-                    for mas in systems
+                    self._enrich_mas(mas, agents_by_mas.get(mas.id, []), ce_by_mas.get(mas.id, [])) for mas in systems
                 ]
 
                 return MultiAgenticSystems(systems=system_responses)
@@ -450,26 +398,6 @@ class MultiAgenticSystemService:
 
                 agents = session.query(AgentModel).filter(AgentModel.mas_id == mas_id).all()
 
-                # Collect provider IDs
-                provider_ids = set()
-                if mas.shared_memory_provider_id:
-                    provider_ids.add(mas.shared_memory_provider_id)
-                for agent in agents:
-                    if agent.agentic_memory_provider_id:
-                        provider_ids.add(agent.agentic_memory_provider_id)
-
-                provider_map = {}
-                if provider_ids:
-                    providers = (
-                        session.query(MemoryProviderModel)
-                        .filter(
-                            MemoryProviderModel.id.in_(provider_ids),
-                            MemoryProviderModel.deleted_at.is_(None),
-                        )
-                        .all()
-                    )
-                    provider_map = {p.id: p for p in providers}
-
                 from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
                 from server.database.relational_db.models.cognition_engine import (
                     CognitionEngine as CognitionEngineModel,
@@ -494,7 +422,7 @@ class MultiAgenticSystemService:
                     for junc, ce in ce_rows
                 ]
 
-                return self._enrich_mas(mas, agents, provider_map, ce_associations)
+                return self._enrich_mas(mas, agents, ce_associations)
 
             finally:
                 session.close()
@@ -553,9 +481,6 @@ class MultiAgenticSystemService:
                 if mas_data.description is not None:
                     mas.description = mas_data.description
 
-                if mas_data.shared_memory_provider_id is not None:
-                    mas.shared_memory_provider_id = mas_data.shared_memory_provider_id
-
                 if mas_data.agents is not None:
                     self._sync_agents(session, mas_id, mas_data.agents)
                     mas.agents = None
@@ -585,25 +510,6 @@ class MultiAgenticSystemService:
 
                 # Re-fetch agents after sync
                 agents = session.query(AgentModel).filter(AgentModel.mas_id == mas_id).all()
-
-                provider_ids = set()
-                if mas.shared_memory_provider_id:
-                    provider_ids.add(mas.shared_memory_provider_id)
-                for agent in agents:
-                    if agent.agentic_memory_provider_id:
-                        provider_ids.add(agent.agentic_memory_provider_id)
-
-                provider_map = {}
-                if provider_ids:
-                    providers = (
-                        session.query(MemoryProviderModel)
-                        .filter(
-                            MemoryProviderModel.id.in_(provider_ids),
-                            MemoryProviderModel.deleted_at.is_(None),
-                        )
-                        .all()
-                    )
-                    provider_map = {p.id: p for p in providers}
 
                 from server.services.cognition_fabric_node import cognition_fabric_node_service
 
@@ -651,7 +557,7 @@ class MultiAgenticSystemService:
                     for junc, ce in ce_rows
                 ]
 
-                return self._enrich_mas(mas, agents, provider_map, ce_associations)
+                return self._enrich_mas(mas, agents, ce_associations)
 
             except IntegrityError as e:
                 session.rollback()
@@ -726,26 +632,6 @@ class MultiAgenticSystemService:
                 for agent in all_agents:
                     agents_by_mas.setdefault(agent.mas_id, []).append(agent)
 
-                provider_ids = set()
-                for mas in systems:
-                    if mas.shared_memory_provider_id:
-                        provider_ids.add(mas.shared_memory_provider_id)
-                for agent in all_agents:
-                    if agent.agentic_memory_provider_id:
-                        provider_ids.add(agent.agentic_memory_provider_id)
-
-                provider_map = {}
-                if provider_ids:
-                    providers = (
-                        session.query(MemoryProviderModel)
-                        .filter(
-                            MemoryProviderModel.id.in_(provider_ids),
-                            MemoryProviderModel.deleted_at.is_(None),
-                        )
-                        .all()
-                    )
-                    provider_map = {p.id: p for p in providers}
-
                 from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
                 from server.database.relational_db.models.cognition_engine import (
                     CognitionEngine as CognitionEngineModel,
@@ -772,8 +658,7 @@ class MultiAgenticSystemService:
                     )
 
                 system_responses = [
-                    self._enrich_mas(mas, agents_by_mas.get(mas.id, []), provider_map, ce_by_mas.get(mas.id, []))
-                    for mas in systems
+                    self._enrich_mas(mas, agents_by_mas.get(mas.id, []), ce_by_mas.get(mas.id, [])) for mas in systems
                 ]
 
                 return MultiAgenticSystems(systems=system_responses)

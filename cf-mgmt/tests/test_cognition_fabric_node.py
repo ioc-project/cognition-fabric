@@ -355,7 +355,6 @@ class TestCognitionFabricNodeGet:
         assert "name" in data
         assert "config" in data
         assert "workspaces" in data["config"]
-        assert "memory_providers" in data["config"]
         assert "status" in data
         assert "last_seen" in data
         assert "enabled" in data
@@ -425,7 +424,6 @@ class TestCognitionFabricNodeUpdate:
         # Config structure has been updated - verify response is successful
         assert "config" in data
         assert "workspaces" in data["config"]
-        assert "memory_providers" in data["config"]
 
     def test_update_cfn_duplicate_name(self, client, multiple_cfn_nodes):
         """Test updating CFN with duplicate name"""
@@ -698,9 +696,8 @@ class TestCognitionFabricNodeEnableDisable:
         assert detail_response.status_code == 200
         detail = detail_response.json()
         assert detail["name"] == "test-node-reboot"
-        # Config structure has been updated - verify workspaces and memory_providers exist
+        # Config structure has been updated - verify workspaces exist
         assert "workspaces" in detail["config"]
-        assert "memory_providers" in detail["config"]
 
     def test_active_cfn_name_conflict(self, client):
         """Test active CFN trying to reconnect with a name that conflicts"""

@@ -28,11 +28,9 @@ from server.schemas.cognition_fabric_node import (
     CognitionFabricNodeStatus,
     CognitionFabricNodeUpdateRequest,
 )
-from server.services.memory_provider import memory_provider_service
 from server.services.multi_agentic_system import multi_agentic_system_service
 from server.services.workspace import workspace_service
 from server.utils import generate_uuid
-from server.utils.encryption import process_config_for_cfn
 
 # Set up module-level logger
 logger = logging.getLogger(__name__)
@@ -133,7 +131,7 @@ class CognitionFabricNodeService:
         """
         Update config_version and regenerate config for all CFNs.
 
-        Called when global resources change (cognitive agents, memory providers, etc.)
+        Called when global resources change (cognitive agents, etc.)
         """
         try:
             db = RelationalDB()
@@ -1169,20 +1167,6 @@ class CognitionFabricNodeService:
                     for system in mas_systems:
                         system_data = system.model_dump(mode="json", exclude_none=False)
 
-                        # Process memory provider configs for CFN (decrypt credentials)
-                        if system_data.get("shared_memory") and system_data["shared_memory"].get("config"):
-                            system_data["shared_memory"]["config"] = process_config_for_cfn(
-                                system_data["shared_memory"]["config"]
-                            )
-
-                        # Process agent memory provider configs
-                        if system_data.get("agents"):
-                            for agent in system_data["agents"]:
-                                if agent.get("agentic_memory") and agent["agentic_memory"].get("config"):
-                                    agent["agentic_memory"]["config"] = process_config_for_cfn(
-                                        agent["agentic_memory"]["config"]
-                                    )
-
                         # Embed minimal CE info per MAS: id, ce_type, and effective mas_config
                         # (junction override if set, otherwise CE factory default)
                         system_data["cognition_engines"] = [
@@ -1205,27 +1189,10 @@ class CognitionFabricNodeService:
 
                 workspaces_payload.append(workspace_obj)
 
-            # Fetch Memory Providers (global, not workspace-scoped)
-            try:
-                providers = memory_provider_service.list_for_cfn()
-                providers_payload = [
-                    {
-                        "id": provider["id"],
-                        "name": provider["name"],
-                        "description": provider["description"],
-                        "enabled": provider["enabled"],
-                        "config": process_config_for_cfn(provider["config"] or {}),
-                    }
-                    for provider in providers
-                ]
-            except Exception:
-                providers_payload = []
-
             return {
                 "config_version": config_version,
                 "cfn_config": cfn_config or {},
                 "workspaces": workspaces_payload,
-                "memory_providers": providers_payload,
                 "cognition_engines": engines_payload,
             }
 
