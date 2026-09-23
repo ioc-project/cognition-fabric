@@ -170,7 +170,7 @@ def upgrade() -> None:
       "ce_type" character varying(20) NOT NULL,
       "base_url" character varying(512) NOT NULL,
       "endpoint" character varying(255) NOT NULL,
-      "status" character varying(20) NOT NULL DEFAULT 'offline',
+      "status" character varying(20) NOT NULL DEFAULT 'online',
       "enabled" boolean NOT NULL DEFAULT true,
       "mas_auto_associate" boolean NOT NULL DEFAULT false,
       "last_seen" timestamptz NULL,

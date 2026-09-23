@@ -78,6 +78,7 @@ class CognitionEngineService:
                     existing.endpoint = engine_data.endpoint
                     existing.mas_auto_associate = engine_data.mas_auto_associate
                     existing.mas_config = engine_data.mas_config or {}
+                    existing.status = "online"
                     existing.updated_by = user_id
                     existing.updated_at = datetime.now(timezone.utc)
                     session.commit()
@@ -92,7 +93,7 @@ class CognitionEngineService:
                         endpoint=engine_data.endpoint,
                         enabled=True,
                         mas_auto_associate=engine_data.mas_auto_associate,
-                        status="offline",
+                        status="online",
                         mas_config=engine_data.mas_config or {},
                         created_by=user_id,
                     )
