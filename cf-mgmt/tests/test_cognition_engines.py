@@ -35,6 +35,20 @@ def _delete(client, ce_id: str) -> None:
     assert resp.status_code == status.HTTP_204_NO_CONTENT
 
 
+def _force_offline(ce_id: str) -> None:
+    """Directly flip a CE to offline, simulating the stale-engine sweep."""
+    from server.database.relational_db.models.cognition_engine import CognitionEngine as CognitionEngineModel
+
+    db = RelationalDB()
+    session = db.get_session()
+    try:
+        engine = session.query(CognitionEngineModel).filter(CognitionEngineModel.id == ce_id).first()
+        engine.status = "offline"
+        session.commit()
+    finally:
+        session.close()
+
+
 class TestCognitionEngineRegister:
     """Tests for POST /cognition-engines"""
 
@@ -61,7 +75,7 @@ class TestCognitionEngineRegister:
         assert data["ce_type"] == "CASA"
         assert data["base_url"] == "http://ce.internal:8080"
         assert data["endpoint"] == "/api/l9/enforcement"
-        assert data["status"] == "offline"
+        assert data["status"] == "online"
         assert data["created"] is True
 
     def test_register_same_ce_type_upserts_returns_200(self, client, registered_cfn):
@@ -207,15 +221,16 @@ class TestCognitionEngineList:
         ce_id = _register(client, registered_cfn, "CASA")
         _register(client, registered_cfn, "DETECTIVE")
 
-        # Bring one engine online via heartbeat
-        client.put(f"/api/cognition-engines/{ce_id}/heartbeat")
+        # Both are online immediately on registration; force one back offline
+        # (simulating the stale-engine sweep) so the filter has something to distinguish.
+        _force_offline(ce_id)
 
         response = client.get(f"/api/cognition-engines?cfn_id={registered_cfn}&status=online")
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data["total"] == 1
-        assert data["cognition_engines"][0]["ce_type"] == "CASA"
+        assert data["cognition_engines"][0]["ce_type"] == "DETECTIVE"
 
     def test_list_cfn_isolation(self, client):
         """Engines from one CFN don't appear in another CFN's listing"""
@@ -279,7 +294,7 @@ class TestCognitionEngineGet:
         assert data["cfn_id"] == registered_cfn
         assert data["ce_type"] == "DETECTIVE"
         assert data["endpoint"] == "/api/l9/detective"
-        assert data["status"] == "offline"
+        assert data["status"] == "online"
         assert "created_at" in data
         assert "updated_at" in data
 
@@ -385,13 +400,12 @@ class TestCognitionEngineDelete:
 
 class TestCognitionEngineHeartbeat:
     def test_heartbeat_sets_status_online(self, client, registered_cfn):
-        """Heartbeat flips offline→online and returns status/last_seen"""
+        """Heartbeat flips offline→online (e.g. after the stale-engine sweep) and returns status/last_seen"""
         ce_id = _register(client, registered_cfn, "CASA")
+        _force_offline(ce_id)
 
-        # Verify initial status is offline
         detail = client.get(f"/api/cognition-engines/{ce_id}").json()
         assert detail["status"] == "offline"
-        assert detail["last_seen"] is None
 
         resp = client.put(f"/api/cognition-engines/{ce_id}/heartbeat")
         assert resp.status_code == status.HTTP_200_OK
@@ -438,8 +452,9 @@ class TestCognitionEngineHeartbeat:
         assert detail["last_seen"] is not None
 
     def test_heartbeat_offline_to_online_increments_config_version(self, client, registered_cfn, created_workspace):
-        """First heartbeat (offline→online transition) triggers a CFN config update."""
+        """A heartbeat that transitions offline→online (e.g. after the stale-engine sweep) triggers a CFN config update."""
         ce_id = _register(client, registered_cfn, "CASA")
+        _force_offline(ce_id)
 
         initial_version = client.put(f"/api/cognition-fabric-nodes/{registered_cfn}/heartbeat").json()["config_version"]
 
@@ -450,8 +465,7 @@ class TestCognitionEngineHeartbeat:
 
     def test_heartbeat_already_online_does_not_increment_config_version(self, client, registered_cfn, created_workspace):
         """Heartbeat on an already-online CE does not trigger a redundant config update."""
-        ce_id = _register(client, registered_cfn, "CASA")
-        client.put(f"/api/cognition-engines/{ce_id}/heartbeat")  # offline → online
+        ce_id = _register(client, registered_cfn, "CASA")  # online immediately on registration
 
         stable_version = client.put(f"/api/cognition-fabric-nodes/{registered_cfn}/heartbeat").json()["config_version"]
 

@@ -15,12 +15,17 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     op.execute("""
-    CREATE TABLE "workspace" (
-      "id" character varying(36) NOT NULL DEFAULT (gen_random_uuid())::text,
+    CREATE TABLE "cognition_fabric_node" (
+      "id" character varying(255) NOT NULL,
       "name" character varying(255) NOT NULL,
-      "cfn_id" character varying(255) NOT NULL,
-      "users" character varying[] NULL,
+      "cfn_config" jsonb NULL,
       "config" jsonb NULL,
+      "ip_address" character varying(45) NULL,
+      "port" character varying(5) NULL,
+      "status" character varying(50) NOT NULL DEFAULT 'online',
+      "last_seen" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "enabled" boolean NOT NULL DEFAULT true,
+      "config_version" integer NOT NULL DEFAULT 0,
       "created_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updated_at" timestamp NULL DEFAULT CURRENT_TIMESTAMP,
       "created_by" character varying(255) NULL,
@@ -28,9 +33,13 @@ def upgrade() -> None:
       "deleted_at" timestamp NULL,
       PRIMARY KEY ("id")
     );
-    CREATE INDEX "idx_workspace_name" ON "workspace" ("name");
-    CREATE INDEX "idx_workspace_deleted_at" ON "workspace" ("deleted_at");
-    CREATE INDEX "idx_workspace_cfn_id" ON "workspace" ("cfn_id");
+    COMMENT ON COLUMN "cognition_fabric_node"."ip_address" IS 'IP address of the CFN node (IPv4 or IPv6)';
+    COMMENT ON COLUMN "cognition_fabric_node"."port" IS 'Port number of the CFN node (1-65535)';
+    CREATE INDEX "idx_cfn_enabled" ON "cognition_fabric_node" ("enabled");
+    CREATE INDEX "idx_cfn_deleted_at" ON "cognition_fabric_node" ("deleted_at");
+    CREATE INDEX "idx_cfn_last_seen" ON "cognition_fabric_node" ("last_seen");
+    CREATE INDEX "idx_cfn_status" ON "cognition_fabric_node" ("status");
+    CREATE UNIQUE INDEX "idx_cfn_name_unique" ON "cognition_fabric_node" ("name") WHERE "deleted_at" IS NULL;
 
     CREATE TABLE "user" (
       "id" character varying(36) NOT NULL DEFAULT (gen_random_uuid())::text,
@@ -46,6 +55,24 @@ def upgrade() -> None:
     CREATE INDEX "idx_user_deleted_at" ON "user" ("deleted_at");
     CREATE UNIQUE INDEX "idx_user_username_unique" ON "user" ("username") WHERE "deleted_at" IS NULL;
 
+    CREATE TABLE "workspace" (
+      "id" character varying(36) NOT NULL DEFAULT (gen_random_uuid())::text,
+      "name" character varying(255) NOT NULL,
+      "cfn_id" character varying(255) NULL,
+      "users" character varying[] NULL,
+      "config" jsonb NULL,
+      "created_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+      "created_by" character varying(255) NULL,
+      "updated_by" character varying(255) NULL,
+      "deleted_at" timestamp NULL,
+      PRIMARY KEY ("id"),
+      CONSTRAINT "fk_workspace_cfn" FOREIGN KEY ("cfn_id") REFERENCES "cognition_fabric_node" ("id") ON DELETE RESTRICT
+    );
+    CREATE INDEX "idx_workspace_name" ON "workspace" ("name");
+    CREATE INDEX "idx_workspace_deleted_at" ON "workspace" ("deleted_at");
+    CREATE INDEX "idx_workspace_cfn_id" ON "workspace" ("cfn_id");
+
     CREATE TABLE "api_key" (
       "id" character varying(36) NOT NULL DEFAULT (gen_random_uuid())::text,
       "user_id" character varying(36) NOT NULL,
@@ -60,7 +87,6 @@ def upgrade() -> None:
     CREATE INDEX "idx_api_key_deleted_at" ON "api_key" ("deleted_at");
     CREATE INDEX "idx_api_key_key_hash" ON "api_key" ("key_hash");
     CREATE UNIQUE INDEX "idx_api_key_user_name_unique" ON "api_key" ("user_id", "name") WHERE "deleted_at" IS NULL;
-
 
     CREATE TABLE "workspace_member" (
       "id" character varying(36) NOT NULL DEFAULT (gen_random_uuid())::text,
@@ -107,7 +133,6 @@ def upgrade() -> None:
       "description" text NULL,
       "agents" jsonb NULL,
       "config" jsonb NULL,
-      "task_schedule" jsonb NULL,
       "created_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updated_at" timestamp NULL DEFAULT CURRENT_TIMESTAMP,
       "created_by" character varying(255) NULL,
@@ -127,7 +152,6 @@ def upgrade() -> None:
       "url" text NULL,
       "identity_type" character varying(50) NULL,
       "identity_identifiers" jsonb NULL,
-      "agentic_memory_provider_id" character varying(255) NULL,
       "config" jsonb NULL,
       "created_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updated_at" timestamp NULL DEFAULT CURRENT_TIMESTAMP,
@@ -138,52 +162,44 @@ def upgrade() -> None:
     );
     CREATE INDEX "idx_agent_mas_id" ON "agent" ("mas_id");
     CREATE INDEX "idx_agent_identity_type" ON "agent" ("identity_type");
-    CREATE INDEX "idx_agent_agentic_memory" ON "agent" ("agentic_memory_provider_id");
+    CREATE UNIQUE INDEX "uq_agent_mas_name" ON "agent" ("mas_id", "name") WHERE "name" IS NOT NULL;
 
-    CREATE TABLE "cognition_fabric_node" (
+    CREATE TABLE "cognition_engine" (
       "id" character varying(255) NOT NULL,
-      "name" character varying(255) NOT NULL,
-      "cfn_config" jsonb NULL,
-      "config" jsonb NULL,
-      "status" character varying(50) NOT NULL DEFAULT 'online',
-      "last_seen" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "cfn_id" character varying(255) NOT NULL,
+      "ce_type" character varying(20) NOT NULL,
+      "base_url" character varying(512) NOT NULL,
+      "endpoint" character varying(255) NOT NULL,
+      "status" character varying(20) NOT NULL DEFAULT 'online',
       "enabled" boolean NOT NULL DEFAULT true,
-      "created_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "updated_at" timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-      "created_by" character varying(255) NULL,
-      "updated_by" character varying(255) NULL,
-      "deleted_at" timestamp NULL,
-      PRIMARY KEY ("id")
-    );
-    CREATE INDEX "idx_cfn_enabled" ON "cognition_fabric_node" ("enabled");
-    CREATE INDEX "idx_cfn_deleted_at" ON "cognition_fabric_node" ("deleted_at");
-    CREATE INDEX "idx_cfn_last_seen" ON "cognition_fabric_node" ("last_seen");
-    CREATE INDEX "idx_cfn_status" ON "cognition_fabric_node" ("status");
-    CREATE UNIQUE INDEX "idx_cfn_name_unique" ON "cognition_fabric_node" ("name") WHERE (deleted_at IS NULL);
-
-    ALTER TABLE "workspace" ADD CONSTRAINT "fk_workspace_cfn"
-      FOREIGN KEY ("cfn_id") REFERENCES "cognition_fabric_node" ("id") ON DELETE RESTRICT;
-
-    CREATE TABLE "memory_provider" (
-      "id" character varying(255) NOT NULL,
-      "name" character varying(255) NOT NULL,
-      "description" character varying(1000) NULL,
-      "config" jsonb NULL,
-      "enabled" boolean NOT NULL DEFAULT true,
-      "created_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "updated_at" timestamp NULL,
-      "created_by" character varying(36) NOT NULL,
+      "mas_auto_associate" boolean NOT NULL DEFAULT false,
+      "last_seen" timestamptz NULL,
+      "mas_config" jsonb NULL DEFAULT '{}'::jsonb,
+      "created_at" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" timestamptz NULL,
+      "created_by" character varying(36) NULL,
       "updated_by" character varying(36) NULL,
-      "deleted_at" timestamp NULL,
-      PRIMARY KEY ("id")
+      "deleted_at" timestamptz NULL,
+      PRIMARY KEY ("id"),
+      CONSTRAINT "fk_ce_cfn" FOREIGN KEY ("cfn_id") REFERENCES "cognition_fabric_node" ("id")
     );
-    CREATE UNIQUE INDEX "idx_mp_name_unique" ON "memory_provider" ("name") WHERE "deleted_at" IS NULL;
+    CREATE INDEX "idx_ce_cfn_id" ON "cognition_engine" ("cfn_id");
+    CREATE INDEX "idx_ce_status" ON "cognition_engine" ("status");
+    CREATE INDEX "idx_ce_enabled" ON "cognition_engine" ("enabled");
+    CREATE INDEX "idx_ce_mas_auto_associate" ON "cognition_engine" ("mas_auto_associate");
 
-    ALTER TABLE "agent" ADD CONSTRAINT "fk_agent_memory_provider"
-      FOREIGN KEY ("agentic_memory_provider_id") REFERENCES "memory_provider" ("id") ON DELETE SET NULL;
+    CREATE TABLE "mas_cognition_engines" (
+      "mas_id" character varying(36) NOT NULL REFERENCES "multi_agentic_system" ("id") ON DELETE CASCADE,
+      "ce_id" character varying(255) NOT NULL REFERENCES "cognition_engine" ("id") ON DELETE CASCADE,
+      "mas_config" jsonb NULL,
+      "created_at" timestamptz NOT NULL DEFAULT NOW(),
+      "created_by" character varying(255) NULL,
+      CONSTRAINT "pk_mas_cognition_engines" PRIMARY KEY ("mas_id", "ce_id")
+    );
+    CREATE INDEX "idx_mas_ce_ce_id" ON "mas_cognition_engines" ("ce_id");
 
-CREATE TABLE "cognition_engine" (
-      "id" character varying(255) NOT NULL,
+    CREATE TABLE "policy" (
+      "id" character varying(36) NOT NULL,
       "workspace_id" character varying(36) NOT NULL,
       "name" character varying(255) NOT NULL,
       "config" jsonb NULL,
@@ -195,19 +211,20 @@ CREATE TABLE "cognition_engine" (
       "deleted_at" timestamp NULL,
       PRIMARY KEY ("id")
     );
-    CREATE INDEX "idx_ce_workspace_id" ON "cognition_engine" ("workspace_id");
-
+    CREATE INDEX "idx_policy_workspace_id" ON "policy" ("workspace_id");
+    CREATE INDEX "idx_policy_deleted_at" ON "policy" ("deleted_at");
     """)
 
 
 def downgrade() -> None:
+    op.execute('DROP TABLE IF EXISTS "policy" CASCADE')
+    op.execute('DROP TABLE IF EXISTS "mas_cognition_engines" CASCADE')
     op.execute('DROP TABLE IF EXISTS "cognition_engine" CASCADE')
-    op.execute('DROP TABLE IF EXISTS "memory_provider" CASCADE')
-    op.execute('DROP TABLE IF EXISTS "cognition_fabric_node" CASCADE')
     op.execute('DROP TABLE IF EXISTS "agent" CASCADE')
     op.execute('DROP TABLE IF EXISTS "multi_agentic_system" CASCADE')
     op.execute('DROP TABLE IF EXISTS "workspace_invitation" CASCADE')
     op.execute('DROP TABLE IF EXISTS "workspace_member" CASCADE')
     op.execute('DROP TABLE IF EXISTS "api_key" CASCADE')
-    op.execute('DROP TABLE IF EXISTS "user" CASCADE')
     op.execute('DROP TABLE IF EXISTS "workspace" CASCADE')
+    op.execute('DROP TABLE IF EXISTS "user" CASCADE')
+    op.execute('DROP TABLE IF EXISTS "cognition_fabric_node" CASCADE')
