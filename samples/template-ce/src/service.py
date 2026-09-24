@@ -26,16 +26,12 @@ DEFAULT_PORT = 50051
 class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
     """Implementation of the ioc.ce.v1.CognitionEngine gRPC service."""
 
+    def __init__(self):
+        self._loop = asyncio.new_event_loop()
+
     def _run_async(self, coro):
-        """Run an async coroutine from sync context."""
-        try:
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                return asyncio.ensure_future(coro)
-            else:
-                return loop.run_until_complete(coro)
-        except RuntimeError:
-            return asyncio.run(coro)
+        """Run an async coroutine from sync context using a persistent event loop."""
+        return self._loop.run_until_complete(coro)
 
     def Evaluate(self, request: ce_pb2.EvaluateRequest, context) -> ce_pb2.EvaluateResponse:
         """
@@ -65,6 +61,13 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
                 )
                 num_findings = len(prior_findings.findings) if prior_findings else 0
                 logger.info(f"[Evaluate] Retrieved {num_findings} prior findings, context_complete={prior_findings.context_complete if prior_findings else 'N/A'}")
+                if prior_findings and prior_findings.findings:
+                    for f in prior_findings.findings:
+                        logger.info(
+                            f"[Evaluate]   - {f.finding_id}: {f.outcome} "
+                            f"({f.source_agent_id} -> {f.destination_agent_id}) "
+                            f"reason={f.reason!r} timestamp={f.timestamp}"
+                        )
             else:
                 logger.info("[Evaluate] Cognition Store not configured, skipping prior findings fetch")
 
@@ -84,12 +87,14 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
 
             # 3. Store finding in Cognition Store
             if client:
+                # Strip DECISION_ prefix for OXP API (expects ALLOW/DENY/MODIFY)
+                outcome_name = ce_pb2.Decision.Name(response.outcome).removeprefix("DECISION_")
                 finding = CEFinding(
                     finding_id=str(uuid.uuid4()),
                     mas_id=request.mas_id,
                     trace_id=request.trace_id,
                     session_id=request.session_id,
-                    outcome=ce_pb2.Decision.Name(response.outcome),
+                    outcome=outcome_name,
                     reason=response.reason,
                     source_agent_id=request.source_agent_id,
                     destination_agent_id=request.destination_agent_id,
@@ -98,8 +103,11 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
                     timestamp=response.timestamp,
                 )
                 logger.info(f"[Evaluate] Storing finding in Cognition Store: finding_id={finding.finding_id}")
-                self._run_async(client.store_finding(finding))
-                logger.info("[Evaluate] Finding stored successfully")
+                stored = self._run_async(client.store_finding(finding))
+                if stored:
+                    logger.info("[Evaluate] Finding stored successfully")
+                else:
+                    logger.warning("[Evaluate] Failed to store finding in Cognition Store")
             else:
                 logger.info("[Evaluate] Cognition Store not configured, skipping finding storage")
 

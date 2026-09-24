@@ -69,29 +69,90 @@ class CognitionStoreClient:
         """
         Fetch prior CE findings for a MAS.
 
-        TODO: Implement actual API call:
-        GET {base_url}/api/cognition-store/findings?mas_id={mas_id}&session_id={session_id}
+        GET {base_url}/cognition-store/findings?mas_id={mas_id}&trace_id={trace_id}&session_id={session_id}&limit={limit}
         """
         logger.info(f"[CognitionStore] GET prior findings: mas_id={mas_id} trace_id={trace_id} session_id={session_id} limit={limit}")
-        logger.info(f"[CognitionStore] Would call: GET {self.base_url}/api/cognition-store/findings?mas_id={mas_id}&session_id={session_id}")
-        # PLACEHOLDER: Return empty findings
-        result = PriorFindingsResult(mas_id=mas_id, findings=[], context_complete=True)
-        logger.info(f"[CognitionStore] Returning {len(result.findings)} findings (PLACEHOLDER)")
-        return result
+
+        client = await self._get_client()
+        params: dict[str, str | int] = {"mas_id": mas_id, "limit": limit}
+        if trace_id:
+            params["trace_id"] = trace_id
+        if session_id:
+            params["session_id"] = session_id
+
+        try:
+            resp = await client.get(f"{self.base_url}/api/v1/cognition-store/findings", params=params)
+            resp.raise_for_status()
+            data = resp.json()
+
+            findings = [
+                CEFinding(
+                    finding_id=f.get("finding_id", ""),
+                    mas_id=f.get("mas_id", ""),
+                    trace_id=f.get("trace_id", ""),
+                    session_id=f.get("session_id", ""),
+                    outcome=f.get("outcome", ""),
+                    reason=f.get("reason", ""),
+                    source_agent_id=f.get("source_agent_id", ""),
+                    destination_agent_id=f.get("destination_agent_id", ""),
+                    action_class=f.get("action_class", ""),
+                    direction=f.get("direction", ""),
+                    timestamp=f.get("timestamp", ""),
+                )
+                for f in data.get("findings", [])
+            ]
+            result = PriorFindingsResult(
+                mas_id=data.get("mas_id", mas_id),
+                findings=findings,
+                context_complete=data.get("context_complete", True),
+            )
+            logger.info(f"[CognitionStore] Fetched {len(result.findings)} prior findings")
+            return result
+
+        except httpx.HTTPStatusError as e:
+            logger.error(f"[CognitionStore] HTTP error fetching prior findings: {e.response.status_code} {e.response.text}")
+            return PriorFindingsResult(mas_id=mas_id, findings=[], context_complete=True)
+        except Exception as e:
+            logger.error(f"[CognitionStore] Error fetching prior findings: {e}")
+            return PriorFindingsResult(mas_id=mas_id, findings=[], context_complete=True)
 
     async def store_finding(self, finding: CEFinding) -> bool:
         """
         Store a CE finding.
 
-        TODO: Implement actual API call:
-        POST {base_url}/api/cognition-store/findings
+        POST {base_url}/cognition-store/findings
         """
         logger.info(f"[CognitionStore] POST finding: finding_id={finding.finding_id} mas_id={finding.mas_id} outcome={finding.outcome}")
-        logger.info(f"[CognitionStore] Would call: POST {self.base_url}/api/cognition-store/findings")
-        logger.info(f"[CognitionStore] Payload: trace_id={finding.trace_id} session_id={finding.session_id} action={finding.action_class} direction={finding.direction}")
-        # PLACEHOLDER: Always succeed
-        logger.info("[CognitionStore] Finding stored (PLACEHOLDER)")
-        return True
+
+        client = await self._get_client()
+        payload = {
+            "finding_id": finding.finding_id,
+            "mas_id": finding.mas_id,
+            "trace_id": finding.trace_id,
+            "session_id": finding.session_id,
+            "outcome": finding.outcome,
+            "reason": finding.reason,
+            "source_agent_id": finding.source_agent_id,
+            "destination_agent_id": finding.destination_agent_id,
+            "action_class": finding.action_class,
+            "direction": finding.direction,
+            "timestamp": finding.timestamp,
+        }
+
+        try:
+            resp = await client.post(f"{self.base_url}/api/v1/cognition-store/findings", json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+            success = data.get("success", False)
+            logger.info(f"[CognitionStore] Finding stored: success={success} finding_id={data.get('finding_id')}")
+            return success
+
+        except httpx.HTTPStatusError as e:
+            logger.error(f"[CognitionStore] HTTP error storing finding: {e.response.status_code} {e.response.text}")
+            return False
+        except Exception as e:
+            logger.error(f"[CognitionStore] Error storing finding: {e}")
+            return False
 
 
 _client: Optional[CognitionStoreClient] = None
