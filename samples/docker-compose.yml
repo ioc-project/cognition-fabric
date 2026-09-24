@@ -11,11 +11,11 @@ services:
     environment:
       - LOG_LEVEL=INFO
       - GRPC_PORT=50051
-      # Optional: CFN registration (uncomment to enable)
+      # For local development (connecting to services on host machine)
+      - CFN_URL=http://host.docker.internal:9002
+      - COGNITION_STORE_URL=http://host.docker.internal:8000
+      # For Docker network (when running alongside other containers)
       # - CFN_URL=http://cfn:9002
+      # - COGNITION_STORE_URL=http://oxp-api:8000
       # - COGNITION_ENGINE_HOST=casa-ce
-      # - CE_HEARTBEAT_INTERVAL_SEC=30.0
-      # - MAS_AUTO_ASSOCIATE=false
-      # Optional: Cognition Store (uncomment to enable)
-      # - COGNITION_STORE_URL=http://cognition-store:8080
     restart: unless-stopped

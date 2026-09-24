@@ -81,7 +81,7 @@ class CognitionStoreClient:
             params["session_id"] = session_id
 
         try:
-            resp = await client.get(f"{self.base_url}/cognition-store/findings", params=params)
+            resp = await client.get(f"{self.base_url}/api/v1/cognition-store/findings", params=params)
             resp.raise_for_status()
             data = resp.json()
 
@@ -140,7 +140,7 @@ class CognitionStoreClient:
         }
 
         try:
-            resp = await client.post(f"{self.base_url}/cognition-store/findings", json=payload)
+            resp = await client.post(f"{self.base_url}/api/v1/cognition-store/findings", json=payload)
             resp.raise_for_status()
             data = resp.json()
             success = data.get("success", False)

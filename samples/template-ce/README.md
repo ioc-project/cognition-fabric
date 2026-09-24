@@ -9,33 +9,57 @@ CASA CE provides authorization decisions (ALLOW / DENY / MODIFY) for in-scope MA
 - **CFN** - Receives `Evaluate` requests via gRPC
 - **Cognition Store (OXP)** - Reads prior findings, stores current finding
 
-## Run Locally
+## Quick Start (Docker Compose)
+
+From the repository root:
 
 ```bash
+docker compose up --build
+```
+
+This starts the CASA CE on port `50051` with default configuration.
+
+### Configuration
+
+Edit `docker-compose.yml` to configure integrations:
+
+```yaml
+environment:
+  - GRPC_PORT=50051
+  - CFN_URL=http://host.docker.internal:9002        # CFN registration
+  - COGNITION_STORE_URL=http://host.docker.internal:8000  # OXP Cognition Store
+```
+
+When running alongside other services in Docker, use container names instead:
+
+```yaml
+environment:
+  - CFN_URL=http://cfn:9002
+  - COGNITION_STORE_URL=http://oxp-api:8000
+```
+
+## Run Locally (without Docker)
+
+```bash
+cd engines/casa
 uv sync
-uv run python -m src.service
+uv run python -m src
 ```
 
 Server runs on `localhost:50051` (gRPC)
 
-### With CFN Registration
+### With integrations
 
 ```bash
 export CFN_URL="http://localhost:9002"
-export COGNITION_ENGINE_HOST="localhost"
-uv run python -m src.service
-```
-
-### With Cognition Store
-
-```bash
-export COGNITION_STORE_URL="http://localhost:8080"
-uv run python -m src.service
+export COGNITION_STORE_URL="http://localhost:8000"
+uv run python -m src
 ```
 
 ## Test
 
 ```bash
+cd engines/casa
 uv run pytest -v
 ```
 
