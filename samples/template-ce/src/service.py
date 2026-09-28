@@ -1,4 +1,4 @@
-"""gRPC service for CASA Cognition Engine.
+"""gRPC service for Demo CE Cognition Engine.
 
 Implements the ioc.ce.v1.CognitionEngine service.
 """
@@ -123,7 +123,7 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
     def GetInfo(self, request: ce_pb2.GetInfoRequest, context) -> ce_pb2.GetInfoResponse:
         """ioc.ce.v1.GetInfo RPC - returns CE capabilities."""
         return ce_pb2.GetInfoResponse(
-            ce_type="CASA",
+            ce_type="Demo CE",
             version="1.0.0",
             matcher_strategy="hybrid",
         )
@@ -143,24 +143,24 @@ def serve(port: int = DEFAULT_PORT, max_workers: int = 10):
 
     server.add_insecure_port(f"[::]:{port}")
     server.start()
-    logger.info(f"CASA CE gRPC server started on port {port}")
+    logger.info(f"Demo CE gRPC server started on port {port}")
     return server
 
 
 async def serve_async(port: int = DEFAULT_PORT):
     """Start gRPC server and register with CFN."""
-    from registration import register_casa_ce, shutdown_lifecycle_client
+    from registration import register_demo_ce, shutdown_lifecycle_client
 
     server = serve(port)
-    await register_casa_ce()
+    await register_demo_ce()
 
     try:
         while True:
             await asyncio.sleep(3600)
     except (KeyboardInterrupt, asyncio.CancelledError):
-        logger.info("Shutting down CASA CE...")
+        logger.info("Shutting down Demo CE...")
     finally:
         await shutdown_lifecycle_client()
         await shutdown_cognition_store_client()
         server.stop(grace=5)
-        logger.info("CASA CE stopped")
+        logger.info("Demo CE stopped")

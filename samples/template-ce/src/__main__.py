@@ -1,4 +1,4 @@
-"""Entry point for running CASA CE as a module."""
+"""Entry point for running Demo CE as a module."""
 import os
 import sys
 

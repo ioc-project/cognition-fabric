@@ -1,11 +1,11 @@
 version: '3.8'
 
 services:
-  casa-ce:
+  demo-ce:
     build:
-      context: ./engines/casa
+      context: ./demo-ce
       dockerfile: Dockerfile
-    container_name: casa-ce
+    container_name: demo-ce
     ports:
       - "50051:50051"
     environment:
@@ -17,5 +17,5 @@ services:
       # For Docker network (when running alongside other containers)
       # - CFN_URL=http://cfn:9002
       # - COGNITION_STORE_URL=http://oxp-api:8000
-      # - COGNITION_ENGINE_HOST=casa-ce
+      # - COGNITION_ENGINE_HOST=demo-ce
     restart: unless-stopped

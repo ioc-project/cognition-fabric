@@ -1,10 +1,10 @@
-# CASA Cognition Engine
+# Demo CE Cognition Engine
 
-CASA (Continuous Agent Semantic Authorization) Cognition Engine implementing the `ioc.ce.v1.CognitionEngine` gRPC contract.
+Demo CE Cognition Engine implementing the `ioc.ce.v1.CognitionEngine` gRPC contract.
 
 ## Overview
 
-CASA CE provides authorization decisions (ALLOW / DENY / MODIFY) for in-scope MAS actions. It integrates with:
+Demo CE provides authorization decisions (ALLOW / DENY / MODIFY) for in-scope MAS actions. It integrates with:
 
 - **CFN** - Receives `Evaluate` requests via gRPC
 - **Cognition Store (OXP)** - Reads prior findings, stores current finding
@@ -17,7 +17,7 @@ From the repository root:
 docker compose up --build
 ```
 
-This starts the CASA CE on port `50051` with default configuration.
+This starts the Demo CE on port `50051` with default configuration.
 
 ### Configuration
 
@@ -41,7 +41,7 @@ environment:
 ## Run Locally (without Docker)
 
 ```bash
-cd engines/casa
+cd demo-ce
 uv sync
 uv run python -m src
 ```
@@ -59,7 +59,7 @@ uv run python -m src
 ## Test
 
 ```bash
-cd engines/casa
+cd demo-ce
 uv run pytest -v
 ```
 
@@ -97,7 +97,7 @@ Returns CE metadata.
 
 ```
 ┌───────────────┐   Evaluate    ┌─────────┐    read/write     ┌─────────────────┐
-│      CFN      │──────────────▶│ CASA CE │◀────────────────▶│  Cognition      │
+│      CFN      │──────────────▶│ Demo CE │◀────────────────▶│  Cognition      │
 │               │◀──────────────│  gRPC   │                   │  Store (OXP)    │
 └───────────────┘   decision    └─────────┘                   └─────────────────┘
 ```
@@ -105,7 +105,7 @@ Returns CE metadata.
 ## Files
 
 ```
-engines/casa/
+demo-ce/
 ├── proto/ce.proto           # ioc.ce.v1 Protocol Buffer definition
 ├── src/
 │   ├── generated/           # Generated gRPC stubs

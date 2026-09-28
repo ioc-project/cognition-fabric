@@ -1,1 +1,1 @@
-"""Tests for CASA enforcement API."""
+"""Tests for Demo CE enforcement API."""

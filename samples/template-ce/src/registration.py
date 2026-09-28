@@ -1,5 +1,5 @@
 """
-CE registration logic for CASA Cognition Engine.
+CE registration logic for Demo CE Cognition Engine.
 
 This module handles registration with the Cognition Fabric (CFN) on startup.
 Registration is idempotent - safe to run multiple times.
@@ -19,14 +19,14 @@ logger = logging.getLogger(__name__)
 
 
 # Constants
-CE_TYPE = "CASA"  # CEType: CASA or DETECTIVE
+CE_TYPE = "Demo CE"  # CEType: Demo CE or DETECTIVE
 CE_ENDPOINT = "ioc.ce.v1.CognitionEngine"  # gRPC service name
 DEFAULT_GRPC_PORT = "50051"  # Default gRPC port
 
 
 class CEType(str, Enum):
     """Type of Cognition Engine."""
-    CASA = "CASA"
+    DEMO_CE = "Demo CE"
     DETECTIVE = "DETECTIVE"
 
 
@@ -35,15 +35,15 @@ class CERegistrationRequest:
     """
     CE registration payload matching ioc-scale-cf-mgmt-svc PR #7 schema.
 
-    Simplified schema with predefined CE types (CASA, DETECTIVE) and
+    Simplified schema with predefined CE types (Demo CE, DETECTIVE) and
     clearer separation of base_url + endpoint.
 
     Note: cfn_id is NOT included here - the CFN adds it before forwarding
     to the management plane. mas_auto_associate is also not included -
     CFN defaults it to true.
     """
-    ce_type: str  # "CASA" or "DETECTIVE"
-    base_url: str  # gRPC address (e.g., "casa-ce:50051")
+    ce_type: str  # "Demo CE" or "DETECTIVE"
+    base_url: str  # gRPC address (e.g., "demo-ce:50051")
     endpoint: str  # gRPC service name (e.g., "ioc.ce.v1.CognitionEngine")
 
 
@@ -214,9 +214,9 @@ class CELifecycleClient:
 _lifecycle_client: Optional[CELifecycleClient] = None
 
 
-async def register_casa_ce() -> None:
+async def register_demo_ce() -> None:
     """
-    Register CASA Cognition Engine with CFN on startup.
+    Register Demo CE Cognition Engine with CFN on startup.
 
     This function:
     1. Checks CFN_URL environment variable
@@ -241,7 +241,7 @@ async def register_casa_ce() -> None:
 
     if not cfn_url:
         logger.warning(
-            "CFN_URL not set - CASA CE will run without CFN registration. "
+            "CFN_URL not set - Demo CE will run without CFN registration. "
             "This CE will not appear in Management Plane. "
             "Set CFN_URL environment variable for production deployments."
         )
@@ -250,7 +250,7 @@ async def register_casa_ce() -> None:
     # base_url format for registration (CFN expects URL with scheme)
     # For gRPC services, we use the host:port that CFN will dial
     base_url = f"{ce_host}:{grpc_port}"
-    logger.info(f"Starting CASA CE registration with cfn_url={cfn_url}, base_url={base_url}")
+    logger.info(f"Starting Demo CE registration with cfn_url={cfn_url}, base_url={base_url}")
 
     # Create lifecycle client
     _lifecycle_client = CELifecycleClient(
@@ -259,7 +259,7 @@ async def register_casa_ce() -> None:
         timeout=10.0,
     )
 
-    # Define CASA CE configuration using new simplified schema
+    # Define Demo CE configuration using new simplified schema
     # Note: cfn_id and mas_auto_associate are added by CFN before forwarding to management plane
     ce_config = CERegistrationRequest(
         ce_type=CE_TYPE,
@@ -273,10 +273,10 @@ async def register_casa_ce() -> None:
     if response:
         # Start heartbeat background task
         _lifecycle_client.start_heartbeat()
-        logger.info(f"CASA CE registration complete: ce_id={response.ce_id}")
+        logger.info(f"Demo CE registration complete: ce_id={response.ce_id}")
     else:
         logger.warning(
-            "CASA CE registration failed - CE will operate without CFN visibility"
+            "Demo CE registration failed - CE will operate without CFN visibility"
         )
 
 
@@ -294,10 +294,10 @@ async def shutdown_lifecycle_client() -> None:
     global _lifecycle_client
 
     if _lifecycle_client:
-        logger.info("Shutting down CASA CE lifecycle client...")
+        logger.info("Shutting down Demo CE lifecycle client...")
         await _lifecycle_client.close()
         _lifecycle_client = None
-        logger.info("CASA CE lifecycle client shutdown complete")
+        logger.info("Demo CE lifecycle client shutdown complete")
 
 
 def get_ce_id() -> Optional[str]:
