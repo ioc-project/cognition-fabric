@@ -155,7 +155,7 @@ services:
       - SERVICE_NAME=${SERVICE_NAME:-ioc-cfn-svc}
       - POSTGRES_HOST=ioc-scale-db
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=cfn_audit
+      - POSTGRES_AUDIT_DB=cfn_audit
       - POSTGRES_USER=${IOC_SCALE_DB_USER}
       - POSTGRES_PASSWORD=${IOC_SCALE_DB_PASSWORD}
     depends_on:
