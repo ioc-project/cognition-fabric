@@ -153,7 +153,14 @@ services:
       - CFN_IP=${CFN_IP:-"Not Set"}
       - HEARTBEAT_INTERVAL_SECONDS=${HEARTBEAT_INTERVAL_SECONDS:-10}
       - SERVICE_NAME=${SERVICE_NAME:-ioc-cfn-svc}
+      - POSTGRES_HOST=ioc-scale-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=cfn_audit
+      - POSTGRES_USER=${IOC_SCALE_DB_USER}
+      - POSTGRES_PASSWORD=${IOC_SCALE_DB_PASSWORD}
     depends_on:
+      ioc-scale-db:
+        condition: service_healthy
       ioc-scale-cf-mgmt-svc:
         condition: service_healthy
     healthcheck:
