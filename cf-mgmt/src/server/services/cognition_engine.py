@@ -487,7 +487,7 @@ class CognitionEngineService:
                         raise HTTPException(
                             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                             detail=f"Unknown mas_config keys: {sorted(unknown_keys)}. "
-                                   f"Allowed keys: {sorted(factory_default.keys())}",
+                            f"Allowed keys: {sorted(factory_default.keys())}",
                         )
 
                 assoc = (

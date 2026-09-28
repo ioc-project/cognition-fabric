@@ -50,4 +50,7 @@ class CognitionEngine(Base):
     updated_by = Column(String(36), nullable=True)
 
     def __repr__(self):
-        return f"<CognitionEngine(id={self.id}, cfn_id={self.cfn_id}, name={self.name}, version={self.version}, ce_type={self.ce_type})>"
+        return (
+            f"<CognitionEngine(id={self.id}, cfn_id={self.cfn_id}, "
+            f"name={self.name}, version={self.version}, ce_type={self.ce_type})>"
+        )
