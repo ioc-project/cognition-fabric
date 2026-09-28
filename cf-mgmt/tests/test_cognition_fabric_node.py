@@ -990,11 +990,16 @@ class TestCognitionFabricNodeConfigVersion:
 class TestCFNConfigCognitionEngines:
     """cognition_engines appear in CFN config payload."""
 
+    _ce_counter = 0
+
     def _register_ce(self, client, cfn_id, ce_type="CASA"):
+        TestCFNConfigCognitionEngines._ce_counter += 1
         resp = client.post(
             "/api/cognition-engines",
             json={
                 "cfn_id": cfn_id,
+                "name": f"test-ce-{TestCFNConfigCognitionEngines._ce_counter}",
+                "version": "1.0.0",
                 "ce_type": ce_type,
                 "base_url": "http://ce.internal:9004",
                 "endpoint": "/api/l9/enforcement",
@@ -1055,10 +1060,13 @@ class TestCFNConfigCognitionEngines:
         workspace_id, cfn_id = created_cfn
 
         # Register CE with auto-associate so it attaches to any new MAS
+        TestCFNConfigCognitionEngines._ce_counter += 1
         ce_id = client.post(
             "/api/cognition-engines",
             json={
                 "cfn_id": cfn_id,
+                "name": f"test-ce-{TestCFNConfigCognitionEngines._ce_counter}",
+                "version": "1.0.0",
                 "ce_type": "CASA",
                 "base_url": "http://ce.internal:9004",
                 "endpoint": "/api/l9/enforcement",
