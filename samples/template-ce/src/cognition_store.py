@@ -1,5 +1,5 @@
 """
-Cognition Store client for CASA CE.
+Cognition Store client for Demo CE.
 
 Handles communication with the Cognition Store APIs (OXP backend) for:
 - Reading prior CE findings (MAS-level context)

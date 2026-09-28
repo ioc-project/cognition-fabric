@@ -1,4 +1,4 @@
-"""Tests for CASA CE gRPC service."""
+"""Tests for Demo CE gRPC service."""
 import pytest
 from uuid import uuid4
 from pathlib import Path
@@ -90,6 +90,6 @@ class TestGetInfoRPC:
         """Test GetInfo returns CE metadata."""
         response = stub.GetInfo(ce_pb2.GetInfoRequest())
 
-        assert response.ce_type == "CASA"
+        assert response.ce_type == "Demo CE"
         assert response.version == "1.0.0"
         assert response.matcher_strategy == "hybrid"

@@ -1,7 +1,7 @@
 #!/bin/bash -e
 
-# Run CASA CE unit tests
-cd engines/casa
+# Run Demo CE unit tests
+cd demo-ce
 uv pip install -e ".[test]"
 uv run pytest -v
 echo "UNIT-TEST DONE"

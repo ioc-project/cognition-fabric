@@ -1,7 +1,7 @@
 // ioc.ce.v1 - Cognition Engine gRPC Contract
 //
-// Protocol Buffer definition for the CASA Cognition Engine service.
-// Based on the specification in ioc-governance-casa-ce/docs/specs/ce-grpc-contract.md
+// Protocol Buffer definition for the Demo CE Cognition Engine service.
+// Based on the specification in ioc-governance-demo-ce/docs/specs/ce-grpc-contract.md
 //
 // The Enforcement Proxy dials a CE over this contract for authorization decisions.
 
@@ -11,13 +11,13 @@ package ioc.ce.v1;
 
 option go_package = "github.com/cisco-outshift/ioc-ce/api/v1;cev1";
 
-// CognitionEngine service - the contract CASA CE implements
+// CognitionEngine service - the contract Demo CE implements
 service CognitionEngine {
   // Evaluate - the authorization decision for an in-scope action
   // Returns ALLOW / DENY / MODIFY with reason
   rpc Evaluate(EvaluateRequest) returns (EvaluateResponse);
 
-  // GetInfo - CASA CE capabilities/metadata
+  // GetInfo - Demo CE capabilities/metadata
   rpc GetInfo(GetInfoRequest) returns (GetInfoResponse);
 }
 
@@ -173,7 +173,7 @@ message GetInfoRequest {}
 
 // Response for the GetInfo RPC
 message GetInfoResponse {
-  string ce_type = 1;                        // CE type (e.g., "CASA")
+  string ce_type = 1;                        // CE type (e.g., "Demo CE")
   string version = 2;                        // CE version
   repeated string enabled_checks = 3;        // Which checks are enabled
   string matcher_strategy = 4;               // Matcher strategy in effect

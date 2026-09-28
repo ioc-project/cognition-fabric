@@ -12,7 +12,7 @@ from registration import (
     CERegistrationRequest,
     CERegistrationResponse,
     CELifecycleClient,
-    register_casa_ce,
+    register_demo_ce,
     shutdown_lifecycle_client,
     get_ce_id,
     get_cfn_id,
@@ -27,12 +27,12 @@ class TestCERegistrationRequest:
     def test_create_registration_request(self):
         """Test creating a registration request with new schema."""
         request = CERegistrationRequest(
-            ce_type="CASA",
+            ce_type="Demo CE",
             base_url="localhost:50051",
             endpoint="ioc.ce.v1.CognitionEngine",
         )
 
-        assert request.ce_type == "CASA"
+        assert request.ce_type == "Demo CE"
         assert request.base_url == "localhost:50051"
         assert request.endpoint == "ioc.ce.v1.CognitionEngine"
 
@@ -45,7 +45,7 @@ class TestCERegistrationResponse:
         response = CERegistrationResponse(
             ce_id="ce-123",
             cfn_id="cfn-456",
-            ce_type="CASA",
+            ce_type="Demo CE",
             base_url="http://localhost:8000",
             endpoint="/authorize",
             enabled=True,
@@ -55,7 +55,7 @@ class TestCERegistrationResponse:
 
         assert response.ce_id == "ce-123"
         assert response.cfn_id == "cfn-456"
-        assert response.ce_type == "CASA"
+        assert response.ce_type == "Demo CE"
         assert response.base_url == "http://localhost:8000"
         assert response.endpoint == "/authorize"
         assert response.enabled is True
@@ -97,13 +97,13 @@ class TestCELifecycleClient:
 
 
 @pytest.mark.asyncio
-class TestRegisterCasaCE:
-    """Test register_casa_ce function."""
+class TestRegisterDemoCE:
+    """Test register_demo_ce function."""
 
     @patch.dict(os.environ, {}, clear=True)
     async def test_no_cfn_url_skips_registration(self, caplog):
         """Test that missing CFN_URL skips registration."""
-        await register_casa_ce()
+        await register_demo_ce()
         assert "CFN_URL not set" in caplog.text
 
     @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"})
@@ -124,7 +124,7 @@ class TestRegisterCasaCE:
         ))
         mock_client_class.return_value = mock_client
 
-        await register_casa_ce()
+        await register_demo_ce()
 
         # Verify client was created with correct URL
         mock_client_class.assert_called_once()
@@ -154,7 +154,7 @@ class TestRegisterCasaCE:
         ))
         mock_client_class.return_value = mock_client
 
-        await register_casa_ce()
+        await register_demo_ce()
 
         # Verify register was called with correct CE base_url
         register_call = mock_client.register.call_args[0][0]
@@ -169,7 +169,7 @@ class TestRegisterCasaCE:
         mock_client.register = AsyncMock(return_value=None)  # Registration failed
         mock_client_class.return_value = mock_client
 
-        await register_casa_ce()
+        await register_demo_ce()
 
         # Verify warning logged
         assert "registration failed" in caplog.text
@@ -206,7 +206,7 @@ class TestShutdownLifecycleClient:
         mock_client_class.return_value = mock_client
 
         # Register
-        await register_casa_ce()
+        await register_demo_ce()
 
         # Shutdown
         await shutdown_lifecycle_client()
@@ -236,13 +236,13 @@ class TestHelperFunctions:
 
 
 @pytest.mark.asyncio
-class TestCasaCEConfiguration:
-    """Test CASA CE specific configuration."""
+class TestDemoCEConfiguration:
+    """Test Demo CE specific configuration."""
 
     @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"})
     @patch('registration.CELifecycleClient')
-    async def test_casa_ce_config_fields(self, mock_client_class):
-        """Test that CASA CE registration includes correct fields."""
+    async def test_demo_ce_config_fields(self, mock_client_class):
+        """Test that Demo CE registration includes correct fields."""
         mock_client = AsyncMock()
         mock_client.register = AsyncMock(return_value=CERegistrationResponse(
             ce_id="ce-123",
@@ -256,12 +256,12 @@ class TestCasaCEConfiguration:
         ))
         mock_client_class.return_value = mock_client
 
-        await register_casa_ce()
+        await register_demo_ce()
 
         # Get the registration request that was passed
         register_call = mock_client.register.call_args[0][0]
 
-        # Verify CASA CE registration fields (cfn_id is added by CFN, not CE)
+        # Verify Demo CE registration fields (cfn_id is added by CFN, not CE)
         assert register_call.ce_type == CE_TYPE
         # gRPC endpoint format: host:port (no http:// prefix)
         assert register_call.base_url == "localhost:50051"

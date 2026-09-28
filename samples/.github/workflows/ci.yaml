@@ -1,4 +1,4 @@
-name: CASA CE CI workflow
+name: Demo CE CI workflow
 
 on:
   push:
@@ -50,7 +50,7 @@ jobs:
           TAG_VERSION=${TAG#v}  # Remove 'v' prefix
 
           # Extract version from pyproject.toml
-          PYPROJECT_VERSION=$(grep -m1 '^version = ' engines/casa/pyproject.toml | cut -d'"' -f2)
+          PYPROJECT_VERSION=$(grep -m1 '^version = ' demo-ce/pyproject.toml | cut -d'"' -f2)
 
           echo "Tag version: $TAG_VERSION"
           echo "pyproject.toml version: $PYPROJECT_VERSION"
@@ -59,7 +59,7 @@ jobs:
             echo "❌ Error: Version mismatch!"
             echo "Git tag: $TAG_VERSION"
             echo "pyproject.toml: $PYPROJECT_VERSION"
-            echo "Please update engines/casa/pyproject.toml version to match the tag."
+            echo "Please update demo-ce/pyproject.toml version to match the tag."
             exit 1
           fi
 
@@ -86,7 +86,7 @@ jobs:
           curl -LsSf https://astral.sh/uv/install.sh | sh
           export PATH="$HOME/.local/bin:$PATH"
           uv --version
-          cd engines/casa
+          cd demo-ce
           uv pip install --system -e ".[test]"
           uv run --no-project pytest -v
 
@@ -133,8 +133,8 @@ jobs:
         if: github.event_name == 'pull_request'
         uses: docker/build-push-action@v6
         with:
-          context: engines/casa
-          file: engines/casa/Dockerfile
+          context: demo-ce
+          file: demo-ce/Dockerfile
           push: false
           platforms: linux/amd64
           tags: |
@@ -148,8 +148,8 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v6
         with:
-          context: engines/casa
-          file: engines/casa/Dockerfile
+          context: demo-ce
+          file: demo-ce/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
@@ -163,8 +163,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         uses: docker/build-push-action@v6
         with:
-          context: engines/casa
-          file: engines/casa/Dockerfile
+          context: demo-ce
+          file: demo-ce/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           tags: |
