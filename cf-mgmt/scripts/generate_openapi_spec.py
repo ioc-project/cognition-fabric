@@ -13,10 +13,10 @@ import os
 import sys
 from pathlib import Path
 
-from server.main import app
-
 # Add the src directory to the path so we can import server modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+
+from server.main import app
 
 
 def generate_openapi_spec():

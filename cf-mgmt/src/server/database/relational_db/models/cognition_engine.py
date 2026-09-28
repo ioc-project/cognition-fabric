@@ -20,6 +20,10 @@ class CognitionEngine(Base):
     id = Column(String(255), primary_key=True, nullable=False)
     cfn_id = Column(String(255), ForeignKey("cognition_fabric_node.id"), nullable=False, index=True)
 
+    # CE identity (unique constraint on cfn_id + name + version)
+    name = Column(String(255), nullable=False)
+    version = Column(String(50), nullable=False)
+
     # CE type: CASA or DETECTIVE
     ce_type = Column(String(20), nullable=False)
 
@@ -46,4 +50,7 @@ class CognitionEngine(Base):
     updated_by = Column(String(36), nullable=True)
 
     def __repr__(self):
-        return f"<CognitionEngine(id={self.id}, cfn_id={self.cfn_id}, ce_type={self.ce_type})>"
+        return (
+            f"<CognitionEngine(id={self.id}, cfn_id={self.cfn_id}, "
+            f"name={self.name}, version={self.version}, ce_type={self.ce_type})>"
+        )

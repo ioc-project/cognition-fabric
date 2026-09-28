@@ -28,10 +28,15 @@ router = APIRouter()
     response_model=CognitionEngineResponse,
     summary="Register Cognition Engine",
     description=(
-        "Register or update a Cognition Engine with a CFN. "
-        "Idempotent: same (cfn_id, name, version) updates the record (200) or creates it (201). "
-        "Same name with a different version creates a new record."
+        "Register a new Cognition Engine with a CFN. "
+        "Returns 409 Conflict if CE with same (cfn_id, name, version) already exists. "
+        "The 409 response includes existing_ce_id for recovery via PUT. "
+        "Same name with a different version creates a new CE record."
     ),
+    responses={
+        201: {"description": "CE created successfully"},
+        409: {"description": "CE with same (name, version) already exists"},
+    },
 )
 def register_cognition_engine(
     engine_data: CognitionEngineRegisterRequest,
@@ -41,7 +46,7 @@ def register_cognition_engine(
     authz_service.require_permission(auth_user, "create", "cognition_engine")
     user_id = auth_user.get("id", "unknown")
     result, created = cognition_engine_service.register(engine_data, user_id)
-    response.status_code = 201 if created else 200
+    response.status_code = 201
     return result
 
 

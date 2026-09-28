@@ -1371,7 +1371,7 @@
           "cognition-engines"
         ],
         "summary": "Register Cognition Engine",
-        "description": "Register or update a Cognition Engine with a CFN. Idempotent: same (cfn_id, name, version) updates the record (200) or creates it (201). Same name with a different version creates a new record.",
+        "description": "Register a new Cognition Engine with a CFN. Returns 409 Conflict if CE with same (cfn_id, name, version) already exists. The 409 response includes existing_ce_id for recovery via PUT. Same name with a different version creates a new CE record.",
         "operationId": "register_cognition_engine_api_cognition_engines_post",
         "security": [
           {
@@ -1398,6 +1398,12 @@
                 }
               }
             }
+          },
+          "201": {
+            "description": "CE created successfully"
+          },
+          "409": {
+            "description": "CE with same (name, version) already exists"
           },
           "422": {
             "description": "Validation Error",
@@ -2473,6 +2479,14 @@
             "type": "string",
             "title": "Cfn Id"
           },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
           "ce_type": {
             "$ref": "#/components/schemas/CEType"
           },
@@ -2542,6 +2556,8 @@
         "required": [
           "id",
           "cfn_id",
+          "name",
+          "version",
           "ce_type",
           "base_url",
           "endpoint",
@@ -2608,6 +2624,14 @@
             "type": "string",
             "title": "Cfn Id"
           },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
           "ce_type": {
             "$ref": "#/components/schemas/CEType"
           },
@@ -2665,6 +2689,8 @@
         "required": [
           "id",
           "cfn_id",
+          "name",
+          "version",
           "ce_type",
           "base_url",
           "endpoint",
@@ -2740,6 +2766,30 @@
             "title": "Cfn Id",
             "description": "Immutable \u2014 cannot be updated via PATCH"
           },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Immutable \u2014 cannot be updated via PATCH"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version",
+            "description": "Immutable \u2014 cannot be updated via PATCH"
+          },
           "ce_type": {
             "anyOf": [
               {
@@ -2754,7 +2804,7 @@
         },
         "type": "object",
         "title": "CognitionEnginePatchRequest",
-        "description": "Schema for PATCH /cognition-engines/{id}.\n\nOnly the fields listed here can be updated.\nAttempting to update immutable fields (cfn_id, ce_type)\nwill be rejected with 400."
+        "description": "Schema for PATCH /cognition-engines/{id}.\n\nOnly the fields listed here can be updated.\nAttempting to update immutable fields (cfn_id, name, version, ce_type)\nwill be rejected with 400."
       },
       "CognitionEngineRegisterRequest": {
         "properties": {
@@ -2763,6 +2813,16 @@
             "title": "Cfn Id",
             "description": "CFN this engine is registering under"
           },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "CE name (e.g., 'demo-ce')"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "CE version (e.g., '1.0.0')"
+          },
           "ce_type": {
             "$ref": "#/components/schemas/CEType",
             "description": "Type of Cognition Engine: CASA or DETECTIVE"
@@ -2770,7 +2830,7 @@
           "base_url": {
             "type": "string",
             "title": "Base Url",
-            "description": "Base URL for the CFN to reach this engine (e.g., 'http://casa-ce:8080')"
+            "description": "Base URL for the CFN to reach this engine (e.g., 'http://demo-ce:8080')"
           },
           "endpoint": {
             "type": "string",
@@ -2800,12 +2860,14 @@
         "type": "object",
         "required": [
           "cfn_id",
+          "name",
+          "version",
           "ce_type",
           "base_url",
           "endpoint"
         ],
         "title": "CognitionEngineRegisterRequest",
-        "description": "Schema for CE self-registration (idempotent upsert)"
+        "description": "Schema for CE self-registration.\n\nPOST behavior:\n- If (cfn_id, name, version) exists: returns 409 Conflict with existing_ce_id\n- If (cfn_id, name) exists with different version: creates new CE record\n- Otherwise: creates new CE record"
       },
       "CognitionEngineResponse": {
         "properties": {
@@ -2816,6 +2878,14 @@
           "cfn_id": {
             "type": "string",
             "title": "Cfn Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
           },
           "ce_type": {
             "$ref": "#/components/schemas/CEType"
@@ -2850,6 +2920,8 @@
         "required": [
           "ce_id",
           "cfn_id",
+          "name",
+          "version",
           "ce_type",
           "base_url",
           "endpoint",
