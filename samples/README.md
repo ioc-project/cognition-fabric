@@ -5,7 +5,7 @@ Repository for Cognition Engines (CEs) - intelligent decision-making services fo
 ## Structure
 
 ```
-ioc-scale-cf-cognition-engines/
+ioc-scale-cf-demo-ce/
 ├── demo-ce/              # Demo CE Cognition Engine
 │   ├── src/              # Python source code
 │   ├── proto/            # Protocol Buffer definitions
@@ -102,8 +102,8 @@ CI automatically runs on:
 Images are published to GitHub Container Registry:
 
 ```
-ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/demo-ce:latest
-ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/demo-ce:v0.1.0
+ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:latest
+ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:v0.1.0
 ```
 
 ## Contributing

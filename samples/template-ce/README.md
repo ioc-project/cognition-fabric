@@ -1,6 +1,6 @@
-# Demo CE Cognition Engine
+# Demo CE
 
-Demo CE Cognition Engine implementing the `ioc.ce.v1.CognitionEngine` gRPC contract.
+Demo Cognition Engine implementing the `ioc.ce.v1.CognitionEngine` gRPC contract.
 
 ## Overview
 
