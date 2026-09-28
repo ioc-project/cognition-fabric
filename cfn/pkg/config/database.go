@@ -47,7 +47,7 @@ func DatabaseFromEnv() Database {
 		Host:     getEnvOrDefault("POSTGRES_HOST", "localhost"),
 		Port:     getEnvOrDefault("POSTGRES_PORT", "5432"),
 		User:     getEnvOrDefault("POSTGRES_USER", "postgres"),
-		Password: getEnvOrDefault("POSTGRES_PASSWORD", "postgres"),
+		Password: getEnvOrDefault("POSTGRES_PASSWORD", "localdev"),
 		Name:     getEnvOrDefault("POSTGRES_AUDIT_DB", "cfn_audit"),
 		SSLMode:  getEnvOrDefault("POSTGRES_SSLMODE", "disable"),
 	}

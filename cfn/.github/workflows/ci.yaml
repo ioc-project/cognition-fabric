@@ -42,7 +42,7 @@ jobs:
       postgres:
         image: postgres:17-alpine
         env:
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: localdev
           POSTGRES_DB: cfn_audit_test
         ports:
           - 5432:5432
@@ -66,7 +66,7 @@ jobs:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: localdev
           POSTGRES_AUDIT_DB: cfn_audit_test
           POSTGRES_TEST_DB: cfn_audit_test
         run: make test
