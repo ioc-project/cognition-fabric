@@ -10,19 +10,25 @@ from fastapi import status
 from server.database.relational_db.db import RelationalDB
 
 
-def _base_payload(cfn_id: str, ce_type: str = "CASA") -> dict:
+def _base_payload(cfn_id: str, ce_type: str = "CASA", name: str = "test-ce", version: str = "1.0.0") -> dict:
     return {
         "cfn_id": cfn_id,
+        "name": name,
+        "version": version,
         "ce_type": ce_type,
         "base_url": "http://ce.internal:8080",
         "endpoint": "/api/l9/enforcement",
     }
 
 
-def _register(client, cfn_id, ce_type="CASA", **extra):
+def _register(client, cfn_id, ce_type="CASA", name: str = None, version: str = "1.0.0", **extra):
+    # Generate unique name if not provided to avoid 409 conflicts
+    if name is None:
+        import uuid
+        name = f"test-ce-{uuid.uuid4().hex[:8]}"
     resp = client.post(
         "/api/cognition-engines",
-        json={**_base_payload(cfn_id, ce_type), **extra},
+        json={**_base_payload(cfn_id, ce_type, name, version), **extra},
     )
     assert resp.status_code == status.HTTP_201_CREATED
     return resp.json()["ce_id"]
@@ -65,22 +71,24 @@ class TestCognitionEngineRegister:
         """New registration returns 201 and created=true"""
         response = client.post(
             "/api/cognition-engines",
-            json=_base_payload(registered_cfn),
+            json=_base_payload(registered_cfn, name="new-engine-test", version="1.0.0"),
         )
 
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
         assert data["ce_id"]
         assert data["cfn_id"] == registered_cfn
+        assert data["name"] == "new-engine-test"
+        assert data["version"] == "1.0.0"
         assert data["ce_type"] == "CASA"
         assert data["base_url"] == "http://ce.internal:8080"
         assert data["endpoint"] == "/api/l9/enforcement"
         assert data["status"] == "online"
         assert data["created"] is True
 
-    def test_register_same_ce_type_upserts_returns_200(self, client, registered_cfn):
-        """Re-registering the same (cfn_id, ce_type) updates the record and returns 200 + created=false"""
-        payload = _base_payload(registered_cfn, "CASA")
+    def test_register_same_name_version_returns_409(self, client, registered_cfn):
+        """Re-registering the same (cfn_id, name, version) returns 409 Conflict with existing_ce_id"""
+        payload = _base_payload(registered_cfn, "CASA", name="conflict-test-ce", version="1.0.0")
 
         first = client.post("/api/cognition-engines", json=payload)
         assert first.status_code == status.HTTP_201_CREATED
@@ -91,20 +99,39 @@ class TestCognitionEngineRegister:
             json={**payload, "base_url": "http://ce-updated.internal:8080"},
         )
 
-        assert second.status_code == status.HTTP_200_OK
+        assert second.status_code == status.HTTP_409_CONFLICT
         data = second.json()
-        assert data["ce_id"] == ce_id
-        assert data["created"] is False
+        # FastAPI wraps the dict in 'detail' field
+        assert data["detail"]["existing_ce_id"] == ce_id
+        assert "already exists" in data["detail"]["error"].lower()
+
+    def test_register_different_version_creates_new_record(self, client, registered_cfn):
+        """Registering same name with different version creates a new record (201)"""
+        first = client.post("/api/cognition-engines", json=_base_payload(registered_cfn, "CASA", name="version-test-ce", version="1.0.0"))
+        assert first.status_code == status.HTTP_201_CREATED
+        ce_id_v1 = first.json()["ce_id"]
+
+        second = client.post(
+            "/api/cognition-engines",
+            json=_base_payload(registered_cfn, "CASA", name="version-test-ce", version="2.0.0"),
+        )
+
+        assert second.status_code == status.HTTP_201_CREATED
+        data = second.json()
+        assert data["ce_id"] != ce_id_v1
+        assert data["version"] == "2.0.0"
+        assert data["name"] == "version-test-ce"
+        assert data["created"] is True
 
     def test_register_different_ce_type_creates_new_record(self, client, registered_cfn):
         """Registering a different ce_type under the same CFN creates a new record (201)"""
-        first = client.post("/api/cognition-engines", json=_base_payload(registered_cfn, "CASA"))
+        first = client.post("/api/cognition-engines", json=_base_payload(registered_cfn, "CASA", name="type-test-casa"))
         assert first.status_code == status.HTTP_201_CREATED
         ce_id_casa = first.json()["ce_id"]
 
         second = client.post(
             "/api/cognition-engines",
-            json=_base_payload(registered_cfn, "DETECTIVE"),
+            json=_base_payload(registered_cfn, "DETECTIVE", name="type-test-detective"),
         )
 
         assert second.status_code == status.HTTP_201_CREATED
@@ -117,6 +144,8 @@ class TestCognitionEngineRegister:
         """Registration with all optional fields"""
         payload = {
             "cfn_id": registered_cfn,
+            "name": "full-payload-ce",
+            "version": "2.0.0",
             "ce_type": "DETECTIVE",
             "base_url": "https://detective.internal:9090",
             "endpoint": "/api/l9/detective",
@@ -127,6 +156,8 @@ class TestCognitionEngineRegister:
 
         assert response.status_code == status.HTTP_201_CREATED
         data = response.json()
+        assert data["name"] == "full-payload-ce"
+        assert data["version"] == "2.0.0"
         assert data["ce_type"] == "DETECTIVE"
         assert data["endpoint"] == "/api/l9/detective"
         assert data["created"] is True
@@ -135,6 +166,8 @@ class TestCognitionEngineRegister:
         """Registration with CASA CE type"""
         payload = {
             "cfn_id": registered_cfn,
+            "name": "casa-type-test",
+            "version": "1.0.0",
             "ce_type": "CASA",
             "base_url": "https://casa.internal:9090",
             "endpoint": "/api/l9/enforcement",
@@ -150,6 +183,8 @@ class TestCognitionEngineRegister:
         """Registration with DETECTIVE CE type"""
         payload = {
             "cfn_id": registered_cfn,
+            "name": "detective-type-test",
+            "version": "1.0.0",
             "ce_type": "DETECTIVE",
             "base_url": "https://detective.internal:9090",
             "endpoint": "/api/l9/detective",
@@ -169,8 +204,8 @@ class TestCognitionEngineRegister:
         )
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
-    def test_register_same_ce_type_different_cfns(self, client):
-        """Same CE type can be registered under different CFNs"""
+    def test_register_same_name_version_different_cfns(self, client):
+        """Same (name, version) can be registered under different CFNs"""
         cfn1_id = client.post(
             "/api/cognition-fabric-nodes/register",
             json={"id": "cfn-ce-test-1", "name": "CFN CE Test 1"},
@@ -181,10 +216,10 @@ class TestCognitionEngineRegister:
             json={"id": "cfn-ce-test-2", "name": "CFN CE Test 2"},
         ).json()["id"]
 
-        resp1 = client.post("/api/cognition-engines", json=_base_payload(cfn1_id, "CASA"))
+        resp1 = client.post("/api/cognition-engines", json=_base_payload(cfn1_id, "CASA", name="shared-ce", version="1.0.0"))
         assert resp1.status_code == status.HTTP_201_CREATED
 
-        resp2 = client.post("/api/cognition-engines", json=_base_payload(cfn2_id, "CASA"))
+        resp2 = client.post("/api/cognition-engines", json=_base_payload(cfn2_id, "CASA", name="shared-ce", version="1.0.0"))
         assert resp2.status_code == status.HTTP_201_CREATED
         assert resp2.json()["cfn_id"] == cfn2_id
         assert resp2.json()["ce_id"] != resp1.json()["ce_id"]
@@ -272,7 +307,7 @@ class TestCognitionEngineList:
 
         item = client.get(f"/api/cognition-engines?cfn_id={registered_cfn}").json()["cognition_engines"][0]
 
-        for field in ("id", "cfn_id", "ce_type", "base_url", "endpoint", "enabled", "status", "mas_config"):
+        for field in ("id", "cfn_id", "name", "version", "ce_type", "base_url", "endpoint", "enabled", "status", "mas_config"):
             assert field in item
 
 
@@ -350,12 +385,12 @@ class TestCognitionEngineDelete:
         assert data["total"] == 1
         assert data["cognition_engines"][0]["ce_type"] == "CASA"
 
-    def test_deleted_engine_ce_type_can_be_reregistered(self, client, registered_cfn):
-        """After deletion the same ce_type can be registered again (partial unique index)."""
-        ce_id = _register(client, registered_cfn, "CASA")
+    def test_deleted_engine_name_version_can_be_reregistered(self, client, registered_cfn):
+        """After deletion the same (name, version) can be registered again (partial unique index)."""
+        ce_id = _register(client, registered_cfn, "CASA", name="rereg-test-ce", version="1.0.0")
         _delete(client, ce_id)
 
-        new = client.post("/api/cognition-engines", json=_base_payload(registered_cfn, "CASA"))
+        new = client.post("/api/cognition-engines", json=_base_payload(registered_cfn, "CASA", name="rereg-test-ce", version="1.0.0"))
         assert new.status_code == status.HTTP_201_CREATED
         assert new.json()["ce_id"] != ce_id
 
@@ -487,7 +522,7 @@ class TestCognitionEngineEnabled:
 
     def test_enabled_present_in_registration_response(self, client, registered_cfn):
         """Registration response includes enabled=true."""
-        resp = client.post("/api/cognition-engines", json=_base_payload(registered_cfn, "CASA"))
+        resp = client.post("/api/cognition-engines", json=_base_payload(registered_cfn, "CASA", name="enabled-resp-test"))
         assert resp.status_code == status.HTTP_201_CREATED
         assert resp.json()["enabled"] is True
 
@@ -500,7 +535,7 @@ class TestCognitionEngineEnabled:
 
     def test_caller_cannot_set_enabled_via_registration(self, client, registered_cfn):
         """enabled is ignored even if the caller tries to pass it in the registration payload."""
-        payload = {**_base_payload(registered_cfn, "CASA"), "enabled": False}
+        payload = {**_base_payload(registered_cfn, "CASA", name="enabled-ignore-test"), "enabled": False}
         resp = client.post("/api/cognition-engines", json=payload)
         assert resp.status_code == status.HTTP_201_CREATED
 
@@ -521,7 +556,7 @@ class TestCognitionEngineAutoAttach:
         """CE registered with mas_auto_associate=true reflects that value."""
         resp = client.post(
             "/api/cognition-engines",
-            json={**_base_payload(registered_cfn, "CASA"), "mas_auto_associate": True},
+            json={**_base_payload(registered_cfn, "CASA", name="auto-assoc-set-test"), "mas_auto_associate": True},
         )
         assert resp.status_code == status.HTTP_201_CREATED
         assert resp.json()["mas_auto_associate"] is True
@@ -535,13 +570,11 @@ class TestCognitionEngineAutoAttach:
         item = client.get(f"/api/cognition-engines?cfn_id={registered_cfn}").json()["cognition_engines"][0]
         assert "mas_auto_associate" in item
 
-    def test_mas_auto_associate_preserved_on_upsert(self, client, registered_cfn):
-        """Re-registering same (cfn_id, ce_type, version) with mas_auto_associate=true updates the flag."""
-        payload = _base_payload(registered_cfn, "CASA")
+    def test_mas_auto_associate_can_be_updated_via_patch(self, client, registered_cfn):
+        """mas_auto_associate can be updated via PATCH."""
+        ce_id = _register(client, registered_cfn, "CASA", name="patch-auto-assoc-ce")
 
-        client.post("/api/cognition-engines", json=payload)
-
-        resp = client.post("/api/cognition-engines", json={**payload, "mas_auto_associate": True})
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"mas_auto_associate": True})
         assert resp.status_code == status.HTTP_200_OK
         assert resp.json()["mas_auto_associate"] is True
 
@@ -602,6 +635,8 @@ class TestCognitionEnginePatch:
         for field, value in [
             ("ce_type", "DETECTIVE"),
             ("cfn_id", "other-cfn"),
+            ("name", "new-name"),
+            ("version", "2.0.0"),
         ]:
             resp = client.patch(f"/api/cognition-engines/{ce_id}", json={field: value})
             assert resp.status_code == status.HTTP_400_BAD_REQUEST, f"Expected 400 for field '{field}'"
@@ -841,7 +876,7 @@ class TestCognitionEngineCfnValidation:
         """Registration does not check CFN active status — it only checks existence."""
         _disable_cfn(client, registered_cfn)
 
-        resp = client.post("/api/cognition-engines", json=_base_payload(registered_cfn, "DETECTIVE"))
+        resp = client.post("/api/cognition-engines", json=_base_payload(registered_cfn, "DETECTIVE", name="inactive-cfn-test"))
         assert resp.status_code == status.HTTP_201_CREATED
 
 
@@ -1055,20 +1090,26 @@ class TestCognitionEngineAutoAttachTrigger:
         )
         assert resp.status_code == status.HTTP_201_CREATED
 
-    def test_mas_auto_associate_upsert_is_idempotent(self, client, registered_cfn, created_workspace):
-        """Re-registering a CE with the same (cfn_id, ce_type) returns 200 (upsert)."""
+    def test_mas_auto_associate_duplicate_returns_409(self, client, registered_cfn, created_workspace):
+        """Re-registering a CE with the same (cfn_id, name, version) returns 409 Conflict."""
         _create_mas(client, created_workspace, "idempotent-mas")
         payload = {
             "cfn_id": registered_cfn,
+            "name": "auto-assoc-dup-ce",
+            "version": "1.0.0",
             "ce_type": "CASA",
             "base_url": "http://ce:8080",
             "endpoint": "/api/l9/enforcement",
             "mas_auto_associate": True,
         }
-        client.post("/api/cognition-engines", json=payload)  # first registration: creates (201)
-        resp = client.post("/api/cognition-engines", json=payload)  # second registration: upsert (200)
+        first = client.post("/api/cognition-engines", json=payload)  # first registration: creates (201)
+        assert first.status_code == status.HTTP_201_CREATED
+        ce_id = first.json()["ce_id"]
 
-        assert resp.status_code == status.HTTP_200_OK
+        resp = client.post("/api/cognition-engines", json=payload)  # second registration: conflict (409)
+
+        assert resp.status_code == status.HTTP_409_CONFLICT
+        assert resp.json()["detail"]["existing_ce_id"] == ce_id
 
     def test_mas_update_mas_auto_associatees_existing_mas_auto_associate_ce(self, client, registered_cfn):
         """Updating a MAS triggers auto-attach for all enabled mas_auto_associate CEs in the CFN."""
