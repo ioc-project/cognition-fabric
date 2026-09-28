@@ -1,6 +1,6 @@
-# IOC Scale CF - Cognition Engines
+# IOC Scale CF - Demo CE
 
-Repository for Cognition Engines (CEs) - intelligent decision-making services for the IOC platform.
+Demo Cognition Engine (CE) for the IOC platform.
 
 ## Structure
 
