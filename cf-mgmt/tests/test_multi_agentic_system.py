@@ -623,13 +623,15 @@ class TestMASInlineCEAssociation:
     _ce_counter = 0
 
     def _register_ce(self, client, cfn_id: str, name: str) -> str:
-        # Use alternating ce_type since (cfn_id, ce_type) is the upsert key
+        # Use unique name for each CE since (cfn_id, name, version) is the uniqueness key
         TestMASInlineCEAssociation._ce_counter += 1
         ce_type = "CASA" if TestMASInlineCEAssociation._ce_counter % 2 == 1 else "DETECTIVE"
         resp = client.post(
             "/api/cognition-engines",
             json={
                 "cfn_id": cfn_id,
+                "name": name,
+                "version": "1.0.0",
                 "ce_type": ce_type,
                 "base_url": f"http://{name}:8080",
                 "endpoint": "/api/l9/enforcement",
