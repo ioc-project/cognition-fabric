@@ -92,7 +92,7 @@ func (c *Client) GetMAS(ctx context.Context, workspaceID, masID string) (*MASRes
 // FindCASACE finds the CASA CE from a MAS response.
 func (m *MASResponse) FindCASACE() *MASCognitionEngine {
 	for i := range m.CognitionEngines {
-		if m.CognitionEngines[i].CEType == "CASA" {
+		if m.CognitionEngines[i].CEType == "CASA" || m.CognitionEngines[i].CEType == "Demo CE" {
 			return &m.CognitionEngines[i]
 		}
 	}

@@ -8,8 +8,8 @@ package cognitionengine
 // RegisterRequest represents a CE registration request from CE to CFN.
 // @Description CE registration request payload. The CE sends this to CFN, which adds cfn_id and forwards to management plane.
 type RegisterRequest struct {
-	// CE type - must be "CASA" or "DETECTIVE"
-	CEType string `json:"ce_type" example:"CASA" enums:"CASA,DETECTIVE"`
+	// CE type - must be "CASA", "Demo CE", or "DETECTIVE"
+	CEType string `json:"ce_type" example:"Demo CE" enums:"CASA,Demo CE,DETECTIVE"`
 	// Base URL for the CE service
 	BaseURL string `json:"base_url" example:"http://casa-ce:8080"`
 	// API endpoint path
@@ -28,7 +28,7 @@ type RegisterResponse struct {
 	// Cognition Fabric Node ID (UUID)
 	CFNID string `json:"cfn_id" example:"660e8400-e29b-41d4-a716-446655440001"`
 	// CE type
-	CEType string `json:"ce_type" example:"CASA"`
+	CEType string `json:"ce_type" example:"Demo CE"`
 	// Base URL for the CE service
 	BaseURL string `json:"base_url" example:"http://casa-ce:8080"`
 	// API endpoint path
