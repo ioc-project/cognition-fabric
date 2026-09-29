@@ -251,6 +251,33 @@ func TestRegisterCognitionEngineHandler_InvalidJSON(t *testing.T) {
 	}
 }
 
+func TestRegisterCognitionEngineHandler_CASATypeAccepted(t *testing.T) {
+	CfnID = "test-cfn-id"
+
+	mockMgmtPlane := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"ce_id":"test-ce-id","cfn_id":"test-cfn-id","name":"casa-ce","version":"1.0.0","ce_type":"CASA","base_url":"http://localhost:8080","endpoint":"/api/test","enabled":true,"mas_auto_associate":true,"status":"offline","created":true}`))
+	}))
+	defer mockMgmtPlane.Close()
+
+	t.Setenv("MGMT_URL", mockMgmtPlane.URL)
+
+	a := &App{}
+	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
+
+	body := `{"name": "casa-ce", "version": "1.0.0", "ce_type": "CASA", "base_url": "http://localhost:8080", "endpoint": "/api/test"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d, body=%s", http.StatusOK, w.Code, w.Body.String())
+	}
+}
+
 func TestRegisterCognitionEngineHandler_MASAutoAssociateDefault(t *testing.T) {
 	CfnID = "test-cfn-id"
 

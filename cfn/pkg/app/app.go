@@ -18,7 +18,10 @@ import (
 
 	_ "github.com/cisco-eti/ioc-scale-cfn-svc/docs/api" // Swagger docs
 	enforcementv1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
+	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/audit"
+	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/database"
 	httpclient "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/http"
+	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/config"
 	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/tools/easyhttp"
 	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/tools/logger"
 	httpSwagger "github.com/swaggo/http-swagger"
@@ -116,19 +119,37 @@ func getOutboundIP() string {
 
 // App represents the CFN application.
 type App struct {
-	server     *easyhttp.EasyServer
-	grpcServer *grpc.Server
-	stopChan   chan struct{}
-	port       int
-	grpcPort   int
+	server         *easyhttp.EasyServer
+	grpcServer     *grpc.Server
+	enforcementSrv *enforcementServer
+	stopChan       chan struct{}
+	port           int
+	grpcPort       int
+	db             database.Store
 }
 
 // New creates a new CFN application.
 func New(port, grpcPort int) (*App, error) {
+	log := getLogger()
+
+	pagination := config.PaginationFromEnv()
+	audit.SetPaginationConfig(pagination.DefaultPageSize, pagination.MaxPageSize)
+	log.Infof("pagination config: defaultPageSize=%d maxPageSize=%d", audit.DefaultPageSize(), audit.MaxPageSize())
+
+	db, err := database.New(config.DatabaseFromEnv())
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+	if err := db.MigrateUp(); err != nil {
+		return nil, fmt.Errorf("failed to migrate database: %w", err)
+	}
+	log.Info("connected to database and ran migrations")
+
 	a := &App{
 		stopChan: make(chan struct{}),
 		port:     port,
 		grpcPort: grpcPort,
+		db:       db,
 	}
 
 	rtr := a.initializeRoutes()
@@ -136,7 +157,8 @@ func New(port, grpcPort int) (*App, error) {
 
 	// Initialize gRPC server
 	a.grpcServer = grpc.NewServer()
-	enforcementv1.RegisterEnforcementServer(a.grpcServer, newEnforcementServer())
+	a.enforcementSrv = newEnforcementServer(db)
+	enforcementv1.RegisterEnforcementServer(a.grpcServer, a.enforcementSrv)
 	reflection.Register(a.grpcServer)
 
 	a.registerOnStartup()
@@ -381,8 +403,21 @@ func (a *App) Stop() error {
 	log.Info("- stopping gRPC server")
 	a.grpcServer.GracefulStop()
 
+	log.Info("- waiting for in-flight audit writes")
+	const auditWaitTimeout = 10 * time.Second
+	if !a.enforcementSrv.WaitTimeout(auditWaitTimeout) {
+		log.Warnf("timed out after %s waiting for in-flight audit writes, continuing shutdown", auditWaitTimeout)
+	}
+
 	log.Info("- stopping HTTP server")
-	return a.server.Stop()
+	err := a.server.Stop()
+
+	log.Info("- closing database connection")
+	if closeErr := a.db.Close(); closeErr != nil {
+		log.Errorf("failed to close database connection: %v", closeErr)
+	}
+
+	return err
 }
 
 // healthHandler returns service health status.
@@ -415,6 +450,10 @@ func (a *App) initializeRoutes() http.Handler {
 	rtr.Put("/api/cognition-engine/{ceId}/heartbeat", a.cognitionEngineHeartbeatHandler)
 	rtr.Patch("/api/cognition-engine/{ceId}", a.patchCognitionEngineHandler)
 	rtr.Delete("/api/cognition-engine/{ceId}", a.deleteCognitionEngineHandler)
+
+	// Audit events (internal - consumed by mgmt-svc's audit passthrough)
+	rtr.Get("/api/internal/mgmt/audit", a.listAuditEventsHandler)
+	rtr.Get("/api/internal/mgmt/audit/{eventId}", a.getAuditEventHandler)
 
 	// Swagger UI
 	rtr.HandleHTTP("/docs/", httpSwagger.WrapHandler)
