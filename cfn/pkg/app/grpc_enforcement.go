@@ -6,25 +6,58 @@ package app
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"sync"
 	"time"
 
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 	enforcementv1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
+	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/audit"
 	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/casa"
+	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/database"
 	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/mgmt"
+	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"gorm.io/datatypes"
 )
+
+// systemActorID is used as created_by/last_modified_by for audit events CFN
+// writes about its own actions, since there is no human actor. It's the same
+// all-zero UUID the Mgmt UI already special-cases and renders as "Admin".
+var systemActorID = uuid.MustParse("00000000-0000-0000-0000-000000000000")
 
 // enforcementServer implements the EnforcementServer interface.
 type enforcementServer struct {
 	enforcementv1.UnimplementedEnforcementServer
+	db database.Store
+	// auditWG tracks in-flight fire-and-forget audit writes so Stop() can wait
+	// for them before closing the database connection out from under them.
+	auditWG sync.WaitGroup
 }
 
 // newEnforcementServer creates a new enforcement gRPC server.
-func newEnforcementServer() *enforcementServer {
-	return &enforcementServer{}
+func newEnforcementServer(db database.Store) *enforcementServer {
+	return &enforcementServer{db: db}
+}
+
+// WaitTimeout blocks until all in-flight audit writes have completed, or the
+// given timeout elapses. Returns false on timeout, so a hung/unreachable DB
+// during shutdown can't block the process from exiting forever.
+func (s *enforcementServer) WaitTimeout(timeout time.Duration) bool {
+	done := make(chan struct{})
+	go func() {
+		s.auditWG.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		return true
+	case <-time.After(timeout):
+		return false
+	}
 }
 
 // GetDisposition handles enforcement requests from the Enforcement Proxy.
@@ -110,10 +143,12 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 	casaResp, err := casaClient.Evaluate(ctx, casaReq)
 	if err != nil {
 		log.Errorf("CASA CE Evaluate failed: ce_id=%s error=%v", casaCE.CEID, err)
+		s.auditCEInvocation(casaCE.CEID, casaReq, "ERROR", err.Error())
 		return nil, status.Errorf(codes.Internal, "CASA CE Evaluate failed: %v", err)
 	}
 
 	log.Infof("CASA CE response: ce_id=%s outcome=%s reason=%s", casaCE.CEID, casaResp.Outcome, casaResp.Reason)
+	s.auditCEInvocation(casaCE.CEID, casaReq, casaResp.Outcome.String(), casaResp.Reason)
 
 	// Map CASA CE decision to enforcement action
 	action := mapCEDecisionToAction(casaResp.Outcome)
@@ -125,6 +160,50 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 		Action: action,
 		Modify: modify,
 	}, nil
+}
+
+// auditCEInvocation records CFN's call into a CE. It is fire-and-forget: a
+// write failure is logged but never affects the GetDisposition response,
+// since this runs on the latency-sensitive live-conversation path.
+func (s *enforcementServer) auditCEInvocation(ceID string, req *cev1.EvaluateRequest, outcome, reason string) {
+	if s.db == nil {
+		return
+	}
+
+	infoBytes, err := json.Marshal(map[string]any{
+		"mas_id":               req.MasId,
+		"source_agent_id":      req.SourceAgentId,
+		"destination_agent_id": req.DestinationAgentId,
+		"trace_id":             req.TraceId,
+		"outcome":              outcome,
+		"reason":               reason,
+	})
+	if err != nil {
+		getLogger().Errorf("failed to marshal audit_information for CE invocation: ce_id=%s error=%v", ceID, err)
+		return
+	}
+
+	success := outcome != "ERROR"
+
+	s.auditWG.Add(1)
+	go func() {
+		defer s.auditWG.Done()
+		event := &audit.Audit{
+			ResourceType:            audit.ResourceTypeCognitionEngine,
+			ResourceIdentifier:      ceID,
+			AuditType:               audit.AuditTypeCEInvoked,
+			AuditResourceIdentifier: req.MasId,
+			AuditInformation:        datatypes.JSON(infoBytes),
+			Success:                 &success,
+			CreatedBy:               systemActorID,
+			LastModifiedBy:          systemActorID,
+		}
+		// Not the RPC's ctx: that gets cancelled the moment GetDisposition returns,
+		// which would kill this write before it has a chance to run.
+		if err := s.db.CreateAuditEvent(context.Background(), event); err != nil {
+			getLogger().Errorf("failed to write CE invocation audit event: ce_id=%s mas_id=%s error=%v", ceID, req.MasId, err)
+		}
+	}()
 }
 
 // mapCEDecisionToAction maps CASA CE decision enum to enforcement action enum.
