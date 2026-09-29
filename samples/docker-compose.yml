@@ -11,6 +11,10 @@ services:
     environment:
       - LOG_LEVEL=INFO
       - GRPC_PORT=50051
+      # CE registration identity
+      - CE_NAME=demo-ce
+      - CE_VERSION=1.0.0
+      - CE_TYPE=CASA
       # For local development (connecting to services on host machine)
       - CFN_URL=http://host.docker.internal:9002
       - COGNITION_STORE_URL=http://host.docker.internal:8000

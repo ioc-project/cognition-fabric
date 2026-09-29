@@ -18,10 +18,10 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
-# Constants
-CE_NAME = "demo-ce"  # CE name for registration
-CE_VERSION = "1.0.0"  # CE version for registration
-CE_TYPE = "CASA"  # CEType: CASA or DETECTIVE
+# Constants (can be overridden via environment variables)
+CE_NAME = os.getenv("CE_NAME", "demo-ce")  # CE name for registration
+CE_VERSION = os.getenv("CE_VERSION", "1.0.0")  # CE version for registration
+CE_TYPE = os.getenv("CE_TYPE", "CASA")  # CEType: CASA or DETECTIVE
 CE_ENDPOINT = "ioc.ce.v1.CognitionEngine"  # gRPC service name
 DEFAULT_GRPC_PORT = "50051"  # Default gRPC port
 

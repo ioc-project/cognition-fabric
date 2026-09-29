@@ -87,11 +87,28 @@ Returns CE metadata.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
+| `CE_NAME` | CE name for registration | `demo-ce` |
+| `CE_VERSION` | CE version for registration | `1.0.0` |
+| `CE_TYPE` | CE type (CASA or DETECTIVE) | `CASA` |
 | `GRPC_PORT` | gRPC server port | `50051` |
 | `CFN_URL` | CFN service URL for registration | (disabled) |
 | `COGNITION_ENGINE_HOST` | Advertised host for this CE | `localhost` |
 | `CE_HEARTBEAT_INTERVAL_SEC` | Heartbeat interval | `30.0` |
 | `COGNITION_STORE_URL` | Cognition Store API URL | (disabled) |
+
+### Running Multiple Instances (Upgrade Demo)
+
+To demonstrate CE registration and version upgrades:
+
+```bash
+# Start v1.0.0
+CE_NAME=demo-ce CE_VERSION=1.0.0 uv run python -m src
+
+# In another terminal, start v1.1.0 (same name, new version)
+CE_NAME=demo-ce CE_VERSION=1.1.0 GRPC_PORT=50052 uv run python -m src
+```
+
+The second instance will get a 409 Conflict (CE already exists), extract the `existing_ce_id`, and update via PATCH.
 
 ## Architecture
 
