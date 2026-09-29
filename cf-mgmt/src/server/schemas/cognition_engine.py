@@ -15,7 +15,6 @@ class CEType(str, Enum):
     """Type of Cognition Engine.
 
     - CASA: Gateway CE for L9 enforcement
-    - DEMO_CE: Gateway CE for L9 enforcement
     - DETECTIVE: Detective CE for investigation/analysis
     """
 
