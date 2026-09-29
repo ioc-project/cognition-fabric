@@ -108,8 +108,8 @@ class AuditCfnEventService:
         Args:
             page: 0-based page number (default 0)
             page_size: Number of records per page (default from DEFAULT_PAGE_SIZE env, clamped to MAX_PAGE_SIZE)
-            resource_type: Optional filter by resource_type (e.g. MAS, WORKSPACE)
-            audit_type: Optional filter by audit_type (e.g. RESOURCE_CREATED)
+            resource_type: Optional filter by resource_type (e.g. COGNITION_ENGINE)
+            audit_type: Optional filter by audit_type (e.g. CE_INVOKED)
 
         Returns:
             dict: Response containing 'data' (list of audit events) and 'pageInfo'

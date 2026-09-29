@@ -15,9 +15,9 @@ class AuditCfnEventResponse(BaseModel):
 
     id: UUID = Field(..., description="Unique audit event ID (UUID)")
     operation_id: Optional[str] = Field(default=None, description="Operation identifier")
-    resource_type: str = Field(..., description="Type of the resource (e.g. MAS, WORKSPACE)")
+    resource_type: str = Field(..., description="Type of the resource (e.g. COGNITION_ENGINE)")
     resource_identifier: str = Field(..., description="Identifier of the resource")
-    audit_type: str = Field(..., description="Type of audit event (e.g. RESOURCE_CREATED)")
+    audit_type: str = Field(..., description="Type of audit event (e.g. CE_INVOKED)")
     audit_resource_identifier: str = Field(..., description="Identifier of the audited resource")
     audit_information: Optional[Dict[str, Any]] = Field(default=None, description="JSONB audit event details")
     audit_extra_information: Optional[str] = Field(default=None, description="Additional information as text")
