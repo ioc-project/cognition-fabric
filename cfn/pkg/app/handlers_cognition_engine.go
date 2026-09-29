@@ -294,6 +294,117 @@ func (a *App) cognitionEngineHeartbeatHandler(w http.ResponseWriter, r *http.Req
 	return eh.RespondWithJSON(w, http.StatusOK, hbResp)
 }
 
+// patchCognitionEngineHandler handles CE update requests.
+//
+// @Summary      Update a Cognition Engine
+// @Description  Update a CE by ID. CFN forwards the request to the management plane.
+// @Tags         cognition-engines
+// @Accept       json
+// @Produce      json
+// @Param        ceId path string true "Cognition Engine ID (UUID)"
+// @Param        request body map[string]any true "Fields to update (base_url, endpoint)"
+// @Success      200 {object} map[string]any "CE updated successfully"
+// @Failure      400 {object} cognitionengine.ErrorResponse "Invalid request"
+// @Failure      404 {object} cognitionengine.ErrorResponse "CE not found"
+// @Failure      502 {object} cognitionengine.ErrorResponse "Management plane error"
+// @Failure      503 {object} cognitionengine.ErrorResponse "CFN not registered"
+// @Router       /api/cognition-engine/{ceId} [patch]
+func (a *App) patchCognitionEngineHandler(w http.ResponseWriter, r *http.Request) (int, error) {
+	log := getLogger()
+
+	ceID := eh.PathParam(r, "ceId")
+	if ceID == "" {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "ce_id is required",
+		})
+	}
+
+	// Validate ceID is a valid UUID
+	if _, err := uuid.Parse(ceID); err != nil {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid ce_id format: must be a valid UUID",
+		})
+	}
+
+	// Check if this CFN is registered with the management plane
+	if CfnID == "" {
+		return eh.RespondWithJSON(w, http.StatusServiceUnavailable, map[string]string{
+			"error": "CFN not registered with management plane yet",
+		})
+	}
+
+	// Parse the request body
+	var reqBody map[string]any
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": fmt.Sprintf("invalid JSON body: %v", err),
+		})
+	}
+
+	// Build the patch URL for management plane
+	mgmtURL := getEnvOrDefault("MGMT_URL", "http://localhost:9000")
+	patchURL := fmt.Sprintf("%s/api/cognition-engines/%s", mgmtURL, ceID)
+
+	requestBody, err := json.Marshal(reqBody)
+	if err != nil {
+		return eh.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": fmt.Sprintf("failed to marshal request: %v", err),
+		})
+	}
+
+	log.Infof("forwarding CE patch request to management plane: %s (ce_id=%s)", patchURL, ceID)
+
+	// Forward the request to the management plane
+	client := httpclient.New(30 * time.Second)
+	headers := map[string]string{
+		"Content-Type": "application/json",
+		"Accept":       "application/json",
+	}
+
+	ctx := context.Background()
+	resp, err := client.Patch(ctx, patchURL, requestBody, headers)
+	if err != nil {
+		return eh.RespondWithJSON(w, http.StatusBadGateway, map[string]string{
+			"error": fmt.Sprintf("failed to forward request to management plane: %v", err),
+		})
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return eh.RespondWithJSON(w, http.StatusBadGateway, map[string]string{
+			"error": fmt.Sprintf("failed to read management plane response: %v", err),
+		})
+	}
+
+	// Parse response
+	var respData map[string]any
+	if err := json.Unmarshal(respBody, &respData); err != nil {
+		respData = map[string]any{"raw": string(respBody)}
+	}
+
+	// Forward the management plane's status code and response
+	if resp.StatusCode == http.StatusOK {
+		log.Infof("CE patched successfully: ce_id=%s", ceID)
+
+		// Trigger config refresh after update
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			mgmtURL := getEnvOrDefault("MGMT_URL", "http://localhost:9000")
+			if err := a.RefreshConfig(mgmtURL); err != nil {
+				log.Errorf("failed to refresh config after CE patch: %v", err)
+			} else {
+				log.Infof("config refreshed after CE patch: ce_id=%s", ceID)
+			}
+		}()
+	} else {
+		log.Errorf("CE patch failed: status=%d, body=%v", resp.StatusCode, respData)
+	}
+
+	return eh.RespondWithJSON(w, resp.StatusCode, respData)
+}
+
 // deleteCognitionEngineHandler handles CE unregistration/deletion requests.
 //
 // @Summary      Unregister/Delete a Cognition Engine

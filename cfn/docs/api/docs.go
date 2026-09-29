@@ -119,6 +119,71 @@ const docTemplate = `{
                         }
                     }
                 }
+            },
+            "patch": {
+                "description": "Update a CE by ID. CFN forwards the request to the management plane.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cognition-engines"
+                ],
+                "summary": "Update a Cognition Engine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Cognition Engine ID (UUID)",
+                        "name": "ceId",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fields to update (base_url, endpoint)",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "CE updated successfully",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request",
+                        "schema": {
+                            "$ref": "#/definitions/cognitionengine.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "CE not found",
+                        "schema": {
+                            "$ref": "#/definitions/cognitionengine.ErrorResponse"
+                        }
+                    },
+                    "502": {
+                        "description": "Management plane error",
+                        "schema": {
+                            "$ref": "#/definitions/cognitionengine.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "CFN not registered",
+                        "schema": {
+                            "$ref": "#/definitions/cognitionengine.ErrorResponse"
+                        }
+                    }
+                }
             }
         },
         "/api/cognition-engine/{ceId}/heartbeat": {
