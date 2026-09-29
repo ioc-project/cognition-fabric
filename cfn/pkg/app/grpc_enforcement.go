@@ -183,6 +183,8 @@ func (s *enforcementServer) auditCEInvocation(ceID string, req *cev1.EvaluateReq
 		return
 	}
 
+	success := outcome != "ERROR"
+
 	s.auditWG.Add(1)
 	go func() {
 		defer s.auditWG.Done()
@@ -192,6 +194,7 @@ func (s *enforcementServer) auditCEInvocation(ceID string, req *cev1.EvaluateReq
 			AuditType:               audit.AuditTypeCEInvoked,
 			AuditResourceIdentifier: req.MasId,
 			AuditInformation:        datatypes.JSON(infoBytes),
+			Success:                 &success,
 			CreatedBy:               systemActorID,
 			LastModifiedBy:          systemActorID,
 		}

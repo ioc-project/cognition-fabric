@@ -143,7 +143,7 @@ func TestListAuditEvents_DefaultsAndClamping(t *testing.T) {
 		event := &Audit{
 			ResourceType:            ResourceTypeCognitionEngine,
 			ResourceIdentifier:      "ce-1",
-			AuditType:               AuditTypeResourceCreated,
+			AuditType:               AuditTypeCEInvoked,
 			AuditResourceIdentifier: "ce-1",
 			CreatedBy:               uuid.New(),
 			LastModifiedBy:          uuid.New(),

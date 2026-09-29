@@ -32,9 +32,9 @@ func TestGetAuditEventHandler(t *testing.T) {
 	a := newTestApp()
 
 	event := &audit.Audit{
-		ResourceType:            audit.ResourceTypeMAS,
-		ResourceIdentifier:      "mas-1",
-		AuditType:               audit.AuditTypeResourceCreated,
+		ResourceType:            audit.ResourceTypeCognitionEngine,
+		ResourceIdentifier:      "ce-1",
+		AuditType:               audit.AuditTypeCEInvoked,
 		AuditResourceIdentifier: "mas-1",
 		CreatedBy:               uuid.New(),
 		LastModifiedBy:          uuid.New(),
@@ -103,7 +103,7 @@ func createTestEvent(t *testing.T, a *App, resourceType, auditType string) {
 func TestListAuditEventsHandler(t *testing.T) {
 	a := newTestApp()
 	for i := 0; i < 3; i++ {
-		createTestEvent(t, a, audit.ResourceTypeCognitionEngine, audit.AuditTypeResourceCreated)
+		createTestEvent(t, a, audit.ResourceTypeCognitionEngine, audit.AuditTypeCEInvoked)
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/api/internal/mgmt/audit", nil)
@@ -132,10 +132,9 @@ func TestListAuditEventsHandler(t *testing.T) {
 
 func TestListAuditEventsHandler_WithFilters(t *testing.T) {
 	a := newTestApp()
-	createTestEvent(t, a, audit.ResourceTypeCognitionEngine, audit.AuditTypeResourceCreated)
-	createTestEvent(t, a, audit.ResourceTypeMAS, audit.AuditTypeResourceCreated)
+	createTestEvent(t, a, audit.ResourceTypeCognitionEngine, audit.AuditTypeCEInvoked)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/internal/mgmt/audit?resource_type=MAS", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/internal/mgmt/audit?resource_type=COGNITION_ENGINE&audit_type=CE_INVOKED", nil)
 	rr := httptest.NewRecorder()
 
 	code, err := a.listAuditEventsHandler(rr, req)
@@ -148,15 +147,15 @@ func TestListAuditEventsHandler_WithFilters(t *testing.T) {
 	if err := json.NewDecoder(rr.Body).Decode(&resp); err != nil {
 		t.Fatalf("failed to decode response: %v", err)
 	}
-	if len(resp.Data) != 1 || resp.Data[0].ResourceType != audit.ResourceTypeMAS {
-		t.Errorf("expected 1 MAS event, got %+v", resp.Data)
+	if len(resp.Data) != 1 || resp.Data[0].ResourceType != audit.ResourceTypeCognitionEngine {
+		t.Errorf("expected 1 matching event, got %+v", resp.Data)
 	}
 }
 
 func TestListAuditEventsHandler_WithPagination(t *testing.T) {
 	a := newTestApp()
 	for i := 0; i < 5; i++ {
-		createTestEvent(t, a, audit.ResourceTypeCognitionEngine, audit.AuditTypeResourceCreated)
+		createTestEvent(t, a, audit.ResourceTypeCognitionEngine, audit.AuditTypeCEInvoked)
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/api/internal/mgmt/audit?page=0&pageSize=2", nil)
@@ -179,7 +178,7 @@ func TestListAuditEventsHandler_WithPagination(t *testing.T) {
 
 func TestListAuditEventsHandler_PageSizeExceedsMax(t *testing.T) {
 	a := newTestApp()
-	createTestEvent(t, a, audit.ResourceTypeCognitionEngine, audit.AuditTypeResourceCreated)
+	createTestEvent(t, a, audit.ResourceTypeCognitionEngine, audit.AuditTypeCEInvoked)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/internal/mgmt/audit?pageSize=99999", nil)
 	rr := httptest.NewRecorder()
