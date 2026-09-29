@@ -26,7 +26,7 @@ class CognitionEngineRegisterRequest(BaseModel):
     """Schema for CE self-registration (idempotent upsert)"""
 
     cfn_id: str = Field(..., description="CFN this engine is registering under")
-    ce_type: CEType = Field(..., description="Type of Cognition Engine: CASA, Demo CE, or DETECTIVE")
+    ce_type: CEType = Field(..., description="Type of Cognition Engine: CASA, or DETECTIVE")
     base_url: str = Field(..., description="Base URL for the CFN to reach this engine (e.g., 'http://casa-ce:8080')")
     endpoint: str = Field(..., description="API endpoint path for request forwarding (e.g., '/api/l9/enforcement')")
     mas_auto_associate: bool = Field(
