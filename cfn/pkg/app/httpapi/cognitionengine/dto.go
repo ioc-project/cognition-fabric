@@ -8,6 +8,10 @@ package cognitionengine
 // RegisterRequest represents a CE registration request from CE to CFN.
 // @Description CE registration request payload. The CE sends this to CFN, which adds cfn_id and forwards to management plane.
 type RegisterRequest struct {
+	// CE name (e.g., "casa-ce")
+	Name string `json:"name" example:"casa-ce"`
+	// CE version (e.g., "1.0.0")
+	Version string `json:"version" example:"1.0.0"`
 	// CE type - must be "CASA" or "DETECTIVE"
 	CEType string `json:"ce_type" example:"CASA" enums:"CASA,DETECTIVE"`
 	// Base URL for the CE service
@@ -27,6 +31,10 @@ type RegisterResponse struct {
 	CEID string `json:"ce_id" example:"550e8400-e29b-41d4-a716-446655440000"`
 	// Cognition Fabric Node ID (UUID)
 	CFNID string `json:"cfn_id" example:"660e8400-e29b-41d4-a716-446655440001"`
+	// CE name
+	Name string `json:"name" example:"casa-ce"`
+	// CE version
+	Version string `json:"version" example:"1.0.0"`
 	// CE type
 	CEType string `json:"ce_type" example:"CASA"`
 	// Base URL for the CE service
@@ -57,4 +65,13 @@ type HeartbeatResponse struct {
 type ErrorResponse struct {
 	// Error message
 	Error string `json:"error" example:"ce_type is required"`
+}
+
+// ConflictResponse represents a 409 Conflict response when CE with same (name, version) already exists.
+// @Description Conflict response with existing CE ID for recovery.
+type ConflictResponse struct {
+	// Error message
+	Error string `json:"error" example:"CE 'casa-ce' version '1.0.0' already exists"`
+	// ID of the existing CE with same (name, version)
+	ExistingCEID string `json:"existing_ce_id" example:"550e8400-e29b-41d4-a716-446655440000"`
 }
