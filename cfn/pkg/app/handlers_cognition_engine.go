@@ -51,6 +51,16 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	// Validate required fields
+	if req.Name == "" {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "name is required",
+		})
+	}
+	if req.Version == "" {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "version is required",
+		})
+	}
 	if req.CEType == "" {
 		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
 			"error": "ce_type is required",
@@ -117,6 +127,8 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 
 	payload := map[string]any{
 		"cfn_id":             CfnID,
+		"name":               req.Name,
+		"version":            req.Version,
 		"ce_type":            req.CEType,
 		"base_url":           req.BaseURL,
 		"endpoint":           req.Endpoint,
@@ -131,8 +143,8 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 		})
 	}
 
-	log.Infof("forwarding CE registration to management plane: %s (ce_type=%s, cfn_id=%s)",
-		registerURL, req.CEType, CfnID)
+	log.Infof("forwarding CE registration to management plane: %s (name=%s, version=%s, ce_type=%s, cfn_id=%s)",
+		registerURL, req.Name, req.Version, req.CEType, CfnID)
 
 	// Forward the request to the management plane
 	client := httpclient.New(30 * time.Second)
@@ -189,8 +201,8 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 		}
 	}()
 
-	// Return the successful response to the CE
-	return eh.RespondWithJSON(w, http.StatusOK, mgmtResp)
+	// Forward the management plane's status code (201 for new, 200 for update)
+	return eh.RespondWithJSON(w, resp.StatusCode, mgmtResp)
 }
 
 // cognitionEngineHeartbeatHandler handles CE heartbeat requests.

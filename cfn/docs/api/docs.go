@@ -229,6 +229,16 @@ const docTemplate = `{
                     "description": "Factory defaults for per-MAS configuration",
                     "type": "object",
                     "additionalProperties": {}
+                },
+                "name": {
+                    "description": "CE name (e.g., \"casa-ce\")",
+                    "type": "string",
+                    "example": "casa-ce"
+                },
+                "version": {
+                    "description": "CE version (e.g., \"1.0.0\")",
+                    "type": "string",
+                    "example": "1.0.0"
                 }
             }
         },
@@ -276,10 +286,20 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": false
                 },
+                "name": {
+                    "description": "CE name",
+                    "type": "string",
+                    "example": "casa-ce"
+                },
                 "status": {
                     "description": "CE status (online/offline)",
                     "type": "string",
                     "example": "offline"
+                },
+                "version": {
+                    "description": "CE version",
+                    "type": "string",
+                    "example": "1.0.0"
                 }
             }
         }
