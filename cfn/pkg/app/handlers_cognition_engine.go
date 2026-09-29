@@ -201,8 +201,8 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 		}
 	}()
 
-	// Return the successful response to the CE
-	return eh.RespondWithJSON(w, http.StatusOK, mgmtResp)
+	// Forward the management plane's status code (201 for new, 200 for update)
+	return eh.RespondWithJSON(w, resp.StatusCode, mgmtResp)
 }
 
 // cognitionEngineHeartbeatHandler handles CE heartbeat requests.
