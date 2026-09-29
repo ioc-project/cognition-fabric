@@ -413,6 +413,7 @@ func (a *App) initializeRoutes() http.Handler {
 	// CE registration endpoints
 	rtr.Post("/api/cognition-engine", a.registerCognitionEngineHandler)
 	rtr.Put("/api/cognition-engine/{ceId}/heartbeat", a.cognitionEngineHeartbeatHandler)
+	rtr.Patch("/api/cognition-engine/{ceId}", a.patchCognitionEngineHandler)
 	rtr.Delete("/api/cognition-engine/{ceId}", a.deleteCognitionEngineHandler)
 
 	// Swagger UI

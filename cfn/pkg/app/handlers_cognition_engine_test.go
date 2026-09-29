@@ -581,3 +581,173 @@ func TestDeleteCognitionEngineHandler_MissingCEID(t *testing.T) {
 		t.Errorf("expected status %d (route not found), got %d", http.StatusNotFound, w.Code)
 	}
 }
+
+// PATCH handler tests
+
+func TestPatchCognitionEngineHandler(t *testing.T) {
+	tests := []struct {
+		name               string
+		ceID               string
+		cfnRegistered      bool
+		requestBody        string
+		mgmtPlaneStatus    int
+		mgmtPlaneResponse  string
+		expectedStatusCode int
+		expectError        bool
+	}{
+		{
+			name:               "successful patch",
+			ceID:               "550e8400-e29b-41d4-a716-446655440000",
+			cfnRegistered:      true,
+			requestBody:        `{"base_url": "localhost:50052", "endpoint": "ioc.ce.v1.CognitionEngine"}`,
+			mgmtPlaneStatus:    http.StatusOK,
+			mgmtPlaneResponse:  `{"id":"550e8400-e29b-41d4-a716-446655440000","cfn_id":"test-cfn-id","name":"demo-ce","version":"1.0.0","ce_type":"CASA","base_url":"localhost:50052","endpoint":"ioc.ce.v1.CognitionEngine","enabled":true,"mas_auto_associate":true,"status":"online"}`,
+			expectedStatusCode: http.StatusOK,
+			expectError:        false,
+		},
+		{
+			name:               "CE not found",
+			ceID:               "550e8400-e29b-41d4-a716-446655440001",
+			cfnRegistered:      true,
+			requestBody:        `{"base_url": "localhost:50052"}`,
+			mgmtPlaneStatus:    http.StatusNotFound,
+			mgmtPlaneResponse:  `{"detail":"CE not found"}`,
+			expectedStatusCode: http.StatusNotFound,
+			expectError:        true,
+		},
+		{
+			name:               "invalid CE ID format",
+			ceID:               "invalid-uuid",
+			cfnRegistered:      true,
+			requestBody:        `{"base_url": "localhost:50052"}`,
+			mgmtPlaneStatus:    0,
+			mgmtPlaneResponse:  "",
+			expectedStatusCode: http.StatusBadRequest,
+			expectError:        true,
+		},
+		{
+			name:               "CFN not registered",
+			ceID:               "550e8400-e29b-41d4-a716-446655440000",
+			cfnRegistered:      false,
+			requestBody:        `{"base_url": "localhost:50052"}`,
+			mgmtPlaneStatus:    0,
+			mgmtPlaneResponse:  "",
+			expectedStatusCode: http.StatusServiceUnavailable,
+			expectError:        true,
+		},
+		{
+			name:               "invalid JSON body",
+			ceID:               "550e8400-e29b-41d4-a716-446655440000",
+			cfnRegistered:      true,
+			requestBody:        `{invalid json}`,
+			mgmtPlaneStatus:    0,
+			mgmtPlaneResponse:  "",
+			expectedStatusCode: http.StatusBadRequest,
+			expectError:        true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup mock management plane
+			mockMgmtPlane := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.Method != http.MethodPatch {
+					t.Errorf("expected PATCH method, got %s", r.Method)
+				}
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tt.mgmtPlaneStatus)
+				w.Write([]byte(tt.mgmtPlaneResponse))
+			}))
+			defer mockMgmtPlane.Close()
+
+			// Set environment
+			t.Setenv("MGMT_URL", mockMgmtPlane.URL)
+
+			// Setup app
+			app := &App{}
+
+			// Set CFN registration status
+			if tt.cfnRegistered {
+				CfnID = "test-cfn-id"
+			} else {
+				CfnID = ""
+			}
+
+			// Create request with router to handle path params
+			rtr := easyhttp.NewRouter()
+			rtr.Patch("/api/cognition-engine/{ceId}", app.patchCognitionEngineHandler)
+
+			req := httptest.NewRequest(http.MethodPatch, "/api/cognition-engine/"+tt.ceID, bytes.NewBufferString(tt.requestBody))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+
+			// Execute handler
+			rtr.ServeHTTP(w, req)
+
+			// Verify status code
+			if w.Code != tt.expectedStatusCode {
+				t.Errorf("expected status code %d, got %d: %s", tt.expectedStatusCode, w.Code, w.Body.String())
+			}
+
+			// Verify error expectation
+			if tt.expectError && w.Body.Len() > 0 {
+				var response map[string]interface{}
+				if err := json.Unmarshal(w.Body.Bytes(), &response); err == nil {
+					if response["error"] == nil && response["detail"] == nil {
+						t.Error("expected error in response body")
+					}
+				}
+			}
+
+			// Verify successful response contains expected fields
+			if !tt.expectError && tt.expectedStatusCode == http.StatusOK {
+				var response map[string]interface{}
+				if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+					t.Fatalf("failed to unmarshal response: %v", err)
+				}
+				if response["id"] == nil && response["ce_id"] == nil {
+					t.Error("expected id or ce_id in response body")
+				}
+			}
+		})
+	}
+}
+
+func TestPatchCognitionEngineHandler_VerifyPayloadForwarded(t *testing.T) {
+	CfnID = "test-cfn-id"
+
+	var receivedPayload map[string]any
+
+	mockMgmtPlane := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&receivedPayload)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"id":"550e8400-e29b-41d4-a716-446655440000","base_url":"localhost:50052","endpoint":"ioc.ce.v1.CognitionEngine"}`))
+	}))
+	defer mockMgmtPlane.Close()
+
+	t.Setenv("MGMT_URL", mockMgmtPlane.URL)
+
+	app := &App{}
+	rtr := easyhttp.NewRouter()
+	rtr.Patch("/api/cognition-engine/{ceId}", app.patchCognitionEngineHandler)
+
+	body := `{"base_url": "localhost:50052", "endpoint": "ioc.ce.v1.CognitionEngine"}`
+	req := httptest.NewRequest(http.MethodPatch, "/api/cognition-engine/550e8400-e29b-41d4-a716-446655440000", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	rtr.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status %d, got %d: %s", http.StatusOK, w.Code, w.Body.String())
+	}
+
+	// Verify payload was forwarded correctly
+	if receivedPayload["base_url"] != "localhost:50052" {
+		t.Errorf("expected base_url 'localhost:50052', got %v", receivedPayload["base_url"])
+	}
+	if receivedPayload["endpoint"] != "ioc.ce.v1.CognitionEngine" {
+		t.Errorf("expected endpoint 'ioc.ce.v1.CognitionEngine', got %v", receivedPayload["endpoint"])
+	}
+}

@@ -185,6 +185,50 @@ paths:
       summary: Unregister/Delete a Cognition Engine
       tags:
       - cognition-engines
+    patch:
+      consumes:
+      - application/json
+      description: Update a CE by ID. CFN forwards the request to the management plane.
+      parameters:
+      - description: Cognition Engine ID (UUID)
+        in: path
+        name: ceId
+        required: true
+        type: string
+      - description: Fields to update (base_url, endpoint)
+        in: body
+        name: request
+        required: true
+        schema:
+          additionalProperties: true
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: CE updated successfully
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/cognitionengine.ErrorResponse'
+        "404":
+          description: CE not found
+          schema:
+            $ref: '#/definitions/cognitionengine.ErrorResponse'
+        "502":
+          description: Management plane error
+          schema:
+            $ref: '#/definitions/cognitionengine.ErrorResponse'
+        "503":
+          description: CFN not registered
+          schema:
+            $ref: '#/definitions/cognitionengine.ErrorResponse'
+      summary: Update a Cognition Engine
+      tags:
+      - cognition-engines
   /api/cognition-engine/{ceId}/heartbeat:
     put:
       description: Send heartbeat to maintain CE online status. CFN forwards to management
