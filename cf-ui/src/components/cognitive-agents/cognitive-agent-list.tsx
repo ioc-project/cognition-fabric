@@ -47,13 +47,19 @@ export function CognitiveAgentList() {
     let items: CognitionEngineListItem[] = [...cognitionEngines];
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      items = items.filter((r) => r.ce_type.toLowerCase().includes(q) || r.id.toLowerCase().includes(q));
+      items = items.filter(
+        (r) =>
+          r.name.toLowerCase().includes(q) ||
+          r.ce_type.toLowerCase().includes(q) ||
+          r.version.toLowerCase().includes(q) ||
+          r.id.toLowerCase().includes(q)
+      );
     }
     if (sortConfig) {
       const {key, dir} = sortConfig;
       items.sort((a, b) => {
         let cmp = 0;
-        if (key === 'ce_type' || key === 'status') {
+        if (key === 'name' || key === 'version' || key === 'ce_type' || key === 'status') {
           cmp = ((a[key as keyof CognitionEngineListItem] as string) ?? '').localeCompare((b[key as keyof CognitionEngineListItem] as string) ?? '');
         } else {
           const av = a.created_at ? new Date(a.created_at).getTime() : 0;
@@ -128,7 +134,7 @@ export function CognitiveAgentList() {
     setIsTogglingEnabled(true);
     try {
       await cognitionEngineApi.patch(toggleTarget.id, {enabled: !toggleTarget.enabled});
-      toast.success(`CE ${toggleTarget.ce_type} ${toggleTarget.enabled ? 'disabled' : 'enabled'} successfully`);
+      toast.success(`CE ${toggleTarget.name} ${toggleTarget.enabled ? 'disabled' : 'enabled'} successfully`);
       await mutate();
       await globalMutate(swrKeys.cognitionEngines());
       setToggleStep(null);
@@ -192,7 +198,7 @@ export function CognitiveAgentList() {
       setHasDisabled(true);
       await mutate();
       await globalMutate(swrKeys.cognitionEngines());
-      toast.success(`CE ${deleteTarget.ce_type} disabled successfully`);
+      toast.success(`CE ${deleteTarget.name} disabled successfully`);
 
       const mas = await fetchAssociatedMas(deleteTarget.id);
       setAssociatedMas(mas);
@@ -234,7 +240,7 @@ export function CognitiveAgentList() {
     setDeleteError(null);
     try {
       await cognitionEngineApi.delete(deleteTarget.id);
-      toast.success(`CE ${deleteTarget.ce_type} deleted successfully`);
+      toast.success(`CE ${deleteTarget.name} deleted successfully`);
       await mutate();
       await globalMutate(swrKeys.cognitionEngines());
       setDeleteStep(null);
@@ -314,7 +320,7 @@ export function CognitiveAgentList() {
       </div>
 
       <CognitionEngineDialogs
-        toggleCeName={toggleTarget?.ce_type}
+        toggleCeName={toggleTarget?.name}
         toggleCeEnabled={toggleTarget?.enabled}
         toggleStep={toggleStep}
         setToggleStep={setToggleStep}
@@ -325,7 +331,7 @@ export function CognitiveAgentList() {
         onToggleDisassociate={handleToggleDisassociate}
         onConfirmToggle={handleConfirmToggle}
         isTogglingEnabled={isTogglingEnabled}
-        deleteCeName={deleteTarget?.ce_type}
+        deleteCeName={deleteTarget?.name}
         deleteStep={deleteStep}
         setDeleteStep={setDeleteStep}
         setDisableError={setDisableError}

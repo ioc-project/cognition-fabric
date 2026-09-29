@@ -39,6 +39,14 @@ export function CognitionEngineFormFields({ce, form, isEditMode, onSubmit}: Cogn
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className={`space-y-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
+            <Label className={dtCompactLabel}>Name</Label>
+            <ReadOnlyField value={ce?.name || ''} className="font-mono" />
+          </div>
+          <div className={`space-y-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
+            <Label className={dtCompactLabel}>Version</Label>
+            <ReadOnlyField value={ce?.version || ''} className="font-mono" />
+          </div>
+          <div className={`space-y-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
             <Label className={dtCompactLabel}>Type</Label>
             <ReadOnlyField value={ce?.ce_type || ''} className="font-mono" />
           </div>

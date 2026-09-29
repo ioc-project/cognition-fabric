@@ -121,7 +121,7 @@ export default function CognitiveAgentDetailsPage() {
   const crumbs = ce
     ? [
         {link: routes.cognitiveAgents.list, text: 'Cognition Engines'},
-        {link: '', text: ce.ce_type, active: true}
+        {link: '', text: ce.name, active: true}
       ]
     : undefined;
 
@@ -158,10 +158,12 @@ export default function CognitiveAgentDetailsPage() {
   return (
     <>
       <BasePage
-        title={ce?.ce_type || 'Cognition Engine'}
+        title={ce?.name || 'Cognition Engine'}
         customDescription={
           ce ? (
             <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-xs text-muted-foreground font-mono">v{ce.version}</span>
+              <span className="text-muted-foreground/30 text-xs select-none">·</span>
               <StatusDot variant="health" active={ce.status === 'online'} />
               <span className="text-muted-foreground/30 text-xs select-none">·</span>
               <IdHoverCard value={ce.id} items={[{label: 'CE ID', value: ce.id}, ...(ce.cfn_id ? [{label: 'CFN', value: ce.cfn_id}] : [])]} />
@@ -222,6 +224,12 @@ export default function CognitiveAgentDetailsPage() {
               {activeTab === 'overview' && (
                 <div className="space-y-4">
                   <InfoPanel>
+                    <InfoRow label="Name" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
+                      <span className="text-sm text-foreground font-mono">{ce?.name || '-'}</span>
+                    </InfoRow>
+                    <InfoRow label="Version" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
+                      <span className="text-sm text-foreground font-mono">{ce?.version || '-'}</span>
+                    </InfoRow>
                     <InfoRow label="Type" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
                       <span className="text-sm text-foreground font-mono">{ce?.ce_type || '-'}</span>
                     </InfoRow>
@@ -370,7 +378,7 @@ export default function CognitiveAgentDetailsPage() {
       </BasePage>
 
       <CognitionEngineDialogs
-        toggleCeName={ce?.ce_type}
+        toggleCeName={ce?.name}
         toggleCeEnabled={ce?.enabled}
         toggleStep={toggleFlow.toggleStep}
         setToggleStep={toggleFlow.setToggleStep}
@@ -381,7 +389,7 @@ export default function CognitiveAgentDetailsPage() {
         onToggleDisassociate={toggleFlow.handleToggleDisassociate}
         onConfirmToggle={toggleFlow.handleConfirmToggle}
         isTogglingEnabled={toggleFlow.isTogglingEnabled}
-        deleteCeName={ce?.ce_type}
+        deleteCeName={ce?.name}
         deleteStep={deleteFlow.deleteStep}
         setDeleteStep={deleteFlow.setDeleteStep}
         setDisableError={deleteFlow.setDisableError}

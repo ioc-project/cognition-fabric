@@ -331,6 +331,8 @@ export default function CfnDetailsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Version</TableHead>
                           <TableHead>Type</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Enabled</TableHead>
@@ -339,6 +341,8 @@ export default function CfnDetailsPage() {
                       <TableBody>
                         {cognitionEngines.map((ce) => (
                           <TableRow key={ce.id}>
+                            <TableCell className="font-medium align-top py-3 font-mono">{ce.name}</TableCell>
+                            <TableCell className="align-top py-3 font-mono">{ce.version}</TableCell>
                             <TableCell className="font-medium align-top py-3 font-mono">{ce.ce_type}</TableCell>
                             <TableCell>
                               <StatusDot variant="health" active={ce.status === 'online'} />

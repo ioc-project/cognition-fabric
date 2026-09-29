@@ -41,8 +41,12 @@ export function CognitiveAgentCardList({
           <div className="pb-4 mb-5 border-b border-border/50 flex justify-between items-start">
             <div className="flex-1 mr-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground font-mono">{r.ce_type}</span>
+                <span className="text-sm font-medium text-foreground font-mono">{r.name}</span>
+                <span className="text-xs text-muted-foreground font-mono">v{r.version}</span>
                 <Badge variant={r.status === 'online' ? 'success' : 'inactive'}>{r.status === 'online' ? 'Online' : 'Offline'}</Badge>
+              </div>
+              <div className="mt-1">
+                <span className="text-xs text-muted-foreground font-mono">{r.ce_type}</span>
               </div>
             </div>
             <DropdownMenu>

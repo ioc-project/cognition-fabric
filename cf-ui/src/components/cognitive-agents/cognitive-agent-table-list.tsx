@@ -57,6 +57,8 @@ export function CognitiveAgentTableList({
     <ResourceTable
       items={cognitiveAgents}
       headers={[
+        sortable('name', 'Name'),
+        sortable('version', 'Version'),
         sortable('ce_type', 'Type'),
         sortable('status', 'Status'),
         {content: 'Enabled'},
@@ -67,6 +69,12 @@ export function CognitiveAgentTableList({
       isSelected={(r) => selectedId === r.id}
       onRowClick={(r) => onRowClick(r)}
       renderRow={(r) => [
+        {
+          content: <span className="font-medium font-mono">{r.name}</span>
+        },
+        {
+          content: <span className="text-sm text-foreground font-mono">{r.version}</span>
+        },
         {
           content: <span className="font-medium font-mono">{r.ce_type}</span>
         },

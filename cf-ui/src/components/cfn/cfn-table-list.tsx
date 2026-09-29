@@ -37,7 +37,9 @@ export function CfnTableList({nodes, onRowClick, onOpenEdit}: CfnTableListProps)
         (n) =>
           n.name.toLowerCase().includes(q) ||
           n.ip_address?.toLowerCase().includes(q) ||
-          n.cognition_engines?.some((ce) => ce.ce_type.toLowerCase().includes(q) || ce.id.toLowerCase().includes(q))
+          n.cognition_engines?.some(
+            (ce) => ce.name.toLowerCase().includes(q) || ce.ce_type.toLowerCase().includes(q) || ce.id.toLowerCase().includes(q)
+          )
       );
     }
     return items;

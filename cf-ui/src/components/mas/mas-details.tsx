@@ -64,7 +64,7 @@ export default function MASDetailsPage() {
   const [isAssociating, setIsAssociating] = useState(false);
   const [disassociatingId, setDisassociatingId] = useState<string | null>(null);
   const [agentExpandedState, setAgentExpandedState] = useState<Record<string, boolean>>({});
-  const [editConfigCE, setEditConfigCE] = useState<{ce_id: string; ce_type: string; mas_config: Record<string, unknown> | null} | null>(null);
+  const [editConfigCE, setEditConfigCE] = useState<{ce_id: string; name: string; mas_config: Record<string, unknown> | null} | null>(null);
   const [editConfigValue, setEditConfigValue] = useState('');
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const deleteDialog = useConfirmDialog<{id: string; name: string}>();
@@ -225,7 +225,7 @@ export default function MASDetailsPage() {
     try {
       const parsed = editConfigValue.trim() === '' ? {} : JSON.parse(editConfigValue);
       await masApi.patchCEMasConfig(workspaceId, masId, editConfigCE.ce_id, parsed);
-      toast.success(`Config updated for CE ${editConfigCE.ce_type}`);
+      toast.success(`Config updated for CE ${editConfigCE.name}`);
       await mutate();
       setEditConfigCE(null);
     } catch (err) {
@@ -465,6 +465,8 @@ export default function MASDetailsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Version</TableHead>
                           <TableHead>Type</TableHead>
                           <TableHead>Enabled</TableHead>
                           <TableHead />
@@ -473,6 +475,8 @@ export default function MASDetailsPage() {
                       <TableBody>
                         {ces.map((ce) => (
                           <TableRow key={ce.ce_id} className="group">
+                            <TableCell className="font-medium align-top py-3 font-mono">{ce.name}</TableCell>
+                            <TableCell className="align-top py-3 font-mono">{ce.version}</TableCell>
                             <TableCell className="font-medium align-top py-3 font-mono">{ce.ce_type}</TableCell>
                             <TableCell>
                               <StatusDot variant="state" active={ce.enabled} />
@@ -486,7 +490,7 @@ export default function MASDetailsPage() {
                                     size="sm"
                                     className="gap-1.5 h-7 text-xs"
                                     onClick={() => {
-                                      setEditConfigCE({ce_id: ce.ce_id, ce_type: ce.ce_type, mas_config: ce.mas_config ?? null});
+                                      setEditConfigCE({ce_id: ce.ce_id, name: ce.name, mas_config: ce.mas_config ?? null});
                                       setEditConfigValue(
                                         ce.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''
                                       );
@@ -501,7 +505,7 @@ export default function MASDetailsPage() {
                                     size="sm"
                                     className="gap-1.5 h-7 text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950"
                                     disabled={disassociatingId === ce.ce_id}
-                                    onClick={() => handleDisassociateCE(ce.ce_id, ce.ce_type)}
+                                    onClick={() => handleDisassociateCE(ce.ce_id, ce.name)}
                                   >
                                     <Unlink className="w-3 h-3" />
                                     {disassociatingId === ce.ce_id ? 'Removing...' : 'Disassociate'}
@@ -521,7 +525,7 @@ export default function MASDetailsPage() {
                                     <DropdownMenuItem
                                       className="gap-2"
                                       onClick={() => {
-                                        setEditConfigCE({ce_id: ce.ce_id, ce_type: ce.ce_type, mas_config: ce.mas_config ?? null});
+                                        setEditConfigCE({ce_id: ce.ce_id, name: ce.name, mas_config: ce.mas_config ?? null});
                                         setEditConfigValue(
                                           ce.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''
                                         );
@@ -532,7 +536,7 @@ export default function MASDetailsPage() {
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                       className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950 gap-2"
-                                      onClick={() => handleDisassociateCE(ce.ce_id, ce.ce_type)}
+                                      onClick={() => handleDisassociateCE(ce.ce_id, ce.name)}
                                       disabled={disassociatingId === ce.ce_id}
                                     >
                                       <Unlink className="w-4 h-4" />
@@ -569,7 +573,7 @@ export default function MASDetailsPage() {
       <Dialog open={!!editConfigCE} onOpenChange={(open) => !open && setEditConfigCE(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Edit Config for CE {editConfigCE?.ce_type}</DialogTitle>
+            <DialogTitle>Edit Config for CE {editConfigCE?.name}</DialogTitle>
           </DialogHeader>
           <div className="space-y-2">
             <div className="flex items-center gap-0.5">

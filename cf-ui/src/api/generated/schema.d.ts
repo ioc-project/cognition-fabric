@@ -1601,6 +1601,10 @@ export interface components {
         MasCognitionEngineItem: {
             /** Ce Id */
             ce_id: string;
+            /** Name */
+            name: string;
+            /** Version */
+            version: string;
             /** Ce Type */
             ce_type: string;
             /** Base Url */
