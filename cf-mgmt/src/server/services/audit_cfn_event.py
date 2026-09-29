@@ -15,12 +15,6 @@ CFN_SVC_TIMEOUT_SECONDS = 10
 CFN_SVC_MAX_RETRIES = 3
 CFN_SVC_RETRY_DELAY_SECONDS = 1
 
-# Audit needs to be re-implemented; the upstream route isn't ready yet, so every
-# call here fails. Short-circuit before making the HTTP call and return an empty
-# result instead of retrying against a route that can't succeed. Flip back to
-# False once audit is re-implemented.
-CFN_AUDIT_ROUTE_NOT_YET_IMPLEMENTED = True
-
 
 class CfnUpstreamError(Exception):
     """Raised when cfn-svc returns a client error (e.g. 400) that should be passed through."""
@@ -86,9 +80,6 @@ class AuditCfnEventService:
         Returns:
             dict: The audit event data if found, None otherwise
         """
-        if CFN_AUDIT_ROUTE_NOT_YET_IMPLEMENTED:
-            return None
-
         url = f"{self._get_base_url()}{CFN_SVC_AUDIT_PATH}/{audit_event_id}"
         self.logger.debug(f"Retrieving audit event from cfn-svc: {url}")
         try:
@@ -117,8 +108,8 @@ class AuditCfnEventService:
         Args:
             page: 0-based page number (default 0)
             page_size: Number of records per page (default from DEFAULT_PAGE_SIZE env, clamped to MAX_PAGE_SIZE)
-            resource_type: Optional filter by resource_type (e.g. MAS, WORKSPACE)
-            audit_type: Optional filter by audit_type (e.g. RESOURCE_CREATED)
+            resource_type: Optional filter by resource_type (e.g. COGNITION_ENGINE)
+            audit_type: Optional filter by audit_type (e.g. CE_INVOKED)
 
         Returns:
             dict: Response containing 'data' (list of audit events) and 'pageInfo'
@@ -128,12 +119,6 @@ class AuditCfnEventService:
         max_ps = _get_max_page_size()
         if page_size > max_ps:
             page_size = max_ps
-
-        if CFN_AUDIT_ROUTE_NOT_YET_IMPLEMENTED:
-            return {
-                "data": [],
-                "pageInfo": {"page": page, "pageSize": page_size, "pageCount": 0, "totalElements": 0},
-            }
 
         url = f"{self._get_base_url()}{CFN_SVC_AUDIT_PATH}"
         params = {"page": page, "pageSize": page_size}

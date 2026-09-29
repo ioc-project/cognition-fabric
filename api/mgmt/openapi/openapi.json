@@ -2014,10 +2014,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by resource type (e.g. MAS, MAS-AGENT, COGNITION_ENGINE, POLICY_ENFORCER, MEMORY_PROVIDER, WORKFLOW, TASK)",
+              "description": "Filter by resource type (e.g. COGNITION_ENGINE)",
               "title": "Resource Type"
             },
-            "description": "Filter by resource type (e.g. MAS, MAS-AGENT, COGNITION_ENGINE, POLICY_ENFORCER, MEMORY_PROVIDER, WORKFLOW, TASK)"
+            "description": "Filter by resource type (e.g. COGNITION_ENGINE)"
           },
           {
             "name": "audit_type",
@@ -2032,10 +2032,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by audit type (e.g. RESOURCE_CREATED, RESOURCE_UPDATED, RESOURCE_DELETED, RESOURCE_PURGED, RESOURCE_PRUNED, KNOWLEDGE_INGESTION, KNOWLEDGE_QUERY, MEMORY_OPERATION, SHARED_MEMORY_OPERATION, AGENT_MEMORY_OPERATION, SEMANTIC_ALIGNMENT_START, SEMANTIC_ALIGNMENT_DECIDE)",
+              "description": "Filter by audit type (e.g. CE_INVOKED)",
               "title": "Audit Type"
             },
-            "description": "Filter by audit type (e.g. RESOURCE_CREATED, RESOURCE_UPDATED, RESOURCE_DELETED, RESOURCE_PURGED, RESOURCE_PRUNED, KNOWLEDGE_INGESTION, KNOWLEDGE_QUERY, MEMORY_OPERATION, SHARED_MEMORY_OPERATION, AGENT_MEMORY_OPERATION, SEMANTIC_ALIGNMENT_START, SEMANTIC_ALIGNMENT_DECIDE)"
+            "description": "Filter by audit type (e.g. CE_INVOKED)"
           }
         ],
         "responses": {
@@ -2320,7 +2320,7 @@
           "resource_type": {
             "type": "string",
             "title": "Resource Type",
-            "description": "Type of the resource (e.g. MAS, WORKSPACE)"
+            "description": "Type of the resource (e.g. COGNITION_ENGINE)"
           },
           "resource_identifier": {
             "type": "string",
@@ -2330,7 +2330,7 @@
           "audit_type": {
             "type": "string",
             "title": "Audit Type",
-            "description": "Type of audit event (e.g. RESOURCE_CREATED)"
+            "description": "Type of audit event (e.g. CE_INVOKED)"
           },
           "audit_resource_identifier": {
             "type": "string",

@@ -46,19 +46,11 @@ def list_audit_events(
     ),
     resource_type: Optional[str] = Query(
         None,
-        description=(
-            "Filter by resource type "
-            "(e.g. MAS, MAS-AGENT, COGNITION_ENGINE, POLICY_ENFORCER, MEMORY_PROVIDER, WORKFLOW, TASK)"
-        ),
+        description="Filter by resource type (e.g. COGNITION_ENGINE)",
     ),
     audit_type: Optional[str] = Query(
         None,
-        description=(
-            "Filter by audit type (e.g. RESOURCE_CREATED, RESOURCE_UPDATED, RESOURCE_DELETED, "
-            "RESOURCE_PURGED, RESOURCE_PRUNED, KNOWLEDGE_INGESTION, KNOWLEDGE_QUERY, "
-            "MEMORY_OPERATION, SHARED_MEMORY_OPERATION, AGENT_MEMORY_OPERATION, "
-            "SEMANTIC_ALIGNMENT_START, SEMANTIC_ALIGNMENT_DECIDE)"
-        ),
+        description="Filter by audit type (e.g. CE_INVOKED)",
     ),
 ):
     """
@@ -66,8 +58,8 @@ def list_audit_events(
 
     - **page**: 0-based page number (default 0)
     - **pageSize**: Number of records per page (default 20, max 100)
-    - **resource_type**: Optional filter — e.g. `MAS`, `MAS-AGENT`, `COGNITION_ENGINE`
-    - **audit_type**: Optional filter — e.g. `RESOURCE_CREATED`, `SHARED_MEMORY_OPERATION`
+    - **resource_type**: Optional filter — e.g. `COGNITION_ENGINE`
+    - **audit_type**: Optional filter — e.g. `CE_INVOKED`
     """
     try:
         result = audit_cfn_event_service.list_audit_events(
