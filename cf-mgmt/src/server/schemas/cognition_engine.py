@@ -20,7 +20,6 @@ class CEType(str, Enum):
     """
 
     CASA = "CASA"
-    DEMO_CE = "Demo CE"
     DETECTIVE = "DETECTIVE"
 
 
