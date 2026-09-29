@@ -120,7 +120,8 @@ class CELifecycleClient:
 
         If CE with same (name, version) already exists:
         - Gets 409 with existing_ce_id
-        - Calls PUT to update the existing CE
+        - Calls PATCH to update base_url/endpoint (address may have changed
+          after restart, e.g., new IP, different port, different hostname)
         - Returns the updated CE record
 
         If CE is new, creates and returns new ce_id.
@@ -159,14 +160,18 @@ class CELifecycleClient:
                 return result
 
             elif response.status_code == 409:
-                # CE already exists - recover by getting the existing CE ID and using PUT
+                # CE with same (name, version) already exists - this happens on CE restart/reconnect.
+                # We PATCH to update base_url/endpoint because the CE's address may have changed:
+                # - Container got a new IP after restart
+                # - Running on a different port
+                # - Different hostname in a new deployment
                 data = response.json()
                 existing_ce_id = data.get("detail", {}).get("existing_ce_id") or data.get("existing_ce_id")
                 if not existing_ce_id:
                     logger.error(f"409 Conflict but no existing_ce_id in response: {data}")
                     return None
 
-                logger.info(f"CE '{request.name}' v{request.version} already exists (ce_id={existing_ce_id}), updating via PUT")
+                logger.info(f"CE '{request.name}' v{request.version} already exists (ce_id={existing_ce_id}), updating via PATCH")
                 return await self._update_existing_ce(existing_ce_id, request)
 
             else:
@@ -190,7 +195,7 @@ class CELifecycleClient:
         ce_id: str,
         request: CERegistrationRequest,
     ) -> Optional[CERegistrationResponse]:
-        """Update an existing CE via PUT after 409 conflict."""
+        """Update an existing CE via PATCH after 409 conflict."""
         endpoint = f"{self.cfn_base_url}/api/cognition-engine/{ce_id}"
         payload = {
             "base_url": request.base_url,
