@@ -37,32 +37,20 @@ func (e *ValidationError) Error() string { return e.msg }
 // ResourceType enum values
 const (
 	ResourceTypeCognitionEngine = "COGNITION_ENGINE"
-	ResourceTypePolicyEnforcer  = "POLICY_ENFORCER"
-	ResourceTypeMAS             = "MAS"
-	ResourceTypeMASAgent        = "MAS-AGENT"
 )
 
 // AuditType enum values
 const (
-	AuditTypeResourceCreated = "RESOURCE_CREATED"
-	AuditTypeResourceUpdated = "RESOURCE_UPDATED"
-	AuditTypeResourceDeleted = "RESOURCE_DELETED"
 	// AuditTypeCEInvoked records CFN calling into a CE (e.g. the CASA Evaluate RPC).
 	AuditTypeCEInvoked = "CE_INVOKED"
 )
 
 var validResourceTypes = map[string]bool{
 	ResourceTypeCognitionEngine: true,
-	ResourceTypePolicyEnforcer:  true,
-	ResourceTypeMAS:             true,
-	ResourceTypeMASAgent:        true,
 }
 
 var validAuditTypes = map[string]bool{
-	AuditTypeResourceCreated: true,
-	AuditTypeResourceUpdated: true,
-	AuditTypeResourceDeleted: true,
-	AuditTypeCEInvoked:       true,
+	AuditTypeCEInvoked: true,
 }
 
 // IsValidResourceType returns true if the given resource type is a known valid value.
@@ -175,10 +163,14 @@ type Audit struct {
 	AuditResourceIdentifier string         `gorm:"size:128;not null" json:"audit_resource_identifier"`
 	AuditInformation        datatypes.JSON `gorm:"type:jsonb" json:"audit_information,omitempty"`
 	AuditExtraInformation   *string        `json:"audit_extra_information,omitempty"`
-	CreatedBy               uuid.UUID      `gorm:"type:uuid;not null" json:"created_by"`
-	CreatedOn               time.Time      `gorm:"not null;index" json:"created_on"`
-	LastModifiedBy          uuid.UUID      `gorm:"type:uuid;not null" json:"last_modified_by"`
-	LastModifiedOn          time.Time      `gorm:"not null" json:"last_modified_on"`
+	// Success indicates whether the audited action itself completed
+	// successfully, when that concept applies (e.g. true/false for a
+	// CE_INVOKED call that reached the CE vs. errored out).
+	Success        *bool     `gorm:"index" json:"success,omitempty"`
+	CreatedBy      uuid.UUID `gorm:"type:uuid;not null" json:"created_by"`
+	CreatedOn      time.Time `gorm:"not null;index" json:"created_on"`
+	LastModifiedBy uuid.UUID `gorm:"type:uuid;not null" json:"last_modified_by"`
+	LastModifiedOn time.Time `gorm:"not null" json:"last_modified_on"`
 }
 
 // MigrateUp runs GORM AutoMigrate for the Audit table.
