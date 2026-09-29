@@ -48,6 +48,14 @@ definitions:
         additionalProperties: {}
         description: Factory defaults for per-MAS configuration
         type: object
+      name:
+        description: CE name (e.g., "casa-ce")
+        example: casa-ce
+        type: string
+      version:
+        description: CE version (e.g., "1.0.0")
+        example: 1.0.0
+        type: string
     type: object
   cognitionengine.RegisterResponse:
     description: CE registration response from management plane.
@@ -84,9 +92,17 @@ definitions:
         description: Auto-associate with all MAS
         example: false
         type: boolean
+      name:
+        description: CE name
+        example: casa-ce
+        type: string
       status:
         description: CE status (online/offline)
         example: offline
+        type: string
+      version:
+        description: CE version
+        example: 1.0.0
         type: string
     type: object
 host: localhost:9002
