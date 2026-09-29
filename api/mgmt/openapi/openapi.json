@@ -3545,6 +3545,14 @@
             "type": "string",
             "title": "Ce Id"
           },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
           "ce_type": {
             "type": "string",
             "title": "Ce Type"
@@ -3581,6 +3589,8 @@
         "type": "object",
         "required": [
           "ce_id",
+          "name",
+          "version",
           "ce_type",
           "base_url",
           "endpoint",

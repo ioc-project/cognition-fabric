@@ -348,6 +348,8 @@ class MultiAgenticSystemService:
                         ce_by_mas.setdefault(junc.mas_id, []).append(
                             MasCognitionEngineItem(
                                 ce_id=junc.ce_id,
+                                name=ce.name,
+                                version=ce.version,
                                 ce_type=ce.ce_type,
                                 base_url=ce.base_url,
                                 endpoint=ce.endpoint,
@@ -412,6 +414,8 @@ class MultiAgenticSystemService:
                 ce_associations = [
                     MasCognitionEngineItem(
                         ce_id=junc.ce_id,
+                        name=ce.name,
+                        version=ce.version,
                         ce_type=ce.ce_type,
                         base_url=ce.base_url,
                         endpoint=ce.endpoint,
@@ -547,6 +551,8 @@ class MultiAgenticSystemService:
                 ce_associations = [
                     MasCognitionEngineItem(
                         ce_id=junc.ce_id,
+                        name=ce.name,
+                        version=ce.version,
                         ce_type=ce.ce_type,
                         base_url=ce.base_url,
                         endpoint=ce.endpoint,
@@ -648,6 +654,8 @@ class MultiAgenticSystemService:
                     ce_by_mas.setdefault(junc.mas_id, []).append(
                         MasCognitionEngineItem(
                             ce_id=junc.ce_id,
+                            name=ce.name,
+                            version=ce.version,
                             ce_type=ce.ce_type,
                             base_url=ce.base_url,
                             endpoint=ce.endpoint,

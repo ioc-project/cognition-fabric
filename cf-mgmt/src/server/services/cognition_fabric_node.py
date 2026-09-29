@@ -1122,6 +1122,8 @@ class CognitionFabricNodeService:
                 engines_payload = [
                     {
                         "id": e.id,
+                        "name": e.name,
+                        "version": e.version,
                         "ce_type": e.ce_type,
                         "base_url": e.base_url,
                         "endpoint": e.endpoint,
