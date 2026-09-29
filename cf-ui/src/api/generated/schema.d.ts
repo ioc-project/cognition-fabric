@@ -649,7 +649,7 @@ export interface paths {
         put?: never;
         /**
          * Register Cognition Engine
-         * @description Register or update a Cognition Engine with a CFN. Idempotent: same (cfn_id, name, version) updates the record (200) or creates it (201). Same name with a different version creates a new record.
+         * @description Register a new Cognition Engine with a CFN. Returns 409 Conflict if CE with same (cfn_id, name, version) already exists. The 409 response includes existing_ce_id for recovery via PUT. Same name with a different version creates a new CE record.
          */
         post: operations["register_cognition_engine_api_cognition_engines_post"];
         delete?: never;
@@ -911,7 +911,7 @@ export interface components {
             operation_id?: string | null;
             /**
              * Resource Type
-             * @description Type of the resource (e.g. MAS, WORKSPACE)
+             * @description Type of the resource (e.g. COGNITION_ENGINE)
              */
             resource_type: string;
             /**
@@ -921,7 +921,7 @@ export interface components {
             resource_identifier: string;
             /**
              * Audit Type
-             * @description Type of audit event (e.g. RESOURCE_CREATED)
+             * @description Type of audit event (e.g. CE_INVOKED)
              */
             audit_type: string;
             /**
@@ -1025,6 +1025,10 @@ export interface components {
             id: string;
             /** Cfn Id */
             cfn_id: string;
+            /** Name */
+            name: string;
+            /** Version */
+            version: string;
             ce_type: components["schemas"]["CEType"];
             /** Base Url */
             base_url: string;
@@ -1082,6 +1086,10 @@ export interface components {
             id: string;
             /** Cfn Id */
             cfn_id: string;
+            /** Name */
+            name: string;
+            /** Version */
+            version: string;
             ce_type: components["schemas"]["CEType"];
             /** Base Url */
             base_url: string;
@@ -1110,7 +1118,7 @@ export interface components {
          * @description Schema for PATCH /cognition-engines/{id}.
          *
          *     Only the fields listed here can be updated.
-         *     Attempting to update immutable fields (cfn_id, ce_type)
+         *     Attempting to update immutable fields (cfn_id, name, version, ce_type)
          *     will be rejected with 400.
          */
         CognitionEnginePatchRequest: {
@@ -1139,12 +1147,27 @@ export interface components {
              * @description Immutable — cannot be updated via PATCH
              */
             cfn_id?: string | null;
+            /**
+             * Name
+             * @description Immutable — cannot be updated via PATCH
+             */
+            name?: string | null;
+            /**
+             * Version
+             * @description Immutable — cannot be updated via PATCH
+             */
+            version?: string | null;
             /** @description Immutable — cannot be updated via PATCH */
             ce_type?: components["schemas"]["CEType"] | null;
         };
         /**
          * CognitionEngineRegisterRequest
-         * @description Schema for CE self-registration (idempotent upsert)
+         * @description Schema for CE self-registration.
+         *
+         *     POST behavior:
+         *     - If (cfn_id, name, version) exists: returns 409 Conflict with existing_ce_id
+         *     - If (cfn_id, name) exists with different version: creates new CE record
+         *     - Otherwise: creates new CE record
          */
         CognitionEngineRegisterRequest: {
             /**
@@ -1152,11 +1175,21 @@ export interface components {
              * @description CFN this engine is registering under
              */
             cfn_id: string;
+            /**
+             * Name
+             * @description CE name (e.g., 'demo-ce')
+             */
+            name: string;
+            /**
+             * Version
+             * @description CE version (e.g., '1.0.0')
+             */
+            version: string;
             /** @description Type of Cognition Engine: CASA or DETECTIVE */
             ce_type: components["schemas"]["CEType"];
             /**
              * Base Url
-             * @description Base URL for the CFN to reach this engine (e.g., 'http://casa-ce:8080')
+             * @description Base URL for the CFN to reach this engine (e.g., 'http://demo-ce:8080')
              */
             base_url: string;
             /**
@@ -1187,6 +1220,10 @@ export interface components {
             ce_id: string;
             /** Cfn Id */
             cfn_id: string;
+            /** Name */
+            name: string;
+            /** Version */
+            version: string;
             ce_type: components["schemas"]["CEType"];
             /** Base Url */
             base_url: string;
@@ -2986,6 +3023,20 @@ export interface operations {
                     "application/json": components["schemas"]["CognitionEngineResponse"];
                 };
             };
+            /** @description CE created successfully */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description CE with same (name, version) already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             /** @description Validation Error */
             422: {
                 headers: {
@@ -3298,9 +3349,9 @@ export interface operations {
                 page?: number;
                 /** @description Number of records per page. Defaults to DEFAULT_PAGE_SIZE env var (fallback 20). Clamped to MAX_PAGE_SIZE env var (fallback 100). */
                 pageSize?: number;
-                /** @description Filter by resource type (e.g. MAS, MAS-AGENT, COGNITION_ENGINE, POLICY_ENFORCER, MEMORY_PROVIDER, WORKFLOW, TASK) */
+                /** @description Filter by resource type (e.g. COGNITION_ENGINE) */
                 resource_type?: string | null;
-                /** @description Filter by audit type (e.g. RESOURCE_CREATED, RESOURCE_UPDATED, RESOURCE_DELETED, RESOURCE_PURGED, RESOURCE_PRUNED, KNOWLEDGE_INGESTION, KNOWLEDGE_QUERY, MEMORY_OPERATION, SHARED_MEMORY_OPERATION, AGENT_MEMORY_OPERATION, SEMANTIC_ALIGNMENT_START, SEMANTIC_ALIGNMENT_DECIDE) */
+                /** @description Filter by audit type (e.g. CE_INVOKED) */
                 audit_type?: string | null;
             };
             header?: never;

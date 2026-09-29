@@ -124,7 +124,8 @@ function getAuditTypeLabel(auditType: string): string {
     REASONING_QUERY: 'Reasoning Query',
     REASONING_FEEDBACK: 'Reasoning Feedback',
     MEMORY_OPERATION: 'Memory Operation',
-    AGENT_MEMORY_OPERATION: 'Agent Memory Operation'
+    AGENT_MEMORY_OPERATION: 'Agent Memory Operation',
+    CE_INVOKED: 'CE Invoked'
   };
   return labels[auditType] || auditType.replace(/_/g, ' ');
 }
@@ -291,30 +292,25 @@ function AuditEventCard({
 
 export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}: MASAuditLogProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
+  const [collapsedEvents, setCollapsedEvents] = useState<Set<string>>(new Set());
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [selectedAuditType, setSelectedAuditType] = useState<string | null>(null);
 
-  const ALL_AUDIT_TYPES = [
-    {value: 'SHARED_MEMORY_OPERATION', label: 'Shared Memory Operation'},
-    {value: 'AGENT_MEMORY_OPERATION', label: 'Agent Memory Operation'},
-    {value: 'KNOWLEDGE_INGESTION', label: 'Knowledge Ingestion'}
-  ];
+  const ALL_AUDIT_TYPES = [{value: 'CE_INVOKED', label: 'CE Invoked'}];
 
-  const availableAuditTypes = selectedAgent ? [{value: 'AGENT_MEMORY_OPERATION', label: 'Agent Memory Operation'}] : ALL_AUDIT_TYPES;
+  const availableAuditTypes = ALL_AUDIT_TYPES;
 
   useEffect(() => {
     if (isOpen) {
       setSelectedAgent(null);
       setSelectedAuditType(null);
-      setExpandedEvents(new Set());
+      setCollapsedEvents(new Set());
     }
   }, [isOpen]);
 
   const auditTypeFilter = selectedAuditType ? {audit_type: selectedAuditType} : {};
 
   const apiFilters = {
-    ...(selectedAgent ? {resource_type: 'MAS-AGENT'} : {}),
     ...auditTypeFilter
   };
 
@@ -357,6 +353,9 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
         }
         return agentIds.has(event.resource_identifier);
       }
+      if (event.resource_type === 'COGNITION_ENGINE') {
+        return event.audit_resource_identifier === masId;
+      }
       return false;
     });
 
@@ -382,7 +381,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
   const showLoadMore = hasMore && parsedEvents.length >= 10;
 
   const toggleExpanded = (eventId: string) => {
-    setExpandedEvents((prev) => {
+    setCollapsedEvents((prev) => {
       const next = new Set(prev);
       if (next.has(eventId)) {
         next.delete(eventId);
@@ -479,7 +478,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
                   <AuditEventCard
                     key={event.id}
                     event={event}
-                    expanded={expandedEvents.has(event.id)}
+                    expanded={!collapsedEvents.has(event.id)}
                     onToggle={() => toggleExpanded(event.id)}
                     resolvedResourceName={
                       event.resource_type === 'MAS'
