@@ -26,7 +26,7 @@ from server.schemas.cognition_engine import (
 
 from server.utils import generate_uuid
 
-_IMMUTABLE_CE_FIELDS = {"cfn_id", "ce_type"}
+_IMMUTABLE_CE_FIELDS = {"cfn_id", "name", "version", "ce_type"}
 
 
 class CognitionEngineService:
@@ -36,10 +36,11 @@ class CognitionEngineService:
         self, engine_data: CognitionEngineRegisterRequest, user_id: str
     ) -> tuple[CognitionEngineResponse, bool]:
         """
-        Register or update a Cognition Engine (idempotent upsert).
+        Register a new Cognition Engine.
 
-        Returns (response, created) — created=True for new, False for update.
+        Returns (response, created) — created=True for new registration.
         Raises HTTPException 404 if the CFN does not exist.
+        Raises HTTPException 409 if CE with same (cfn_id, name, version) already exists.
         """
         try:
             db = RelationalDB()
@@ -62,50 +63,54 @@ class CognitionEngineService:
                         detail=f"Cognition Fabric Node '{engine_data.cfn_id}' not found",
                     )
 
-                # Upsert by (cfn_id, ce_type) - each CE type can only have one active registration per CFN
+                # Check for existing CE with same (cfn_id, name, version)
                 existing = (
                     session.query(CognitionEngineModel)
                     .filter(
                         CognitionEngineModel.cfn_id == engine_data.cfn_id,
-                        CognitionEngineModel.ce_type == engine_data.ce_type.value,
+                        CognitionEngineModel.name == engine_data.name,
+                        CognitionEngineModel.version == engine_data.version,
                         CognitionEngineModel.deleted_at.is_(None),
                     )
                     .first()
                 )
 
                 if existing:
-                    existing.base_url = engine_data.base_url
-                    existing.endpoint = engine_data.endpoint
-                    existing.mas_auto_associate = engine_data.mas_auto_associate
-                    existing.mas_config = engine_data.mas_config or {}
-                    existing.status = "online"
-                    existing.updated_by = user_id
-                    existing.updated_at = datetime.now(timezone.utc)
-                    session.commit()
-                    session.refresh(existing)
-                    engine, created = existing, False
-                else:
-                    engine = CognitionEngineModel(
-                        id=generate_uuid(),
-                        cfn_id=engine_data.cfn_id,
-                        ce_type=engine_data.ce_type.value,  # Store enum value as string
-                        base_url=engine_data.base_url,
-                        endpoint=engine_data.endpoint,
-                        enabled=True,
-                        mas_auto_associate=engine_data.mas_auto_associate,
-                        status="online",
-                        mas_config=engine_data.mas_config or {},
-                        created_by=user_id,
+                    # Return 409 Conflict with existing CE ID for recovery
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail={
+                            "error": f"CE '{engine_data.name}' version '{engine_data.version}' already exists",
+                            "existing_ce_id": existing.id,
+                        },
                     )
-                    session.add(engine)
-                    session.commit()
-                    session.refresh(engine)
-                    created = True
+
+                # Create new CE record
+                engine = CognitionEngineModel(
+                    id=generate_uuid(),
+                    cfn_id=engine_data.cfn_id,
+                    name=engine_data.name,
+                    version=engine_data.version,
+                    ce_type=engine_data.ce_type.value,  # Store enum value as string
+                    base_url=engine_data.base_url,
+                    endpoint=engine_data.endpoint,
+                    enabled=True,
+                    mas_auto_associate=engine_data.mas_auto_associate,
+                    status="online",
+                    mas_config=engine_data.mas_config or {},
+                    created_by=user_id,
+                )
+                session.add(engine)
+                session.commit()
+                session.refresh(engine)
+                created = True
 
                 response = (
                     CognitionEngineResponse(
                         ce_id=engine.id,
                         cfn_id=engine.cfn_id,
+                        name=engine.name,
+                        version=engine.version,
                         ce_type=engine.ce_type,
                         base_url=engine.base_url,
                         endpoint=engine.endpoint,
@@ -201,6 +206,8 @@ class CognitionEngineService:
                         CognitionEngineListItem(
                             id=e.id,
                             cfn_id=e.cfn_id,
+                            name=e.name,
+                            version=e.version,
                             ce_type=e.ce_type,
                             base_url=e.base_url,
                             endpoint=e.endpoint,
@@ -480,7 +487,7 @@ class CognitionEngineService:
                         raise HTTPException(
                             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                             detail=f"Unknown mas_config keys: {sorted(unknown_keys)}. "
-                                   f"Allowed keys: {sorted(factory_default.keys())}",
+                            f"Allowed keys: {sorted(factory_default.keys())}",
                         )
 
                 assoc = (
@@ -701,6 +708,8 @@ class CognitionEngineService:
                 return [
                     {
                         "id": e.id,
+                        "name": e.name,
+                        "version": e.version,
                         "ce_type": e.ce_type,
                         "base_url": e.base_url,
                         "endpoint": e.endpoint,
@@ -837,6 +846,8 @@ def _to_detail(engine: CognitionEngineModel) -> CognitionEngineDetail:
     return CognitionEngineDetail(
         id=engine.id,
         cfn_id=engine.cfn_id,
+        name=engine.name,
+        version=engine.version,
         ce_type=engine.ce_type,
         base_url=engine.base_url,
         endpoint=engine.endpoint,

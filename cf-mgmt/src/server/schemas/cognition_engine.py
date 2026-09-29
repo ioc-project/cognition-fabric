@@ -23,11 +23,19 @@ class CEType(str, Enum):
 
 
 class CognitionEngineRegisterRequest(BaseModel):
-    """Schema for CE self-registration (idempotent upsert)"""
+    """Schema for CE self-registration.
+
+    POST behavior:
+    - If (cfn_id, name, version) exists: returns 409 Conflict with existing_ce_id
+    - If (cfn_id, name) exists with different version: creates new CE record
+    - Otherwise: creates new CE record
+    """
 
     cfn_id: str = Field(..., description="CFN this engine is registering under")
-    ce_type: CEType = Field(..., description="Type of Cognition Engine: CASA, or DETECTIVE")
-    base_url: str = Field(..., description="Base URL for the CFN to reach this engine (e.g., 'http://casa-ce:8080')")
+    name: str = Field(..., description="CE name (e.g., 'demo-ce')")
+    version: str = Field(..., description="CE version (e.g., '1.0.0')")
+    ce_type: CEType = Field(..., description="Type of Cognition Engine: CASA or DETECTIVE")
+    base_url: str = Field(..., description="Base URL for the CFN to reach this engine (e.g., 'http://demo-ce:8080')")
     endpoint: str = Field(..., description="API endpoint path for request forwarding (e.g., '/api/l9/enforcement')")
     mas_auto_associate: bool = Field(
         False, description="If true, CE is auto-associated with all MAS under the same CFN's workspaces"
@@ -43,6 +51,8 @@ class CognitionEngineResponse(BaseModel):
 
     ce_id: str
     cfn_id: str
+    name: str
+    version: str
     ce_type: CEType
     base_url: str
     endpoint: str
@@ -57,6 +67,8 @@ class CognitionEngineListItem(BaseModel):
 
     id: str
     cfn_id: str
+    name: str
+    version: str
     ce_type: CEType
     base_url: str
     endpoint: str
@@ -80,6 +92,8 @@ class CognitionEngineDetail(BaseModel):
 
     id: str
     cfn_id: str
+    name: str
+    version: str
     ce_type: CEType
     base_url: str
     endpoint: str
@@ -96,7 +110,7 @@ class CognitionEnginePatchRequest(BaseModel):
     """Schema for PATCH /cognition-engines/{id}.
 
     Only the fields listed here can be updated.
-    Attempting to update immutable fields (cfn_id, ce_type)
+    Attempting to update immutable fields (cfn_id, name, version, ce_type)
     will be rejected with 400.
     """
 
@@ -108,6 +122,8 @@ class CognitionEnginePatchRequest(BaseModel):
 
     # Immutable fields — declared so callers get a 400 with a clear message rather than silent ignore
     cfn_id: Optional[str] = Field(None, description="Immutable — cannot be updated via PATCH")
+    name: Optional[str] = Field(None, description="Immutable — cannot be updated via PATCH")
+    version: Optional[str] = Field(None, description="Immutable — cannot be updated via PATCH")
     ce_type: Optional[CEType] = Field(None, description="Immutable — cannot be updated via PATCH")
 
 
@@ -124,3 +140,10 @@ class CognitionEngineHeartbeatResponse(BaseModel):
 
     status: str
     last_seen: datetime
+
+
+class CognitionEngineConflictError(BaseModel):
+    """Schema for 409 Conflict response when CE with same (name, version) already exists"""
+
+    error: str = Field(..., description="Error message")
+    existing_ce_id: str = Field(..., description="ID of the existing CE with same (name, version)")
