@@ -207,14 +207,13 @@ const docTemplate = `{
                     "example": "http://casa-ce:8080"
                 },
                 "ce_type": {
-                    "description": "CE type - must be \"CASA\", \"Demo CE\", or \"DETECTIVE\"",
+                    "description": "CE type - must be \"CASA\" or \"DETECTIVE\"",
                     "type": "string",
                     "enum": [
                         "CASA",
-                        "Demo CE",
                         "DETECTIVE"
                     ],
-                    "example": "Demo CE"
+                    "example": "CASA"
                 },
                 "endpoint": {
                     "description": "API endpoint path",
@@ -250,7 +249,7 @@ const docTemplate = `{
                 "ce_type": {
                     "description": "CE type",
                     "type": "string",
-                    "example": "Demo CE"
+                    "example": "CASA"
                 },
                 "cfn_id": {
                     "description": "Cognition Fabric Node ID (UUID)",

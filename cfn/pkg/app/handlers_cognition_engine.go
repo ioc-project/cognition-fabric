@@ -23,7 +23,6 @@ import (
 // Valid CE types
 var validCETypes = map[string]bool{
 	"CASA":      true,
-	"Demo CE":   true,
 	"DETECTIVE": true,
 }
 
@@ -59,7 +58,7 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 	}
 	if !validCETypes[req.CEType] {
 		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
-			"error": fmt.Sprintf("ce_type must be one of: CASA, Demo CE, DETECTIVE (got: %s)", req.CEType),
+			"error": fmt.Sprintf("ce_type must be one of: CASA, DETECTIVE (got: %s)", req.CEType),
 		})
 	}
 	if req.BaseURL == "" {

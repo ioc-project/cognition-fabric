@@ -29,12 +29,11 @@ definitions:
         example: http://casa-ce:8080
         type: string
       ce_type:
-        description: CE type - must be "CASA", "Demo CE", or "DETECTIVE"
+        description: CE type - must be "CASA" or "DETECTIVE"
         enum:
         - CASA
-        - Demo CE
         - DETECTIVE
-        example: Demo CE
+        example: CASA
         type: string
       endpoint:
         description: API endpoint path
@@ -63,7 +62,7 @@ definitions:
         type: string
       ce_type:
         description: CE type
-        example: Demo CE
+        example: CASA
         type: string
       cfn_id:
         description: Cognition Fabric Node ID (UUID)

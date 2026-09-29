@@ -26,13 +26,6 @@ func TestFindCASACE(t *testing.T) {
 			wantID: "ce-1",
 		},
 		{
-			name: "Demo CE is matched (same CE, renamed)",
-			engines: []MASCognitionEngine{
-				{CEID: "ce-1", CEType: "Demo CE"},
-			},
-			wantID: "ce-1",
-		},
-		{
 			name: "DETECTIVE alone is not matched",
 			engines: []MASCognitionEngine{
 				{CEID: "ce-1", CEType: "DETECTIVE"},
@@ -40,12 +33,12 @@ func TestFindCASACE(t *testing.T) {
 			wantNil: true,
 		},
 		{
-			name: "DETECTIVE is skipped in favor of the CASA/Demo CE engine",
+			name: "DETECTIVE is skipped in favor of the CASA engine",
 			engines: []MASCognitionEngine{
 				{CEID: "ce-detective", CEType: "DETECTIVE"},
-				{CEID: "ce-demo", CEType: "Demo CE"},
+				{CEID: "ce-casa", CEType: "CASA"},
 			},
-			wantID: "ce-demo",
+			wantID: "ce-casa",
 		},
 	}
 

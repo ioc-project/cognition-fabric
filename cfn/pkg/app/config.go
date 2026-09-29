@@ -14,7 +14,7 @@ type CfnConfigPayload struct {
 // EngineCfg represents a Cognition Engine configuration.
 type EngineCfg struct {
 	ID               string         `json:"id"`
-	CEType           string         `json:"ce_type"` // "CASA", "Demo CE", or "DETECTIVE"
+	CEType           string         `json:"ce_type"` // "CASA" or "DETECTIVE"
 	BaseURL          string         `json:"base_url"`
 	Endpoint         string         `json:"endpoint"`
 	Enabled          bool           `json:"enabled"`

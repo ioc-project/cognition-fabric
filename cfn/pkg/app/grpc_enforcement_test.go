@@ -298,7 +298,7 @@ func TestGetDisposition_CASACEDisabled(t *testing.T) {
 		"cognition_engines": []map[string]any{
 			{
 				"ce_id":    "ce-casa-1",
-				"ce_type":  "Demo CE",
+				"ce_type":  "CASA",
 				"base_url": "localhost:50051",
 				"endpoint": "ioc.ce.v1.CognitionEngine",
 				"enabled":  false, // Disabled
@@ -337,51 +337,6 @@ func TestGetDisposition_CASACEDisabled(t *testing.T) {
 }
 
 func TestGetDisposition_Success_Allow(t *testing.T) {
-	masResp := map[string]any{
-		"id":           "mas-123",
-		"workspace_id": "ws-test-123",
-		"name":         "Test MAS",
-		"cognition_engines": []map[string]any{
-			{
-				"ce_id":    "ce-casa-1",
-				"ce_type":  "Demo CE",
-				"base_url": "will-be-replaced",
-				"endpoint": "ioc.ce.v1.CognitionEngine",
-				"enabled":  true,
-				"status":   "online",
-			},
-		},
-	}
-	casaResp := &cev1.EvaluateResponse{
-		Outcome: cev1.Decision_DECISION_ALLOW,
-		Reason:  "All checks passed",
-	}
-
-	cleanup := setupTestEnvWithCASA(t, masResp, casaResp, nil)
-	defer cleanup()
-
-	server := newEnforcementServer(nil)
-
-	req := &enforcementv1.GetDispositionRequest{
-		Payload: &enforcementv1.GetDispositionPayload{
-			MasId:              "mas-123",
-			SourceAgentId:      "agent-1",
-			DestinationAgentId: "agent-2",
-			TraceId:            "trace-123",
-		},
-	}
-
-	resp, err := server.GetDisposition(context.Background(), req)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if resp.Action != enforcementv1.GetDispositionResponse_ACTION_ALLOW {
-		t.Errorf("expected ACTION_ALLOW, got %v", resp.Action)
-	}
-}
-
-func TestGetDisposition_Success_CASAType(t *testing.T) {
 	masResp := map[string]any{
 		"id":           "mas-123",
 		"workspace_id": "ws-test-123",
@@ -434,7 +389,7 @@ func TestGetDisposition_Success_Deny(t *testing.T) {
 		"cognition_engines": []map[string]any{
 			{
 				"ce_id":    "ce-casa-1",
-				"ce_type":  "Demo CE",
+				"ce_type":  "CASA",
 				"base_url": "will-be-replaced",
 				"endpoint": "ioc.ce.v1.CognitionEngine",
 				"enabled":  true,
@@ -480,7 +435,7 @@ func TestGetDisposition_Success_Modify(t *testing.T) {
 		"cognition_engines": []map[string]any{
 			{
 				"ce_id":    "ce-casa-1",
-				"ce_type":  "Demo CE",
+				"ce_type":  "CASA",
 				"base_url": "will-be-replaced",
 				"endpoint": "ioc.ce.v1.CognitionEngine",
 				"enabled":  true,
@@ -533,7 +488,7 @@ func TestGetDisposition_CASACEError(t *testing.T) {
 		"cognition_engines": []map[string]any{
 			{
 				"ce_id":    "ce-casa-1",
-				"ce_type":  "Demo CE",
+				"ce_type":  "CASA",
 				"base_url": "will-be-replaced",
 				"endpoint": "ioc.ce.v1.CognitionEngine",
 				"enabled":  true,
@@ -602,7 +557,7 @@ func TestEnforcementServer_WaitBlocksForInFlightAuditWrite(t *testing.T) {
 		"cognition_engines": []map[string]any{
 			{
 				"ce_id":    "ce-casa-1",
-				"ce_type":  "Demo CE",
+				"ce_type":  "CASA",
 				"base_url": "will-be-replaced",
 				"endpoint": "ioc.ce.v1.CognitionEngine",
 				"enabled":  true,
@@ -671,7 +626,7 @@ func TestEnforcementServer_WaitTimeoutReturnsFalseOnHungWrite(t *testing.T) {
 		"cognition_engines": []map[string]any{
 			{
 				"ce_id":    "ce-casa-1",
-				"ce_type":  "Demo CE",
+				"ce_type":  "CASA",
 				"base_url": "will-be-replaced",
 				"endpoint": "ioc.ce.v1.CognitionEngine",
 				"enabled":  true,
