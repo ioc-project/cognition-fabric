@@ -114,6 +114,8 @@ class MasCognitionEngineItem(BaseModel):
     """Schema for a cognition engine associated with a MAS"""
 
     ce_id: str
+    name: str
+    version: str
     ce_type: str
     base_url: str
     endpoint: str
