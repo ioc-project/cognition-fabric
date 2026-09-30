@@ -123,7 +123,7 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
     def GetInfo(self, request: ce_pb2.GetInfoRequest, context) -> ce_pb2.GetInfoResponse:
         """ioc.ce.v1.GetInfo RPC - returns CE capabilities."""
         return ce_pb2.GetInfoResponse(
-            ce_type="Demo CE",
+            ce_type="CASA",
             version="1.0.0",
             matcher_strategy="hybrid",
         )

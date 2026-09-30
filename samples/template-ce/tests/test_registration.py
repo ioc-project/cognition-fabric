@@ -16,6 +16,8 @@ from registration import (
     shutdown_lifecycle_client,
     get_ce_id,
     get_cfn_id,
+    CE_NAME,
+    CE_VERSION,
     CE_TYPE,
     CE_ENDPOINT,
 )
@@ -27,12 +29,16 @@ class TestCERegistrationRequest:
     def test_create_registration_request(self):
         """Test creating a registration request with new schema."""
         request = CERegistrationRequest(
-            ce_type="Demo CE",
+            name="demo-ce",
+            version="1.0.0",
+            ce_type="CASA",
             base_url="localhost:50051",
             endpoint="ioc.ce.v1.CognitionEngine",
         )
 
-        assert request.ce_type == "Demo CE"
+        assert request.name == "demo-ce"
+        assert request.version == "1.0.0"
+        assert request.ce_type == "CASA"
         assert request.base_url == "localhost:50051"
         assert request.endpoint == "ioc.ce.v1.CognitionEngine"
 
@@ -45,7 +51,9 @@ class TestCERegistrationResponse:
         response = CERegistrationResponse(
             ce_id="ce-123",
             cfn_id="cfn-456",
-            ce_type="Demo CE",
+            name="demo-ce",
+            version="1.0.0",
+            ce_type="CASA",
             base_url="http://localhost:8000",
             endpoint="/authorize",
             enabled=True,
@@ -55,7 +63,9 @@ class TestCERegistrationResponse:
 
         assert response.ce_id == "ce-123"
         assert response.cfn_id == "cfn-456"
-        assert response.ce_type == "Demo CE"
+        assert response.name == "demo-ce"
+        assert response.version == "1.0.0"
+        assert response.ce_type == "CASA"
         assert response.base_url == "http://localhost:8000"
         assert response.endpoint == "/authorize"
         assert response.enabled is True
@@ -115,6 +125,8 @@ class TestRegisterDemoCE:
         mock_client.register = AsyncMock(return_value=CERegistrationResponse(
             ce_id="ce-123",
             cfn_id="cfn-test",
+            name=CE_NAME,
+            version=CE_VERSION,
             ce_type=CE_TYPE,
             base_url="http://localhost:8000",
             endpoint=CE_ENDPOINT,
@@ -145,6 +157,8 @@ class TestRegisterDemoCE:
         mock_client.register = AsyncMock(return_value=CERegistrationResponse(
             ce_id="ce-123",
             cfn_id="cfn-test",
+            name=CE_NAME,
+            version=CE_VERSION,
             ce_type=CE_TYPE,
             base_url="http://example.com:9999",
             endpoint=CE_ENDPOINT,
@@ -195,6 +209,8 @@ class TestShutdownLifecycleClient:
         mock_client.register = AsyncMock(return_value=CERegistrationResponse(
             ce_id="ce-123",
             cfn_id="cfn-test",
+            name=CE_NAME,
+            version=CE_VERSION,
             ce_type=CE_TYPE,
             base_url="http://localhost:8000",
             endpoint=CE_ENDPOINT,
@@ -247,6 +263,8 @@ class TestDemoCEConfiguration:
         mock_client.register = AsyncMock(return_value=CERegistrationResponse(
             ce_id="ce-123",
             cfn_id="cfn-test",
+            name=CE_NAME,
+            version=CE_VERSION,
             ce_type=CE_TYPE,
             base_url="http://localhost:8000",
             endpoint=CE_ENDPOINT,
@@ -262,6 +280,8 @@ class TestDemoCEConfiguration:
         register_call = mock_client.register.call_args[0][0]
 
         # Verify Demo CE registration fields (cfn_id is added by CFN, not CE)
+        assert register_call.name == CE_NAME
+        assert register_call.version == CE_VERSION
         assert register_call.ce_type == CE_TYPE
         # gRPC endpoint format: host:port (no http:// prefix)
         assert register_call.base_url == "localhost:50051"

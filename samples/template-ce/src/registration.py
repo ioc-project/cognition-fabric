@@ -18,31 +18,32 @@ import httpx
 logger = logging.getLogger(__name__)
 
 
-# Constants
-CE_TYPE = "Demo CE"  # CEType: Demo CE or DETECTIVE
+# Constants (can be overridden via environment variables)
+CE_NAME = os.getenv("CE_NAME", "demo-ce")  # CE name for registration
+CE_VERSION = os.getenv("CE_VERSION", "1.0.0")  # CE version for registration
+CE_TYPE = os.getenv("CE_TYPE", "CASA")  # CEType: CASA or DETECTIVE
 CE_ENDPOINT = "ioc.ce.v1.CognitionEngine"  # gRPC service name
 DEFAULT_GRPC_PORT = "50051"  # Default gRPC port
 
 
 class CEType(str, Enum):
     """Type of Cognition Engine."""
-    DEMO_CE = "Demo CE"
+    CASA = "CASA"
     DETECTIVE = "DETECTIVE"
 
 
 @dataclass
 class CERegistrationRequest:
     """
-    CE registration payload matching ioc-scale-cf-mgmt-svc PR #7 schema.
-
-    Simplified schema with predefined CE types (Demo CE, DETECTIVE) and
-    clearer separation of base_url + endpoint.
+    CE registration payload for POST /api/cognition-engine.
 
     Note: cfn_id is NOT included here - the CFN adds it before forwarding
     to the management plane. mas_auto_associate is also not included -
     CFN defaults it to true.
     """
-    ce_type: str  # "Demo CE" or "DETECTIVE"
+    name: str  # CE name (e.g., "demo-ce")
+    version: str  # CE version (e.g., "1.0.0")
+    ce_type: str  # "CASA" or "DETECTIVE"
     base_url: str  # gRPC address (e.g., "demo-ce:50051")
     endpoint: str  # gRPC service name (e.g., "ioc.ce.v1.CognitionEngine")
 
@@ -52,6 +53,8 @@ class CERegistrationResponse:
     """CE registration response from CFN."""
     ce_id: str
     cfn_id: str
+    name: str
+    version: str
     ce_type: str
     base_url: str
     endpoint: str
@@ -113,9 +116,14 @@ class CELifecycleClient:
         request: CERegistrationRequest,
     ) -> Optional[CERegistrationResponse]:
         """
-        Register CE with CFN (idempotent).
+        Register CE with CFN.
 
-        If CE already exists, returns existing ce_id.
+        If CE with same (name, version) already exists:
+        - Gets 409 with existing_ce_id
+        - Calls PATCH to update base_url/endpoint (address may have changed
+          after restart, e.g., new IP, different port, different hostname)
+        - Returns the updated CE record
+
         If CE is new, creates and returns new ce_id.
 
         Returns:
@@ -123,6 +131,8 @@ class CELifecycleClient:
         """
         endpoint = f"{self.cfn_base_url}/api/cognition-engine"
         payload = {
+            "name": request.name,
+            "version": request.version,
             "ce_type": request.ce_type,
             "base_url": request.base_url,
             "endpoint": request.endpoint,
@@ -130,7 +140,7 @@ class CELifecycleClient:
 
         try:
             client = await self._get_client()
-            logger.info(f"Registering CE type '{request.ce_type}' at {endpoint}")
+            logger.info(f"Registering CE '{request.name}' v{request.version} at {endpoint}")
 
             response = await client.post(
                 endpoint,
@@ -138,30 +148,32 @@ class CELifecycleClient:
                 headers={"Content-Type": "application/json"},
             )
 
-            if response.status_code in (200, 201):
+            if response.status_code == 201:
+                # New CE created
                 data = response.json()
-                result = CERegistrationResponse(
-                    ce_id=data["ce_id"],
-                    cfn_id=data["cfn_id"],
-                    ce_type=data["ce_type"],
-                    base_url=data["base_url"],
-                    endpoint=data["endpoint"],
-                    enabled=data["enabled"],
-                    status=data["status"],
-                    created=data["created"],
-                )
-
-                # Store for heartbeats
-                self.ce_id = result.ce_id
-                self.cfn_id = result.cfn_id
-                self.ce_type = result.ce_type
-
-                action = "created" if result.created else "updated"
+                result = self._parse_response(data, created=True)
+                self._store_ce_info(result)
                 logger.info(
-                    f"CE type '{request.ce_type}' {action}: ce_id={result.ce_id}, "
+                    f"CE '{request.name}' v{request.version} created: ce_id={result.ce_id}, "
                     f"status={result.status}, enabled={result.enabled}"
                 )
                 return result
+
+            elif response.status_code == 409:
+                # CE with same (name, version) already exists - this happens on CE restart/reconnect.
+                # We PATCH to update base_url/endpoint because the CE's address may have changed:
+                # - Container got a new IP after restart
+                # - Running on a different port
+                # - Different hostname in a new deployment
+                data = response.json()
+                existing_ce_id = data.get("detail", {}).get("existing_ce_id") or data.get("existing_ce_id")
+                if not existing_ce_id:
+                    logger.error(f"409 Conflict but no existing_ce_id in response: {data}")
+                    return None
+
+                logger.info(f"CE '{request.name}' v{request.version} already exists (ce_id={existing_ce_id}), updating via PATCH")
+                return await self._update_existing_ce(existing_ce_id, request)
+
             else:
                 logger.error(
                     f"CE registration failed: {response.status_code} - {response.text[:200]}"
@@ -177,6 +189,72 @@ class CELifecycleClient:
         except Exception as e:
             logger.error(f"CE registration error: {e}", exc_info=True)
             return None
+
+    async def _update_existing_ce(
+        self,
+        ce_id: str,
+        request: CERegistrationRequest,
+    ) -> Optional[CERegistrationResponse]:
+        """Update an existing CE via PATCH after 409 conflict."""
+        endpoint = f"{self.cfn_base_url}/api/cognition-engine/{ce_id}"
+        payload = {
+            "base_url": request.base_url,
+            "endpoint": request.endpoint,
+        }
+
+        try:
+            client = await self._get_client()
+            response = await client.patch(
+                endpoint,
+                json=payload,
+                headers={"Content-Type": "application/json"},
+            )
+
+            if response.status_code == 200:
+                data = response.json()
+                result = CERegistrationResponse(
+                    ce_id=data["id"],
+                    cfn_id=data["cfn_id"],
+                    name=data["name"],
+                    version=data["version"],
+                    ce_type=data["ce_type"],
+                    base_url=data["base_url"],
+                    endpoint=data["endpoint"],
+                    enabled=data["enabled"],
+                    status=data["status"],
+                    created=False,
+                )
+                self._store_ce_info(result)
+                logger.info(f"CE '{request.name}' v{request.version} updated: ce_id={result.ce_id}")
+                return result
+            else:
+                logger.error(f"CE update failed: {response.status_code} - {response.text[:200]}")
+                return None
+
+        except Exception as e:
+            logger.error(f"CE update error: {e}", exc_info=True)
+            return None
+
+    def _parse_response(self, data: dict, created: bool) -> CERegistrationResponse:
+        """Parse registration response data into CERegistrationResponse."""
+        return CERegistrationResponse(
+            ce_id=data["ce_id"],
+            cfn_id=data["cfn_id"],
+            name=data["name"],
+            version=data["version"],
+            ce_type=data["ce_type"],
+            base_url=data["base_url"],
+            endpoint=data["endpoint"],
+            enabled=data["enabled"],
+            status=data["status"],
+            created=created,
+        )
+
+    def _store_ce_info(self, result: CERegistrationResponse) -> None:
+        """Store CE info for heartbeats."""
+        self.ce_id = result.ce_id
+        self.cfn_id = result.cfn_id
+        self.ce_type = result.ce_type
 
     def start_heartbeat(self):
         """Start background heartbeat task."""
@@ -259,9 +337,11 @@ async def register_demo_ce() -> None:
         timeout=10.0,
     )
 
-    # Define Demo CE configuration using new simplified schema
+    # Define Demo CE configuration
     # Note: cfn_id and mas_auto_associate are added by CFN before forwarding to management plane
     ce_config = CERegistrationRequest(
+        name=CE_NAME,
+        version=CE_VERSION,
         ce_type=CE_TYPE,
         base_url=base_url,
         endpoint=CE_ENDPOINT,
