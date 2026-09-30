@@ -11,11 +11,12 @@ Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
 
 2. Start the stack:
    ```bash
-   docker compose up -d
+   docker compose up -d                      # 15 containers
+   docker compose --profile full-mas up -d   # 16, adds the NOA sample app
    ```
 
-All images are pulled from GHCR; nothing is built locally. The full stack is
-15 containers.
+All images are pulled from GHCR; nothing is built locally. The sample app is
+the only profiled service; everything else starts either way.
 
 The one image whose source lives in this repo is the database. See
 [`docker-db/`](docker-db/) for the Dockerfile and how to publish a new tag.
@@ -51,15 +52,14 @@ the pipeline.
 #### Connecting ClickHouse to the workers
 
 The collector writes spans, but it does not know about the columns the workers
-read or about RabbitMQ. Those are added by hand, once, after the collector has
-received its first span: `session_id`, `application_id`, and `agent_id` as
-materialized columns on `otel_traces`, plus a materialized view that publishes
-each `session.end` span to the `claris` exchange with routing key
-`new_session_in` — the queue `norm` reads from. They persist in the
-`oxp_clickhouse_data` volume.
+read or about RabbitMQ. Two one-shot services configure that connection on
+startup. `oxp-clickhouse-init` waits five seconds, adds the materialized trace
+columns, and creates the RabbitMQ-backed view. `oxp-rabbitmq-init` then binds
+the `claris` exchange to the `new_session_in` queue declared by `norm`.
 
-See [`scripts/README.md`](scripts/README.md) for the statements and how to run
-them.
+The operations are idempotent and run automatically with `docker compose up`.
+Set `OXP_INIT_DELAY_SECONDS` to change the initial grace period. See
+[`scripts/README.md`](scripts/README.md) for verification and recovery commands.
 
 ### OXP workers
 
@@ -75,11 +75,34 @@ RabbitMQ, entering at `norm` and fanning out from there.
 | `analysis` | Analysis layer |
 | `hierarchical-grouping` | Hierarchical grouping |
 
+### MAS sample app
+
+| Service | Port | Description |
+|---------|------|-------------|
+| `noa-trip-planner` | 8125 | Multi-agent trip planner that emits OTLP spans into the collector |
+
+Nothing in the stack produces traces on its own, so without this there is
+nothing for the workers to process. It is the only profiled service, started
+with `--profile full-mas`, which keeps the rest of the stack usable without a
+gateway key. Port 8125 rather than 8000, which belongs to
+`ioc-scale-cf-cognition-engine`.
+
+Ask it something once the stack is up:
+
+```bash
+curl -X POST http://localhost:8125/ask \
+  -H "Content-Type: application/json" \
+  -d '{"question":"Plan a 1-day trip to Celestia"}'
+```
+
+The session only reaches Neo4j after the app emits its `session.end` span,
+which the SDK sends on a five-minute idle timeout or at exit.
+
 ## Configuration
 
 See `.env.example` for all available configuration options. Key settings:
 
-- `IOC_KNOWLEDGE_DB_*` - Database credentials
+- `IOC_SCALE_DB_*` - Database credentials
 - `ADMIN_USER_PASSWORD` - Admin password for mgmt backend
 - `CLARIS_REGISTRY`, `CLARIS_IMAGE_TAG` - Source and version of the worker images
 - `AI_GATEWAY_API_KEY`, `OPENAI_API_KEY` - Required by `embedding`, `mce`, and
@@ -90,6 +113,13 @@ See `.env.example` for all available configuration options. Key settings:
 - `CLICKHOUSE_*` - Read by the workers and the OTel collector. `CLICKHOUSE_HOST`
   defaults to the bundled `clickhouse-server`; set it to `host.docker.internal`
   to use an external instance instead.
+- `OXP_INIT_DELAY_SECONDS` - Grace period before automatic ClickHouse/RabbitMQ
+  bridge initialization starts. Defaults to 5 seconds.
+- `NOA_*` - The sample app. It reuses `AI_GATEWAY_BASE_URL` and
+  `AI_GATEWAY_API_KEY`, so that key needs the chat model on its allow-list too.
+  `NOA_API_PORT` moves the host port only; the app always listens on 8125 inside
+  the container. `NOA_ENABLE_SIMULATED_DELAY` and the `NOA_DELAY_*` values pad
+  out a session when you want a slower one to watch.
 
 ### Architecture
 

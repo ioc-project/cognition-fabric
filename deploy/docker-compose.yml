@@ -139,7 +139,7 @@ services:
   # Port Mapping: 9002:9002 (HTTP)
   ioc-scale-cfn-svc:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cfn-svc/pkgs/container/ioc-scale-cfn-svc
-    image: ghcr.io/cisco-eti/ioc-scale-cfn-svc:2026-08-21-6226f5c
+    image: ghcr.io/cisco-eti/ioc-scale-cfn-svc:2026-09-18-74fe552
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cfn-svc
     restart: unless-stopped
@@ -153,7 +153,14 @@ services:
       - CFN_IP=${CFN_IP:-"Not Set"}
       - HEARTBEAT_INTERVAL_SECONDS=${HEARTBEAT_INTERVAL_SECONDS:-10}
       - SERVICE_NAME=${SERVICE_NAME:-ioc-cfn-svc}
+      - POSTGRES_HOST=ioc-scale-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_AUDIT_DB=cfn_audit
+      - POSTGRES_USER=${IOC_SCALE_DB_USER}
+      - POSTGRES_PASSWORD=${IOC_SCALE_DB_PASSWORD}
     depends_on:
+      ioc-scale-db:
+        condition: service_healthy
       ioc-scale-cf-mgmt-svc:
         condition: service_healthy
     healthcheck:
@@ -174,7 +181,7 @@ services:
   # Port Mapping: 8000:8000 (HTTP)
   ioc-scale-cf-cognition-engine:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-cognition-engines/pkgs/container/ioc-scale-cf-cognition-engines%2Fce-demo
-    image: ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/ce-demo:2026-08-18-a6f07d4
+    image: ghcr.io/cisco-eti/ioc-scale-cf-cognition-engines/ce-demo:2026-09-18-7210972
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-cognition-engine
     ports:
@@ -298,6 +305,8 @@ services:
     environment:
       CLICKHOUSE_USER: ${CLICKHOUSE_USERNAME:-admin}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin} # legit:ignore
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest} # legit:ignore
     ulimits:
       nofile:
         soft: 262144
@@ -305,6 +314,7 @@ services:
     volumes:
       - oxp_clickhouse_data:/var/lib/clickhouse
       - oxp_clickhouse_logs:/var/log/clickhouse-server
+      - ./clickhouse-rabbitmq-config.xml:/etc/clickhouse-server/config.d/rabbitmq.xml:ro
     restart: unless-stopped
     healthcheck:
       test:
@@ -340,6 +350,53 @@ services:
     depends_on:
       clickhouse-server:
         condition: service_healthy
+
+  # Creates the materialized columns and RabbitMQ-backed view after the
+  # collector has created its trace table.
+  oxp-clickhouse-init:
+    image: clickhouse/clickhouse-server:24.8
+    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-oxp-clickhouse-init
+    entrypoint: ["/bin/sh", "/scripts/init-oxp-clickhouse.sh"]
+    environment:
+      CLICKHOUSE_HOST: clickhouse-server
+      CLICKHOUSE_NATIVE_PORT: 9000
+      CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME:-admin}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin} # legit:ignore
+      OXP_INIT_DELAY_SECONDS: ${OXP_INIT_DELAY_SECONDS:-5}
+    volumes:
+      - ./scripts/init-oxp-clickhouse.sh:/scripts/init-oxp-clickhouse.sh:ro
+      - ./scripts/init-oxp-clickhouse.sql:/scripts/init-oxp-clickhouse.sql:ro
+    restart: "no"
+    depends_on:
+      clickhouse-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+
+  # Connects the ClickHouse exchange to the queue declared by norm.
+  oxp-rabbitmq-init:
+    image: rabbitmq:3-management
+    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-oxp-rabbitmq-init
+    entrypoint: ["/bin/sh", "/scripts/init-oxp-rabbitmq.sh"]
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_MANAGEMENT_PORT: 15672
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest} # legit:ignore
+    volumes:
+      - ./scripts/init-oxp-rabbitmq.sh:/scripts/init-oxp-rabbitmq.sh:ro
+    restart: "no"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      norm:
+        condition: service_started
+      oxp-clickhouse-init:
+        condition: service_completed_successfully
 
   # OXP: normalization worker (pipeline entry point)
   norm:
@@ -457,6 +514,38 @@ services:
       clickhouse-server:
         condition: service_healthy
       norm:
+        condition: service_started
+
+  # MAS sample app. Emits the OTLP spans the OXP workers turn into a knowledge
+  # graph, so the pipeline has something to process without a local checkout.
+  # Port Mapping: 8125:8125 (HTTP). Host 8000 is ioc-scale-cf-cognition-engine,
+  # and 8125 is what the app listens on by default.
+  #
+  # The only profiled service, so the stack stays usable without a gateway key:
+  #   docker compose up -d                       # everything except this app
+  #   docker compose --profile full-mas up -d    # everything, this app included
+  # Every other service is unprofiled and starts either way.
+  noa-trip-planner:
+    profiles: ["full-mas"]
+    image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/noa-trip-planner:${NOA_IMAGE_TAG:-latest}
+    platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
+    container_name: ioc-scale-noa-trip-planner
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "${NOA_API_PORT:-8125}:8125"
+    environment:
+      # Fixed inside the container; NOA_API_PORT above only moves the host port.
+      NOA_API_PORT: 8125
+      NOA_API_HOST: 0.0.0.0
+      OTLP_HTTP_ENDPOINT: http://otel-collector:4318
+      AI_GATEWAY_BASE_URL: ${AI_GATEWAY_BASE_URL}
+      AI_GATEWAY_API_KEY: ${AI_GATEWAY_API_KEY}
+      NOA_LLM_MODEL: ${NOA_LLM_MODEL:-azure/gpt-4o}
+    restart: unless-stopped
+    depends_on:
+      otel-collector:
         condition: service_started
 
 volumes:
