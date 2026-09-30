@@ -77,7 +77,7 @@ services:
   # Port Mapping: 9000:9000
   ioc-scale-cf-mgmt-svc:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-mgmt-svc/pkgs/container/ioc-scale-cf-mgmt-svc
-    image: ghcr.io/cisco-eti/ioc-scale-cf-mgmt-svc:2026-08-13-f457a4c
+    image: ghcr.io/cisco-eti/ioc-scale-cf-mgmt-svc:2026-09-29-b686239
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-mgmt-svc
     ports:
@@ -118,7 +118,7 @@ services:
   # Port Mapping: 9001:9001
   ioc-scale-cf-mgmt-plane-ui:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-ui/pkgs/container/ioc-scale-cf-ui
-    image: ghcr.io/cisco-eti/ioc-scale-cf-ui:2026-08-14-52542ed
+    image: ghcr.io/cisco-eti/ioc-scale-cf-ui:2026-09-29-0209699
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-mgmt-plane-ui
     ports:
@@ -139,7 +139,7 @@ services:
   # Port Mapping: 9002:9002 (HTTP)
   ioc-scale-cfn-svc:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cfn-svc/pkgs/container/ioc-scale-cfn-svc
-    image: ghcr.io/cisco-eti/ioc-scale-cfn-svc:2026-09-18-74fe552
+    image: ghcr.io/cisco-eti/ioc-scale-cfn-svc:2026-09-29-fdee83e
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cfn-svc
     restart: unless-stopped
