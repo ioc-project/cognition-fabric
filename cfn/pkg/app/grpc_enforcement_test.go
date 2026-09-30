@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -290,7 +291,7 @@ func TestGetDisposition_NoCASACEAssociated(t *testing.T) {
 }
 
 func TestGetDisposition_CASACEDisabled(t *testing.T) {
-	// MAS with disabled CASA CE
+	// MAS with disabled CASA CE (but online status)
 	masResp := map[string]any{
 		"id":           "mas-123",
 		"workspace_id": "ws-test-123",
@@ -302,7 +303,7 @@ func TestGetDisposition_CASACEDisabled(t *testing.T) {
 				"base_url": "localhost:50051",
 				"endpoint": "ioc.ce.v1.CognitionEngine",
 				"enabled":  false, // Disabled
-				"status":   "offline",
+				"status":   "online",
 			},
 		},
 	}
@@ -333,6 +334,118 @@ func TestGetDisposition_CASACEDisabled(t *testing.T) {
 
 	if st.Code() != codes.Unavailable {
 		t.Errorf("expected code %v, got %v", codes.Unavailable, st.Code())
+	}
+	if !strings.Contains(st.Message(), "disabled") {
+		t.Errorf("expected error message to contain 'disabled', got %q", st.Message())
+	}
+}
+
+func TestGetDisposition_CASACEOffline(t *testing.T) {
+	// MAS with offline CASA CE (but enabled)
+	masResp := map[string]any{
+		"id":           "mas-123",
+		"workspace_id": "ws-test-123",
+		"name":         "Test MAS",
+		"cognition_engines": []map[string]any{
+			{
+				"ce_id":    "ce-casa-1",
+				"ce_type":  "CASA",
+				"base_url": "localhost:50051",
+				"endpoint": "ioc.ce.v1.CognitionEngine",
+				"enabled":  true,
+				"status":   "offline", // Offline
+			},
+		},
+	}
+
+	cleanup, _ := setupTestEnv(t, masResp)
+	defer cleanup()
+
+	server := newEnforcementServer(nil)
+
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-123",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+		},
+	}
+
+	_, err := server.GetDisposition(context.Background(), req)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("expected gRPC status error, got %v", err)
+	}
+
+	if st.Code() != codes.Unavailable {
+		t.Errorf("expected code %v, got %v", codes.Unavailable, st.Code())
+	}
+	if !strings.Contains(st.Message(), "offline") {
+		t.Errorf("expected error message to contain 'offline', got %q", st.Message())
+	}
+}
+
+func TestGetDisposition_CASACEMixedUnhealthy(t *testing.T) {
+	// MAS with multiple CASA CEs - one disabled, one offline
+	masResp := map[string]any{
+		"id":           "mas-123",
+		"workspace_id": "ws-test-123",
+		"name":         "Test MAS",
+		"cognition_engines": []map[string]any{
+			{
+				"ce_id":    "ce-casa-1",
+				"ce_type":  "CASA",
+				"base_url": "localhost:50051",
+				"endpoint": "ioc.ce.v1.CognitionEngine",
+				"enabled":  false, // Disabled
+				"status":   "online",
+			},
+			{
+				"ce_id":    "ce-casa-2",
+				"ce_type":  "CASA",
+				"base_url": "localhost:50052",
+				"endpoint": "ioc.ce.v1.CognitionEngine",
+				"enabled":  true,
+				"status":   "offline", // Offline
+			},
+		},
+	}
+
+	cleanup, _ := setupTestEnv(t, masResp)
+	defer cleanup()
+
+	server := newEnforcementServer(nil)
+
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-123",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+		},
+	}
+
+	_, err := server.GetDisposition(context.Background(), req)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("expected gRPC status error, got %v", err)
+	}
+
+	if st.Code() != codes.Unavailable {
+		t.Errorf("expected code %v, got %v", codes.Unavailable, st.Code())
+	}
+	// Should mention both counts
+	if !strings.Contains(st.Message(), "disabled=1") || !strings.Contains(st.Message(), "offline=1") {
+		t.Errorf("expected error message to contain counts, got %q", st.Message())
 	}
 }
 
