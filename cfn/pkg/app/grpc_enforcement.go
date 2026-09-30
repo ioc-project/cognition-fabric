@@ -103,16 +103,40 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 	log.Debugf("fetched MAS from management plane: mas_id=%s workspace_id=%s mas_name=%s",
 		mas.ID, mas.WorkspaceID, mas.Name)
 
-	// Find first healthy CASA CE for this MAS (online status)
-	casaCE := mas.FindFirstHealthyCASA()
-	if casaCE == nil {
-		log.Warnf("enforcement request failed: no healthy CASA CE for MAS: mas_id=%s", req.Payload.MasId)
-		return nil, status.Errorf(codes.Unavailable, "no healthy CASA CE available for MAS: %s", req.Payload.MasId)
+	// Find CASA CEs for this MAS
+	casaCEs := mas.FindCASACEs()
+	if len(casaCEs) == 0 {
+		log.Warnf("enforcement request failed: no CASA CE associated with MAS: mas_id=%s", req.Payload.MasId)
+		return nil, status.Errorf(codes.NotFound, "no CASA CE associated with MAS: %s", req.Payload.MasId)
 	}
 
-	if !casaCE.Enabled {
-		log.Warnf("enforcement request failed: CASA CE is disabled: ce_id=%s", casaCE.CEID)
-		return nil, status.Errorf(codes.Unavailable, "CASA CE is disabled: %s", casaCE.CEID)
+	// Find first online and enabled CASA CE, tracking why others were skipped
+	var casaCE *mgmt.MASCognitionEngine
+	var disabledCount, offlineCount int
+	for _, ce := range casaCEs {
+		if !ce.Enabled {
+			disabledCount++
+			continue
+		}
+		if ce.Status != "online" {
+			offlineCount++
+			continue
+		}
+		casaCE = ce
+		break
+	}
+	if casaCE == nil {
+		// Provide specific error based on why no CE was available
+		if disabledCount > 0 && offlineCount == 0 {
+			log.Warnf("enforcement request failed: all CASA CEs disabled for MAS: mas_id=%s (disabled=%d)", req.Payload.MasId, disabledCount)
+			return nil, status.Errorf(codes.Unavailable, "all CASA CEs are disabled for MAS: %s", req.Payload.MasId)
+		}
+		if offlineCount > 0 && disabledCount == 0 {
+			log.Warnf("enforcement request failed: all CASA CEs offline for MAS: mas_id=%s (offline=%d)", req.Payload.MasId, offlineCount)
+			return nil, status.Errorf(codes.Unavailable, "all CASA CEs are offline for MAS: %s", req.Payload.MasId)
+		}
+		log.Warnf("enforcement request failed: no healthy CASA CE for MAS: mas_id=%s (disabled=%d, offline=%d)", req.Payload.MasId, disabledCount, offlineCount)
+		return nil, status.Errorf(codes.Unavailable, "no healthy CASA CE available for MAS: %s (disabled=%d, offline=%d)", req.Payload.MasId, disabledCount, offlineCount)
 	}
 
 	log.Infof("calling CASA CE: ce_id=%s base_url=%s endpoint=%s", casaCE.CEID, casaCE.BaseURL, casaCE.Endpoint)
