@@ -103,11 +103,11 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 	log.Debugf("fetched MAS from management plane: mas_id=%s workspace_id=%s mas_name=%s",
 		mas.ID, mas.WorkspaceID, mas.Name)
 
-	// Find CASA CE for this MAS
-	casaCE := mas.FindCASACE()
+	// Find first healthy CASA CE for this MAS (online status)
+	casaCE := mas.FindFirstHealthyCASA()
 	if casaCE == nil {
-		log.Warnf("enforcement request failed: no CASA CE associated with MAS: mas_id=%s", req.Payload.MasId)
-		return nil, status.Errorf(codes.NotFound, "no CASA CE associated with MAS: %s", req.Payload.MasId)
+		log.Warnf("enforcement request failed: no healthy CASA CE for MAS: mas_id=%s", req.Payload.MasId)
+		return nil, status.Errorf(codes.Unavailable, "no healthy CASA CE available for MAS: %s", req.Payload.MasId)
 	}
 
 	if !casaCE.Enabled {

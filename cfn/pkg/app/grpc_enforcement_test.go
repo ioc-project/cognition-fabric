@@ -284,8 +284,8 @@ func TestGetDisposition_NoCASACEAssociated(t *testing.T) {
 		t.Fatalf("expected gRPC status error, got %v", err)
 	}
 
-	if st.Code() != codes.NotFound {
-		t.Errorf("expected code %v, got %v", codes.NotFound, st.Code())
+	if st.Code() != codes.Unavailable {
+		t.Errorf("expected code %v, got %v", codes.Unavailable, st.Code())
 	}
 }
 

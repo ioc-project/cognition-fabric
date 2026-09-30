@@ -89,11 +89,13 @@ func (c *Client) GetMAS(ctx context.Context, workspaceID, masID string) (*MASRes
 	return &mas, nil
 }
 
-// FindCASACE finds the CASA CE from a MAS response.
-func (m *MASResponse) FindCASACE() *MASCognitionEngine {
+// FindFirstHealthyCASA finds the first online CASA CE from a MAS response.
+// Returns nil if no online CASA CE is found.
+func (m *MASResponse) FindFirstHealthyCASA() *MASCognitionEngine {
 	for i := range m.CognitionEngines {
-		if m.CognitionEngines[i].CEType == "CASA" {
-			return &m.CognitionEngines[i]
+		ce := &m.CognitionEngines[i]
+		if ce.CEType == "CASA" && ce.Status == "online" {
+			return ce
 		}
 	}
 	return nil
