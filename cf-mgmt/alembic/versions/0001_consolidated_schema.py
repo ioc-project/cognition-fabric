@@ -167,6 +167,8 @@ def upgrade() -> None:
     CREATE TABLE "cognition_engine" (
       "id" character varying(255) NOT NULL,
       "cfn_id" character varying(255) NOT NULL,
+      "name" character varying(255) NOT NULL,
+      "version" character varying(50) NOT NULL,
       "ce_type" character varying(20) NOT NULL,
       "base_url" character varying(512) NOT NULL,
       "endpoint" character varying(255) NOT NULL,
@@ -187,6 +189,7 @@ def upgrade() -> None:
     CREATE INDEX "idx_ce_status" ON "cognition_engine" ("status");
     CREATE INDEX "idx_ce_enabled" ON "cognition_engine" ("enabled");
     CREATE INDEX "idx_ce_mas_auto_associate" ON "cognition_engine" ("mas_auto_associate");
+    CREATE UNIQUE INDEX "uq_ce_cfn_name_version" ON "cognition_engine" ("cfn_id", "name", "version") WHERE "deleted_at" IS NULL;
 
     CREATE TABLE "mas_cognition_engines" (
       "mas_id" character varying(36) NOT NULL REFERENCES "multi_agentic_system" ("id") ON DELETE CASCADE,
