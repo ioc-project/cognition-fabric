@@ -76,7 +76,7 @@ class CELifecycleClient:
     def __init__(
         self,
         cfn_base_url: str,
-        heartbeat_interval_sec: float = 30.0,
+        heartbeat_interval_sec: float = 5.0,
         timeout: float = 10.0,
     ):
         self.cfn_base_url = cfn_base_url.rstrip("/")
@@ -308,7 +308,7 @@ async def register_demo_ce() -> None:
         COGNITION_ENGINE_HOST: Advertised host for this service (default: "localhost")
         GRPC_PORT: Advertised gRPC port for this service (default: "50051")
         MAS_AUTO_ASSOCIATE: Auto-associate with all MAS (default: "false")
-        CE_HEARTBEAT_INTERVAL_SEC: Heartbeat interval in seconds (default: "30.0")
+        CE_HEARTBEAT_INTERVAL_SEC: Heartbeat interval in seconds (default: "5.0")
     """
     global _lifecycle_client
 
@@ -333,7 +333,7 @@ async def register_demo_ce() -> None:
     # Create lifecycle client
     _lifecycle_client = CELifecycleClient(
         cfn_base_url=cfn_url,
-        heartbeat_interval_sec=float(os.getenv("CE_HEARTBEAT_INTERVAL_SEC", "30.0")),
+        heartbeat_interval_sec=float(os.getenv("CE_HEARTBEAT_INTERVAL_SEC", "5.0")),
         timeout=10.0,
     )
 
