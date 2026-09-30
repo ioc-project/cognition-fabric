@@ -729,9 +729,12 @@ class CognitionEngineService:
             logging.getLogger(__name__).error(f"Failed to list cognition engines for CFN: {str(e)}")
             return []
 
-    def mark_stale_engines_offline(self, threshold_minutes: int = 2) -> int:
+    def mark_stale_engines_offline(self, threshold_seconds: int = 15) -> int:
         """
         Background job: mark engines offline if last_seen exceeds threshold.
+
+        Args:
+            threshold_seconds: Seconds since last heartbeat to mark offline (default: 15)
 
         Returns count of engines marked offline.
         """
@@ -740,7 +743,7 @@ class CognitionEngineService:
             session = db.get_session()
 
             try:
-                threshold_time = datetime.now(timezone.utc) - timedelta(minutes=threshold_minutes)
+                threshold_time = datetime.now(timezone.utc) - timedelta(seconds=threshold_seconds)
 
                 stale_engines = (
                     session.query(CognitionEngineModel)

@@ -6,29 +6,45 @@
 
 import asyncio
 import logging
+import os
 
 from server.services.cognition_engine import cognition_engine_service
 
 logger = logging.getLogger(__name__)
 
+# Default values for CE monitoring
+# - CE_MONITOR_CHECK_INTERVAL_SECONDS: How often the monitor checks for stale CEs (default: 1s)
+# - CE_OFFLINE_THRESHOLD_SECONDS: Mark CE offline after this many seconds without heartbeat (default: 15s)
+#
+# These should be coordinated with the CE heartbeat interval:
+# - CE heartbeat interval should be < offline_threshold / 3 (e.g., 5s heartbeat with 15s threshold)
+DEFAULT_CHECK_INTERVAL_SECONDS = 1
+DEFAULT_OFFLINE_THRESHOLD_SECONDS = 15
+
 
 class CognitionEngineMonitor:
     """Background monitor for Cognition Engine status"""
 
-    def __init__(self, check_interval_seconds: int = 60, offline_threshold_minutes: int = 2):
+    def __init__(self, check_interval_seconds: int = None, offline_threshold_seconds: int = None):
         """
         Initialize Cognition Engine Monitor
 
         Args:
-            check_interval_seconds: How often to check for stale engines (default: 60s)
-            offline_threshold_minutes: Minutes since last heartbeat to mark offline (default: 2min)
+            check_interval_seconds: How often to check for stale engines.
+                                    Defaults to CE_MONITOR_CHECK_INTERVAL_SECONDS env var or 5s.
+            offline_threshold_seconds: Seconds since last heartbeat to mark offline.
+                                       Defaults to CE_OFFLINE_THRESHOLD_SECONDS env var or 15s.
         """
-        self.check_interval = check_interval_seconds
-        self.offline_threshold = offline_threshold_minutes
+        self.check_interval = check_interval_seconds or int(
+            os.getenv("CE_MONITOR_CHECK_INTERVAL_SECONDS", DEFAULT_CHECK_INTERVAL_SECONDS)
+        )
+        self.offline_threshold = offline_threshold_seconds or int(
+            os.getenv("CE_OFFLINE_THRESHOLD_SECONDS", DEFAULT_OFFLINE_THRESHOLD_SECONDS)
+        )
         self.running = False
         logger.info(
             f"Cognition Engine Monitor initialized (check_interval={self.check_interval}s, "
-            f"offline_threshold={self.offline_threshold}min)"
+            f"offline_threshold={self.offline_threshold}s)"
         )
 
     async def start(self):
