@@ -77,7 +77,7 @@ services:
   # Port Mapping: 9000:9000
   ioc-scale-cf-mgmt-svc:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-mgmt-svc/pkgs/container/ioc-scale-cf-mgmt-svc
-    image: ghcr.io/cisco-eti/ioc-scale-cf-mgmt-svc:2026-09-29-b686239
+    image: ghcr.io/cisco-eti/ioc-scale-cf-mgmt-svc:2026-09-30-ee7a726
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-mgmt-svc
     ports:
