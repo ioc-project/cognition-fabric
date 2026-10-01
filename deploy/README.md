@@ -113,6 +113,8 @@ See `.env.example` for all available configuration options. Key settings:
 - `CLICKHOUSE_*` - Read by the workers and the OTel collector. `CLICKHOUSE_HOST`
   defaults to the bundled `clickhouse-server`; set it to `host.docker.internal`
   to use an external instance instead.
+- `NEO4J_PASSWORD` - Shared by `neo4j` and `oxp-api`; defaults to
+  `testpassword` when unset.
 - `OXP_INIT_DELAY_SECONDS` - Grace period before automatic ClickHouse/RabbitMQ
   bridge initialization starts. Defaults to 5 seconds.
 - `NOA_*` - The sample app. It reuses `AI_GATEWAY_BASE_URL` and
