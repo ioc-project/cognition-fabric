@@ -163,7 +163,7 @@ services:
   # Port Mapping: 9002:9002 (HTTP)
   ioc-scale-cfn-svc:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cfn-svc/pkgs/container/ioc-scale-cfn-svc
-    image: ghcr.io/cisco-eti/ioc-scale-cfn-svc:2026-09-29-fdee83e
+    image: ghcr.io/cisco-eti/ioc-scale-cfn-svc:2026-10-01-141bcf7
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cfn-svc
     restart: unless-stopped
