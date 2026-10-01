@@ -15,8 +15,38 @@ Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
    docker compose --profile full-mas up -d   # 16, adds the NOA sample app
    ```
 
-All images are pulled from GHCR; nothing is built locally. The sample app is
-the only profiled service; everything else starts either way.
+
+# IMPORTANT:
+
+Temporary, the following does not apply:
+
+<del>All images are pulled from GHCR; nothing is built locally. The sample app is the only profiled service; everything else starts either way.</del>
+
+All images are pulled from GHCR, except oxp-api:  
+As of 2026.10, there are issues with the SRE secrets used to push new images into repos. For this reason, we have to build oxp-api from source.
+
+## Building oxp-api from source
+Checkout the following projects, as sibling directories:
+- ioc-scale-cf-deployment, BRANCH: feat-complete-docker-pipeline
+    https://github.com/cisco-eti/ioc-scale-cf-deployment/tree/feat-complete-docker-pipeline
+- oxp-lib, BRANCH: feat-complete-docker-pipeline
+    https://github.com/cisco-eti/oxp-lib/tree/feat-complete-docker-pipeline
+
+```
+export ARTIFACTORY_USERNAME="\<user\>"  
+export ARTIFACTORY_PASSWORD="\<pass\>"   
+
+docker compose build oxp-api
+
+docker compose up
+
+curl http://localhost:8081/api/v1/cognition-store/findings
+```
+
+---
+
+
+
 
 The one image whose source lives in this repo is the database. See
 [`docker-db/`](docker-db/) for the Dockerfile and how to publish a new tag.
