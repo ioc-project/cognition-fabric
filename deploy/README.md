@@ -15,8 +15,38 @@ Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
    docker compose --profile full-mas up -d   # 16, adds the NOA sample app
    ```
 
-All images are pulled from GHCR; nothing is built locally. The sample app is
-the only profiled service; everything else starts either way.
+
+# IMPORTANT:
+
+Temporary, the following does not apply:
+
+<del>All images are pulled from GHCR; nothing is built locally. The sample app is the only profiled service; everything else starts either way.</del>
+
+All images are pulled from GHCR, except oxp-api:  
+As of 2026.10, there are issues with the SRE secrets used to push new images into repos. For this reason, we have to build oxp-api from source.
+
+## Building oxp-api from source
+Checkout the following projects, as sibling directories:
+- ioc-scale-cf-deployment, BRANCH: feat-complete-docker-pipeline
+    https://github.com/cisco-eti/ioc-scale-cf-deployment/tree/feat-complete-docker-pipeline
+- oxp-lib, BRANCH: feat-complete-docker-pipeline
+    https://github.com/cisco-eti/oxp-lib/tree/feat-complete-docker-pipeline
+
+```
+export ARTIFACTORY_USERNAME="\<user\>"  
+export ARTIFACTORY_PASSWORD="\<pass\>"   
+
+docker compose build oxp-api
+
+docker compose up
+
+curl http://localhost:8081/api/v1/cognition-store/findings
+```
+
+---
+
+
+
 
 The one image whose source lives in this repo is the database. See
 [`docker-db/`](docker-db/) for the Dockerfile and how to publish a new tag.
@@ -103,6 +133,9 @@ which the SDK sends on a five-minute idle timeout or at exit.
 See `.env.example` for all available configuration options. Key settings:
 
 - `IOC_SCALE_DB_*` - Database credentials
+- Database bootstrap (`cfn_mgmt`, `cognition_store`, `cfn_audit`) is handled by
+  `ioc-scale-db` healthchecks via `scripts/ensure-databases.sh`, so there is no
+  separate `ioc-scale-db-init` service to run.
 - `ADMIN_USER_PASSWORD` - Admin password for mgmt backend
 - `CLARIS_REGISTRY`, `CLARIS_IMAGE_TAG` - Source and version of the worker images
 - `AI_GATEWAY_API_KEY`, `OPENAI_API_KEY` - Required by `embedding`, `mce`, and
@@ -113,6 +146,8 @@ See `.env.example` for all available configuration options. Key settings:
 - `CLICKHOUSE_*` - Read by the workers and the OTel collector. `CLICKHOUSE_HOST`
   defaults to the bundled `clickhouse-server`; set it to `host.docker.internal`
   to use an external instance instead.
+- `NEO4J_PASSWORD` - Shared by `neo4j` and `oxp-api`; defaults to
+  `testpassword` when unset.
 - `OXP_INIT_DELAY_SECONDS` - Grace period before automatic ClickHouse/RabbitMQ
   bridge initialization starts. Defaults to 5 seconds.
 - `NOA_*` - The sample app. It reuses `AI_GATEWAY_BASE_URL` and

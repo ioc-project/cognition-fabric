@@ -1,8 +1,12 @@
 # `scripts/`
 
 [`init-multi-db.sh`](init-multi-db.sh) runs automatically on the first init of
-`ioc-scale-db` and creates the `cfn_mgmt` and `cognition_store` databases.
-Nothing to do.
+`ioc-scale-db` and creates the `cfn_mgmt`, `cognition_store`, and `cfn_audit`
+databases.
+
+[`ensure-databases.sh`](ensure-databases.sh) is mounted into `ioc-scale-db` and
+run by its healthcheck, ensuring those same databases exist even when reusing
+an existing Postgres volume.
 
 The rest of this page is the end-to-end run: app → ClickHouse → RabbitMQ →
 Neo4j.
