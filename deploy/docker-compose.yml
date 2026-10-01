@@ -201,7 +201,7 @@ services:
       start_period: 40s
 
   # Demo CE
-  # Port Mapping: 8000:8000 (HTTP)
+  # Port Mapping: 50051:50051 (gRPC)
   ioc-scale-cf-demo-ce:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-demo-ce/pkgs/container/ioc-scale-cf-demo-ce%2Fce-demo
     image: ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/ce-demo:2026-09-30-d51b466
