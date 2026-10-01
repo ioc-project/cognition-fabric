@@ -169,6 +169,16 @@ When CFN receives an enforcement request:
 
 ## Future Considerations
 
+### Graceful Shutdown Notification
+
+Currently, when a CE shuts down gracefully, it simply stops sending heartbeats and waits to be marked offline after the threshold. This could be improved by having CEs send an explicit shutdown notification:
+
+- CE calls `DELETE /api/cognition-engine/{ce_id}/status` or similar on shutdown
+- Management Plane immediately marks CE as offline
+- CFN stops routing requests to that CE instantly
+
+This would eliminate the detection delay for planned shutdowns (deployments, scaling down, maintenance).
+
 ### Circuit Breaker
 
 For instant failure detection on the request path, a circuit breaker can be added to CFN:
