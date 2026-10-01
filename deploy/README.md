@@ -133,9 +133,6 @@ which the SDK sends on a five-minute idle timeout or at exit.
 See `.env.example` for all available configuration options. Key settings:
 
 - `IOC_SCALE_DB_*` - Database credentials
-- Database bootstrap (`cfn_mgmt`, `cognition_store`, `cfn_audit`) is handled by
-  `ioc-scale-db` healthchecks via `scripts/ensure-databases.sh`, so there is no
-  separate `ioc-scale-db-init` service to run.
 - `ADMIN_USER_PASSWORD` - Admin password for mgmt backend
 - `CLARIS_REGISTRY`, `CLARIS_IMAGE_TAG` - Source and version of the worker images
 - `AI_GATEWAY_API_KEY`, `OPENAI_API_KEY` - Required by `embedding`, `mce`, and
