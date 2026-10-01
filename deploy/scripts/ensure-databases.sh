@@ -3,17 +3,28 @@ set -eu
 
 DB_HOST="${DB_HOST:-ioc-scale-db}"
 DB_PORT="${DB_PORT:-5432}"
+ENSURE_DB_NO_WAIT="${ENSURE_DB_NO_WAIT:-0}"
 
-# Wait for Postgres to accept connections.
-until PGPASSWORD="$POSTGRES_PASSWORD" psql \
-  -h "$DB_HOST" \
-  -p "$DB_PORT" \
-  -U "$POSTGRES_USER" \
-  -d "$POSTGRES_DB" \
-  -c "SELECT 1" >/dev/null 2>&1; do
-  echo "Waiting for Postgres at ${DB_HOST}:${DB_PORT}..."
-  sleep 2
 done
+# Wait for Postgres to accept connections unless explicitly disabled.
+if [ "$ENSURE_DB_NO_WAIT" = "1" ]; then
+  PGPASSWORD="$POSTGRES_PASSWORD" psql \
+    -h "$DB_HOST" \
+    -p "$DB_PORT" \
+    -U "$POSTGRES_USER" \
+    -d "$POSTGRES_DB" \
+    -c "SELECT 1" >/dev/null
+else
+  until PGPASSWORD="$POSTGRES_PASSWORD" psql \
+    -h "$DB_HOST" \
+    -p "$DB_PORT" \
+    -U "$POSTGRES_USER" \
+    -d "$POSTGRES_DB" \
+    -c "SELECT 1" >/dev/null 2>&1; do
+    echo "Waiting for Postgres at ${DB_HOST}:${DB_PORT}..."
+    sleep 2
+  done
+fi
 
 ensure_db() {
   db_name="$1"

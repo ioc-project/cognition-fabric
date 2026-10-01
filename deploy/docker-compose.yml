@@ -61,36 +61,17 @@ services:
     volumes:
       - ioc_scale_db_data:/var/lib/postgresql/data
       - ./scripts/init-multi-db.sh:/docker-entrypoint-initdb.d/init-multi-db.sh:ro
+      - ./scripts/ensure-databases.sh:/scripts/ensure-databases.sh:ro
     restart: unless-stopped
     healthcheck:
       test: [
           "CMD-SHELL",
-          "pg_isready -h localhost -p 5432 -U ${IOC_SCALE_DB_USER} -d
-          ${IOC_SCALE_DB:-ioc-scale-db}",
+          "ENSURE_DB_NO_WAIT=1 DB_HOST=localhost DB_PORT=5432 POSTGRES_DB=${IOC_SCALE_DB:-ioc-scale-db} POSTGRES_USER=${IOC_SCALE_DB_USER} POSTGRES_PASSWORD=${IOC_SCALE_DB_PASSWORD} /bin/sh /scripts/ensure-databases.sh && pg_isready -h localhost -p 5432 -U ${IOC_SCALE_DB_USER} -d ${IOC_SCALE_DB:-ioc-scale-db}",
         ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
-
-  # Ensures required app databases exist even when reusing an existing PG volume.
-  ioc-scale-db-init:
-    image: postgres:16-alpine
-    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
-    container_name: ioc-scale-db-init
-    entrypoint: ["/bin/sh", "/scripts/ensure-databases.sh"]
-    environment:
-      DB_HOST: ioc-scale-db
-      DB_PORT: 5432
-      POSTGRES_DB: ${IOC_SCALE_DB:-ioc-scale-db}
-      POSTGRES_USER: ${IOC_SCALE_DB_USER}
-      POSTGRES_PASSWORD: ${IOC_SCALE_DB_PASSWORD}
-    volumes:
-      - ./scripts/ensure-databases.sh:/scripts/ensure-databases.sh:ro
-    restart: "no"
-    depends_on:
-      ioc-scale-db:
-        condition: service_healthy
 
   # Mgmt Backend Service - FastAPI backend for workspaces, users, CFN nodes
   # Port Mapping: 9000:9000
@@ -120,8 +101,6 @@ services:
     depends_on:
       ioc-scale-db:
         condition: service_healthy
-      ioc-scale-db-init:
-        condition: service_completed_successfully
     healthcheck:
       test:
         [
@@ -182,8 +161,6 @@ services:
     depends_on:
       ioc-scale-db:
         condition: service_healthy
-      ioc-scale-db-init:
-        condition: service_completed_successfully
       ioc-scale-cf-mgmt-svc:
         condition: service_healthy
     healthcheck:
