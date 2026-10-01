@@ -96,7 +96,7 @@ services:
   # Port Mapping: 9000:9000
   ioc-scale-cf-mgmt-svc:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-mgmt-svc/pkgs/container/ioc-scale-cf-mgmt-svc
-    image: ghcr.io/cisco-eti/ioc-scale-cf-mgmt-svc:2026-09-30-ee7a726
+    image: ghcr.io/cisco-eti/ioc-scale-cf-mgmt-svc:2026-09-30-a39ea7b
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-mgmt-svc
     ports:
@@ -113,7 +113,10 @@ services:
       - POSTGRES_PASSWORD=${IOC_SCALE_DB_PASSWORD}
       - PORT=9000
       - CFN_DEV_MODE=${CFN_DEV_MODE}
-      - CFN_SVC_URL=${CFN_SVC_URL:-http://ioc-cfn-svc:9002}
+      - CFN_SVC_URL=${CFN_SVC_URL:-http://ioc-scale-cfn-svc:9002}
+      # CE lifecycle monitoring
+      - CE_MONITOR_CHECK_INTERVAL_SECONDS=${CE_MONITOR_CHECK_INTERVAL_SECONDS:-1}
+      - CE_OFFLINE_THRESHOLD_SECONDS=${CE_OFFLINE_THRESHOLD_SECONDS:-3}
     volumes:
       - ./.secrets:/home/app/.secrets:ro
     restart: unless-stopped
@@ -204,7 +207,7 @@ services:
   # Port Mapping: 50051:50051 (gRPC)
   ioc-scale-cf-demo-ce:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-demo-ce/pkgs/container/ioc-scale-cf-demo-ce%2Fce-demo
-    image: ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/ce-demo:2026-09-30-d51b466
+    image: ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/ce-demo:2026-09-30-cf57fac
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-demo-ce
     ports:
@@ -220,6 +223,8 @@ services:
       - CE_VERSION=1.0.0
       - CE_TYPE=CASA
       - COGNITION_STORE_URL=http://oxp-api:8081
+      # CE heartbeat interval (should be < CE_OFFLINE_THRESHOLD_SECONDS / 3)
+      - CE_HEARTBEAT_INTERVAL_SEC=${CE_HEARTBEAT_INTERVAL_SEC:-1}
     depends_on:
       ioc-scale-cfn-svc:
         condition: service_healthy
