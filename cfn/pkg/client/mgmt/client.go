@@ -89,12 +89,13 @@ func (c *Client) GetMAS(ctx context.Context, workspaceID, masID string) (*MASRes
 	return &mas, nil
 }
 
-// FindCASACE finds the CASA CE from a MAS response.
-func (m *MASResponse) FindCASACE() *MASCognitionEngine {
+// FindCASACEs returns all CASA CEs from a MAS response regardless of status.
+func (m *MASResponse) FindCASACEs() []*MASCognitionEngine {
+	var casaCEs []*MASCognitionEngine
 	for i := range m.CognitionEngines {
 		if m.CognitionEngines[i].CEType == "CASA" {
-			return &m.CognitionEngines[i]
+			casaCEs = append(casaCEs, &m.CognitionEngines[i])
 		}
 	}
-	return nil
+	return casaCEs
 }
