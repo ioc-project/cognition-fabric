@@ -6,57 +6,69 @@ package mgmt
 
 import "testing"
 
-func TestFindCASACE(t *testing.T) {
+func TestFindCASACEs(t *testing.T) {
 	tests := []struct {
-		name    string
-		engines []MASCognitionEngine
-		wantID  string
-		wantNil bool
+		name     string
+		engines  []MASCognitionEngine
+		wantIDs  []string
+		wantNone bool
 	}{
 		{
-			name:    "no engines",
-			engines: []MASCognitionEngine{},
-			wantNil: true,
+			name:     "no engines",
+			engines:  []MASCognitionEngine{},
+			wantNone: true,
 		},
 		{
-			name: "CASA is matched",
+			name: "single CASA is returned",
 			engines: []MASCognitionEngine{
-				{CEID: "ce-1", CEType: "CASA"},
+				{CEID: "ce-1", CEType: "CASA", Enabled: true, Status: "online"},
 			},
-			wantID: "ce-1",
+			wantIDs: []string{"ce-1"},
 		},
 		{
-			name: "DETECTIVE alone is not matched",
+			name: "DETECTIVE alone returns empty",
 			engines: []MASCognitionEngine{
-				{CEID: "ce-1", CEType: "DETECTIVE"},
+				{CEID: "ce-1", CEType: "DETECTIVE", Enabled: true, Status: "online"},
 			},
-			wantNil: true,
+			wantNone: true,
 		},
 		{
-			name: "DETECTIVE is skipped in favor of the CASA engine",
+			name: "only CASA CEs are returned",
 			engines: []MASCognitionEngine{
-				{CEID: "ce-detective", CEType: "DETECTIVE"},
-				{CEID: "ce-casa", CEType: "CASA"},
+				{CEID: "ce-detective", CEType: "DETECTIVE", Enabled: true, Status: "online"},
+				{CEID: "ce-casa-1", CEType: "CASA", Enabled: true, Status: "online"},
+				{CEID: "ce-casa-2", CEType: "CASA", Enabled: false, Status: "offline"},
 			},
-			wantID: "ce-casa",
+			wantIDs: []string{"ce-casa-1", "ce-casa-2"},
+		},
+		{
+			name: "all CASA CEs returned regardless of status",
+			engines: []MASCognitionEngine{
+				{CEID: "ce-online", CEType: "CASA", Enabled: true, Status: "online"},
+				{CEID: "ce-offline", CEType: "CASA", Enabled: true, Status: "offline"},
+				{CEID: "ce-disabled", CEType: "CASA", Enabled: false, Status: "online"},
+			},
+			wantIDs: []string{"ce-online", "ce-offline", "ce-disabled"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mas := &MASResponse{CognitionEngines: tt.engines}
-			got := mas.FindCASACE()
-			if tt.wantNil {
-				if got != nil {
-					t.Errorf("FindCASACE() = %+v, want nil", got)
+			got := mas.FindCASACEs()
+			if tt.wantNone {
+				if len(got) != 0 {
+					t.Errorf("FindCASACEs() returned %d CEs, want 0", len(got))
 				}
 				return
 			}
-			if got == nil {
-				t.Fatalf("FindCASACE() = nil, want CEID %q", tt.wantID)
+			if len(got) != len(tt.wantIDs) {
+				t.Fatalf("FindCASACEs() returned %d CEs, want %d", len(got), len(tt.wantIDs))
 			}
-			if got.CEID != tt.wantID {
-				t.Errorf("FindCASACE().CEID = %q, want %q", got.CEID, tt.wantID)
+			for i, ce := range got {
+				if ce.CEID != tt.wantIDs[i] {
+					t.Errorf("FindCASACEs()[%d].CEID = %q, want %q", i, ce.CEID, tt.wantIDs[i])
+				}
 			}
 		})
 	}
