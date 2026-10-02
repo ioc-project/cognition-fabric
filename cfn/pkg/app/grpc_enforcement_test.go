@@ -161,6 +161,7 @@ func TestGetDisposition_MissingMASID(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -203,6 +204,7 @@ func TestGetDisposition_WorkspaceIDNotSet(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -234,6 +236,7 @@ func TestGetDisposition_MASNotFound(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -272,6 +275,7 @@ func TestGetDisposition_NoCASACEAssociated(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -319,6 +323,7 @@ func TestGetDisposition_CASACEDisabled(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -369,6 +374,7 @@ func TestGetDisposition_CASACEOffline(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -427,6 +433,7 @@ func TestGetDisposition_CASACEMixedUnhealthy(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -481,6 +488,7 @@ func TestGetDisposition_Success_Allow(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -527,6 +535,7 @@ func TestGetDisposition_Success_Deny(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -576,6 +585,7 @@ func TestGetDisposition_Success_Modify(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -622,6 +632,7 @@ func TestGetDisposition_CASACEError(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -690,6 +701,7 @@ func TestEnforcementServer_WaitBlocksForInFlightAuditWrite(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -760,6 +772,7 @@ func TestEnforcementServer_WaitTimeoutReturnsFalseOnHungWrite(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 	if _, err := server.GetDisposition(context.Background(), req); err != nil {

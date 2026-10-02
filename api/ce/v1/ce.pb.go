@@ -582,6 +582,7 @@ type EvaluateRequest struct {
 	SourceAgentId      string `protobuf:"bytes,2,opt,name=source_agent_id,json=sourceAgentId,proto3" json:"source_agent_id,omitempty"`                // Source agent identifier
 	DestinationAgentId string `protobuf:"bytes,3,opt,name=destination_agent_id,json=destinationAgentId,proto3" json:"destination_agent_id,omitempty"` // Destination agent identifier
 	TraceId            string `protobuf:"bytes,4,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`                                    // W3C trace correlation ID
+	SpanId             string `protobuf:"bytes,18,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`                                      // Span ID for the specific operation within the trace
 	// Action classification
 	ActionClass ActionClass `protobuf:"varint,5,opt,name=action_class,json=actionClass,proto3,enum=ioc.ce.v1.ActionClass" json:"action_class,omitempty"` // Type of action being evaluated
 	Direction   Direction   `protobuf:"varint,6,opt,name=direction,proto3,enum=ioc.ce.v1.Direction" json:"direction,omitempty"`                          // REQUEST or RESPONSE direction
@@ -659,6 +660,13 @@ func (x *EvaluateRequest) GetDestinationAgentId() string {
 func (x *EvaluateRequest) GetTraceId() string {
 	if x != nil {
 		return x.TraceId
+	}
+	return ""
+}
+
+func (x *EvaluateRequest) GetSpanId() string {
+	if x != nil {
+		return x.SpanId
 	}
 	return ""
 }
@@ -996,12 +1004,13 @@ const file_api_proto_ce_v1_ce_proto_rawDesc = "" +
 	"\vCheckResult\x12\x19\n" +
 	"\bcheck_id\x18\x01 \x01(\tR\acheckId\x12\x16\n" +
 	"\x06passed\x18\x02 \x01(\bR\x06passed\x12\x16\n" +
-	"\x06reason\x18\x03 \x01(\tR\x06reason\"\xd4\x06\n" +
+	"\x06reason\x18\x03 \x01(\tR\x06reason\"\xed\x06\n" +
 	"\x0fEvaluateRequest\x12\x15\n" +
 	"\x06mas_id\x18\x01 \x01(\tR\x05masId\x12&\n" +
 	"\x0fsource_agent_id\x18\x02 \x01(\tR\rsourceAgentId\x120\n" +
 	"\x14destination_agent_id\x18\x03 \x01(\tR\x12destinationAgentId\x12\x19\n" +
-	"\btrace_id\x18\x04 \x01(\tR\atraceId\x129\n" +
+	"\btrace_id\x18\x04 \x01(\tR\atraceId\x12\x17\n" +
+	"\aspan_id\x18\x12 \x01(\tR\x06spanId\x129\n" +
 	"\faction_class\x18\x05 \x01(\x0e2\x16.ioc.ce.v1.ActionClassR\vactionClass\x122\n" +
 	"\tdirection\x18\x06 \x01(\x0e2\x14.ioc.ce.v1.DirectionR\tdirection\x12'\n" +
 	"\x0foriginal_intent\x18\a \x01(\tR\x0eoriginalIntent\x12\x1f\n" +

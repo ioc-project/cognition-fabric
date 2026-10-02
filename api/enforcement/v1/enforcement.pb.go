@@ -150,7 +150,9 @@ type GetDispositionPayload struct {
 	// Destination agent identifier
 	DestinationAgentId string `protobuf:"bytes,3,opt,name=destination_agent_id,json=destinationAgentId,proto3" json:"destination_agent_id,omitempty"`
 	// Trace ID for span coordination (UUID or string)
-	TraceId       string `protobuf:"bytes,4,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	TraceId string `protobuf:"bytes,4,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	// Span ID for identifying the specific operation within the trace
+	SpanId        string `protobuf:"bytes,5,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -209,6 +211,13 @@ func (x *GetDispositionPayload) GetDestinationAgentId() string {
 func (x *GetDispositionPayload) GetTraceId() string {
 	if x != nil {
 		return x.TraceId
+	}
+	return ""
+}
+
+func (x *GetDispositionPayload) GetSpanId() string {
+	if x != nil {
+		return x.SpanId
 	}
 	return ""
 }
@@ -279,12 +288,13 @@ const file_api_proto_enforcement_v1_enforcement_proto_rawDesc = "" +
 	"\n" +
 	"ExtraEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xa3\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xbc\x01\n" +
 	"\x15GetDispositionPayload\x12\x15\n" +
 	"\x06mas_id\x18\x01 \x01(\tR\x05masId\x12&\n" +
 	"\x0fsource_agent_id\x18\x02 \x01(\tR\rsourceAgentId\x120\n" +
 	"\x14destination_agent_id\x18\x03 \x01(\tR\x12destinationAgentId\x12\x19\n" +
-	"\btrace_id\x18\x04 \x01(\tR\atraceId\"\xea\x01\n" +
+	"\btrace_id\x18\x04 \x01(\tR\atraceId\x12\x17\n" +
+	"\aspan_id\x18\x05 \x01(\tR\x06spanId\"\xea\x01\n" +
 	"\x16GetDispositionResponse\x12L\n" +
 	"\x06action\x18\x01 \x01(\x0e24.ioc.cf.enforcement.v1.GetDispositionResponse.ActionR\x06action\x12\x16\n" +
 	"\x06modify\x18\x02 \x01(\bR\x06modify\"j\n" +

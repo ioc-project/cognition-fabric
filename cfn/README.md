@@ -172,7 +172,8 @@ grpcurl -plaintext -d '{
     "mas_id": "your-mas-uuid",
     "source_agent_id": "agent-1",
     "destination_agent_id": "agent-2",
-    "trace_id": "trace-123"
+    "trace_id": "trace-123",
+    "span_id": "span-456"
   }
 }' localhost:9003 ioc.cf.enforcement.v1.Enforcement/GetDisposition
 ```
