@@ -2,7 +2,7 @@
 
 **Status:** Implemented
 
-**Date:** 2026-08-21 (updated from 2026-08-11)
+**Date:** 2026-10-02 (updated from 2026-08-21)
 
 **Parties:** CF T3, Enforcement Proxy T3
 
@@ -32,7 +32,8 @@ grpcurl -plaintext -d '{
     "mas_id": "550e8400-e29b-41d4-a716-446655440000",
     "source_agent_id": "agent-1",
     "destination_agent_id": "agent-2",
-    "trace_id": "trace-123"
+    "trace_id": "trace-123",
+    "span_id": "span-456"
   }
 }' localhost:9003 ioc.cf.enforcement.v1.Enforcement/GetDisposition
 ```
@@ -40,6 +41,7 @@ grpcurl -plaintext -d '{
 **Notes:**
 - `workspace_id` is **not** exposed to the Enforcement Proxy — CF/management-plane handles workspace resolution internally (see decision D1.1 below)
 - `trace_id` — Proxy needs to observe this ID to coordinate spans; sync with Pavan
+- `span_id` — Identifies the specific operation within the trace for precise correlation
 - `extra` — map of string key-value pairs for headers/metadata (contents TBD)
 
 ### Response (`GetDispositionResponse`)

@@ -72,9 +72,21 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 	if req.Payload.MasId == "" {
 		return nil, status.Error(codes.InvalidArgument, "mas_id is required")
 	}
+	if req.Payload.SourceAgentId == "" {
+		return nil, status.Error(codes.InvalidArgument, "source_agent_id is required")
+	}
+	if req.Payload.DestinationAgentId == "" {
+		return nil, status.Error(codes.InvalidArgument, "destination_agent_id is required")
+	}
+	if req.Payload.TraceId == "" {
+		return nil, status.Error(codes.InvalidArgument, "trace_id is required")
+	}
+	if req.Payload.SpanId == "" {
+		return nil, status.Error(codes.InvalidArgument, "span_id is required")
+	}
 
-	log.Infof("enforcement request: mas_id=%s source=%s dest=%s trace_id=%s",
-		req.Payload.MasId, req.Payload.SourceAgentId, req.Payload.DestinationAgentId, req.Payload.TraceId)
+	log.Infof("enforcement request: mas_id=%s source=%s dest=%s trace_id=%s span_id=%s",
+		req.Payload.MasId, req.Payload.SourceAgentId, req.Payload.DestinationAgentId, req.Payload.TraceId, req.Payload.SpanId)
 
 	// Check workspace_id is available
 	if WorkspaceID == "" {
@@ -159,6 +171,7 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 		SourceAgentId:      req.Payload.SourceAgentId,
 		DestinationAgentId: req.Payload.DestinationAgentId,
 		TraceId:            req.Payload.TraceId,
+		SpanId:             req.Payload.SpanId,
 		WorkspaceId:        WorkspaceID,
 		Extra:              req.Extra,
 	}
@@ -199,6 +212,7 @@ func (s *enforcementServer) auditCEInvocation(ceID string, req *cev1.EvaluateReq
 		"source_agent_id":      req.SourceAgentId,
 		"destination_agent_id": req.DestinationAgentId,
 		"trace_id":             req.TraceId,
+		"span_id":              req.SpanId,
 		"outcome":              outcome,
 		"reason":               reason,
 	})

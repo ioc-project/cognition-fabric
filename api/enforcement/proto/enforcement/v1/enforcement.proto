@@ -38,6 +38,8 @@ message GetDispositionPayload {
   string destination_agent_id = 3;
   // Trace ID for span coordination (UUID or string)
   string trace_id = 4;
+  // Span ID for identifying the specific operation within the trace
+  string span_id = 5;
 }
 
 // GetDispositionResponse contains the enforcement disposition.

@@ -161,6 +161,7 @@ func TestGetDisposition_MissingMASID(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -180,6 +181,134 @@ func TestGetDisposition_MissingMASID(t *testing.T) {
 
 	if st.Message() != "mas_id is required" {
 		t.Errorf("expected message 'mas_id is required', got '%s'", st.Message())
+	}
+}
+
+func TestGetDisposition_MissingSourceAgentID(t *testing.T) {
+	server := newEnforcementServer(nil)
+
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-123",
+			SourceAgentId:      "",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+			SpanId:             "span-456",
+		},
+	}
+
+	_, err := server.GetDisposition(context.Background(), req)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("expected gRPC status error, got %v", err)
+	}
+
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("expected code %v, got %v", codes.InvalidArgument, st.Code())
+	}
+
+	if st.Message() != "source_agent_id is required" {
+		t.Errorf("expected message 'source_agent_id is required', got '%s'", st.Message())
+	}
+}
+
+func TestGetDisposition_MissingDestinationAgentID(t *testing.T) {
+	server := newEnforcementServer(nil)
+
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-123",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "",
+			TraceId:            "trace-123",
+			SpanId:             "span-456",
+		},
+	}
+
+	_, err := server.GetDisposition(context.Background(), req)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("expected gRPC status error, got %v", err)
+	}
+
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("expected code %v, got %v", codes.InvalidArgument, st.Code())
+	}
+
+	if st.Message() != "destination_agent_id is required" {
+		t.Errorf("expected message 'destination_agent_id is required', got '%s'", st.Message())
+	}
+}
+
+func TestGetDisposition_MissingTraceID(t *testing.T) {
+	server := newEnforcementServer(nil)
+
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-123",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "",
+			SpanId:             "span-456",
+		},
+	}
+
+	_, err := server.GetDisposition(context.Background(), req)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("expected gRPC status error, got %v", err)
+	}
+
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("expected code %v, got %v", codes.InvalidArgument, st.Code())
+	}
+
+	if st.Message() != "trace_id is required" {
+		t.Errorf("expected message 'trace_id is required', got '%s'", st.Message())
+	}
+}
+
+func TestGetDisposition_MissingSpanID(t *testing.T) {
+	server := newEnforcementServer(nil)
+
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-123",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+			SpanId:             "",
+		},
+	}
+
+	_, err := server.GetDisposition(context.Background(), req)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("expected gRPC status error, got %v", err)
+	}
+
+	if st.Code() != codes.InvalidArgument {
+		t.Errorf("expected code %v, got %v", codes.InvalidArgument, st.Code())
+	}
+
+	if st.Message() != "span_id is required" {
+		t.Errorf("expected message 'span_id is required', got '%s'", st.Message())
 	}
 }
 
@@ -203,6 +332,7 @@ func TestGetDisposition_WorkspaceIDNotSet(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -234,6 +364,7 @@ func TestGetDisposition_MASNotFound(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -272,6 +403,7 @@ func TestGetDisposition_NoCASACEAssociated(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -319,6 +451,7 @@ func TestGetDisposition_CASACEDisabled(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -369,6 +502,7 @@ func TestGetDisposition_CASACEOffline(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -427,6 +561,7 @@ func TestGetDisposition_CASACEMixedUnhealthy(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -481,6 +616,7 @@ func TestGetDisposition_Success_Allow(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -527,6 +663,7 @@ func TestGetDisposition_Success_Deny(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -576,6 +713,7 @@ func TestGetDisposition_Success_Modify(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -622,6 +760,7 @@ func TestGetDisposition_CASACEError(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -690,6 +829,7 @@ func TestEnforcementServer_WaitBlocksForInFlightAuditWrite(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 
@@ -760,6 +900,7 @@ func TestEnforcementServer_WaitTimeoutReturnsFalseOnHungWrite(t *testing.T) {
 			SourceAgentId:      "agent-1",
 			DestinationAgentId: "agent-2",
 			TraceId:            "trace-123",
+			SpanId:             "span-456",
 		},
 	}
 	if _, err := server.GetDisposition(context.Background(), req); err != nil {
