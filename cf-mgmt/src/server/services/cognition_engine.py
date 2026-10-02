@@ -142,14 +142,15 @@ class CognitionEngineService:
             )
 
     def _carry_forward_mas_associations(self, session, engine: CognitionEngineModel, user_id: str) -> None:
-        """Associate an upgraded CE with every MAS a prior version (same cfn_id, name) was attached to."""
+        """Associate an upgraded CE with every MAS its immediate predecessor (most recently registered
+        prior version, same cfn_id/name) was attached to."""
         try:
             from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
             from server.database.relational_db.models.multi_agentic_system import (
                 MultiAgenticSystem as MultiAgenticSystemModel,
             )
 
-            prior_versions = (
+            predecessor = (
                 session.query(CognitionEngineModel)
                 .filter(
                     CognitionEngineModel.cfn_id == engine.cfn_id,
@@ -157,26 +158,25 @@ class CognitionEngineService:
                     CognitionEngineModel.id != engine.id,
                     CognitionEngineModel.deleted_at.is_(None),
                 )
-                .all()
+                .order_by(CognitionEngineModel.created_at.desc(), CognitionEngineModel.id.desc())
+                .first()
             )
-            if not prior_versions:
+            if not predecessor:
                 return
 
-            prior_ids = [p.id for p in prior_versions]
-            prior_mas_ids = (
+            predecessor_mas_ids = (
                 session.query(MasCognitionEngine.mas_id)
                 .join(MultiAgenticSystemModel, MasCognitionEngine.mas_id == MultiAgenticSystemModel.id)
                 .filter(
-                    MasCognitionEngine.ce_id.in_(prior_ids),
+                    MasCognitionEngine.ce_id == predecessor.id,
                     MultiAgenticSystemModel.deleted_at.is_(None),
                 )
-                .distinct()
                 .all()
             )
-            if not prior_mas_ids:
+            if not predecessor_mas_ids:
                 return
 
-            for (mas_id,) in prior_mas_ids:
+            for (mas_id,) in predecessor_mas_ids:
                 session.add(
                     MasCognitionEngine(
                         mas_id=mas_id,

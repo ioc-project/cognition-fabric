@@ -1461,26 +1461,61 @@ class TestCognitionEngineVersionUpgradeAssociation:
         )
         assert manual.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_new_version_dedupes_mas_shared_by_multiple_prior_versions(self, client, registered_cfn, created_workspace):
-        """If two prior versions are both attached to the same MAS, v3 gets exactly one association, not a conflict."""
-        ce_v1 = _register(client, registered_cfn, "CASA", name="upgrade-dedupe-ce", version="1.0.0")
-        ce_v2 = _register(client, registered_cfn, "CASA", name="upgrade-dedupe-ce", version="2.0.0")
-        mas_id = _create_mas(client, created_workspace, "upgrade-dedupe-mas")
-        for ce_id in (ce_v1, ce_v2):
-            client.post(
-                f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
-                json={"ce_id": ce_id},
-            )
+    def test_new_version_inherits_only_from_most_recent_predecessor(self, client, registered_cfn, created_workspace):
+        """With multiple active siblings, only the most recently registered one is inherited from — not a
+        union of every sibling's associations."""
+        ce_v1 = _register(client, registered_cfn, "CASA", name="upgrade-predecessor-ce", version="1.0.0")
+        ce_v2 = _register(client, registered_cfn, "CASA", name="upgrade-predecessor-ce", version="2.0.0")
+        mas_a = _create_mas(client, created_workspace, "upgrade-predecessor-mas-a")
+        mas_b = _create_mas(client, created_workspace, "upgrade-predecessor-mas-b")
+        client.post(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_a}/cognition-engines",
+            json={"ce_id": ce_v1},
+        )
+        client.post(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_b}/cognition-engines",
+            json={"ce_id": ce_v2},
+        )
 
         resp = client.post(
             "/api/cognition-engines",
-            json=_base_payload(registered_cfn, "CASA", name="upgrade-dedupe-ce", version="3.0.0"),
+            json=_base_payload(registered_cfn, "CASA", name="upgrade-predecessor-ce", version="3.0.0"),
         )
         assert resp.status_code == status.HTTP_201_CREATED
         ce_v3 = resp.json()["ce_id"]
 
+        assert ce_v3 in _mas_ce_ids(client, created_workspace, mas_b)
+        assert ce_v3 not in _mas_ce_ids(client, created_workspace, mas_a)
+
+    def test_new_version_does_not_resurrect_a_disassociated_mas(self, client, registered_cfn, created_workspace):
+        """If the most recent predecessor was deliberately disassociated from a MAS, an older sibling still
+        holding that stale association must not resurrect it for the next version."""
+        ce_v1 = _register(client, registered_cfn, "CASA", name="upgrade-resurrect-ce", version="1.0.0")
+        mas_id = _create_mas(client, created_workspace, "upgrade-resurrect-mas")
+        client.post(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
+            json={"ce_id": ce_v1},
+        )
+
+        ce_v2 = client.post(
+            "/api/cognition-engines",
+            json=_base_payload(registered_cfn, "CASA", name="upgrade-resurrect-ce", version="2.0.0"),
+        ).json()["ce_id"]
+        assert ce_v2 in _mas_ce_ids(client, created_workspace, mas_id)
+
+        # Deliberately disassociate the most recent version from the MAS
+        client.delete(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines/{ce_v2}"
+        )
+
+        ce_v3 = client.post(
+            "/api/cognition-engines",
+            json=_base_payload(registered_cfn, "CASA", name="upgrade-resurrect-ce", version="3.0.0"),
+        ).json()["ce_id"]
+
         ce_ids = _mas_ce_ids(client, created_workspace, mas_id)
-        assert ce_ids.count(ce_v3) == 1
+        assert ce_v1 in ce_ids  # v1's own association is untouched
+        assert ce_v3 not in ce_ids  # v3 must not resurrect what v2 deliberately dropped
 
     def test_new_version_association_uses_new_engines_own_mas_config(self, client, registered_cfn, created_workspace):
         """The inherited association is seeded with v2's own factory mas_config, not v1's per-MAS override."""
