@@ -812,6 +812,11 @@ class TestCognitionEngineMasConfigPerMas:
             session.close()
 
 
+def _mas_ce_ids(client, workspace_id: str, mas_id: str) -> list:
+    detail = client.get(f"/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}").json()
+    return [ce["ce_id"] for ce in (detail.get("cognition_engines") or [])]
+
+
 def _disable_cfn(client, cfn_id: str) -> None:
     resp = client.patch(f"/api/cognition-fabric-nodes/{cfn_id}/disable")
     assert resp.status_code == status.HTTP_200_OK
@@ -1374,3 +1379,196 @@ class TestMasCognitionEnginePatch:
             assert row2.mas_config == original_config
         finally:
             session.close()
+
+
+class TestCognitionEngineVersionUpgradeAssociation:
+    """Registering a new version of an existing CE (same cfn_id, name) carries forward
+    the MAS associations of prior versions, so the upgraded CE keeps serving the same MAS."""
+
+    def test_new_version_inherits_prior_version_mas_association(self, client, registered_cfn, created_workspace):
+        """Registering v2 of a CE auto-associates it with every MAS v1 was attached to."""
+        ce_v1 = _register(client, registered_cfn, "CASA", name="upgrade-ce", version="1.0.0")
+        mas_id = _create_mas(client, created_workspace, "upgrade-mas")
+        client.post(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
+            json={"ce_id": ce_v1},
+        )
+
+        resp = client.post(
+            "/api/cognition-engines",
+            json=_base_payload(registered_cfn, "CASA", name="upgrade-ce", version="2.0.0"),
+        )
+        assert resp.status_code == status.HTTP_201_CREATED
+        ce_v2 = resp.json()["ce_id"]
+
+        assert ce_v2 in _mas_ce_ids(client, created_workspace, mas_id)
+
+    def test_new_version_does_not_disassociate_prior_version(self, client, registered_cfn, created_workspace):
+        """The prior version's own association is left untouched — disassociation is a separate concern."""
+        ce_v1 = _register(client, registered_cfn, "CASA", name="upgrade-keep-ce", version="1.0.0")
+        mas_id = _create_mas(client, created_workspace, "upgrade-keep-mas")
+        client.post(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
+            json={"ce_id": ce_v1},
+        )
+
+        client.post(
+            "/api/cognition-engines",
+            json=_base_payload(registered_cfn, "CASA", name="upgrade-keep-ce", version="2.0.0"),
+        )
+
+        assert ce_v1 in _mas_ce_ids(client, created_workspace, mas_id)
+
+    def test_new_version_with_no_prior_mas_association_is_unaffected(self, client, registered_cfn):
+        """A prior version with no MAS attached registers a new version with no errors and no associations."""
+        _register(client, registered_cfn, "CASA", name="upgrade-no-mas-ce", version="1.0.0")
+
+        resp = client.post(
+            "/api/cognition-engines",
+            json=_base_payload(registered_cfn, "CASA", name="upgrade-no-mas-ce", version="2.0.0"),
+        )
+
+        assert resp.status_code == status.HTTP_201_CREATED
+
+    def test_first_registration_has_no_prior_version_to_inherit_from(self, client, registered_cfn):
+        """A brand-new CE name has no prior version, so registration succeeds with nothing to carry forward."""
+        resp = client.post(
+            "/api/cognition-engines",
+            json=_base_payload(registered_cfn, "CASA", name="brand-new-ce", version="1.0.0"),
+        )
+        assert resp.status_code == status.HTTP_201_CREATED
+
+    def test_new_version_ignores_association_to_soft_deleted_mas(self, client, registered_cfn, created_workspace):
+        """A prior version's association to a since-deleted MAS is not carried forward."""
+        ce_v1 = _register(client, registered_cfn, "CASA", name="upgrade-deleted-mas-ce", version="1.0.0")
+        mas_id = _create_mas(client, created_workspace, "upgrade-deleted-mas")
+        client.post(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
+            json={"ce_id": ce_v1},
+        )
+        client.delete(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}")
+
+        resp = client.post(
+            "/api/cognition-engines",
+            json=_base_payload(registered_cfn, "CASA", name="upgrade-deleted-mas-ce", version="2.0.0"),
+        )
+        ce_v2 = resp.json()["ce_id"]
+
+        # Manual association must still succeed — v2 was not auto-attached to the deleted MAS
+        manual = client.post(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
+            json={"ce_id": ce_v2},
+        )
+        assert manual.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_new_version_dedupes_mas_shared_by_multiple_prior_versions(self, client, registered_cfn, created_workspace):
+        """If two prior versions are both attached to the same MAS, v3 gets exactly one association, not a conflict."""
+        ce_v1 = _register(client, registered_cfn, "CASA", name="upgrade-dedupe-ce", version="1.0.0")
+        ce_v2 = _register(client, registered_cfn, "CASA", name="upgrade-dedupe-ce", version="2.0.0")
+        mas_id = _create_mas(client, created_workspace, "upgrade-dedupe-mas")
+        for ce_id in (ce_v1, ce_v2):
+            client.post(
+                f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
+                json={"ce_id": ce_id},
+            )
+
+        resp = client.post(
+            "/api/cognition-engines",
+            json=_base_payload(registered_cfn, "CASA", name="upgrade-dedupe-ce", version="3.0.0"),
+        )
+        assert resp.status_code == status.HTTP_201_CREATED
+        ce_v3 = resp.json()["ce_id"]
+
+        ce_ids = _mas_ce_ids(client, created_workspace, mas_id)
+        assert ce_ids.count(ce_v3) == 1
+
+    def test_new_version_association_uses_new_engines_own_mas_config(self, client, registered_cfn, created_workspace):
+        """The inherited association is seeded with v2's own factory mas_config, not v1's per-MAS override."""
+        from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
+
+        ce_v1 = _register(
+            client, registered_cfn, "CASA", name="upgrade-config-ce", version="1.0.0",
+            mas_config={"schedule": "0 0 * * *"},
+        )
+        mas_id = _create_mas(client, created_workspace, "upgrade-config-mas")
+        client.post(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
+            json={"ce_id": ce_v1},
+        )
+        # Override v1's per-MAS config so it differs from its own factory default
+        client.patch(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines/{ce_v1}",
+            json={"mas_config": {"schedule": "0 12 * * *"}},
+        )
+
+        v2_factory_config = {"schedule": "0 6 * * *"}
+        resp = client.post(
+            "/api/cognition-engines",
+            json={
+                **_base_payload(registered_cfn, "CASA", name="upgrade-config-ce", version="2.0.0"),
+                "mas_config": v2_factory_config,
+            },
+        )
+        ce_v2 = resp.json()["ce_id"]
+
+        db = RelationalDB()
+        session = db.get_session()
+        try:
+            row = (
+                session.query(MasCognitionEngine)
+                .filter(MasCognitionEngine.mas_id == mas_id, MasCognitionEngine.ce_id == ce_v2)
+                .first()
+            )
+            assert row is not None
+            assert row.mas_config == v2_factory_config
+        finally:
+            session.close()
+
+    def test_new_version_registration_increments_config_version(self, client, registered_cfn, created_workspace):
+        """Inheriting a MAS association on version upgrade triggers a CFN config update."""
+        ce_v1 = _register(client, registered_cfn, "CASA", name="upgrade-cfgv-ce", version="1.0.0")
+        mas_id = _create_mas(client, created_workspace, "upgrade-cfgv-mas")
+        client.post(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
+            json={"ce_id": ce_v1},
+        )
+
+        initial_version = client.put(f"/api/cognition-fabric-nodes/{registered_cfn}/heartbeat").json()["config_version"]
+
+        client.post(
+            "/api/cognition-engines",
+            json=_base_payload(registered_cfn, "CASA", name="upgrade-cfgv-ce", version="2.0.0"),
+        )
+
+        updated_version = client.put(f"/api/cognition-fabric-nodes/{registered_cfn}/heartbeat").json()["config_version"]
+        assert updated_version > initial_version
+
+    def test_different_cfn_prior_version_is_not_inherited_from(self, client):
+        """A CE with the same name under a different CFN is a separate logical CE — no cross-CFN inheritance."""
+        cfn1_id = client.post(
+            "/api/cognition-fabric-nodes/register",
+            json={"id": "cfn-upgrade-iso-1", "name": "CFN Upgrade Iso 1"},
+        ).json()["id"]
+        cfn2_id = client.post(
+            "/api/cognition-fabric-nodes/register",
+            json={"id": "cfn-upgrade-iso-2", "name": "CFN Upgrade Iso 2"},
+        ).json()["id"]
+        ws1_id = client.post(
+            "/api/workspaces/create",
+            json={"name": "Upgrade Iso WS 1", "cfn_id": cfn1_id},
+        ).json()["id"]
+
+        ce_v1 = _register(client, cfn1_id, "CASA", name="cross-cfn-ce", version="1.0.0")
+        mas_id = _create_mas(client, ws1_id, "cross-cfn-mas")
+        client.post(
+            f"/api/workspaces/{ws1_id}/multi-agentic-systems/{mas_id}/cognition-engines",
+            json={"ce_id": ce_v1},
+        )
+
+        resp = client.post(
+            "/api/cognition-engines",
+            json=_base_payload(cfn2_id, "CASA", name="cross-cfn-ce", version="2.0.0"),
+        )
+        ce_v2 = resp.json()["ce_id"]
+
+        assert ce_v2 not in _mas_ce_ids(client, ws1_id, mas_id)
