@@ -101,11 +101,12 @@ class CognitionEngineService:
                     created_by=user_id,
                 )
                 session.add(engine)
-                session.commit()
-                session.refresh(engine)
+                session.flush()
                 created = True
 
                 self._carry_forward_mas_associations(session, engine, user_id)
+
+                session.commit()
 
                 response = (
                     CognitionEngineResponse(
@@ -143,54 +144,51 @@ class CognitionEngineService:
 
     def _carry_forward_mas_associations(self, session, engine: CognitionEngineModel, user_id: str) -> None:
         """Associate an upgraded CE with every MAS its immediate predecessor (most recently registered
-        prior version, same cfn_id/name) was attached to."""
-        try:
-            from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
-            from server.database.relational_db.models.multi_agentic_system import (
-                MultiAgenticSystem as MultiAgenticSystemModel,
+        prior version, same cfn_id/name) was attached to.
+
+        Runs inside the caller's transaction — does not commit or roll back itself. A failure here
+        propagates to the caller so CE creation and association carry-forward commit or fail together,
+        rather than leaving a CE registered with associations silently missing.
+        """
+        from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
+        from server.database.relational_db.models.multi_agentic_system import (
+            MultiAgenticSystem as MultiAgenticSystemModel,
+        )
+
+        predecessor = (
+            session.query(CognitionEngineModel)
+            .filter(
+                CognitionEngineModel.cfn_id == engine.cfn_id,
+                CognitionEngineModel.name == engine.name,
+                CognitionEngineModel.id != engine.id,
+                CognitionEngineModel.deleted_at.is_(None),
             )
+            .order_by(CognitionEngineModel.created_at.desc(), CognitionEngineModel.id.desc())
+            .first()
+        )
+        if not predecessor:
+            return
 
-            predecessor = (
-                session.query(CognitionEngineModel)
-                .filter(
-                    CognitionEngineModel.cfn_id == engine.cfn_id,
-                    CognitionEngineModel.name == engine.name,
-                    CognitionEngineModel.id != engine.id,
-                    CognitionEngineModel.deleted_at.is_(None),
-                )
-                .order_by(CognitionEngineModel.created_at.desc(), CognitionEngineModel.id.desc())
-                .first()
+        predecessor_mas_ids = (
+            session.query(MasCognitionEngine.mas_id)
+            .join(MultiAgenticSystemModel, MasCognitionEngine.mas_id == MultiAgenticSystemModel.id)
+            .filter(
+                MasCognitionEngine.ce_id == predecessor.id,
+                MultiAgenticSystemModel.deleted_at.is_(None),
             )
-            if not predecessor:
-                return
+            .all()
+        )
+        if not predecessor_mas_ids:
+            return
 
-            predecessor_mas_ids = (
-                session.query(MasCognitionEngine.mas_id)
-                .join(MultiAgenticSystemModel, MasCognitionEngine.mas_id == MultiAgenticSystemModel.id)
-                .filter(
-                    MasCognitionEngine.ce_id == predecessor.id,
-                    MultiAgenticSystemModel.deleted_at.is_(None),
+        for (mas_id,) in predecessor_mas_ids:
+            session.add(
+                MasCognitionEngine(
+                    mas_id=mas_id,
+                    ce_id=engine.id,
+                    mas_config=copy.deepcopy(engine.mas_config) if engine.mas_config else None,
+                    created_by=user_id,
                 )
-                .all()
-            )
-            if not predecessor_mas_ids:
-                return
-
-            for (mas_id,) in predecessor_mas_ids:
-                session.add(
-                    MasCognitionEngine(
-                        mas_id=mas_id,
-                        ce_id=engine.id,
-                        mas_config=copy.deepcopy(engine.mas_config) if engine.mas_config else None,
-                        created_by=user_id,
-                    )
-                )
-            session.commit()
-
-        except Exception as e:
-            session.rollback()
-            logging.getLogger(__name__).error(
-                f"Failed to carry forward MAS associations for CE {engine.id}: {e}"
             )
 
     def get(self, ce_id: str) -> CognitionEngineDetail:

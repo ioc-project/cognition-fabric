@@ -1607,3 +1607,31 @@ class TestCognitionEngineVersionUpgradeAssociation:
         ce_v2 = resp.json()["ce_id"]
 
         assert ce_v2 not in _mas_ce_ids(client, ws1_id, mas_id)
+
+    def test_new_version_registration_is_atomic_with_carry_forward(self, client, registered_cfn, created_workspace, monkeypatch):
+        """If carrying forward associations fails, the whole registration rolls back — no orphaned CE row
+        is left behind with missing associations."""
+        from server.services.cognition_engine import cognition_engine_service
+
+        ce_v1 = _register(client, registered_cfn, "CASA", name="upgrade-atomic-ce", version="1.0.0")
+        mas_id = _create_mas(client, created_workspace, "upgrade-atomic-mas")
+        client.post(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
+            json={"ce_id": ce_v1},
+        )
+
+        def _boom(self, session, engine, user_id):
+            raise RuntimeError("simulated carry-forward failure")
+
+        monkeypatch.setattr(cognition_engine_service, "_carry_forward_mas_associations", _boom.__get__(cognition_engine_service))
+
+        resp = client.post(
+            "/api/cognition-engines",
+            json=_base_payload(registered_cfn, "CASA", name="upgrade-atomic-ce", version="2.0.0"),
+        )
+        assert resp.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+        # No v2 row was persisted — only the original v1 remains
+        remaining = client.get(f"/api/cognition-engines?cfn_id={registered_cfn}").json()["cognition_engines"]
+        versions = [e["version"] for e in remaining if e["name"] == "upgrade-atomic-ce"]
+        assert versions == ["1.0.0"]
