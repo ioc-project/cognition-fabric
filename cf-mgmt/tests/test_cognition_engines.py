@@ -675,52 +675,55 @@ class TestCognitionEnginePatch:
         assert before["enabled"] == after["enabled"]
         assert before["mas_config"] == after["mas_config"]
 
-    def test_patch_disable_with_attached_mas_returns_409(self, client, registered_cfn, created_workspace):
-        """Cannot disable a CE while it has at least one MAS attached."""
+    def test_patch_disable_with_attached_mas_succeeds(self, client, registered_cfn, created_workspace):
+        """Disabling a CE with attached MAS succeeds — enabled is a pure state toggle, not a precondition."""
         ce_id = _register(client, registered_cfn, "CASA")
-        mas_id = _create_mas(client, created_workspace, "guard-mas")
+        mas_id = _create_mas(client, created_workspace, "attached-mas")
         client.post(
             f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
             json={"ce_id": ce_id},
         )
-
-        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"enabled": False})
-
-        assert resp.status_code == status.HTTP_409_CONFLICT
-        assert "mas" in resp.json()["detail"].lower()
-
-    def test_patch_disable_ignores_soft_deleted_mas(self, client, registered_cfn, created_workspace):
-        """Soft-deleted MAS associations do not block CE disable."""
-        ce_id = _register(client, registered_cfn, "CASA")
-        mas_id = _create_mas(client, created_workspace, "soft-deleted-mas")
-        client.post(
-            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
-            json={"ce_id": ce_id},
-        )
-        # Soft-delete the MAS — junction row remains but MAS is gone
-        client.delete(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}")
 
         resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"enabled": False})
 
         assert resp.status_code == status.HTTP_200_OK
         assert resp.json()["enabled"] is False
 
-    def test_patch_disable_allowed_after_disassociation(self, client, registered_cfn, created_workspace):
-        """Disable succeeds once all MAS are disassociated."""
+    def test_patch_disable_preserves_mas_association(self, client, registered_cfn, created_workspace):
+        """Disabling a CE does not remove its existing MAS associations."""
         ce_id = _register(client, registered_cfn, "CASA")
-        mas_id = _create_mas(client, created_workspace, "disassoc-guard-mas")
+        mas_id = _create_mas(client, created_workspace, "disable-preserve-mas")
         client.post(
             f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
             json={"ce_id": ce_id},
         )
-        client.delete(
-            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines/{ce_id}"
+
+        client.patch(f"/api/cognition-engines/{ce_id}", json={"enabled": False})
+
+        detail = client.get(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}").json()
+        ce_ids = [ce["ce_id"] for ce in detail["cognition_engines"]]
+        assert ce_id in ce_ids
+
+    def test_patch_disable_then_enable_restores_mas_association_without_reassociation(
+        self, client, registered_cfn, created_workspace
+    ):
+        """Re-enabling a CE after a disable cycle keeps serving the same MAS without needing manual re-association."""
+        ce_id = _register(client, registered_cfn, "CASA")
+        mas_id = _create_mas(client, created_workspace, "disable-enable-mas")
+        client.post(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
+            json={"ce_id": ce_id},
         )
 
-        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"enabled": False})
+        client.patch(f"/api/cognition-engines/{ce_id}", json={"enabled": False})
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"enabled": True})
 
         assert resp.status_code == status.HTTP_200_OK
-        assert resp.json()["enabled"] is False
+        assert resp.json()["enabled"] is True
+
+        detail = client.get(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}").json()
+        ce_ids = [ce["ce_id"] for ce in detail["cognition_engines"]]
+        assert ce_id in ce_ids
 
     def test_patch_ce_mas_config_field_not_accepted(self, client, registered_cfn):
         """CE PATCH does not accept mas_config — it is silently ignored and factory default is unchanged."""

@@ -1086,6 +1086,8 @@ class TestCFNConfigCognitionEngines:
 
         assert len(mas["cognition_engines"]) == 1
         assert mas["cognition_engines"][0]["id"] == ce_id
+        assert mas["cognition_engines"][0]["enabled"] is True
+        assert mas["cognition_engines"][0]["status"] == "online"
 
 
 # Pytest fixtures
