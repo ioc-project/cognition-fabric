@@ -1169,12 +1169,14 @@ class CognitionFabricNodeService:
                     for system in mas_systems:
                         system_data = system.model_dump(mode="json", exclude_none=False)
 
-                        # Embed minimal CE info per MAS: id, ce_type, and effective mas_config
-                        # (junction override if set, otherwise CE factory default)
+                        # Embed minimal CE info per MAS: id, ce_type, enabled, status, and effective
+                        # mas_config (junction override if set, otherwise CE factory default)
                         system_data["cognition_engines"] = [
                             {
                                 "id": row.ce_id,
                                 "ce_type": ce_by_id[row.ce_id]["ce_type"],
+                                "enabled": ce_by_id[row.ce_id]["enabled"],
+                                "status": ce_by_id[row.ce_id]["status"],
                                 "mas_config": (
                                     row.mas_config if row.mas_config is not None else ce_by_id[row.ce_id]["mas_config"]
                                 ),
