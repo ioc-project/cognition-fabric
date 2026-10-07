@@ -251,7 +251,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                           <MultiSelect
                             value={field.value ?? []}
                             options={cognitionEngines.map((ce) => ({
-                              label: `${ce.name} (${ce.ce_type})`,
+                              label: `${ce.name} v${ce.version} (${ce.ce_type})`,
                               value: ce.id,
                               disabled: ce.mas_auto_associate ?? false,
                               hint: ce.mas_auto_associate ? 'Automatically attached to this MAS at creation.' : undefined

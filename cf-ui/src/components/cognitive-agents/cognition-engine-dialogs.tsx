@@ -18,11 +18,6 @@ export interface CognitionEngineDialogsProps {
   toggleCeEnabled: boolean | undefined;
   toggleStep: ToggleStep;
   setToggleStep: (step: ToggleStep) => void;
-  toggleAssociatedMas: MultiAgenticSystem[];
-  toggleDisassociatedIds: Set<string>;
-  toggleDisassociatingIds: Set<string>;
-  togglePendingMas: MultiAgenticSystem[];
-  onToggleDisassociate: (mas: MultiAgenticSystem) => void;
   onConfirmToggle: () => void;
   isTogglingEnabled: boolean;
   // Delete flow
@@ -50,11 +45,6 @@ export function CognitionEngineDialogs({
   toggleCeEnabled,
   toggleStep,
   setToggleStep,
-  toggleAssociatedMas,
-  toggleDisassociatedIds,
-  toggleDisassociatingIds,
-  togglePendingMas,
-  onToggleDisassociate,
   onConfirmToggle,
   isTogglingEnabled,
   deleteCeName,
@@ -77,52 +67,6 @@ export function CognitionEngineDialogs({
 }: CognitionEngineDialogsProps) {
   return (
     <>
-      <Modal
-        open={toggleStep === 'disassociate'}
-        onOpenChange={(open) => {
-          if (!open) {
-            setToggleStep(null);
-          }
-        }}
-        title="Remove MAS Associations"
-        description={`"${toggleCeName}" must be disassociated from all Multi-Agentic Systems before it can be disabled.`}
-        icon={
-          <div className="rounded-full bg-yellow-100 dark:bg-yellow-900/20 p-2">
-            <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
-          </div>
-        }
-        footer={
-          <div className="flex w-full items-center justify-end gap-3">
-            <Button variant="outline" onClick={() => setToggleStep(null)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" disabled={togglePendingMas.length > 0} onClick={() => setToggleStep('confirm')}>
-              Disable
-            </Button>
-          </div>
-        }
-      >
-        <div className="space-y-2">
-          {toggleAssociatedMas.map((mas) => {
-            const disassociated = toggleDisassociatedIds.has(mas.id);
-            const disassociating = toggleDisassociatingIds.has(mas.id);
-            return (
-              <div key={mas.id} className="flex items-center justify-between rounded-md border px-4 py-3">
-                <span className={`text-sm font-medium ${disassociated ? 'line-through text-muted-foreground' : ''}`}>{mas.name}</span>
-                {disassociated ? (
-                  <span className="text-xs text-muted-foreground">Disassociated</span>
-                ) : (
-                  <Button variant="outline" size="sm" className="gap-2" disabled={disassociating} onClick={() => onToggleDisassociate(mas)}>
-                    <Unlink className="w-3 h-3" />
-                    {disassociating ? 'Removing...' : 'Disassociate'}
-                  </Button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </Modal>
-
       <ConfirmDialog
         open={toggleStep === 'confirm'}
         onOpenChange={(open) => {

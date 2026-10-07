@@ -74,8 +74,10 @@ export default function MASDetailsPage() {
     error,
     isLoading,
     mutate
-  } = useSWR<MultiAgenticSystem>(workspaceId && masId ? swrKeys.masDetails(workspaceId, masId) : null, () =>
-    masApi.get(workspaceId as string, masId as string)
+  } = useSWR<MultiAgenticSystem>(
+    workspaceId && masId ? swrKeys.masDetails(workspaceId, masId) : null,
+    () => masApi.get(workspaceId as string, masId as string),
+    {dedupingInterval: 2000}
   );
   const {cognitionEngines = []} = useCognitionEngines();
 
@@ -122,6 +124,10 @@ export default function MASDetailsPage() {
       router.replace('/not-found');
     }
   }, [workspaceId, masId, router, isWorkspaceLoading]);
+
+  useEffect(() => {
+    void mutate();
+  }, [activeTab, mutate]);
 
   const crumbs = mas
     ? [
@@ -468,6 +474,7 @@ export default function MASDetailsPage() {
                           <TableHead>Name</TableHead>
                           <TableHead>Version</TableHead>
                           <TableHead>Type</TableHead>
+                          <TableHead>Status</TableHead>
                           <TableHead>Enabled</TableHead>
                           <TableHead />
                         </TableRow>
@@ -478,6 +485,9 @@ export default function MASDetailsPage() {
                             <TableCell className="font-medium align-top py-3 font-mono">{ce.name}</TableCell>
                             <TableCell className="align-top py-3 font-mono">{ce.version}</TableCell>
                             <TableCell className="font-medium align-top py-3 font-mono">{ce.ce_type}</TableCell>
+                            <TableCell>
+                              <Badge variant={ce.status === 'online' ? 'success' : 'inactive'}>{ce.status === 'online' ? 'Online' : 'Offline'}</Badge>
+                            </TableCell>
                             <TableCell>
                               <StatusDot variant="state" active={ce.enabled} />
                             </TableCell>

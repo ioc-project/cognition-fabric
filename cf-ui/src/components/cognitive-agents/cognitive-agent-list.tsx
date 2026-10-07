@@ -74,58 +74,12 @@ export function CognitiveAgentList() {
 
   const [toggleTarget, setToggleTarget] = useState<CognitionEngineListItem | null>(null);
   const [toggleStep, setToggleStep] = useState<ToggleStep>(null);
-  const [toggleAssociatedMas, setToggleAssociatedMas] = useState<MultiAgenticSystem[]>([]);
-  const [toggleDisassociatingIds, setToggleDisassociatingIds] = useState<Set<string>>(new Set());
-  const [toggleDisassociatedIds, setToggleDisassociatedIds] = useState<Set<string>>(new Set());
   const [isTogglingEnabled, setIsTogglingEnabled] = useState(false);
 
-  const fetchToggleMas = async (ceId: string): Promise<MultiAgenticSystem[]> => {
-    if (!defaultWorkspaceId) {
-      return [];
-    }
-    try {
-      const masList = await masApi.list(defaultWorkspaceId);
-      return masList.filter((mas) => mas.cognition_engines?.some((c) => c.ce_id === ceId));
-    } catch {
-      return [];
-    }
-  };
-
-  const handleToggleEnabled = async (r: CognitionEngineListItem) => {
+  const handleToggleEnabled = (r: CognitionEngineListItem) => {
     setToggleTarget(r);
-    setToggleAssociatedMas([]);
-    setToggleDisassociatedIds(new Set());
-    setToggleDisassociatingIds(new Set());
-    if (r.enabled) {
-      const mas = await fetchToggleMas(r.id);
-      setToggleAssociatedMas(mas);
-      setToggleStep(mas.length > 0 ? 'disassociate' : 'confirm');
-    } else {
-      setToggleStep('confirm');
-    }
+    setToggleStep('confirm');
   };
-
-  const handleToggleDisassociate = async (mas: MultiAgenticSystem) => {
-    if (!toggleTarget) {
-      return;
-    }
-    setToggleDisassociatingIds((prev) => new Set(prev).add(mas.id));
-    try {
-      await masApi.disassociateCE(mas.workspace_id, mas.id, toggleTarget.id);
-      setToggleDisassociatedIds((prev) => new Set(prev).add(mas.id));
-      toast.success(`Disassociated from "${mas.name}"`);
-    } catch (err) {
-      toast.error(parseError(err));
-    } finally {
-      setToggleDisassociatingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(mas.id);
-        return next;
-      });
-    }
-  };
-
-  const togglePendingMas = toggleAssociatedMas.filter((m) => !toggleDisassociatedIds.has(m.id));
 
   const handleConfirmToggle = async () => {
     if (!toggleTarget) {
@@ -324,11 +278,6 @@ export function CognitiveAgentList() {
         toggleCeEnabled={toggleTarget?.enabled}
         toggleStep={toggleStep}
         setToggleStep={setToggleStep}
-        toggleAssociatedMas={toggleAssociatedMas}
-        toggleDisassociatedIds={toggleDisassociatedIds}
-        toggleDisassociatingIds={toggleDisassociatingIds}
-        togglePendingMas={togglePendingMas}
-        onToggleDisassociate={handleToggleDisassociate}
         onConfirmToggle={handleConfirmToggle}
         isTogglingEnabled={isTogglingEnabled}
         deleteCeName={deleteTarget?.name}

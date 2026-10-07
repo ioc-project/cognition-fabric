@@ -81,7 +81,7 @@ export default function CognitiveAgentDetailsPage() {
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'config'>('overview');
-  const toggleFlow = useCEToggleFlow({cognitiveAgentId, ce, defaultWorkspaceId, mutate});
+  const toggleFlow = useCEToggleFlow({cognitiveAgentId, ce, mutate});
   const deleteFlow = useCEDeleteFlow({
     cognitiveAgentId,
     ce,
@@ -382,11 +382,6 @@ export default function CognitiveAgentDetailsPage() {
         toggleCeEnabled={ce?.enabled}
         toggleStep={toggleFlow.toggleStep}
         setToggleStep={toggleFlow.setToggleStep}
-        toggleAssociatedMas={toggleFlow.toggleAssociatedMas}
-        toggleDisassociatedIds={toggleFlow.toggleDisassociatedIds}
-        toggleDisassociatingIds={toggleFlow.toggleDisassociatingIds}
-        togglePendingMas={toggleFlow.togglePendingMas}
-        onToggleDisassociate={toggleFlow.handleToggleDisassociate}
         onConfirmToggle={toggleFlow.handleConfirmToggle}
         isTogglingEnabled={toggleFlow.isTogglingEnabled}
         deleteCeName={ce?.name}
