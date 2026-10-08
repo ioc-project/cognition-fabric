@@ -256,7 +256,7 @@ services:
       start_period: 30s
        
   oxp-api:
-    image: ${OXP_API_IMAGE:-ghcr.io/cisco-eti/oxp/container-images/ioc-analytics-api: 0.0.0-45-gfbf0fe3}
+    image: ${OXP_API_IMAGE:-ghcr.io/cisco-eti/oxp/container-images/ioc-analytics-api: 0.0.1-165-gfcc94bea}
     platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
     env_file: .env
     container_name: ioc-scale-oxp-api
@@ -266,12 +266,17 @@ services:
       CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
       CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME:-admin}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin}
-      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE:-claris}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE:-oxp}
       NEO4J_HOST: neo4j
       NEO4J_PORT: ${NEO4J_PORT:-7687}
       NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-testpassword}
       NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
+      POSTGRES_HOST:  ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USERNAME: ${POSTGRES_USERNAME:-oxppostgresuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-oxppostgrespassword}
+      POSTGRES_DATABASE: ${POSTGRES_DATABASE:-oxppostgresdb}
     ports:
       - "8081:8000"
     restart: unless-stopped
@@ -279,6 +284,8 @@ services:
       redis:
         condition: service_healthy
       neo4j:
+        condition: service_healthy
+      postgres:
         condition: service_healthy
 
   redis:
