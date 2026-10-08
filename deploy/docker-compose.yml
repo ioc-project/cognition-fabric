@@ -228,14 +228,8 @@ services:
       start_period: 30s
        
   oxp-api:
-    build:
-      context: ../oxp-lib
-      dockerfile: api/Dockerfile
-      secrets:
-        - ARTIFACTORY_USERNAME
-        - ARTIFACTORY_PASSWORD
-    image: oxp-api:local
-    pull_policy: never
+    image: ${OXP_API_IMAGE:-ghcr.io/cisco-eti/oxp/container-images/ioc-analytics-api:latest}
+    platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
     env_file: .env
     container_name: ioc-scale-oxp-api
     environment:
@@ -553,12 +547,6 @@ services:
     depends_on:
       otel-collector:
         condition: service_started
-
-secrets:
-  ARTIFACTORY_USERNAME:
-    environment: "ARTIFACTORY_USERNAME"
-  ARTIFACTORY_PASSWORD:
-    environment: "ARTIFACTORY_PASSWORD"
 
 volumes:
   ioc_scale_db_data:
