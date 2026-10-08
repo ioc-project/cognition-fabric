@@ -61,23 +61,42 @@ services:
     volumes:
       - ioc_scale_db_data:/var/lib/postgresql/data
       - ./scripts/init-multi-db.sh:/docker-entrypoint-initdb.d/init-multi-db.sh:ro
-      - ./scripts/ensure-databases.sh:/scripts/ensure-databases.sh:ro
     restart: unless-stopped
     healthcheck:
       test: [
           "CMD-SHELL",
-          "ENSURE_DB_NO_WAIT=1 DB_HOST=localhost DB_PORT=5432 POSTGRES_DB=${IOC_SCALE_DB:-ioc-scale-db} POSTGRES_USER=${IOC_SCALE_DB_USER} POSTGRES_PASSWORD=${IOC_SCALE_DB_PASSWORD} /bin/sh /scripts/ensure-databases.sh && pg_isready -h localhost -p 5432 -U ${IOC_SCALE_DB_USER} -d ${IOC_SCALE_DB:-ioc-scale-db}",
+          "pg_isready -h localhost -p 5432 -U ${IOC_SCALE_DB_USER} -d
+          ${IOC_SCALE_DB:-ioc-scale-db}",
         ]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
 
+  # Ensures required app databases exist even when reusing an existing PG volume.
+  ioc-scale-db-init:
+    image: postgres:16-alpine
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-db-init
+    entrypoint: ["/bin/sh", "/scripts/ensure-databases.sh"]
+    environment:
+      DB_HOST: ioc-scale-db
+      DB_PORT: 5432
+      POSTGRES_DB: ${IOC_SCALE_DB:-ioc-scale-db}
+      POSTGRES_USER: ${IOC_SCALE_DB_USER}
+      POSTGRES_PASSWORD: ${IOC_SCALE_DB_PASSWORD}
+    volumes:
+      - ./scripts/ensure-databases.sh:/scripts/ensure-databases.sh:ro
+    restart: "no"
+    depends_on:
+      ioc-scale-db:
+        condition: service_healthy
+
   # Mgmt Backend Service - FastAPI backend for workspaces, users, CFN nodes
   # Port Mapping: 9000:9000
   ioc-scale-cf-mgmt-svc:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-mgmt-svc/pkgs/container/ioc-scale-cf-mgmt-svc
-    image: ghcr.io/cisco-eti/ioc-scale-cf-mgmt-svc:2026-09-30-ee7a726
+    image: ghcr.io/cisco-eti/ioc-scale-cf-mgmt-svc:2026-09-30-a39ea7b
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-mgmt-svc
     ports:
@@ -94,13 +113,18 @@ services:
       - POSTGRES_PASSWORD=${IOC_SCALE_DB_PASSWORD}
       - PORT=9000
       - CFN_DEV_MODE=${CFN_DEV_MODE}
-      - CFN_SVC_URL=${CFN_SVC_URL:-http://ioc-cfn-svc:9002}
+      - CFN_SVC_URL=${CFN_SVC_URL:-http://ioc-scale-cfn-svc:9002}
+      # CE lifecycle monitoring
+      - CE_MONITOR_CHECK_INTERVAL_SECONDS=${CE_MONITOR_CHECK_INTERVAL_SECONDS:-1}
+      - CE_OFFLINE_THRESHOLD_SECONDS=${CE_OFFLINE_THRESHOLD_SECONDS:-3}
     volumes:
       - ./.secrets:/home/app/.secrets:ro
     restart: unless-stopped
     depends_on:
       ioc-scale-db:
         condition: service_healthy
+      ioc-scale-db-init:
+        condition: service_completed_successfully
     healthcheck:
       test:
         [
@@ -139,7 +163,7 @@ services:
   # Port Mapping: 9002:9002 (HTTP)
   ioc-scale-cfn-svc:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cfn-svc/pkgs/container/ioc-scale-cfn-svc
-    image: ghcr.io/cisco-eti/ioc-scale-cfn-svc:2026-09-29-fdee83e
+    image: ghcr.io/cisco-eti/ioc-scale-cfn-svc:2026-10-01-141bcf7
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cfn-svc
     restart: unless-stopped
@@ -161,6 +185,8 @@ services:
     depends_on:
       ioc-scale-db:
         condition: service_healthy
+      ioc-scale-db-init:
+        condition: service_completed_successfully
       ioc-scale-cf-mgmt-svc:
         condition: service_healthy
     healthcheck:
@@ -178,10 +204,10 @@ services:
       start_period: 40s
 
   # Demo CE
-  # Port Mapping: 8000:8000 (HTTP)
+  # Port Mapping: 50051:50051 (gRPC)
   ioc-scale-cf-demo-ce:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-demo-ce/pkgs/container/ioc-scale-cf-demo-ce%2Fce-demo
-    image: ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/ce-demo:2026-09-30-d51b466
+    image: ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/ce-demo:2026-09-30-cf57fac
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-demo-ce
     ports:
@@ -197,6 +223,8 @@ services:
       - CE_VERSION=1.0.0
       - CE_TYPE=CASA
       - COGNITION_STORE_URL=http://oxp-api:8081
+      # CE heartbeat interval (should be < CE_OFFLINE_THRESHOLD_SECONDS / 3)
+      - CE_HEARTBEAT_INTERVAL_SEC=${CE_HEARTBEAT_INTERVAL_SEC:-1}
     depends_on:
       ioc-scale-cfn-svc:
         condition: service_healthy
