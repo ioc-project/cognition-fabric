@@ -256,7 +256,7 @@ services:
       start_period: 30s
        
   oxp-api:
-    image: ${OXP_API_IMAGE:-ghcr.io/cisco-eti/oxp/container-images/ioc-analytics-api: 0.0.1-165-gfcc94bea}
+    image: ${OXP_API_IMAGE:-ghcr.io/cisco-eti/oxp/container-images/ioc-analytics-api:0.0.1-165-gfcc94bea}
     platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
     env_file: .env
     container_name: ioc-scale-oxp-api
@@ -272,7 +272,7 @@ services:
       NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-testpassword}
       NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
-      POSTGRES_HOST:  ${POSTGRES_HOST:-postgres}
+      POSTGRES_HOST: ${POSTGRES_HOST:-ioc-scale-db}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
       POSTGRES_USERNAME: ${POSTGRES_USERNAME:-oxppostgresuser}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-oxppostgrespassword}
@@ -285,7 +285,7 @@ services:
         condition: service_healthy
       neo4j:
         condition: service_healthy
-      postgres:
+      ioc-scale-db:
         condition: service_healthy
 
   redis:
