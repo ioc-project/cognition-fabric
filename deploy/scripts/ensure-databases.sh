@@ -5,7 +5,7 @@ DB_HOST="${DB_HOST:-ioc-scale-db}"
 DB_PORT="${DB_PORT:-5432}"
 
 # Wait for Postgres to accept connections unless explicitly disabled.
-if [ "$ENSURE_DB_NO_WAIT" = "1" ]; then
+if [ "${ENSURE_DB_NO_WAIT:-0}" = "1" ]; then
   PGPASSWORD="$POSTGRES_PASSWORD" psql \
     -h "$DB_HOST" \
     -p "$DB_PORT" \
