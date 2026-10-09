@@ -11,41 +11,12 @@ Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
 
 2. Start the stack:
    ```bash
-   docker compose up -d                      # 15 containers
-   docker compose --profile full-mas up -d   # 16, adds the NOA sample app
+   docker compose up -d
+   docker compose --profile full-mas up -d   # adds the NOA sample app
    ```
 
-
-# IMPORTANT:
-
-Temporary, the following does not apply:
-
-<del>All images are pulled from GHCR; nothing is built locally. The sample app is the only profiled service; everything else starts either way.</del>
-
-All images are pulled from GHCR, except oxp-api:  
-As of 2026.10, there are issues with the SRE secrets used to push new images into repos. For this reason, we have to build oxp-api from source.
-
-## Building oxp-api from source
-Checkout the following projects, as sibling directories:
-- ioc-scale-cf-deployment, BRANCH: feat-complete-docker-pipeline
-    https://github.com/cisco-eti/ioc-scale-cf-deployment/tree/feat-complete-docker-pipeline
-- oxp-lib, BRANCH: feat-complete-docker-pipeline
-    https://github.com/cisco-eti/oxp-lib/tree/feat-complete-docker-pipeline
-
-```
-export ARTIFACTORY_USERNAME="\<user\>"  
-export ARTIFACTORY_PASSWORD="\<pass\>"   
-
-docker compose build oxp-api
-
-docker compose up
-
-curl http://localhost:8081/api/v1/cognition-store/findings
-```
-
----
-
-
+All images are pulled from GHCR; nothing is built locally. The sample app is
+the only profiled service; everything else starts either way.
 
 
 The one image whose source lives in this repo is the database. See
@@ -93,7 +64,7 @@ Set `OXP_INIT_DELAY_SECONDS` to change the initial grace period. See
 
 ### OXP workers
 
-Pipeline workers from `claris-lib`. They expose no ports and communicate over
+Pipeline workers from OXP. They expose no ports and communicate over
 RabbitMQ, entering at `norm` and fanning out from there.
 
 | Service | Description |
@@ -104,6 +75,8 @@ RabbitMQ, entering at `norm` and fanning out from there.
 | `grouping` | Session grouping |
 | `analysis` | Analysis layer |
 | `hierarchical-grouping` | Hierarchical grouping |
+| `decision-block` | Routes embedded sessions to evaluation queues |
+| `stateful-eval` | Stateful session evaluation |
 
 ### MAS sample app
 
@@ -134,7 +107,7 @@ See `.env.example` for all available configuration options. Key settings:
 
 - `IOC_SCALE_DB_*` - Database credentials
 - `ADMIN_USER_PASSWORD` - Admin password for mgmt backend
-- `CLARIS_REGISTRY`, `CLARIS_IMAGE_TAG` - Source and version of the worker images
+- `OXP_REGISTRY`, `OXP_IMG_TAG` - Source and version of the OXP API and worker images
 - `AI_GATEWAY_API_KEY`, `OPENAI_API_KEY` - Required by `embedding`, `mce`, and
   `analysis`. Without them those workers exit on startup and restart in a loop.
   The two are read by different workers and can hold the same gateway key.
