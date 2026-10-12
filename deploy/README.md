@@ -14,9 +14,12 @@ Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
    docker compose up -d
    docker compose --profile full-mas up -d   # adds the NOA sample app
    ```
-
 All images are pulled from GHCR; nothing is built locally. The sample app is
 the only profiled service; everything else starts either way.
+
+`oxp-api` follows `OXP_REGISTRY` + `OXP_IMG_TAG` by default. Set
+`OXP_API_IMAGE` in `.env` only when you need to pin the API image
+independently of worker tags.
 
 
 The one image whose source lives in this repo is the database. See
