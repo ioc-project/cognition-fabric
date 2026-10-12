@@ -13,15 +13,11 @@ class UserResponse(BaseModel):
         json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
-                "api_key": "ioc_abc123...",
-                "api_key_preview": "ioc_abc123...",
             }
         }
     )
 
     id: str = Field(..., description="Unique identifier for the user")
-    api_key: Optional[str] = Field(None, description="Auto-generated API key (only shown once)")
-    api_key_preview: Optional[str] = Field(None, description="Preview of the API key")
 
 
 class User(BaseModel):

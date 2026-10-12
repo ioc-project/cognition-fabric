@@ -245,10 +245,6 @@ class MultiAgenticSystemService:
                 workspace = session.query(Workspace).filter(Workspace.id == workspace_id).first()
                 workspace_cfn_id = workspace.cfn_id if workspace else None
 
-                from server.services.vector_store_cfn import vector_store_cfn_service
-
-                vector_store_cfn_service.onboard_vector_store(workspace_id, new_mas.id)
-
                 from server.services.cognition_engine import cognition_engine_service
 
                 cognition_engine_service.auto_attach_for_new_mas(new_mas.id, workspace_cfn_id)
