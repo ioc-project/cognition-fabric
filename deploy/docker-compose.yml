@@ -222,7 +222,7 @@ services:
       - CE_NAME=demo-ce
       - CE_VERSION=1.0.0
       - CE_TYPE=CASA
-      - COGNITION_STORE_URL=http://oxp-api:8081
+      - COGNITION_STORE_URL=http://oxp-api:8000
       # CE heartbeat interval (should be < CE_OFFLINE_THRESHOLD_SECONDS / 3)
       - CE_HEARTBEAT_INTERVAL_SEC=${CE_HEARTBEAT_INTERVAL_SEC:-1}
     depends_on:
@@ -256,13 +256,14 @@ services:
       start_period: 30s
        
   oxp-api:
-    image: ${OXP_API_IMAGE:-ghcr.io/cisco-eti/oxp/container-images/ioc-analytics-api:0.0.1-165-gfcc94bea}
-    platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
+      image: ${OXP_API_IMAGE:-${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/ioc-analytics-api:${OXP_IMG_TAG:-latest}}
+      platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
     env_file: .env
     container_name: ioc-scale-oxp-api
     environment:
+      CLARIS_API_RELOAD: "false"
       CACHE_REDIS_URL: redis://redis:6379/0
-      CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-host.docker.internal}
+      CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-clickhouse-server}
       CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
       CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME:-admin}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin}
@@ -286,6 +287,8 @@ services:
       neo4j:
         condition: service_healthy
       ioc-scale-db:
+        condition: service_healthy
+      clickhouse-server:
         condition: service_healthy
 
   redis:
@@ -436,7 +439,7 @@ services:
   # OXP: normalization worker (pipeline entry point)
   norm:
     <<: *worker-base
-    image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/claris-worker-norm:${CLARIS_IMAGE_TAG:-latest}
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-norm:${OXP_IMG_TAG:-latest}
     container_name: ioc-scale-oxp-norm
     command: ["--max-sessions", "-1"]
     environment:
@@ -447,12 +450,13 @@ services:
   # OXP: embedding worker
   embedding:
     <<: *worker-base
-    image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/claris-worker-embedding:${CLARIS_IMAGE_TAG:-latest}
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-embedding:${OXP_IMG_TAG:-latest}
     container_name: ioc-scale-oxp-embedding
     command: ["--embedder-type", "OpenAIEmbedder", "--embedding-model", "${EMBEDDING_MODEL:-azure/text-embedding-3-small}"]
     environment:
       <<: *worker-env
       MAX_INFLIGHT_MESSAGES: ${EMBEDDING_MAX_INFLIGHT_MESSAGES:-16}
+      EMBEDDING_OUTPUT_QUEUE: ${EMBEDDING_OUTPUT_QUEUE:-new_session_to_grouping,new_session_embedding_to_decision_block}
     restart: unless-stopped
     depends_on:
       rabbitmq:
@@ -467,7 +471,7 @@ services:
   # OXP: metrics computation engine worker
   mce:
     <<: *worker-base
-    image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/claris-worker-mce:${CLARIS_IMAGE_TAG:-latest}
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-mce:${OXP_IMG_TAG:-latest}
     container_name: ioc-scale-oxp-mce
     command: ["--config-file", "/claris/mce_config.yaml"]
     environment:
@@ -487,7 +491,7 @@ services:
   # OXP: semantic grouping worker
   grouping:
     <<: *worker-base
-    image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/claris-worker-grouping:${CLARIS_IMAGE_TAG:-latest}
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-grouping:${OXP_IMG_TAG:-latest}
     container_name: ioc-scale-oxp-grouping
     command: ["--embedding-model", "${EMBEDDING_MODEL:-azure/text-embedding-3-small}"]
     environment:
@@ -507,7 +511,7 @@ services:
   # OXP: analysis worker (anomaly / consistency / normal-behaviour)
   analysis:
     <<: *worker-base
-    image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/claris-worker-analysis:${CLARIS_IMAGE_TAG:-latest}
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-analysis:${OXP_IMG_TAG:-latest}
     container_name: ioc-scale-oxp-analysis
     command:
       - "--embedding-model"
@@ -532,7 +536,7 @@ services:
   # OXP: hierarchical grouping worker
   hierarchical-grouping:
     <<: *worker-base
-    image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/claris-worker-hierarchical-grouping:${CLARIS_IMAGE_TAG:-latest}
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-hierarchical-grouping:${OXP_IMG_TAG:-latest}
     container_name: ioc-scale-oxp-hierarchical-grouping
     command:
       - "--embedding-model"
@@ -549,6 +553,49 @@ services:
       clickhouse-server:
         condition: service_healthy
       norm:
+        condition: service_started
+
+  # OXP: routes embedded sessions to downstream evaluation workers
+  decision-block:
+    <<: *worker-base
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-decision-block:${OXP_IMG_TAG:-latest}
+    container_name: ioc-scale-oxp-decision-block
+    environment:
+      <<: *worker-env
+      MAX_INFLIGHT_MESSAGES: ${DECISION_BLOCK_MAX_INFLIGHT_MESSAGES:-8}
+      DB_INPUT_QUEUE: ${DB_INPUT_QUEUE:-new_session_embedding_to_decision_block}
+      DB_NSEVAL_OUTPUT_Q: ${DB_NSEVAL_OUTPUT_Q:-new_session_to_nseval}
+      DB_STATEFUL_OUTPUT_Q: ${DB_STATEFUL_OUTPUT_Q:-new_session_to_stateful_eval}
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      clickhouse-server:
+        condition: service_healthy
+      embedding:
+        condition: service_started
+
+  # OXP: stateful evaluation worker
+  stateful-eval:
+    <<: *worker-base
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-stateful-eval:${OXP_IMG_TAG:-latest}
+    container_name: ioc-scale-oxp-stateful-eval
+    environment:
+      <<: *worker-env
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-${AI_GATEWAY_API_KEY:-}}
+      STATEFUL_EVAL_INPUT_QUEUE: ${STATEFUL_EVAL_INPUT_QUEUE:-new_session_to_stateful_eval}
+      MAX_INFLIGHT_MESSAGES: ${STATEFUL_EVAL_MAX_INFLIGHT_MESSAGES:-8}
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      clickhouse-server:
+        condition: service_healthy
+      decision-block:
         condition: service_started
 
   # MAS sample app. Emits the OTLP spans the OXP workers turn into a knowledge

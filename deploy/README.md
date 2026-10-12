@@ -11,21 +11,15 @@ Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
 
 2. Start the stack:
    ```bash
-   docker compose up -d                      # 15 containers
-   docker compose --profile full-mas up -d   # 16, adds the NOA sample app
+   docker compose up -d
+   docker compose --profile full-mas up -d   # adds the NOA sample app
    ```
+All images are pulled from GHCR; nothing is built locally. The sample app is
+the only profiled service; everything else starts either way.
 
-
-All images are pulled from GHCR; nothing is built locally.
-
-`oxp-api` defaults to:
-`ghcr.io/cisco-eti/oxp/container-images/ioc-analytics-api:latest`
-
-Override it with `OXP_API_IMAGE` in `.env` when you need a specific tag.
-
----
-
-
+`oxp-api` follows `OXP_REGISTRY` + `OXP_IMG_TAG` by default. Set
+`OXP_API_IMAGE` in `.env` only when you need to pin the API image
+independently of worker tags.
 
 
 The one image whose source lives in this repo is the database. See
@@ -73,7 +67,7 @@ Set `OXP_INIT_DELAY_SECONDS` to change the initial grace period. See
 
 ### OXP workers
 
-Pipeline workers from `claris-lib`. They expose no ports and communicate over
+Pipeline workers from OXP. They expose no ports and communicate over
 RabbitMQ, entering at `norm` and fanning out from there.
 
 | Service | Description |
@@ -84,6 +78,8 @@ RabbitMQ, entering at `norm` and fanning out from there.
 | `grouping` | Session grouping |
 | `analysis` | Analysis layer |
 | `hierarchical-grouping` | Hierarchical grouping |
+| `decision-block` | Routes embedded sessions to evaluation queues |
+| `stateful-eval` | Stateful session evaluation |
 
 ### MAS sample app
 
@@ -114,7 +110,7 @@ See `.env.example` for all available configuration options. Key settings:
 
 - `IOC_SCALE_DB_*` - Database credentials
 - `ADMIN_USER_PASSWORD` - Admin password for mgmt backend
-- `CLARIS_REGISTRY`, `CLARIS_IMAGE_TAG` - Source and version of the worker images
+- `OXP_REGISTRY`, `OXP_IMG_TAG` - Source and version of the OXP API and worker images
 - `AI_GATEWAY_API_KEY`, `OPENAI_API_KEY` - Required by `embedding`, `mce`, and
   `analysis`. Without them those workers exit on startup and restart in a loop.
   The two are read by different workers and can hold the same gateway key.
