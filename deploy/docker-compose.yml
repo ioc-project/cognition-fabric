@@ -256,8 +256,8 @@ services:
       start_period: 30s
        
   oxp-api:
-      image: ${OXP_API_IMAGE:-${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/ioc-analytics-api:${OXP_IMG_TAG:-latest}}
-      platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
+    image: ${OXP_API_IMAGE:-ghcr.io/cisco-eti/oxp/container-images/ioc-analytics-api:0.0.0-48-ge5f5ac7}
+    platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
     env_file: .env
     container_name: ioc-scale-oxp-api
     environment:
