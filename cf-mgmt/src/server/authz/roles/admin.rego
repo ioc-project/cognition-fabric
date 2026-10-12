@@ -8,7 +8,6 @@ import data.authz.operations.cognition_fabric_node
 import data.authz.operations.cognition_engine
 import data.authz.operations.memory_provider
 import data.authz.operations.multi_agentic_system
-import data.authz.operations.policy
 
 # Admin role permissions - full access to all operations
 allow if {
@@ -51,10 +50,4 @@ allow if {
 	input.user.role == "admin"
 	input.resource == "multi_agentic_system"
 	input.operation in multi_agentic_system.admin
-}
-
-allow if {
-	input.user.role == "admin"
-	input.resource == "policy"
-	input.operation in policy.admin
 }

@@ -1,4 +1,4 @@
-"""drop workspace_member, workspace_invitation, and api_key tables
+"""drop workspace_member, workspace_invitation, api_key, and policy tables
 
 Revision ID: 0002
 Revises: 0001
@@ -17,6 +17,7 @@ def upgrade() -> None:
     op.execute('DROP TABLE IF EXISTS "workspace_invitation" CASCADE')
     op.execute('DROP TABLE IF EXISTS "workspace_member" CASCADE')
     op.execute('DROP TABLE IF EXISTS "api_key" CASCADE')
+    op.execute('DROP TABLE IF EXISTS "policy" CASCADE')
 
 
 def downgrade() -> None:
@@ -73,4 +74,20 @@ def downgrade() -> None:
     CREATE INDEX "idx_workspace_invitation_status" ON "workspace_invitation" ("status");
     CREATE INDEX "idx_workspace_invitation_expires_at" ON "workspace_invitation" ("expires_at");
     CREATE INDEX "idx_workspace_invitation_deleted_at" ON "workspace_invitation" ("deleted_at");
+
+    CREATE TABLE "policy" (
+      "id" character varying(36) NOT NULL,
+      "workspace_id" character varying(36) NOT NULL,
+      "name" character varying(255) NOT NULL,
+      "config" jsonb NULL,
+      "enabled" boolean NOT NULL DEFAULT true,
+      "created_at" timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updated_at" timestamp NULL,
+      "created_by" character varying(36) NOT NULL,
+      "updated_by" character varying(36) NULL,
+      "deleted_at" timestamp NULL,
+      PRIMARY KEY ("id")
+    );
+    CREATE INDEX "idx_policy_workspace_id" ON "policy" ("workspace_id");
+    CREATE INDEX "idx_policy_deleted_at" ON "policy" ("deleted_at");
     """)
