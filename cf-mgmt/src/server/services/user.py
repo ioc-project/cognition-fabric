@@ -4,7 +4,6 @@
 
 """UserTable service - Business logic for user operations"""
 
-import hashlib
 import logging
 import os
 
@@ -12,10 +11,8 @@ from fastapi import HTTPException, status
 
 from server.common import hash_password
 from server.database.relational_db.db import RelationalDB
-from server.database.relational_db.models.api_key import ApiKey as ApiKeyModel
 from server.database.relational_db.models.user import User as UserModel
 from server.schemas.user import User, UserResponse, Users
-from server.utils import generate_uuid
 
 # Get logger instance (logging is setup in main.py)
 logger = logging.getLogger(__name__)
@@ -27,7 +24,6 @@ ADMIN_USER_PASSWORD_DEFAULT = "admin"
 ADMIN_USER_DOMAIN_DEFAULT = "ioc.local"
 ADMIN_USER_ROLE_DEFAULT = "admin"
 ADMIN_WORKSPACE_ID_DEFAULT = "00000000-0000-0000-0000-000000000001"  # Hardcoded for dev/testing
-ADMIN_API_KEY_DEFAULT = "ioc_admin_default_key_for_testing_only_do_not_use_in_prod"  # Fixed API key for testing
 
 
 class UserService:
@@ -91,36 +87,6 @@ class UserService:
                         f"with ID: {user_id}"
                     )
 
-                # Create or get default API key for admin user
-                api_key_hash = hashlib.sha256(ADMIN_API_KEY_DEFAULT.encode()).hexdigest()
-                api_key_preview = ADMIN_API_KEY_DEFAULT[:15] + "..."
-
-                # Check if API key already exists
-                existing_api_key = (
-                    session.query(ApiKeyModel)
-                    .filter(
-                        ApiKeyModel.user_id == user_id,
-                        ApiKeyModel.deleted_at.is_(None),
-                        ApiKeyModel.name == "Admin Default API Key",
-                    )
-                    .first()
-                )
-
-                if not existing_api_key:
-                    # Create the API key
-                    admin_api_key = ApiKeyModel(
-                        id=generate_uuid(),
-                        user_id=user_id,
-                        key_hash=api_key_hash,
-                        key_preview=api_key_preview,
-                        name="Admin Default API Key",
-                    )
-                    session.add(admin_api_key)
-                    session.commit()
-                    logger.info(f"Created default API key for admin user: {api_key_preview}")
-                else:
-                    logger.info(f"Default API key for admin user already exists: {api_key_preview}")
-
                 # Create default workspace for admin user if it doesn't exist
                 from server.database.relational_db.models.workspace import Workspace as WorkspaceModel
                 from server.schemas.workspace import WorkspaceCreate
@@ -160,7 +126,7 @@ class UserService:
                         f"Successfully created default workspace for admin user with ID: {workspace_response.id}"
                     )
 
-                response = UserResponse(id=user_id, api_key=ADMIN_API_KEY_DEFAULT, api_key_preview=api_key_preview)
+                response = UserResponse(id=user_id)
                 return response
 
             except Exception as e:

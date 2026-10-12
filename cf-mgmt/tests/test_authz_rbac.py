@@ -110,22 +110,6 @@ class TestAuthzRBAC:
         assert not authz_service.check_permission(guest_user, "list", "cognition_fabric_node")
         assert not authz_service.check_permission(guest_user, "get", "cognition_fabric_node")
 
-    def test_admin_has_full_api_key_access(self):
-        """Admin role should have full API key access"""
-        admin_user = {"id": "admin-123", "role": "admin"}
-
-        assert authz_service.check_permission(admin_user, "create", "api_key")
-        assert authz_service.check_permission(admin_user, "get", "api_key")
-        assert authz_service.check_permission(admin_user, "delete", "api_key")
-
-    def test_viewer_has_readonly_api_key_access(self):
-        """Viewer role should have read-only API key access"""
-        viewer_user = {"id": "viewer-123", "role": "viewer"}
-
-        assert authz_service.check_permission(viewer_user, "get", "api_key")
-        assert not authz_service.check_permission(viewer_user, "create", "api_key")
-        assert not authz_service.check_permission(viewer_user, "delete", "api_key")
-
     def test_require_permission_raises_403_on_deny(self):
         """require_permission should raise 403 when permission is denied"""
         from fastapi import HTTPException

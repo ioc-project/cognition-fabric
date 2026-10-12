@@ -39,16 +39,3 @@ class TokenResponse(BaseModel):
     refresh_token: str = Field(..., description="JWT refresh token")
     token_type: str = Field(default="bearer", description="Token type")
     user: dict = Field(..., description="User information")
-
-
-class RefreshTokenRequest(BaseModel):
-    """Schema for token refresh request"""
-
-    refresh_token: str = Field(..., description="Refresh token")
-
-
-class TokenRefreshResponse(BaseModel):
-    """Schema for token refresh response"""
-
-    access_token: str = Field(..., description="New JWT access token")
-    token_type: str = Field(default="bearer", description="Token type")

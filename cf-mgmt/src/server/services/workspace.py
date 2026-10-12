@@ -15,10 +15,6 @@ from sqlalchemy.exc import IntegrityError
 from server.database.relational_db.db import RelationalDB
 from server.database.relational_db.models.multi_agentic_system import MultiAgenticSystem as MASModel
 from server.database.relational_db.models.workspace import Workspace as WorkspaceModel
-from server.database.relational_db.models.workspace_member import WorkspaceMember as WorkspaceMemberModel
-from server.database.relational_db.models.workspace_invitation import (
-    WorkspaceInvitation as WorkspaceInvitationModel,
-)
 from server.schemas.workspace import (
     WorkspaceCreate,
     WorkspaceDetail,
@@ -26,7 +22,6 @@ from server.schemas.workspace import (
     WorkspaceResponse,
     WorkspaceUpdate,
 )
-from server.schemas.workspace_member import WorkspaceMemberDetail
 from server.utils import generate_uuid
 
 logger = logging.getLogger(__name__)
@@ -36,55 +31,6 @@ class WorkspaceService:
     """Service layer for workspace business logic"""
 
     DEFAULT_WORKSPACE_NAME = "Default Workspace"
-
-    def _get_workspace_members(self, session, workspace_id: str, creator_id: str = None) -> list:
-        """Get workspace members with user details.
-
-        Args:
-            session: Database session
-            workspace_id: ID of the workspace
-            creator_id: Optional creator ID to mark the creator member
-
-        Returns:
-            List of WorkspaceMemberDetail objects
-        """
-        from server.database.relational_db.models.user import User as UserModel
-
-        # Query workspace members with user details
-        members = (
-            session.query(
-                WorkspaceMemberModel.id,
-                WorkspaceMemberModel.workspace_id,
-                WorkspaceMemberModel.user_id,
-                WorkspaceMemberModel.role,
-                WorkspaceMemberModel.joined_at,
-                UserModel.username,
-            )
-            .join(UserModel, WorkspaceMemberModel.user_id == UserModel.id)
-            .filter(
-                and_(
-                    WorkspaceMemberModel.workspace_id == workspace_id,
-                    WorkspaceMemberModel.deleted_at.is_(None),
-                )
-            )
-            .all()
-        )
-
-        # Convert to WorkspaceMemberDetail objects
-        member_details = [
-            WorkspaceMemberDetail(
-                id=member.id,
-                workspace_id=member.workspace_id,
-                user_id=member.user_id,
-                username=member.username,
-                role=member.role,
-                joined_at=member.joined_at,
-                is_creator=(member.user_id == creator_id) if creator_id else False,
-            )
-            for member in members
-        ]
-
-        return member_details
 
     def _get_dependency_status(self, session, workspace_id: str):
         """Check if workspace has dependent objects before deletion.
@@ -107,21 +53,6 @@ class WorkspaceService:
         if mas_count > 0:
             found_parts.append(f"{mas_count} MAS")
         return True, ", ".join(found_parts)
-
-    def _purge_dependents(self, session, workspace_id: str):
-        """Hard delete all dependent objects for a workspace during internal purge operations"""
-        # Delete workspace members
-        session.query(WorkspaceMemberModel).filter(WorkspaceMemberModel.workspace_id == workspace_id).delete(
-            synchronize_session=False
-        )
-
-        # Delete workspace invitations
-        session.query(WorkspaceInvitationModel).filter(WorkspaceInvitationModel.workspace_id == workspace_id).delete(
-            synchronize_session=False
-        )
-
-        # Delete multi-agentic systems
-        session.query(MASModel).filter(MASModel.workspace_id == workspace_id).delete(synchronize_session=False)
 
     def create(
         self, workspace_data: WorkspaceCreate, creator_user_id: str, workspace_id: str = None
@@ -227,16 +158,6 @@ class WorkspaceService:
                         )
                         session.commit()
 
-                # Automatically add creator as workspace admin
-                from server.services.workspace_member import workspace_member_service
-
-                workspace_member_service.add_member(
-                    workspace_id=new_workspace.id,  # type: ignore[arg-type]
-                    user_id=creator_user_id,
-                    role="admin",
-                    created_by=creator_user_id,
-                )
-
                 response = WorkspaceResponse(id=new_workspace.id)  # type: ignore[arg-type]
 
                 return response
@@ -260,12 +181,7 @@ class WorkspaceService:
     def list(self, user_id: str, user_role: str) -> WorkspaceList:
         """List workspaces accessible to the user.
 
-        Super admins see all workspaces. Regular users see workspaces where they are:
-        - A workspace admin (role='admin' in workspace_member table), OR
-        - A workspace viewer (role='viewer' in workspace_member table), OR
-        - The creator of the workspace (created_by field)
-
-        Guests (role='guest') are excluded from workspace listings.
+        Super admins see all workspaces. Regular users see workspaces they created.
         """
         try:
             db = RelationalDB()
@@ -278,36 +194,17 @@ class WorkspaceService:
                 if user_role == "super_admin":
                     workspaces = session.query(WorkspaceModel).filter(WorkspaceModel.deleted_at.is_(None)).all()
                 else:
-                    # Regular users see workspaces where they are workspace admins/viewers OR creators
-                    # Get workspaces where user is a workspace admin or viewer
-                    member_workspaces = (
+                    # Regular users see only workspaces they created
+                    workspaces = (
                         session.query(WorkspaceModel)
-                        .join(
-                            WorkspaceMemberModel,
-                            and_(
-                                WorkspaceMemberModel.workspace_id == WorkspaceModel.id,
-                                WorkspaceMemberModel.deleted_at.is_(None),
-                            ),
-                        )
                         .filter(
                             and_(
                                 WorkspaceModel.deleted_at.is_(None),
-                                WorkspaceMemberModel.user_id == user_id,
-                                WorkspaceMemberModel.role.in_(["admin", "viewer"]),
+                                WorkspaceModel.created_by == user_id,
                             )
                         )
+                        .all()
                     )
-
-                    # Get workspaces created by the user
-                    created_workspaces = session.query(WorkspaceModel).filter(
-                        and_(
-                            WorkspaceModel.deleted_at.is_(None),
-                            WorkspaceModel.created_by == user_id,
-                        )
-                    )
-
-                    # Union the two queries and get distinct results
-                    workspaces = member_workspaces.union(created_workspaces).all()
 
                 # Get creator usernames for all workspaces
                 workspace_ids = [ws.id for ws in workspaces]
@@ -321,23 +218,18 @@ class WorkspaceService:
                     )
                     creator_map = {ws_id: username for ws_id, username in creators}
 
-                workspace_details = []
-                for workspace in workspaces:
-                    # Get workspace members
-                    members = self._get_workspace_members(session, workspace.id, workspace.created_by)
-
-                    workspace_details.append(
-                        WorkspaceDetail(
-                            id=workspace.id,  # type: ignore[arg-type]
-                            name=workspace.name,  # type: ignore[arg-type]
-                            cfn_id=workspace.cfn_id,  # type: ignore[arg-type]
-                            created_at=workspace.created_at,  # type: ignore[arg-type]
-                            created_by=workspace.created_by,  # type: ignore[arg-type]
-                            created_by_username=creator_map.get(workspace.id),  # type: ignore[arg-type]
-                            members=members,
-                            config=workspace.config,  # type: ignore[arg-type]
-                        )
+                workspace_details = [
+                    WorkspaceDetail(
+                        id=workspace.id,  # type: ignore[arg-type]
+                        name=workspace.name,  # type: ignore[arg-type]
+                        cfn_id=workspace.cfn_id,  # type: ignore[arg-type]
+                        created_at=workspace.created_at,  # type: ignore[arg-type]
+                        created_by=workspace.created_by,  # type: ignore[arg-type]
+                        created_by_username=creator_map.get(workspace.id),  # type: ignore[arg-type]
+                        config=workspace.config,  # type: ignore[arg-type]
                     )
+                    for workspace in workspaces
+                ]
 
                 return WorkspaceList(workspaces=workspace_details, total=len(workspace_details))
 
@@ -354,7 +246,7 @@ class WorkspaceService:
         """Get a specific workspace by ID.
 
         If user_id and user_role are provided, verifies the user has access to the workspace.
-        Super admins have access to all workspaces. Regular users must be workspace admins, viewers, or creators.
+        Super admins have access to all workspaces. Regular users must be the creator.
         """
         try:
             db = RelationalDB()
@@ -380,28 +272,11 @@ class WorkspaceService:
 
                 # Check access if user info is provided
                 if user_id and user_role:
-                    if user_role != "super_admin":
-                        # Check if user is workspace admin or viewer
-                        workspace_member = (
-                            session.query(WorkspaceMemberModel)
-                            .filter(
-                                and_(
-                                    WorkspaceMemberModel.workspace_id == workspace_id,
-                                    WorkspaceMemberModel.user_id == user_id,
-                                    WorkspaceMemberModel.role.in_(["admin", "viewer"]),
-                                    WorkspaceMemberModel.deleted_at.is_(None),
-                                )
-                            )
-                            .first()
+                    if user_role != "super_admin" and workspace.created_by != user_id:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Access denied: You must be the workspace creator",
                         )
-
-                        is_creator = workspace.created_by == user_id
-
-                        if not (workspace_member or is_creator):
-                            raise HTTPException(
-                                status_code=status.HTTP_403_FORBIDDEN,
-                                detail="Access denied: You must be a workspace admin, viewer, or creator",
-                            )
 
                 # Get creator username
                 from server.database.relational_db.models.user import User as UserModel
@@ -411,9 +286,6 @@ class WorkspaceService:
                     creator = session.query(UserModel).filter(UserModel.id == workspace.created_by).first()
                     creator_username = creator.username if creator else None
 
-                # Get workspace members
-                members = self._get_workspace_members(session, workspace.id, workspace.created_by)
-
                 return WorkspaceDetail(
                     id=workspace.id,  # type: ignore[arg-type]
                     name=workspace.name,  # type: ignore[arg-type]
@@ -421,7 +293,6 @@ class WorkspaceService:
                     created_at=workspace.created_at,  # type: ignore[arg-type]
                     created_by=workspace.created_by,  # type: ignore[arg-type]
                     created_by_username=creator_username,
-                    members=members,
                     config=workspace.config,  # type: ignore[arg-type]
                 )
 
@@ -442,7 +313,7 @@ class WorkspaceService:
         """Update a workspace.
 
         If user_id and user_role are provided, verifies the user has access to the workspace.
-        Super admins have access to all workspaces. Regular users must be workspace admins or creators.
+        Super admins have access to all workspaces. Regular users must be the creator.
         """
         try:
             db = RelationalDB()
@@ -468,28 +339,11 @@ class WorkspaceService:
 
                 # Check access if user info is provided
                 if user_id and user_role:
-                    if user_role != "super_admin":
-                        # Check if user is workspace admin or creator
-                        is_workspace_admin = (
-                            session.query(WorkspaceMemberModel)
-                            .filter(
-                                and_(
-                                    WorkspaceMemberModel.workspace_id == workspace_id,
-                                    WorkspaceMemberModel.user_id == user_id,
-                                    WorkspaceMemberModel.role == "admin",
-                                    WorkspaceMemberModel.deleted_at.is_(None),
-                                )
-                            )
-                            .first()
+                    if user_role != "super_admin" and workspace.created_by != user_id:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Access denied: You must be the workspace creator",
                         )
-
-                        is_creator = workspace.created_by == user_id
-
-                        if not (is_workspace_admin or is_creator):
-                            raise HTTPException(
-                                status_code=status.HTTP_403_FORBIDDEN,
-                                detail="Access denied: You must be a workspace admin or creator",
-                            )
 
                 # Update only provided fields
                 if workspace_data.name is not None:
@@ -590,9 +444,6 @@ class WorkspaceService:
                     creator = session.query(UserModel).filter(UserModel.id == workspace.created_by).first()
                     creator_username = creator.username if creator else None
 
-                # Get workspace members
-                members = self._get_workspace_members(session, workspace.id, workspace.created_by)
-
                 response = WorkspaceDetail(
                     id=workspace.id,  # type: ignore[arg-type]
                     name=workspace.name,  # type: ignore[arg-type]
@@ -601,7 +452,6 @@ class WorkspaceService:
                     updated_at=workspace.updated_at,  # type: ignore[arg-type]
                     created_by=workspace.created_by,  # type: ignore[arg-type]
                     created_by_username=creator_username,
-                    members=members,
                     config=workspace.config,  # type: ignore[arg-type]
                 )
 
@@ -633,7 +483,7 @@ class WorkspaceService:
         """Delete a workspace (soft delete only).
 
         If user_id and user_role are provided, verifies the user has access to the workspace.
-        Super admins have access to all workspaces. Regular users must be workspace admins or creators.
+        Super admins have access to all workspaces. Regular users must be the creator.
         Blocks deletion of the Default Workspace unless allow_default_delete is True.
         """
         try:
@@ -667,28 +517,11 @@ class WorkspaceService:
 
                 # Check access if user info is provided
                 if user_id and user_role:
-                    if user_role != "super_admin":
-                        # Check if user is workspace admin or creator
-                        is_workspace_admin = (
-                            session.query(WorkspaceMemberModel)
-                            .filter(
-                                and_(
-                                    WorkspaceMemberModel.workspace_id == workspace_id,
-                                    WorkspaceMemberModel.user_id == user_id,
-                                    WorkspaceMemberModel.role == "admin",
-                                    WorkspaceMemberModel.deleted_at.is_(None),
-                                )
-                            )
-                            .first()
+                    if user_role != "super_admin" and workspace.created_by != user_id:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Access denied: You must be the workspace creator",
                         )
-
-                        is_creator = workspace.created_by == user_id
-
-                        if not (is_workspace_admin or is_creator):
-                            raise HTTPException(
-                                status_code=status.HTTP_403_FORBIDDEN,
-                                detail="Access denied: You must be a workspace admin or creator",
-                            )
 
                 # Validate dependent objects - soft delete requires no dependencies
                 has_deps, found_detail = self._get_dependency_status(session, workspace_id)

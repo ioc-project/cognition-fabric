@@ -52,15 +52,14 @@ async def lifespan(app: FastAPI):
     try:
         from server.services.user import ADMIN_USER_ID_DEFAULT, ADMIN_WORKSPACE_ID_DEFAULT
 
-        admin_response = UserService().create_admin_user()
+        UserService().create_admin_user()
     except Exception as e:
         logger.error(f"Admin user creation failed: {str(e)}")
         raise
 
-    # Display admin API key if CFN_DEV_MODE is enabled
+    # Display hardcoded dev-mode IDs if CFN_DEV_MODE is enabled
     cfn_dev_mode = os.getenv("CFN_DEV_MODE", "false").lower() == "true"
     if cfn_dev_mode:
-        admin_api_key = admin_response.api_key
         logger.warning(
             "\n"
             + "=" * 80
@@ -70,11 +69,9 @@ async def lifespan(app: FastAPI):
             + "\n"
             + f"Admin User ID:  {ADMIN_USER_ID_DEFAULT}\n"
             + f"Workspace ID:   {ADMIN_WORKSPACE_ID_DEFAULT}\n"
-            + f"Admin API Key:  {admin_api_key}\n"
             + "\n"
             + "Example CFN Registration:\n"
             + "curl -X POST http://localhost:8000/api/cognition-fabric-nodes/register \\\n"
-            + f'  -H "X-API-Key: {admin_api_key}" \\\n'
             + '  -H "Content-Type: application/json" \\\n'
             + '  -d \'{"id": "cfn-001", "name": "test-node", '
             + f'"workspace_id": "{ADMIN_WORKSPACE_ID_DEFAULT}"}}\'\n'

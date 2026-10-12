@@ -6,8 +6,6 @@ from pydantic import BaseModel, Field, ConfigDict
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 
-from server.schemas.workspace_member import WorkspaceMemberDetail
-
 
 class WorkspaceCreate(BaseModel):
     model_config = ConfigDict(
@@ -67,7 +65,6 @@ class WorkspaceDetail(BaseModel):
                 "updated_at": "2024-11-14T11:15:00Z",
                 "created_by": "user-123",
                 "updated_by": "user-456",
-                "members": [],
                 "config": {},
             }
         }
@@ -81,7 +78,6 @@ class WorkspaceDetail(BaseModel):
     created_by: Optional[str] = None
     created_by_username: Optional[str] = Field(None, description="Username of the workspace creator")
     updated_by: Optional[str] = None
-    members: List[WorkspaceMemberDetail] = Field(default_factory=list, description="List of workspace members")
     config: Optional[Dict[str, Any]] = None
 
 
@@ -97,7 +93,6 @@ class WorkspaceList(BaseModel):
                         "updated_at": "2024-11-14T11:15:00Z",
                         "created_by": "user-123",
                         "updated_by": "user-456",
-                        "members": [],
                         "config": {},
                     }
                 ],

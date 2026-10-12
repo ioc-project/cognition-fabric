@@ -3,13 +3,11 @@ package authz.roles.viewer
 import rego.v1
 import data.authz.operations.workspaces
 import data.authz.operations.users
-import data.authz.operations.api_keys
 import data.authz.operations.softwares
 import data.authz.operations.cognition_fabric_node
 import data.authz.operations.cognition_engine
 import data.authz.operations.memory_provider
 import data.authz.operations.multi_agentic_system
-import data.authz.operations.policy
 
 # Viewer role permissions - read-only operations
 allow if {
@@ -22,12 +20,6 @@ allow if {
 	input.user.role == "viewer"
 	input.resource == "user"
 	input.operation in users.viewer
-}
-
-allow if {
-	input.user.role == "viewer"
-	input.resource == "api_key"
-	input.operation in api_keys.viewer
 }
 
 allow if {
@@ -58,10 +50,4 @@ allow if {
 	input.user.role == "viewer"
 	input.resource == "multi_agentic_system"
 	input.operation in multi_agentic_system.viewer
-}
-
-allow if {
-	input.user.role == "viewer"
-	input.resource == "policy"
-	input.operation in policy.viewer
 }
