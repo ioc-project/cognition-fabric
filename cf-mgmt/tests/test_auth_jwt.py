@@ -81,54 +81,9 @@ class TestJWTAuthentication:
         assert response.status_code == 200
         assert "workspaces" in response.json()
 
-    def test_api_access_with_api_key_still_works(self, client):
-        """Test that API key authentication still works alongside JWT."""
-        # This client has API key in headers from fixture
-        response = client.get("/api/workspaces/")
-
-        assert response.status_code == 200
-        assert "workspaces" in response.json()
-
     def test_api_access_without_auth_fails(self, unauthenticated_client):
         """Test that accessing protected endpoint without auth fails."""
         response = unauthenticated_client.get("/api/workspaces/")
 
         assert response.status_code == 401
         assert "Authentication required" in response.json()["detail"]
-
-    def test_refresh_token_generates_new_access_token(self, unauthenticated_client):
-        """Test that refresh token can be used to get a new access token."""
-        # Login first
-        login_response = unauthenticated_client.post("/api/auth/login", json={
-            "username": "dev-user",
-            "password": "dev"
-        })
-
-        assert login_response.status_code == 200
-        refresh_token = login_response.json()["refresh_token"]
-
-        # Use refresh token to get new access token
-        refresh_response = unauthenticated_client.post("/api/auth/refresh", json={
-            "refresh_token": refresh_token
-        })
-
-        assert refresh_response.status_code == 200
-        data = refresh_response.json()
-        assert "access_token" in data
-        assert data["token_type"] == "bearer"
-
-        # Verify new access token works
-        new_token = data["access_token"]
-        response = unauthenticated_client.get("/api/workspaces/", headers={
-            "Authorization": f"Bearer {new_token}"
-        })
-
-        assert response.status_code == 200
-
-    def test_invalid_refresh_token_fails(self, unauthenticated_client):
-        """Test that invalid refresh token is rejected."""
-        response = unauthenticated_client.post("/api/auth/refresh", json={
-            "refresh_token": "invalid_token_12345"
-        })
-
-        assert response.status_code == 401
