@@ -5,7 +5,6 @@
 import type {components} from '../generated/schema';
 
 export type Workspace = components['schemas']['WorkspaceDetail'];
-export type WorkspaceRole = components['schemas']['WorkspaceRole'];
 
 export type CreateWorkspaceRequest = components['schemas']['WorkspaceCreate'];
 export type CreateWorkspaceResponse = components['schemas']['WorkspaceResponse'];

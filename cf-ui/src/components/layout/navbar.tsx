@@ -10,13 +10,12 @@ import {useThemeStore} from '@/store';
 import {signOut, useSession} from 'next-auth/react';
 import Image from 'next/image';
 import {useCallback} from 'react';
-import {useCurrentWorkspace} from '@/hooks/useCurrentWorkspace';
 
 export function NavBar() {
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
   const {data: session} = useSession();
-  const {userRole} = useCurrentWorkspace();
+  const userRole = session?.user?.role;
 
   const username = session?.user?.username || session?.user?.name || 'User';
 

@@ -119,9 +119,6 @@ export function WorkspacesList() {
                           })}
                         </p>
                       )}
-                      <p className="text-xs text-muted-foreground">
-                        {workspace.members?.length || 0} {(workspace.members?.length || 0) === 1 ? 'member' : 'members'}
-                      </p>
                     </div>
                   </div>
                   <DropdownMenu>

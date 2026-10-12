@@ -25,8 +25,7 @@ export const routes = {
       list: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-agents`,
       create: (workspaceId: string) => `/workspaces/${workspaceId}/cognitive-agents/create`,
       details: (workspaceId: string, cognitiveAgentId: string) => `/workspaces/${workspaceId}/cognitive-agents/${cognitiveAgentId}`
-    },
-    members: (workspaceId: string) => `/workspaces/${workspaceId}/members`
+    }
   },
 
   mas: {
@@ -49,11 +48,7 @@ export const routes = {
 
   queries: {
     list: '/queries'
-  },
-
-  apiKeys: '/api-keys',
-
-  invitations: '/invitations'
+  }
 } as const;
 
 export const apiRoutes = {
@@ -71,14 +66,6 @@ export const apiRoutes = {
   users: {
     list: (workspaceId: string) => `/api/workspaces/${workspaceId}/users`,
     details: (workspaceId: string, userId: string) => `/api/workspaces/${workspaceId}/users/${userId}`
-  },
-
-  apiKeys: {
-    list: '/api/iam/api-keys',
-    create: '/api/iam/api-keys',
-    delete: (id: string) => `/api/iam/api-keys/${id}`,
-    roles: '/api/iam/roles',
-    users: '/api/iam/users'
   },
 
   cfn: {
@@ -164,11 +151,6 @@ export const breadcrumbs = {
   cognitiveAgentCreate: (): BreadcrumbItem[] => [
     {link: routes.cognitiveAgents.list, text: 'Cognition Engines'},
     {link: '', text: 'Create', active: true}
-  ],
-
-  apiKeysList: (): BreadcrumbItem[] => [
-    {link: routes.home, text: 'Home'},
-    {link: '', text: 'API Keys', active: true}
   ],
 
   cfnList: (): BreadcrumbItem[] => [

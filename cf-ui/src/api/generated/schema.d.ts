@@ -1963,7 +1963,6 @@ export interface components {
          *       "created_at": "2024-11-14T10:30:00Z",
          *       "created_by": "user-123",
          *       "id": "550e8400-e29b-41d4-a716-446655440000",
-         *       "members": [],
          *       "name": "My Workspace",
          *       "updated_at": "2024-11-14T11:15:00Z",
          *       "updated_by": "user-456"
@@ -1995,11 +1994,6 @@ export interface components {
             created_by_username?: string | null;
             /** Updated By */
             updated_by?: string | null;
-            /**
-             * Members
-             * @description List of workspace members
-             */
-            members?: components["schemas"]["WorkspaceMemberDetail"][];
             /** Config */
             config?: {
                 [key: string]: unknown;
@@ -2015,7 +2009,6 @@ export interface components {
          *           "created_at": "2024-11-14T10:30:00Z",
          *           "created_by": "user-123",
          *           "id": "550e8400-e29b-41d4-a716-446655440000",
-         *           "members": [],
          *           "name": "My Workspace",
          *           "updated_at": "2024-11-14T11:15:00Z",
          *           "updated_by": "user-456"
@@ -2030,35 +2023,6 @@ export interface components {
             total: number;
         };
         /**
-         * WorkspaceMemberDetail
-         * @description Schema for workspace member details
-         */
-        WorkspaceMemberDetail: {
-            /** Id */
-            id: string;
-            /** Workspace Id */
-            workspace_id: string;
-            /** User Id */
-            user_id: string;
-            /**
-             * Username
-             * @description Username joined from user table
-             */
-            username?: string | null;
-            role: components["schemas"]["WorkspaceRole"];
-            /**
-             * Joined At
-             * Format: date-time
-             */
-            joined_at: string;
-            /**
-             * Is Creator
-             * @description True if this member created the workspace
-             * @default false
-             */
-            is_creator: boolean;
-        };
-        /**
          * WorkspaceResponse
          * @example {
          *       "id": "550e8400-e29b-41d4-a716-446655440000"
@@ -2071,12 +2035,6 @@ export interface components {
              */
             id: string;
         };
-        /**
-         * WorkspaceRole
-         * @description Workspace-level roles
-         * @enum {string}
-         */
-        WorkspaceRole: "admin" | "viewer" | "guest";
         /** WorkspaceUpdate */
         WorkspaceUpdate: {
             /**

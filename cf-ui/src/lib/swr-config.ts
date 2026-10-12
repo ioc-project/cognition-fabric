@@ -11,9 +11,6 @@ export const swrKeys = {
   defaultWorkspace: () => ['default-workspace'] as const,
 
   users: (workspaceId: string) => ['users', workspaceId] as const,
-  apiKeys: () => ['api-keys'] as const,
-  iamRoles: () => ['iam-roles'] as const,
-  iamUsers: () => ['iam-users'] as const,
 
   mas: (workspaceId: string) => ['mas-list', workspaceId] as const,
   masDetails: (workspaceId: string, masId: string) => ['mas-details', workspaceId, masId] as const,
@@ -23,10 +20,6 @@ export const swrKeys = {
 
   cfn: (workspaceId?: string) => (workspaceId ? (['cfn-list', workspaceId] as const) : (['cfn-list'] as const)),
   cfnDetails: (cfnId: string) => ['cfn-details', cfnId] as const,
-
-  workspaceInvitations: (workspaceId: string) => ['workspace-invitations', workspaceId] as const,
-  workspaceMembers: (workspaceId: string) => ['workspace-members', workspaceId] as const,
-  myPendingInvitations: () => ['my-pending-invitations'] as const,
 
   cfnTopology: () => ['cfn-topology'] as const
 };
