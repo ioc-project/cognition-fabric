@@ -686,78 +686,6 @@ export interface paths {
         patch: operations["patch_cognition_engine_api_cognition_engines__ce_id__patch"];
         trace?: never;
     };
-    "/api/cognition-engines/{ce_id}/heartbeat": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /**
-         * Cognition Engine Heartbeat
-         * @description Update last_seen and flip status to online. Called by the CE to signal it is alive.
-         */
-        put: operations["heartbeat_cognition_engine_api_cognition_engines__ce_id__heartbeat_put"];
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/workspaces/{workspace_id}/policies": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List Policies
-         * @description Get list of all policies in workspace
-         */
-        get: operations["list_policies_api_workspaces__workspace_id__policies_get"];
-        put?: never;
-        /**
-         * Create Policy
-         * @description Create a new policy in workspace
-         */
-        post: operations["create_policy_api_workspaces__workspace_id__policies_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/workspaces/{workspace_id}/policies/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Policy
-         * @description Get details of a specific policy
-         */
-        get: operations["get_policy_api_workspaces__workspace_id__policies__id__get"];
-        put?: never;
-        post?: never;
-        /**
-         * Delete Policy
-         * @description Delete a policy (soft delete)
-         */
-        delete: operations["delete_policy_api_workspaces__workspace_id__policies__id__delete"];
-        options?: never;
-        head?: never;
-        /**
-         * Update Policy
-         * @description Update an existing policy
-         */
-        patch: operations["update_policy_api_workspaces__workspace_id__policies__id__patch"];
-        trace?: never;
-    };
     "/api/audit-events/": {
         parameters: {
             query?: never;
@@ -1034,6 +962,8 @@ export interface components {
             base_url: string;
             /** Endpoint */
             endpoint: string;
+            /** Health Url */
+            health_url: string;
             /** Enabled */
             enabled: boolean;
             /** Mas Auto Associate */
@@ -1053,19 +983,6 @@ export interface components {
             created_at: string;
             /** Updated At */
             updated_at: string | null;
-        };
-        /**
-         * CognitionEngineHeartbeatResponse
-         * @description Schema for CE heartbeat response
-         */
-        CognitionEngineHeartbeatResponse: {
-            /** Status */
-            status: string;
-            /**
-             * Last Seen
-             * Format: date-time
-             */
-            last_seen: string;
         };
         /**
          * CognitionEngineList
@@ -1095,6 +1012,8 @@ export interface components {
             base_url: string;
             /** Endpoint */
             endpoint: string;
+            /** Health Url */
+            health_url: string;
             /** Enabled */
             enabled: boolean;
             /** Mas Auto Associate */
@@ -1132,6 +1051,11 @@ export interface components {
              * @description API endpoint path for request forwarding
              */
             endpoint?: string | null;
+            /**
+             * Health Url
+             * @description Full URL CFN probes with an HTTP GET to check liveness
+             */
+            health_url?: string | null;
             /**
              * Enabled
              * @description Enable or disable the CE
@@ -1198,6 +1122,11 @@ export interface components {
              */
             endpoint: string;
             /**
+             * Health Url
+             * @description Full URL CFN probes with an HTTP GET to check liveness (e.g., 'http://demo-ce:8080/healthz')
+             */
+            health_url: string;
+            /**
              * Mas Auto Associate
              * @description If true, CE is auto-associated with all MAS under the same CFN's workspaces
              * @default false
@@ -1229,6 +1158,8 @@ export interface components {
             base_url: string;
             /** Endpoint */
             endpoint: string;
+            /** Health Url */
+            health_url: string;
             /** Enabled */
             enabled: boolean;
             /** Mas Auto Associate */
@@ -1802,115 +1733,6 @@ export interface components {
              * @description List of multi-agentic systems in the workspace
              */
             systems: components["schemas"]["MultiAgenticSystem"][];
-        };
-        /**
-         * PolicyCreate
-         * @description Schema for creating a policy
-         */
-        PolicyCreate: {
-            /**
-             * Name
-             * @description Policy name
-             */
-            name: string;
-            /**
-             * Config
-             * @description Policy-specific configuration
-             */
-            config?: {
-                [key: string]: unknown;
-            } | null;
-        };
-        /**
-         * PolicyDetail
-         * @description Schema for detailed policy information
-         */
-        PolicyDetail: {
-            /** Id */
-            id: string;
-            /** Workspace Id */
-            workspace_id: string;
-            /** Name */
-            name: string;
-            /** Config */
-            config: {
-                [key: string]: unknown;
-            } | null;
-            /** Enabled */
-            enabled: boolean;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** Updated At */
-            updated_at: string | null;
-            /** Created By */
-            created_by: string;
-            /** Updated By */
-            updated_by: string | null;
-        };
-        /**
-         * PolicyList
-         * @description Schema for policy list response
-         */
-        PolicyList: {
-            /**
-             * Policies
-             * @description List of policies
-             */
-            policies: components["schemas"]["PolicyListItem"][];
-            /**
-             * Total
-             * @description Total number of policies
-             */
-            total: number;
-        };
-        /**
-         * PolicyListItem
-         * @description Schema for policy list item
-         */
-        PolicyListItem: {
-            /** Id */
-            id: string;
-            /** Workspace Id */
-            workspace_id: string;
-            /** Name */
-            name: string;
-            /** Config */
-            config: {
-                [key: string]: unknown;
-            } | null;
-            /** Enabled */
-            enabled: boolean;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-        };
-        /**
-         * PolicyUpdate
-         * @description Schema for updating a policy
-         */
-        PolicyUpdate: {
-            /**
-             * Name
-             * @description Policy name
-             */
-            name?: string | null;
-            /**
-             * Config
-             * @description Policy-specific configuration
-             */
-            config?: {
-                [key: string]: unknown;
-            } | null;
-            /**
-             * Enabled
-             * @description Whether policy is enabled
-             */
-            enabled?: boolean | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -3092,205 +2914,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CognitionEngineDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    heartbeat_cognition_engine_api_cognition_engines__ce_id__heartbeat_put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ce_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CognitionEngineHeartbeatResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    list_policies_api_workspaces__workspace_id__policies_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                workspace_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PolicyList"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_policy_api_workspaces__workspace_id__policies_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                workspace_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PolicyCreate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PolicyDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_policy_api_workspaces__workspace_id__policies__id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                workspace_id: string;
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PolicyDetail"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_policy_api_workspaces__workspace_id__policies__id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                workspace_id: string;
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_policy_api_workspaces__workspace_id__policies__id__patch: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                workspace_id: string;
-                id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PolicyUpdate"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PolicyDetail"];
                 };
             };
             /** @description Validation Error */

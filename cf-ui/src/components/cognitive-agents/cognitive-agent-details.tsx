@@ -279,6 +279,9 @@ export default function CognitiveAgentDetailsPage() {
                         <span className="text-sm text-foreground font-mono">{ce?.endpoint || '-'}</span>
                       )}
                     </InfoRow>
+                    <InfoRow label="Health URL" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
+                      <span className="text-sm text-foreground font-mono">{ce?.health_url || '-'}</span>
+                    </InfoRow>
                     <InfoRow label="CFN" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
                       <span className="text-sm text-foreground">{cfn?.name || '-'}</span>
                     </InfoRow>
