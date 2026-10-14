@@ -2169,6 +2169,28 @@
             "type": "string",
             "title": "Health Url"
           },
+          "notification_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Url"
+          },
+          "notification_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Endpoint"
+          },
           "enabled": {
             "type": "boolean",
             "title": "Enabled"
@@ -2299,6 +2321,28 @@
             "type": "string",
             "title": "Health Url"
           },
+          "notification_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Url"
+          },
+          "notification_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Endpoint"
+          },
           "enabled": {
             "type": "boolean",
             "title": "Enabled"
@@ -2400,6 +2444,30 @@
             ],
             "title": "Health Url",
             "description": "Full URL CFN probes with an HTTP GET to check liveness"
+          },
+          "notification_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Url",
+            "description": "Base URL for lifecycle event notifications"
+          },
+          "notification_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Endpoint",
+            "description": "Notification endpoint path for MAS lifecycle events"
           },
           "enabled": {
             "anyOf": [
@@ -2533,6 +2601,30 @@
             ],
             "title": "Mas Config",
             "description": "Factory defaults for per-MAS configuration (e.g. schedule). Copied to each MAS on association and overridable per MAS."
+          },
+          "notification_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Url",
+            "description": "Webhook base URL for MAS lifecycle notifications"
+          },
+          "notification_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Endpoint",
+            "description": "Webhook endpoint path for MAS lifecycle notifications"
           }
         },
         "type": "object",
@@ -2580,6 +2672,28 @@
           "health_url": {
             "type": "string",
             "title": "Health Url"
+          },
+          "notification_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Url"
+          },
+          "notification_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Endpoint"
           },
           "enabled": {
             "type": "boolean",

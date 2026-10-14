@@ -1128,6 +1128,8 @@ class CognitionFabricNodeService:
                         "base_url": e.base_url,
                         "endpoint": e.endpoint,
                         "health_url": e.health_url,
+                        "notification_url": e.notification_url,
+                        "notification_endpoint": e.notification_endpoint,
                         "enabled": e.enabled,
                         "status": e.status,
                         "mas_config": e.mas_config or {},
@@ -1169,6 +1171,9 @@ class CognitionFabricNodeService:
                     mas_systems_data = []
                     for system in mas_systems:
                         system_data = system.model_dump(mode="json", exclude_none=False)
+
+                        # Add last_updated_on for change detection
+                        system_data["last_updated_on"] = system.updated_at.isoformat() if system.updated_at else None
 
                         # Embed minimal CE info per MAS: id, ce_type, enabled, status, and effective
                         # mas_config (junction override if set, otherwise CE factory default)

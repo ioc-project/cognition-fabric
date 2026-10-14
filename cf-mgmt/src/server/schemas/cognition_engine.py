@@ -52,6 +52,10 @@ class CognitionEngineRegisterRequest(BaseModel):
         default_factory=dict,
         description="Factory defaults for per-MAS configuration (e.g. schedule). Copied to each MAS on association and overridable per MAS.",  # noqa: E501
     )
+    notification_url: Optional[str] = Field(None, description="Webhook base URL for MAS lifecycle notifications")
+    notification_endpoint: Optional[str] = Field(
+        None, description="Webhook endpoint path for MAS lifecycle notifications"
+    )
 
 
 class CognitionEngineResponse(BaseModel):
@@ -65,6 +69,8 @@ class CognitionEngineResponse(BaseModel):
     base_url: str
     endpoint: str
     health_url: str
+    notification_url: Optional[str] = None
+    notification_endpoint: Optional[str] = None
     enabled: bool
     mas_auto_associate: bool
     status: str
@@ -82,6 +88,8 @@ class CognitionEngineListItem(BaseModel):
     base_url: str
     endpoint: str
     health_url: str
+    notification_url: Optional[str] = None
+    notification_endpoint: Optional[str] = None
     enabled: bool
     mas_auto_associate: bool
     status: str
@@ -108,6 +116,8 @@ class CognitionEngineDetail(BaseModel):
     base_url: str
     endpoint: str
     health_url: str
+    notification_url: Optional[str] = None
+    notification_endpoint: Optional[str] = None
     enabled: bool
     mas_auto_associate: bool
     status: str
@@ -133,6 +143,10 @@ class CognitionEnginePatchRequest(BaseModel):
         pattern=HEALTH_URL_PATTERN,
         max_length=512,
         description="Full URL CFN probes with an HTTP GET to check liveness",
+    )
+    notification_url: Optional[str] = Field(None, description="Base URL for lifecycle event notifications")
+    notification_endpoint: Optional[str] = Field(
+        None, description="Notification endpoint path for MAS lifecycle events"
     )
     enabled: Optional[bool] = Field(None, description="Enable or disable the CE")
     mas_auto_associate: Optional[bool] = Field(None, description="Enable or disable auto-association to new MAS")
