@@ -6,7 +6,6 @@ Registration is idempotent - safe to run multiple times.
 """
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 from typing import Optional
@@ -14,6 +13,8 @@ from dataclasses import dataclass
 from enum import Enum
 
 import httpx
+
+from health import HEALTH_PATH, get_health_port
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,7 @@ class CERegistrationRequest:
     ce_type: str  # "CASA" or "DETECTIVE"
     base_url: str  # gRPC address (e.g., "demo-ce:50051")
     endpoint: str  # gRPC service name (e.g., "ioc.ce.v1.CognitionEngine")
+    health_url: str  # CFN probes this with an HTTP GET (e.g., "http://demo-ce:8080/healthz")
 
 
 @dataclass
@@ -65,26 +67,22 @@ class CERegistrationResponse:
 
 class CELifecycleClient:
     """
-    Client for CE registration and heartbeat management.
+    Client for CE registration.
 
     Handles:
     - Registration with CFN on startup
-    - Periodic heartbeats to keep CE status "online"
     - Graceful error handling (logs errors, never raises)
     """
 
     def __init__(
         self,
         cfn_base_url: str,
-        heartbeat_interval_sec: float = 5.0,
         timeout: float = 10.0,
     ):
         self.cfn_base_url = cfn_base_url.rstrip("/")
-        self.heartbeat_interval_sec = heartbeat_interval_sec
         self.timeout = timeout
 
         self._client: Optional[httpx.AsyncClient] = None
-        self._heartbeat_task: Optional[asyncio.Task] = None
 
         # Stored after successful registration
         self.ce_id: Optional[str] = None
@@ -98,15 +96,7 @@ class CELifecycleClient:
         return self._client
 
     async def close(self):
-        """Close HTTP client and stop heartbeat task."""
-        if self._heartbeat_task:
-            self._heartbeat_task.cancel()
-            try:
-                await self._heartbeat_task
-            except asyncio.CancelledError:
-                pass
-            self._heartbeat_task = None
-
+        """Close HTTP client."""
         if self._client:
             await self._client.aclose()
             self._client = None
@@ -120,7 +110,7 @@ class CELifecycleClient:
 
         If CE with same (name, version) already exists:
         - Gets 409 with existing_ce_id
-        - Calls PATCH to update base_url/endpoint (address may have changed
+        - Calls PATCH to update base_url/endpoint/health_url (address may have changed
           after restart, e.g., new IP, different port, different hostname)
         - Returns the updated CE record
 
@@ -136,6 +126,7 @@ class CELifecycleClient:
             "ce_type": request.ce_type,
             "base_url": request.base_url,
             "endpoint": request.endpoint,
+            "health_url": request.health_url,
         }
 
         try:
@@ -161,7 +152,7 @@ class CELifecycleClient:
 
             elif response.status_code == 409:
                 # CE with same (name, version) already exists - this happens on CE restart/reconnect.
-                # We PATCH to update base_url/endpoint because the CE's address may have changed:
+                # We PATCH to update base_url/endpoint/health_url because the CE's address may have changed:
                 # - Container got a new IP after restart
                 # - Running on a different port
                 # - Different hostname in a new deployment
@@ -200,6 +191,7 @@ class CELifecycleClient:
         payload = {
             "base_url": request.base_url,
             "endpoint": request.endpoint,
+            "health_url": request.health_url,
         }
 
         try:
@@ -251,41 +243,10 @@ class CELifecycleClient:
         )
 
     def _store_ce_info(self, result: CERegistrationResponse) -> None:
-        """Store CE info for heartbeats."""
+        """Store CE info from the registration response."""
         self.ce_id = result.ce_id
         self.cfn_id = result.cfn_id
         self.ce_type = result.ce_type
-
-    def start_heartbeat(self):
-        """Start background heartbeat task."""
-        if self._heartbeat_task is None and self.ce_id:
-            self._heartbeat_task = asyncio.create_task(self._heartbeat_loop())
-            logger.info(f"Heartbeat task started for CE type '{self.ce_type}' (interval={self.heartbeat_interval_sec}s)")
-
-    async def _heartbeat_loop(self):
-        """Background task that sends periodic heartbeats to CFN."""
-        endpoint = f"{self.cfn_base_url}/api/cognition-engine/{self.ce_id}/heartbeat"
-
-        while True:
-            try:
-                await asyncio.sleep(self.heartbeat_interval_sec)
-
-                client = await self._get_client()
-                response = await client.put(endpoint)
-
-                if response.status_code == 200:
-                    logger.debug(f"Heartbeat sent for CE type '{self.ce_type}'")
-                else:
-                    logger.warning(
-                        f"Heartbeat failed: {response.status_code} - {response.text[:100]}"
-                    )
-
-            except asyncio.CancelledError:
-                logger.info(f"Heartbeat task cancelled for CE type '{self.ce_type}'")
-                break
-            except Exception as e:
-                logger.error(f"Heartbeat error: {e}")
-                # Continue loop - don't crash on transient errors
 
 
 # Global lifecycle client
@@ -300,7 +261,6 @@ async def register_demo_ce() -> None:
     1. Checks CFN_URL environment variable
     2. Creates CELifecycleClient
     3. Calls client.register() (idempotent)
-    4. Starts heartbeat background task
 
     Environment variables:
         CFN_URL: Base URL of CFN service (e.g. "http://localhost:9002")
@@ -308,7 +268,7 @@ async def register_demo_ce() -> None:
         COGNITION_ENGINE_HOST: Advertised host for this service (default: "localhost")
         GRPC_PORT: Advertised gRPC port for this service (default: "50051")
         MAS_AUTO_ASSOCIATE: Auto-associate with all MAS (default: "false")
-        CE_HEARTBEAT_INTERVAL_SEC: Heartbeat interval in seconds (default: "5.0")
+        HEALTH_PORT: Port of the HTTP health endpoint (default: "8080")
     """
     global _lifecycle_client
 
@@ -316,6 +276,7 @@ async def register_demo_ce() -> None:
     cfn_url = os.getenv("CFN_URL", "").rstrip("/")
     ce_host = os.getenv("COGNITION_ENGINE_HOST", "localhost")
     grpc_port = os.getenv("GRPC_PORT", DEFAULT_GRPC_PORT)
+    health_port = get_health_port()
 
     if not cfn_url:
         logger.warning(
@@ -328,12 +289,15 @@ async def register_demo_ce() -> None:
     # base_url format for registration (CFN expects URL with scheme)
     # For gRPC services, we use the host:port that CFN will dial
     base_url = f"{ce_host}:{grpc_port}"
-    logger.info(f"Starting Demo CE registration with cfn_url={cfn_url}, base_url={base_url}")
+    health_url = f"http://{ce_host}:{health_port}{HEALTH_PATH}"
+
+    logger.info(
+        f"Starting Demo CE registration with cfn_url={cfn_url}, base_url={base_url}, health_url={health_url}"
+    )
 
     # Create lifecycle client
     _lifecycle_client = CELifecycleClient(
         cfn_base_url=cfn_url,
-        heartbeat_interval_sec=float(os.getenv("CE_HEARTBEAT_INTERVAL_SEC", "5.0")),
         timeout=10.0,
     )
 
@@ -345,14 +309,13 @@ async def register_demo_ce() -> None:
         ce_type=CE_TYPE,
         base_url=base_url,
         endpoint=CE_ENDPOINT,
+        health_url=health_url,
     )
 
     # Attempt registration
     response = await _lifecycle_client.register(ce_config)
 
     if response:
-        # Start heartbeat background task
-        _lifecycle_client.start_heartbeat()
         logger.info(f"Demo CE registration complete: ce_id={response.ce_id}")
     else:
         logger.warning(
@@ -365,9 +328,8 @@ async def shutdown_lifecycle_client() -> None:
     Shutdown lifecycle client on service shutdown.
 
     This function:
-    1. Cancels heartbeat background task
-    2. Closes HTTP client
-    3. Clears global client reference
+    1. Closes HTTP client
+    2. Clears global client reference
 
     Called from service lifespan shutdown phase.
     """

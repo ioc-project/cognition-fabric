@@ -34,6 +34,7 @@ class TestCERegistrationRequest:
             ce_type="CASA",
             base_url="localhost:50051",
             endpoint="ioc.ce.v1.CognitionEngine",
+            health_url="http://localhost:8080/healthz",
         )
 
         assert request.name == "demo-ce"
@@ -41,6 +42,7 @@ class TestCERegistrationRequest:
         assert request.ce_type == "CASA"
         assert request.base_url == "localhost:50051"
         assert request.endpoint == "ioc.ce.v1.CognitionEngine"
+        assert request.health_url == "http://localhost:8080/healthz"
 
 
 class TestCERegistrationResponse:
@@ -80,12 +82,10 @@ class TestCELifecycleClient:
         """Test client initialization."""
         client = CELifecycleClient(
             cfn_base_url="http://localhost:9002",
-            heartbeat_interval_sec=30.0,
             timeout=10.0,
         )
 
         assert client.cfn_base_url == "http://localhost:9002"
-        assert client.heartbeat_interval_sec == 30.0
         assert client.timeout == 10.0
         assert client.ce_id is None
         assert client.cfn_id is None
@@ -103,7 +103,51 @@ class TestCELifecycleClient:
         client = CELifecycleClient("http://localhost:9002")
         await client.close()
         assert client._client is None
-        assert client._heartbeat_task is None
+
+
+@pytest.mark.asyncio
+class TestHealthURLInPayloads:
+    """health_url must be sent on both the POST and the PATCH after a 409."""
+
+    def _request(self):
+        return CERegistrationRequest(
+            name="demo-ce",
+            version="1.0.0",
+            ce_type="CASA",
+            base_url="demo-ce:50051",
+            endpoint="ioc.ce.v1.CognitionEngine",
+            health_url="http://demo-ce:8080/healthz",
+        )
+
+    def _ce_json(self, key):
+        return {
+            key: "ce-123", "cfn_id": "cfn-1", "name": "demo-ce", "version": "1.0.0",
+            "ce_type": "CASA", "base_url": "demo-ce:50051",
+            "endpoint": "ioc.ce.v1.CognitionEngine", "enabled": True, "status": "online",
+        }
+
+    async def test_post_includes_health_url(self):
+        client = CELifecycleClient("http://cfn:9002")
+        http = AsyncMock()
+        http.post.return_value = MagicMock(status_code=201, json=lambda: self._ce_json("ce_id"))
+        client._client = http
+
+        await client.register(self._request())
+
+        assert http.post.call_args[1]["json"]["health_url"] == "http://demo-ce:8080/healthz"
+
+    async def test_patch_after_409_includes_health_url(self):
+        client = CELifecycleClient("http://cfn:9002")
+        http = AsyncMock()
+        http.post.return_value = MagicMock(
+            status_code=409, json=lambda: {"detail": {"existing_ce_id": "ce-123"}}
+        )
+        http.patch.return_value = MagicMock(status_code=200, json=lambda: self._ce_json("id"))
+        client._client = http
+
+        await client.register(self._request())
+
+        assert http.patch.call_args[1]["json"]["health_url"] == "http://demo-ce:8080/healthz"
 
 
 @pytest.mark.asyncio
@@ -116,7 +160,7 @@ class TestRegisterDemoCE:
         await register_demo_ce()
         assert "CFN_URL not set" in caplog.text
 
-    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"})
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"}, clear=True)
     @patch('registration.CELifecycleClient')
     async def test_successful_registration(self, mock_client_class):
         """Test successful CE registration."""
@@ -146,10 +190,11 @@ class TestRegisterDemoCE:
         # Verify register was called
         mock_client.register.assert_called_once()
 
-        # Verify heartbeat was started
-        mock_client.start_heartbeat.assert_called_once()
+        # Verify health_url is sent in the registration request
+        register_call = mock_client.register.call_args[0][0]
+        assert register_call.health_url == "http://localhost:8080/healthz"
 
-    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002","COGNITION_ENGINE_HOST": "example.com", "COGNITION_ENGINE_PORT": "9999"})
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002","COGNITION_ENGINE_HOST": "example.com", "COGNITION_ENGINE_PORT": "9999"}, clear=True)
     @patch('registration.CELifecycleClient')
     async def test_custom_ce_url(self, mock_client_class):
         """Test CE base_url constructed from environment variables."""
@@ -175,7 +220,7 @@ class TestRegisterDemoCE:
         # gRPC endpoint format: host:port (no http:// prefix)
         assert register_call.base_url == "example.com:50051"
 
-    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"})
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"}, clear=True)
     @patch('registration.CELifecycleClient')
     async def test_registration_failure(self, mock_client_class, caplog):
         """Test handling of registration failure."""
@@ -188,8 +233,27 @@ class TestRegisterDemoCE:
         # Verify warning logged
         assert "registration failed" in caplog.text
 
-        # Verify heartbeat was NOT started
-        mock_client.start_heartbeat.assert_not_called()
+
+class TestHealthUrlConfiguration:
+    """health_url is built from COGNITION_ENGINE_HOST and HEALTH_PORT."""
+
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002", "HEALTH_PORT": "8081"}, clear=True)
+    @patch('registration.CELifecycleClient')
+    @pytest.mark.asyncio
+    async def test_health_port_is_used_in_health_url(self, mock_client_class):
+        mock_client = AsyncMock()
+        mock_client.register = AsyncMock(return_value=None)
+        mock_client_class.return_value = mock_client
+
+        await register_demo_ce()
+
+        assert mock_client.register.call_args[0][0].health_url == "http://localhost:8081/healthz"
+
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002", "HEALTH_PORT": "nope"}, clear=True)
+    @pytest.mark.asyncio
+    async def test_invalid_health_port_raises(self):
+        with pytest.raises(ValueError, match="HEALTH_PORT"):
+            await register_demo_ce()
 
 
 @pytest.mark.asyncio
@@ -201,7 +265,7 @@ class TestShutdownLifecycleClient:
         # Should not raise
         await shutdown_lifecycle_client()
 
-    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"})
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"}, clear=True)
     @patch('registration.CELifecycleClient')
     async def test_shutdown_after_registration(self, mock_client_class):
         """Test shutdown after successful registration."""
@@ -255,7 +319,7 @@ class TestHelperFunctions:
 class TestDemoCEConfiguration:
     """Test Demo CE specific configuration."""
 
-    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"})
+    @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"}, clear=True)
     @patch('registration.CELifecycleClient')
     async def test_demo_ce_config_fields(self, mock_client_class):
         """Test that Demo CE registration includes correct fields."""
