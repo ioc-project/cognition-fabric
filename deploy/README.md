@@ -33,7 +33,7 @@ The one image whose source lives in this repo is the database. See
 | `ioc-scale-cf-mgmt-svc` | 9000 | Management backend API |
 | `ioc-scale-cf-mgmt-plane-ui` | 9001 | Management plane UI (Next.js) |
 | `ioc-scale-cfn-svc` | 9002 (HTTP), 9003 (gRPC) | Cognition Fabric Node |
-| `ioc-scale-cf-demo-ce` | 50051 (gRPC) | Demo Cognition Engine |
+| `ioc-scale-cf-demo-ce` | 50051 (gRPC), 8080 (HTTP health) | Demo Cognition Engine |
 
 ### OXP infrastructure
 
