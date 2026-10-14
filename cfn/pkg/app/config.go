@@ -17,6 +17,7 @@ type EngineCfg struct {
 	CEType           string         `json:"ce_type"` // "CASA" or "DETECTIVE"
 	BaseURL          string         `json:"base_url"`
 	Endpoint         string         `json:"endpoint"`
+	HealthURL        string         `json:"health_url"`
 	Enabled          bool           `json:"enabled"`
 	Status           string         `json:"status"`
 	MASAutoAssociate bool           `json:"mas_auto_associate"`

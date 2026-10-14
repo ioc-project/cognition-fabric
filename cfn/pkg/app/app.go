@@ -126,6 +126,9 @@ type App struct {
 	port           int
 	grpcPort       int
 	db             database.Store
+
+	// probeTimeout is how long CE health probes wait for an answer (zero means the default).
+	probeTimeout time.Duration
 }
 
 // New creates a new CFN application.
@@ -432,6 +435,8 @@ func (a *App) healthHandler(w http.ResponseWriter, r *http.Request) (int, error)
 func (a *App) initializeRoutes() http.Handler {
 	log := getLogger()
 
+	a.probeTimeout = probeTimeoutFromEnv()
+
 	rtr := easyhttp.NewRouter()
 
 	// Log incoming requests
@@ -447,9 +452,11 @@ func (a *App) initializeRoutes() http.Handler {
 
 	// CE registration endpoints
 	rtr.Post("/api/cognition-engine", a.registerCognitionEngineHandler)
-	rtr.Put("/api/cognition-engine/{ceId}/heartbeat", a.cognitionEngineHeartbeatHandler)
 	rtr.Patch("/api/cognition-engine/{ceId}", a.patchCognitionEngineHandler)
 	rtr.Delete("/api/cognition-engine/{ceId}", a.deleteCognitionEngineHandler)
+
+	// CE health probe (internal - called by mgmt-svc's CE monitor)
+	rtr.Post("/api/internal/mgmt/cognition-engine/probe", a.probeCognitionEngineHandler)
 
 	// Audit events (internal - consumed by mgmt-svc's audit passthrough)
 	rtr.Get("/api/internal/mgmt/audit", a.listAuditEventsHandler)
