@@ -295,11 +295,30 @@ func (a *App) RefreshConfig(mgmtURL string) error {
 			log.Errorf("failed to parse refreshed config into typed struct: %v", err)
 			return fmt.Errorf("failed to parse config: %v", err)
 		}
+
+		// Detect MAS changes before updating config
+		cfnConfigMutex.RLock()
+		oldConfig := ParsedConfig
+		cfnConfigMutex.RUnlock()
+
+		log.Debugf("detecting MAS changes (oldConfig nil: %v)", oldConfig == nil)
+		changes := detectMASChanges(oldConfig, &parsed)
+		log.Debugf("detected %d MAS changes", len(changes))
+
 		cfnConfigMutex.Lock()
 		ParsedConfig = &parsed
 		ConfigVersion = parsed.ConfigVersion
 		cfnConfigMutex.Unlock()
+
 		log.Infof("CFN Config refreshed, config_version=%d", parsed.ConfigVersion)
+
+		// Dispatch notifications for any detected changes
+		if len(changes) > 0 {
+			log.Infof("detected %d MAS changes, dispatching notifications", len(changes))
+			a.dispatchNotifications(changes)
+		} else {
+			log.Debugf("no MAS changes detected")
+		}
 	} else {
 		log.Warnf("RefreshConfig response missing config key")
 	}
@@ -313,10 +332,10 @@ func (a *App) startHeartbeat(mgmtURL string) {
 
 	heartbeatURL := mgmtURL + "/api/cognition-fabric-nodes/" + CfnID + "/heartbeat"
 
-	intervalStr := getEnvOrDefault("HEARTBEAT_INTERVAL_SECONDS", "29")
+	intervalStr := getEnvOrDefault("HEARTBEAT_INTERVAL_SECONDS", "10")
 	interval, err := time.ParseDuration(intervalStr + "s")
 	if err != nil {
-		interval = 29 * time.Second
+		interval = 10 * time.Second
 	}
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -457,6 +476,8 @@ func (a *App) initializeRoutes() http.Handler {
 
 	// CE health probe (internal - called by mgmt-svc's CE monitor)
 	rtr.Post("/api/internal/mgmt/cognition-engine/probe", a.probeCognitionEngineHandler)
+	// MAS query endpoint (proxy to management plane)
+	rtr.Get("/api/multi-agentic-systems/{masId}", a.getMASHandler)
 
 	// Audit events (internal - consumed by mgmt-svc's audit passthrough)
 	rtr.Get("/api/internal/mgmt/audit", a.listAuditEventsHandler)

@@ -231,6 +231,62 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/multi-agentic-systems/{masId}": {
+            "get": {
+                "description": "Get details of a specific Multi-Agentic System. Proxies to management plane.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "multi-agentic-systems"
+                ],
+                "summary": "Get MAS details",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "MAS ID",
+                        "name": "masId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "MAS details",
+                        "schema": {
+                            "$ref": "#/definitions/mgmt.MASResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "MAS not found",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Management plane unavailable",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -274,7 +330,7 @@ const docTemplate = `{
                 "base_url": {
                     "description": "Base URL for the CE service",
                     "type": "string",
-                    "example": "http://casa-ce:8080"
+                    "example": "http://my-ce:8080"
                 },
                 "ce_type": {
                     "description": "CE type - must be \"CASA\" or \"DETECTIVE\"",
@@ -306,9 +362,19 @@ const docTemplate = `{
                     "additionalProperties": {}
                 },
                 "name": {
-                    "description": "CE name (e.g., \"casa-ce\")",
+                    "description": "CE name (e.g., \"my-ce\")",
                     "type": "string",
-                    "example": "casa-ce"
+                    "example": "my-ce"
+                },
+                "notification_endpoint": {
+                    "description": "Notification endpoint path for MAS event notifications",
+                    "type": "string",
+                    "example": "/notification/mas-lifecycle"
+                },
+                "notification_url": {
+                    "description": "Notification base URL for MAS event notifications",
+                    "type": "string",
+                    "example": "http://my-ce:8080"
                 },
                 "version": {
                     "description": "CE version (e.g., \"1.0.0\")",
@@ -324,7 +390,7 @@ const docTemplate = `{
                 "base_url": {
                     "description": "Base URL for the CE service",
                     "type": "string",
-                    "example": "http://casa-ce:8080"
+                    "example": "http://my-ce:8080"
                 },
                 "ce_id": {
                     "description": "Cognition Engine ID (UUID)",
@@ -369,7 +435,17 @@ const docTemplate = `{
                 "name": {
                     "description": "CE name",
                     "type": "string",
-                    "example": "casa-ce"
+                    "example": "my-ce"
+                },
+                "notification_endpoint": {
+                    "description": "Notification endpoint path for MAS event notifications",
+                    "type": "string",
+                    "example": "/notification/mas-lifecycle"
+                },
+                "notification_url": {
+                    "description": "Notification base URL for MAS event notifications",
+                    "type": "string",
+                    "example": "http://my-ce:8080"
                 },
                 "status": {
                     "description": "CE status (online/offline)",
@@ -380,6 +456,49 @@ const docTemplate = `{
                     "description": "CE version",
                     "type": "string",
                     "example": "1.0.0"
+                }
+            }
+        },
+        "mgmt.MASCognitionEngine": {
+            "type": "object",
+            "properties": {
+                "base_url": {
+                    "type": "string"
+                },
+                "ce_id": {
+                    "type": "string"
+                },
+                "ce_type": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "endpoint": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                }
+            }
+        },
+        "mgmt.MASResponse": {
+            "type": "object",
+            "properties": {
+                "cognition_engines": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/mgmt.MASCognitionEngine"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "workspace_id": {
+                    "type": "string"
                 }
             }
         }

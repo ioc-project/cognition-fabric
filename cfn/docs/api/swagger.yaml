@@ -30,7 +30,7 @@ definitions:
     properties:
       base_url:
         description: Base URL for the CE service
-        example: http://casa-ce:8080
+        example: http://my-ce:8080
         type: string
       ce_type:
         description: CE type - must be "CASA" or "DETECTIVE"
@@ -58,8 +58,16 @@ definitions:
         description: Factory defaults for per-MAS configuration
         type: object
       name:
-        description: CE name (e.g., "casa-ce")
-        example: casa-ce
+        description: CE name (e.g., "my-ce")
+        example: my-ce
+        type: string
+      notification_endpoint:
+        description: Notification endpoint path for MAS event notifications
+        example: /notification/mas-lifecycle
+        type: string
+      notification_url:
+        description: Notification base URL for MAS event notifications
+        example: http://my-ce:8080
         type: string
       version:
         description: CE version (e.g., "1.0.0")
@@ -71,7 +79,7 @@ definitions:
     properties:
       base_url:
         description: Base URL for the CE service
-        example: http://casa-ce:8080
+        example: http://my-ce:8080
         type: string
       ce_id:
         description: Cognition Engine ID (UUID)
@@ -107,7 +115,15 @@ definitions:
         type: boolean
       name:
         description: CE name
-        example: casa-ce
+        example: my-ce
+        type: string
+      notification_endpoint:
+        description: Notification endpoint path for MAS event notifications
+        example: /notification/mas-lifecycle
+        type: string
+      notification_url:
+        description: Notification base URL for MAS event notifications
+        example: http://my-ce:8080
         type: string
       status:
         description: CE status (online/offline)
@@ -116,6 +132,34 @@ definitions:
       version:
         description: CE version
         example: 1.0.0
+        type: string
+    type: object
+  mgmt.MASCognitionEngine:
+    properties:
+      base_url:
+        type: string
+      ce_id:
+        type: string
+      ce_type:
+        type: string
+      enabled:
+        type: boolean
+      endpoint:
+        type: string
+      status:
+        type: string
+    type: object
+  mgmt.MASResponse:
+    properties:
+      cognition_engines:
+        items:
+          $ref: '#/definitions/mgmt.MASCognitionEngine'
+        type: array
+      id:
+        type: string
+      name:
+        type: string
+      workspace_id:
         type: string
     type: object
 host: localhost:9002
@@ -274,4 +318,42 @@ paths:
       summary: Probe a Cognition Engine
       tags:
       - internal
+  /api/multi-agentic-systems/{masId}:
+    get:
+      description: Get details of a specific Multi-Agentic System. Proxies to management
+        plane.
+      parameters:
+      - description: MAS ID
+        in: path
+        name: masId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: MAS details
+          schema:
+            $ref: '#/definitions/mgmt.MASResponse'
+        "404":
+          description: MAS not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "503":
+          description: Management plane unavailable
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get MAS details
+      tags:
+      - multi-agentic-systems
 swagger: "2.0"

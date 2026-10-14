@@ -145,6 +145,14 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 		"mas_config":         masConfig,
 	}
 
+	// Add notification fields if provided
+	if req.NotificationURL != nil {
+		payload["notification_url"] = *req.NotificationURL
+	}
+	if req.NotificationEndpoint != nil {
+		payload["notification_endpoint"] = *req.NotificationEndpoint
+	}
+
 	requestBody, err := json.Marshal(payload)
 	if err != nil {
 		return eh.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{
