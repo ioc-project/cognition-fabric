@@ -11,7 +11,7 @@ expansion on the first line. Terms still under discussion link to
 
 ## CFN
 
-The central orchestration plane for Cognition Fabric. CFN is a microservice that routes tasks to Cognitive Engines based on subprotocols, ingests metrics and audit events, manages shared memory, and handles registration/heartbeat lifecycle for CEs.
+The central orchestration plane for Cognition Fabric. CFN is a microservice that routes tasks to Cognitive Engines based on subprotocols, ingests metrics and audit events, and handles registration and health probing for CEs.
 
 ## Cognition Fabric
 
