@@ -663,6 +663,37 @@ class TestCognitionEnginePatch:
         assert resp.status_code == status.HTTP_200_OK
         assert resp.json()["endpoint"] == "/api/v2/enforcement"
 
+    def test_patch_notification_url(self, client, registered_cfn):
+        """PATCH can update the CE notification_url."""
+        ce_id = _register(client, registered_cfn, "CASA")
+
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"notification_url": "http://new-notification:9999"})
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.json()["notification_url"] == "http://new-notification:9999"
+
+    def test_patch_notification_endpoint(self, client, registered_cfn):
+        """PATCH can update the CE notification_endpoint."""
+        ce_id = _register(client, registered_cfn, "CASA")
+
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"notification_endpoint": "/notification/v2/mas-events"})
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.json()["notification_endpoint"] == "/notification/v2/mas-events"
+
+    def test_patch_both_notification_fields(self, client, registered_cfn):
+        """PATCH can update both notification fields together."""
+        ce_id = _register(client, registered_cfn, "CASA")
+
+        resp = client.patch(
+            f"/api/cognition-engines/{ce_id}",
+            json={
+                "notification_url": "http://updated-ce:8080",
+                "notification_endpoint": "/notifications/mas"
+            }
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.json()["notification_url"] == "http://updated-ce:8080"
+        assert resp.json()["notification_endpoint"] == "/notifications/mas"
+
     def test_patch_empty_body_is_no_op(self, client, registered_cfn):
         """Empty PATCH body leaves the CE unchanged."""
         ce_id = _register(client, registered_cfn, "CASA")

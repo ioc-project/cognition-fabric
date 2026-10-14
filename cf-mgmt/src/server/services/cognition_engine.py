@@ -94,6 +94,8 @@ class CognitionEngineService:
                     ce_type=engine_data.ce_type.value,  # Store enum value as string
                     base_url=engine_data.base_url,
                     endpoint=engine_data.endpoint,
+                    notification_url=engine_data.notification_url,
+                    notification_endpoint=engine_data.notification_endpoint,
                     enabled=True,
                     mas_auto_associate=engine_data.mas_auto_associate,
                     status="online",
@@ -117,6 +119,8 @@ class CognitionEngineService:
                         ce_type=engine.ce_type,
                         base_url=engine.base_url,
                         endpoint=engine.endpoint,
+                        notification_url=engine.notification_url,
+                        notification_endpoint=engine.notification_endpoint,
                         enabled=engine.enabled,
                         mas_auto_associate=engine.mas_auto_associate,
                         status=engine.status,
@@ -467,6 +471,10 @@ class CognitionEngineService:
                     engine.base_url = provided["base_url"]
                 if "endpoint" in provided:
                     engine.endpoint = provided["endpoint"]
+                if "notification_url" in provided:
+                    engine.notification_url = provided["notification_url"]
+                if "notification_endpoint" in provided:
+                    engine.notification_endpoint = provided["notification_endpoint"]
                 if "enabled" in provided:
                     engine.enabled = provided["enabled"]
                 if "mas_auto_associate" in provided:
@@ -883,6 +891,8 @@ def _to_detail(engine: CognitionEngineModel) -> CognitionEngineDetail:
         ce_type=engine.ce_type,
         base_url=engine.base_url,
         endpoint=engine.endpoint,
+        notification_url=engine.notification_url,
+        notification_endpoint=engine.notification_endpoint,
         enabled=engine.enabled,
         mas_auto_associate=engine.mas_auto_associate,
         status=engine.status,

@@ -31,6 +31,10 @@ class CognitionEngine(Base):
     base_url = Column(String(512), nullable=False)  # Base URL (e.g., http://casa-ce:8080)
     endpoint = Column(String(255), nullable=False)  # API endpoint path (e.g., /api/l9/enforcement)
 
+    # Webhook configuration for MAS lifecycle notifications
+    notification_url = Column(String(512), nullable=True)  # Webhook base URL
+    notification_endpoint = Column(String(255), nullable=True)  # Webhook endpoint path
+
     # Lifecycle
     enabled = Column(Boolean, nullable=False, default=True)
     mas_auto_associate = Column(Boolean, nullable=False, default=False)

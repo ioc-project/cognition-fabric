@@ -44,6 +44,8 @@ class CognitionEngineRegisterRequest(BaseModel):
         default_factory=dict,
         description="Factory defaults for per-MAS configuration (e.g. schedule). Copied to each MAS on association and overridable per MAS.",  # noqa: E501
     )
+    notification_url: Optional[str] = Field(None, description="Webhook base URL for MAS lifecycle notifications")
+    notification_endpoint: Optional[str] = Field(None, description="Webhook endpoint path for MAS lifecycle notifications")
 
 
 class CognitionEngineResponse(BaseModel):
@@ -56,6 +58,8 @@ class CognitionEngineResponse(BaseModel):
     ce_type: CEType
     base_url: str
     endpoint: str
+    notification_url: Optional[str] = None
+    notification_endpoint: Optional[str] = None
     enabled: bool
     mas_auto_associate: bool
     status: str
@@ -72,6 +76,8 @@ class CognitionEngineListItem(BaseModel):
     ce_type: CEType
     base_url: str
     endpoint: str
+    notification_url: Optional[str] = None
+    notification_endpoint: Optional[str] = None
     enabled: bool
     mas_auto_associate: bool
     status: str
@@ -97,6 +103,8 @@ class CognitionEngineDetail(BaseModel):
     ce_type: CEType
     base_url: str
     endpoint: str
+    notification_url: Optional[str] = None
+    notification_endpoint: Optional[str] = None
     enabled: bool
     mas_auto_associate: bool
     status: str
@@ -117,6 +125,8 @@ class CognitionEnginePatchRequest(BaseModel):
     # Mutable fields — all optional, only provided fields are updated
     base_url: Optional[str] = Field(None, description="Base URL for the CFN to reach this engine")
     endpoint: Optional[str] = Field(None, description="API endpoint path for request forwarding")
+    notification_url: Optional[str] = Field(None, description="Base URL for lifecycle event notifications")
+    notification_endpoint: Optional[str] = Field(None, description="Notification endpoint path for MAS lifecycle events")
     enabled: Optional[bool] = Field(None, description="Enable or disable the CE")
     mas_auto_associate: Optional[bool] = Field(None, description="Enable or disable auto-association to new MAS")
 
