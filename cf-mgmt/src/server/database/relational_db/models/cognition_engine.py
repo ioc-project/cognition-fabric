@@ -30,6 +30,7 @@ class CognitionEngine(Base):
     # Connection info
     base_url = Column(String(512), nullable=False)  # Base URL (e.g., http://casa-ce:8080)
     endpoint = Column(String(255), nullable=False)  # API endpoint path (e.g., /api/l9/enforcement)
+    health_url = Column(String(512), nullable=False)  # Full URL CFN probes with GET (e.g., http://casa-ce:8080/healthz)
 
     # Lifecycle
     enabled = Column(Boolean, nullable=False, default=True)
@@ -37,7 +38,7 @@ class CognitionEngine(Base):
 
     # Status
     status = Column(String(20), nullable=False, default="offline")
-    last_seen = Column(TIMESTAMP(timezone=True), nullable=True)
+    last_seen = Column(TIMESTAMP(timezone=True), nullable=True)  # Last successful health probe
 
     # Configuration
     mas_config = Column(JSONB, nullable=True, default=dict)

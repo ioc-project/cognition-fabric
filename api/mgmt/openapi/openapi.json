@@ -1634,54 +1634,6 @@
         }
       }
     },
-    "/api/cognition-engines/{ce_id}/heartbeat": {
-      "put": {
-        "tags": [
-          "cognition-engines"
-        ],
-        "summary": "Cognition Engine Heartbeat",
-        "description": "Update last_seen and flip status to online. Called by the CE to signal it is alive.",
-        "operationId": "heartbeat_cognition_engine_api_cognition_engines__ce_id__heartbeat_put",
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "ce_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Ce Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CognitionEngineHeartbeatResponse"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/audit-events/": {
       "get": {
         "tags": [
@@ -2213,6 +2165,10 @@
             "type": "string",
             "title": "Endpoint"
           },
+          "health_url": {
+            "type": "string",
+            "title": "Health Url"
+          },
           "enabled": {
             "type": "boolean",
             "title": "Enabled"
@@ -2276,6 +2232,7 @@
           "ce_type",
           "base_url",
           "endpoint",
+          "health_url",
           "enabled",
           "mas_auto_associate",
           "status",
@@ -2286,26 +2243,6 @@
         ],
         "title": "CognitionEngineDetail",
         "description": "Schema for detailed cognition engine information"
-      },
-      "CognitionEngineHeartbeatResponse": {
-        "properties": {
-          "status": {
-            "type": "string",
-            "title": "Status"
-          },
-          "last_seen": {
-            "type": "string",
-            "format": "date-time",
-            "title": "Last Seen"
-          }
-        },
-        "type": "object",
-        "required": [
-          "status",
-          "last_seen"
-        ],
-        "title": "CognitionEngineHeartbeatResponse",
-        "description": "Schema for CE heartbeat response"
       },
       "CognitionEngineList": {
         "properties": {
@@ -2358,6 +2295,10 @@
             "type": "string",
             "title": "Endpoint"
           },
+          "health_url": {
+            "type": "string",
+            "title": "Health Url"
+          },
           "enabled": {
             "type": "boolean",
             "title": "Enabled"
@@ -2409,6 +2350,7 @@
           "ce_type",
           "base_url",
           "endpoint",
+          "health_url",
           "enabled",
           "mas_auto_associate",
           "status",
@@ -2444,6 +2386,20 @@
             ],
             "title": "Endpoint",
             "description": "API endpoint path for request forwarding"
+          },
+          "health_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512,
+                "pattern": "^https?://\\S+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Url",
+            "description": "Full URL CFN probes with an HTTP GET to check liveness"
           },
           "enabled": {
             "anyOf": [
@@ -2552,6 +2508,13 @@
             "title": "Endpoint",
             "description": "API endpoint path for request forwarding (e.g., '/api/l9/enforcement')"
           },
+          "health_url": {
+            "type": "string",
+            "maxLength": 512,
+            "pattern": "^https?://\\S+$",
+            "title": "Health Url",
+            "description": "Full URL CFN probes with an HTTP GET to check liveness (e.g., 'http://demo-ce:8080/healthz')"
+          },
           "mas_auto_associate": {
             "type": "boolean",
             "title": "Mas Auto Associate",
@@ -2579,7 +2542,8 @@
           "version",
           "ce_type",
           "base_url",
-          "endpoint"
+          "endpoint",
+          "health_url"
         ],
         "title": "CognitionEngineRegisterRequest",
         "description": "Schema for CE self-registration.\n\nPOST behavior:\n- If (cfn_id, name, version) exists: returns 409 Conflict with existing_ce_id\n- If (cfn_id, name) exists with different version: creates new CE record\n- Otherwise: creates new CE record"
@@ -2613,6 +2577,10 @@
             "type": "string",
             "title": "Endpoint"
           },
+          "health_url": {
+            "type": "string",
+            "title": "Health Url"
+          },
           "enabled": {
             "type": "boolean",
             "title": "Enabled"
@@ -2640,6 +2608,7 @@
           "ce_type",
           "base_url",
           "endpoint",
+          "health_url",
           "enabled",
           "mas_auto_associate",
           "status",

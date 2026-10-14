@@ -10,6 +10,8 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
+HEALTH_URL_PATTERN = r"^https?://\S+$"
+
 
 class CEType(str, Enum):
     """Type of Cognition Engine.
@@ -37,6 +39,12 @@ class CognitionEngineRegisterRequest(BaseModel):
     ce_type: CEType = Field(..., description="Type of Cognition Engine: CASA or DETECTIVE")
     base_url: str = Field(..., description="Base URL for the CFN to reach this engine (e.g., 'http://demo-ce:8080')")
     endpoint: str = Field(..., description="API endpoint path for request forwarding (e.g., '/api/l9/enforcement')")
+    health_url: str = Field(
+        ...,
+        pattern=HEALTH_URL_PATTERN,
+        max_length=512,
+        description="Full URL CFN probes with an HTTP GET to check liveness (e.g., 'http://demo-ce:8080/healthz')",
+    )
     mas_auto_associate: bool = Field(
         False, description="If true, CE is auto-associated with all MAS under the same CFN's workspaces"
     )
@@ -56,6 +64,7 @@ class CognitionEngineResponse(BaseModel):
     ce_type: CEType
     base_url: str
     endpoint: str
+    health_url: str
     enabled: bool
     mas_auto_associate: bool
     status: str
@@ -72,6 +81,7 @@ class CognitionEngineListItem(BaseModel):
     ce_type: CEType
     base_url: str
     endpoint: str
+    health_url: str
     enabled: bool
     mas_auto_associate: bool
     status: str
@@ -97,6 +107,7 @@ class CognitionEngineDetail(BaseModel):
     ce_type: CEType
     base_url: str
     endpoint: str
+    health_url: str
     enabled: bool
     mas_auto_associate: bool
     status: str
@@ -117,6 +128,12 @@ class CognitionEnginePatchRequest(BaseModel):
     # Mutable fields — all optional, only provided fields are updated
     base_url: Optional[str] = Field(None, description="Base URL for the CFN to reach this engine")
     endpoint: Optional[str] = Field(None, description="API endpoint path for request forwarding")
+    health_url: Optional[str] = Field(
+        None,
+        pattern=HEALTH_URL_PATTERN,
+        max_length=512,
+        description="Full URL CFN probes with an HTTP GET to check liveness",
+    )
     enabled: Optional[bool] = Field(None, description="Enable or disable the CE")
     mas_auto_associate: Optional[bool] = Field(None, description="Enable or disable auto-association to new MAS")
 
@@ -133,13 +150,6 @@ class CognitionEngineAssociateResponse(BaseModel):
     ce_id: str
     mas_id: str
     created_at: datetime
-
-
-class CognitionEngineHeartbeatResponse(BaseModel):
-    """Schema for CE heartbeat response"""
-
-    status: str
-    last_seen: datetime
 
 
 class CognitionEngineConflictError(BaseModel):

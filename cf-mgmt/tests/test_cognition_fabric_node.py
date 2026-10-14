@@ -1003,6 +1003,7 @@ class TestCFNConfigCognitionEngines:
                 "ce_type": ce_type,
                 "base_url": "http://ce.internal:9004",
                 "endpoint": "/api/l9/enforcement",
+                "health_url": "http://ce.internal:9004/healthz",
             },
         )
         assert resp.status_code == 201
@@ -1023,8 +1024,16 @@ class TestCFNConfigCognitionEngines:
         self._register_ce(client, cfn_id)
 
         engine = client.get(f"/api/cognitive-fabric-node/{cfn_id}/workspaces").json()["cognition_engines"][0]
-        for field in ("id", "ce_type", "base_url", "endpoint", "enabled", "status", "mas_config"):
+        for field in ("id", "ce_type", "base_url", "endpoint", "health_url", "enabled", "status", "mas_config"):
             assert field in engine
+
+    def test_workspaces_config_ce_includes_health_url(self, client, created_cfn):
+        """CFN resolves a CE's health_url from this payload when probing it."""
+        _, cfn_id = created_cfn
+        self._register_ce(client, cfn_id)
+
+        engine = client.get(f"/api/cognitive-fabric-node/{cfn_id}/workspaces").json()["cognition_engines"][0]
+        assert engine["health_url"] == "http://ce.internal:9004/healthz"
 
     def test_workspaces_config_no_ce_when_none_registered(self, client, created_cfn):
         """cognition_engines is empty when no CEs are registered for this CFN."""
@@ -1070,6 +1079,7 @@ class TestCFNConfigCognitionEngines:
                 "ce_type": "CASA",
                 "base_url": "http://ce.internal:9004",
                 "endpoint": "/api/l9/enforcement",
+                "health_url": "http://ce.internal:9004/healthz",
                 "mas_auto_associate": True,
             },
         ).json()["ce_id"]

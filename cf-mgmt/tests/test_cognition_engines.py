@@ -4,10 +4,20 @@
 
 """Tests for Cognition Engine API endpoints"""
 
+import asyncio
+import json
+import time
+from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
+
 import pytest
+import requests
 from fastapi import status
 
 from server.database.relational_db.db import RelationalDB
+from server.services.cfn_ce_probe import probe_ce_health
+from server.services.cognition_engine import cognition_engine_service
+from server.services.cognition_engine_monitor import CognitionEngineMonitor
 
 
 def _base_payload(cfn_id: str, ce_type: str = "CASA", name: str = "test-ce", version: str = "1.0.0") -> dict:
@@ -18,6 +28,7 @@ def _base_payload(cfn_id: str, ce_type: str = "CASA", name: str = "test-ce", ver
         "ce_type": ce_type,
         "base_url": "http://ce.internal:8080",
         "endpoint": "/api/l9/enforcement",
+        "health_url": "http://ce.internal:8080/healthz",
     }
 
 
@@ -25,6 +36,7 @@ def _register(client, cfn_id, ce_type="CASA", name: str = None, version: str = "
     # Generate unique name if not provided to avoid 409 conflicts
     if name is None:
         import uuid
+
         name = f"test-ce-{uuid.uuid4().hex[:8]}"
     resp = client.post(
         "/api/cognition-engines",
@@ -42,7 +54,7 @@ def _delete(client, ce_id: str) -> None:
 
 
 def _force_offline(ce_id: str) -> None:
-    """Directly flip a CE to offline, simulating the stale-engine sweep."""
+    """Directly flip a CE to offline, simulating a CE that failed its health probes."""
     from server.database.relational_db.models.cognition_engine import CognitionEngine as CognitionEngineModel
 
     db = RelationalDB()
@@ -107,7 +119,10 @@ class TestCognitionEngineRegister:
 
     def test_register_different_version_creates_new_record(self, client, registered_cfn):
         """Registering same name with different version creates a new record (201)"""
-        first = client.post("/api/cognition-engines", json=_base_payload(registered_cfn, "CASA", name="version-test-ce", version="1.0.0"))
+        first = client.post(
+            "/api/cognition-engines",
+            json=_base_payload(registered_cfn, "CASA", name="version-test-ce", version="1.0.0"),
+        )
         assert first.status_code == status.HTTP_201_CREATED
         ce_id_v1 = first.json()["ce_id"]
 
@@ -149,6 +164,7 @@ class TestCognitionEngineRegister:
             "ce_type": "DETECTIVE",
             "base_url": "https://detective.internal:9090",
             "endpoint": "/api/l9/detective",
+            "health_url": "http://ce.internal:8080/healthz",
             "mas_config": {"timeout": 30, "max_requests": 3000},
         }
 
@@ -171,6 +187,7 @@ class TestCognitionEngineRegister:
             "ce_type": "CASA",
             "base_url": "https://casa.internal:9090",
             "endpoint": "/api/l9/enforcement",
+            "health_url": "http://ce.internal:8080/healthz",
         }
 
         response = client.post("/api/cognition-engines", json=payload)
@@ -188,6 +205,7 @@ class TestCognitionEngineRegister:
             "ce_type": "DETECTIVE",
             "base_url": "https://detective.internal:9090",
             "endpoint": "/api/l9/detective",
+            "health_url": "http://ce.internal:8080/healthz",
         }
 
         response = client.post("/api/cognition-engines", json=payload)
@@ -216,10 +234,14 @@ class TestCognitionEngineRegister:
             json={"id": "cfn-ce-test-2", "name": "CFN CE Test 2"},
         ).json()["id"]
 
-        resp1 = client.post("/api/cognition-engines", json=_base_payload(cfn1_id, "CASA", name="shared-ce", version="1.0.0"))
+        resp1 = client.post(
+            "/api/cognition-engines", json=_base_payload(cfn1_id, "CASA", name="shared-ce", version="1.0.0")
+        )
         assert resp1.status_code == status.HTTP_201_CREATED
 
-        resp2 = client.post("/api/cognition-engines", json=_base_payload(cfn2_id, "CASA", name="shared-ce", version="1.0.0"))
+        resp2 = client.post(
+            "/api/cognition-engines", json=_base_payload(cfn2_id, "CASA", name="shared-ce", version="1.0.0")
+        )
         assert resp2.status_code == status.HTTP_201_CREATED
         assert resp2.json()["cfn_id"] == cfn2_id
         assert resp2.json()["ce_id"] != resp1.json()["ce_id"]
@@ -307,7 +329,18 @@ class TestCognitionEngineList:
 
         item = client.get(f"/api/cognition-engines?cfn_id={registered_cfn}").json()["cognition_engines"][0]
 
-        for field in ("id", "cfn_id", "name", "version", "ce_type", "base_url", "endpoint", "enabled", "status", "mas_config"):
+        for field in (
+            "id",
+            "cfn_id",
+            "name",
+            "version",
+            "ce_type",
+            "base_url",
+            "endpoint",
+            "enabled",
+            "status",
+            "mas_config",
+        ):
             assert field in item
 
 
@@ -317,7 +350,9 @@ class TestCognitionEngineGet:
     def test_get_cognition_engine(self, client, registered_cfn):
         """Returns full detail for a known engine"""
         ce_id = _register(
-            client, registered_cfn, "DETECTIVE",
+            client,
+            registered_cfn,
+            "DETECTIVE",
             endpoint="/api/l9/detective",
         )
 
@@ -338,7 +373,6 @@ class TestCognitionEngineGet:
         response = client.get("/api/cognition-engines/nonexistent-id")
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert "not found" in response.json()["detail"].lower()
-
 
 
 class TestCognitionEngineDelete:
@@ -390,7 +424,9 @@ class TestCognitionEngineDelete:
         ce_id = _register(client, registered_cfn, "CASA", name="rereg-test-ce", version="1.0.0")
         _delete(client, ce_id)
 
-        new = client.post("/api/cognition-engines", json=_base_payload(registered_cfn, "CASA", name="rereg-test-ce", version="1.0.0"))
+        new = client.post(
+            "/api/cognition-engines", json=_base_payload(registered_cfn, "CASA", name="rereg-test-ce", version="1.0.0")
+        )
         assert new.status_code == status.HTTP_201_CREATED
         assert new.json()["ce_id"] != ce_id
 
@@ -433,81 +469,409 @@ class TestCognitionEngineDelete:
         assert resp.status_code == status.HTTP_204_NO_CONTENT
 
 
-class TestCognitionEngineHeartbeat:
-    def test_heartbeat_sets_status_online(self, client, registered_cfn):
-        """Heartbeat flips offline→online (e.g. after the stale-engine sweep) and returns status/last_seen"""
+def _get_ce(ce_id: str) -> dict:
+    """Read status, last_seen and created_at straight from the DB."""
+    from server.database.relational_db.models.cognition_engine import CognitionEngine as CognitionEngineModel
+
+    db = RelationalDB()
+    session = db.get_session()
+    try:
+        engine = session.query(CognitionEngineModel).filter(CognitionEngineModel.id == ce_id).first()
+        return {"status": engine.status, "last_seen": engine.last_seen, "created_at": engine.created_at}
+    finally:
+        session.close()
+
+
+def _set_ce(ce_id: str, **fields) -> None:
+    from server.database.relational_db.models.cognition_engine import CognitionEngine as CognitionEngineModel
+
+    db = RelationalDB()
+    session = db.get_session()
+    try:
+        engine = session.query(CognitionEngineModel).filter(CognitionEngineModel.id == ce_id).first()
+        for key, value in fields.items():
+            setattr(engine, key, value)
+        session.commit()
+    finally:
+        session.close()
+
+
+def _config_version(client, cfn_id: str) -> int:
+    return client.put(f"/api/cognition-fabric-nodes/{cfn_id}/heartbeat").json()["config_version"]
+
+
+class TestCognitionEngineHealthProbeResult:
+    """Tests for CognitionEngineService.record_probe_result"""
+
+    def test_no_heartbeat_endpoint(self, client, registered_cfn):
+        """The CE heartbeat endpoint was replaced by CFN probing"""
+        ce_id = _register(client, registered_cfn, "CASA")
+        resp = client.put(f"/api/cognition-engines/{ce_id}/heartbeat")
+        assert resp.status_code in (status.HTTP_404_NOT_FOUND, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def test_healthy_probe_flips_offline_to_online(self, client, registered_cfn):
         ce_id = _register(client, registered_cfn, "CASA")
         _force_offline(ce_id)
 
-        detail = client.get(f"/api/cognition-engines/{ce_id}").json()
-        assert detail["status"] == "offline"
+        changed = cognition_engine_service.record_probe_result(ce_id, True, 6)
 
-        resp = client.put(f"/api/cognition-engines/{ce_id}/heartbeat")
+        assert changed == "online"
+        ce = _get_ce(ce_id)
+        assert ce["status"] == "online"
+        assert ce["last_seen"] is not None
+        assert client.get(f"/api/cognition-engines/{ce_id}").json()["status"] == "online"
+
+    def test_healthy_probe_updates_last_seen(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+
+        cognition_engine_service.record_probe_result(ce_id, True, 6)
+        first = _get_ce(ce_id)["last_seen"]
+        cognition_engine_service.record_probe_result(ce_id, True, 6)
+
+        assert _get_ce(ce_id)["last_seen"] > first
+
+    def test_healthy_probe_on_online_engine_reports_no_change(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+
+        assert cognition_engine_service.record_probe_result(ce_id, True, 6) is None
+        assert _get_ce(ce_id)["status"] == "online"
+
+    def test_offline_to_online_increments_config_version(self, client, registered_cfn, created_workspace):
+        """A probe that brings a CE back online refreshes CFN's config snapshot."""
+        ce_id = _register(client, registered_cfn, "CASA")
+        _force_offline(ce_id)
+        initial_version = _config_version(client, registered_cfn)
+
+        cognition_engine_service.record_probe_result(ce_id, True, 6)
+
+        assert _config_version(client, registered_cfn) > initial_version
+
+    def test_already_online_does_not_increment_config_version(self, client, registered_cfn, created_workspace):
+        ce_id = _register(client, registered_cfn, "CASA")
+        stable_version = _config_version(client, registered_cfn)
+
+        cognition_engine_service.record_probe_result(ce_id, True, 6)
+
+        assert _config_version(client, registered_cfn) == stable_version
+
+    def test_unhealthy_probe_within_threshold_keeps_online(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+        now = datetime.now(timezone.utc)
+        _set_ce(ce_id, last_seen=now)
+
+        assert cognition_engine_service.record_probe_result(ce_id, False, 6, now=now + timedelta(seconds=4)) is None
+        assert _get_ce(ce_id)["status"] == "online"
+
+    def test_unhealthy_probe_past_threshold_goes_offline(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+        now = datetime.now(timezone.utc)
+        _set_ce(ce_id, last_seen=now)
+
+        changed = cognition_engine_service.record_probe_result(ce_id, False, 6, now=now + timedelta(seconds=7))
+
+        assert changed == "offline"
+        assert _get_ce(ce_id)["status"] == "offline"
+
+    def test_never_answered_engine_goes_offline_from_registration_time(self, client, registered_cfn):
+        """A CE that registered but never answered a probe has no last_seen, so created_at is the baseline."""
+        ce_id = _register(client, registered_cfn, "CASA")
+        ce = _get_ce(ce_id)
+        assert ce["last_seen"] is None
+
+        early = ce["created_at"] + timedelta(seconds=3)
+        assert cognition_engine_service.record_probe_result(ce_id, False, 6, now=early) is None
+        assert (
+            cognition_engine_service.record_probe_result(ce_id, False, 6, now=ce["created_at"] + timedelta(seconds=7))
+            == "offline"
+        )
+
+    def test_unhealthy_probe_on_offline_engine_reports_no_change(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+        _force_offline(ce_id)
+
+        changed = cognition_engine_service.record_probe_result(
+            ce_id, False, 6, now=datetime.now(timezone.utc) + timedelta(seconds=60)
+        )
+
+        assert changed is None
+        assert _get_ce(ce_id)["status"] == "offline"
+
+    def test_unknown_engine_returns_none(self, client):
+        assert cognition_engine_service.record_probe_result("nonexistent-ce", True, 6) is None
+
+    def test_probe_result_for_engine_disabled_meanwhile_is_ignored(self, client, registered_cfn):
+        """A probe in flight when the CE is disabled must not flip it back online (disabling set it offline)."""
+        from server.services.cognition_fabric_node import cognition_fabric_node_service
+
+        ce_id = _register(client, registered_cfn, "CASA")
+        assert ce_id in cognition_engine_service.list_probe_targets()
+        assert client.patch(f"/api/cognition-engines/{ce_id}", json={"enabled": False}).status_code == 200
+        assert _get_ce(ce_id)["status"] == "offline"
+
+        with patch.object(cognition_fabric_node_service, "update_config_for_cfn") as refresh:
+            changed = cognition_engine_service.record_probe_result(ce_id, True, 6)
+
+        assert changed is None
+        assert _get_ce(ce_id)["status"] == "offline"
+        assert _get_ce(ce_id)["last_seen"] is None
+        refresh.assert_not_called()
+
+
+class TestCognitionEngineMonitorProbe:
+    """Tests for the monitor's probe loop (CFN call mocked)"""
+
+    @staticmethod
+    def _monitor(**kwargs) -> CognitionEngineMonitor:
+        options = dict(probe_interval_seconds=1, probe_timeout_seconds=1, offline_threshold_seconds=0.001)
+        options.update(kwargs)
+        return CognitionEngineMonitor(**options)
+
+    def test_probe_all_sets_status_from_results(self, client, registered_cfn):
+        healthy_id = _register(client, registered_cfn, "CASA", health_url="http://healthy-ce:8080/healthz")
+        broken_id = _register(client, registered_cfn, "CASA", health_url="http://broken-ce:8080/healthz")
+        _force_offline(healthy_id)
+        _set_ce(broken_id, last_seen=datetime.now(timezone.utc) - timedelta(seconds=60))
+
+        with patch(
+            "server.services.cognition_engine_monitor.probe_ce_health",
+            side_effect=lambda ce_id, timeout: ce_id == healthy_id,
+        ) as probe:
+            asyncio.run(self._monitor().probe_all())
+
+        assert probe.call_count == 2
+        assert _get_ce(healthy_id)["status"] == "online"
+        assert _get_ce(broken_id)["status"] == "offline"
+
+    def test_probe_all_passes_ce_id_and_probe_timeout(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+
+        with patch("server.services.cognition_engine_monitor.probe_ce_health", return_value=True) as probe:
+            asyncio.run(self._monitor().probe_all())
+
+        probe.assert_called_once_with(ce_id, 1)
+
+    def test_probe_all_skips_disabled_engines(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+        client.patch(f"/api/cognition-engines/{ce_id}", json={"enabled": False})
+
+        with patch("server.services.cognition_engine_monitor.probe_ce_health", return_value=True) as probe:
+            asyncio.run(self._monitor().probe_all())
+
+        probe.assert_not_called()
+
+    def test_probe_all_skips_deleted_engines(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+        _delete(client, ce_id)
+
+        with patch("server.services.cognition_engine_monitor.probe_ce_health", return_value=True) as probe:
+            asyncio.run(self._monitor().probe_all())
+
+        probe.assert_not_called()
+
+    def test_one_failing_engine_does_not_block_others(self, client, registered_cfn):
+        bad_id = _register(client, registered_cfn, "CASA", health_url="http://bad-ce:8080/healthz")
+        good_id = _register(client, registered_cfn, "CASA", health_url="http://good-ce:8080/healthz")
+        _force_offline(good_id)
+
+        def fake_probe(ce_id, timeout):
+            if ce_id == bad_id:
+                raise RuntimeError("boom")
+            return True
+
+        with patch("server.services.cognition_engine_monitor.probe_ce_health", side_effect=fake_probe):
+            asyncio.run(self._monitor().probe_all())
+
+        assert _get_ce(good_id)["status"] == "online"
+        assert _get_ce(bad_id)["status"] == "online"  # error is logged, status untouched
+
+    def test_never_answered_engine_goes_offline_after_the_threshold(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+        monitor = self._monitor(offline_threshold_seconds=0.2)
+
+        with patch("server.services.cognition_engine_monitor.probe_ce_health", return_value=False):
+            asyncio.run(monitor.probe_all())
+            assert _get_ce(ce_id)["status"] == "online"
+            time.sleep(0.3)
+            asyncio.run(monitor.probe_all())
+
+        assert _get_ce(ce_id)["status"] == "offline"
+
+    def test_healthy_engine_comes_back_online_and_last_seen_is_updated(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+        _force_offline(ce_id)
+
+        with patch("server.services.cognition_engine_monitor.probe_ce_health", return_value=True):
+            asyncio.run(self._monitor().probe_all())
+
+        ce = _get_ce(ce_id)
+        assert ce["status"] == "online"
+        assert ce["last_seen"] is not None
+
+    def test_failed_listing_skips_the_tick(self, client, registered_cfn, caplog):
+        ce_id = _register(client, registered_cfn, "CASA")
+        _force_offline(ce_id)
+
+        with patch.object(cognition_engine_service, "list_probe_targets", side_effect=RuntimeError("db down")):
+            with patch("server.services.cognition_engine_monitor.probe_ce_health", return_value=True) as probe:
+                with caplog.at_level("ERROR"):
+                    asyncio.run(self._monitor().probe_all())
+
+        probe.assert_not_called()
+        assert "Failed to list Cognition Engines to probe" in caplog.text
+        assert _get_ce(ce_id)["status"] == "offline"
+
+    def test_list_probe_targets_raises_on_database_errors(self, client):
+        with patch("server.services.cognition_engine.RelationalDB", side_effect=RuntimeError("db down")):
+            with pytest.raises(RuntimeError):
+                cognition_engine_service.list_probe_targets()
+
+    def test_monitor_probes_until_stopped_and_survives_a_failed_listing(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+        _force_offline(ce_id)
+        monitor = self._monitor(probe_interval_seconds=0.05, offline_threshold_seconds=6)
+        real_list = cognition_engine_service.list_probe_targets
+        calls = {"n": 0}
+
+        def flaky_list():
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise RuntimeError("db blip")
+            return real_list()
+
+        async def run_for_a_moment():
+            task = asyncio.create_task(monitor.start())
+            await asyncio.sleep(0.4)
+            monitor.stop()
+            await asyncio.wait_for(task, timeout=2)
+
+        with patch.object(cognition_engine_service, "list_probe_targets", side_effect=flaky_list):
+            with patch("server.services.cognition_engine_monitor.probe_ce_health", return_value=True):
+                asyncio.run(run_for_a_moment())
+
+        assert calls["n"] > 1
+        assert _get_ce(ce_id)["status"] == "online"
+
+    def test_settings_come_from_the_environment(self, monkeypatch):
+        monkeypatch.setenv("CE_PROBE_INTERVAL_SECONDS", "3")
+        monkeypatch.setenv("CE_PROBE_TIMEOUT_SECONDS", "0.5")
+        monkeypatch.setenv("CE_OFFLINE_THRESHOLD_SECONDS", "20")
+
+        monitor = CognitionEngineMonitor()
+
+        assert (monitor.probe_interval, monitor.probe_timeout, monitor.offline_threshold) == (3, 0.5, 20)
+
+    def test_defaults(self, monkeypatch):
+        for name in ("CE_PROBE_INTERVAL_SECONDS", "CE_PROBE_TIMEOUT_SECONDS", "CE_OFFLINE_THRESHOLD_SECONDS"):
+            monkeypatch.delenv(name, raising=False)
+
+        monitor = CognitionEngineMonitor()
+
+        assert (monitor.probe_interval, monitor.probe_timeout, monitor.offline_threshold) == (2, 1, 6)
+
+
+_POST = "server.services.cfn_ce_probe.requests.post"
+
+
+class TestCfnCeProbeClient:
+    """probe_ce_health asks cfn-svc to probe a CE by ID: True only for a 200 with healthy true"""
+
+    @staticmethod
+    def _response(status_code=200, json_body=None, json_error=None):
+        response = requests.Response()
+        response.status_code = status_code
+        if json_error is not None:
+            response._content = b"not json"
+        else:
+            response._content = json.dumps(json_body).encode()
+        return response
+
+    def test_healthy_answer(self):
+        with patch(_POST, return_value=self._response(json_body={"healthy": True})) as post:
+            assert probe_ce_health("ce-1", 1) is True
+
+        assert post.call_args.kwargs["json"] == {"ce_id": "ce-1"}
+        assert post.call_args.args[0].endswith("/api/internal/mgmt/cognition-engine/probe")
+        assert post.call_args.kwargs["timeout"] == 2
+
+    def test_unhealthy_answer(self):
+        with patch(_POST, return_value=self._response(json_body={"healthy": False})):
+            assert probe_ce_health("ce-1", 1) is False
+
+    @pytest.mark.parametrize("code", [404, 500, 502])
+    def test_error_status_is_unhealthy(self, code):
+        with patch(_POST, return_value=self._response(code, {"healthy": True})):
+            assert probe_ce_health("ce-1", 1) is False
+
+    @pytest.mark.parametrize("body", [{}, {"healthy": "yes"}, {"healthy": None}, [], "healthy", 5])
+    def test_malformed_body_is_unhealthy(self, body):
+        with patch(_POST, return_value=self._response(json_body=body)):
+            assert probe_ce_health("ce-1", 1) is False
+
+    def test_body_that_is_not_json_is_unhealthy(self):
+        with patch(_POST, return_value=self._response(json_error=True)):
+            assert probe_ce_health("ce-1", 1) is False
+
+    @pytest.mark.parametrize("error", [requests.exceptions.ConnectionError, requests.exceptions.Timeout])
+    def test_transport_error_is_unhealthy(self, error):
+        with patch(_POST, side_effect=error("boom")):
+            assert probe_ce_health("ce-1", 1) is False
+
+    def test_cfn_svc_url_is_read_from_env(self, monkeypatch):
+        monkeypatch.setenv("CFN_SVC_URL", "http://cfn-svc:9002")
+        with patch(_POST, return_value=self._response(json_body={"healthy": True})) as post:
+            probe_ce_health("ce-1", 1)
+
+        assert post.call_args.args[0] == "http://cfn-svc:9002/api/internal/mgmt/cognition-engine/probe"
+
+
+class TestCognitionEngineHealthUrl:
+    """health_url is required at registration and mutable via PATCH"""
+
+    def test_register_requires_health_url(self, client, registered_cfn):
+        payload = _base_payload(registered_cfn, name="no-health-url")
+        del payload["health_url"]
+
+        resp = client.post("/api/cognition-engines", json=payload)
+
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+    @pytest.mark.parametrize("bad_url", ["", "healthz", "ftp://ce:8080/healthz", "http://", "http://ce 8080/healthz"])
+    def test_register_rejects_invalid_health_url(self, client, registered_cfn, bad_url):
+        payload = {**_base_payload(registered_cfn, name="bad-health-url"), "health_url": bad_url}
+
+        resp = client.post("/api/cognition-engines", json=payload)
+
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+    def test_register_returns_health_url(self, client, registered_cfn):
+        payload = {**_base_payload(registered_cfn, name="with-health-url"), "health_url": "https://ce:8443/healthz"}
+
+        resp = client.post("/api/cognition-engines", json=payload)
+
+        assert resp.status_code == status.HTTP_201_CREATED
+        assert resp.json()["health_url"] == "https://ce:8443/healthz"
+
+    def test_get_and_list_include_health_url(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA", health_url="http://ce:9000/live")
+
+        assert client.get(f"/api/cognition-engines/{ce_id}").json()["health_url"] == "http://ce:9000/live"
+        listed = client.get(f"/api/cognition-engines?cfn_id={registered_cfn}").json()["cognition_engines"]
+        assert [e["health_url"] for e in listed if e["id"] == ce_id] == ["http://ce:9000/live"]
+
+    def test_patch_updates_health_url(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"health_url": "http://new-host:8080/healthz"})
+
         assert resp.status_code == status.HTTP_200_OK
+        assert resp.json()["health_url"] == "http://new-host:8080/healthz"
 
-        body = resp.json()
-        assert body["status"] == "online"
-        assert body["last_seen"] is not None
-
-    def test_heartbeat_updates_last_seen(self, client, registered_cfn):
-        """Two consecutive heartbeats produce increasing last_seen timestamps"""
+    def test_patch_rejects_invalid_health_url(self, client, registered_cfn):
         ce_id = _register(client, registered_cfn, "CASA")
 
-        r1 = client.put(f"/api/cognition-engines/{ce_id}/heartbeat")
-        r2 = client.put(f"/api/cognition-engines/{ce_id}/heartbeat")
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"health_url": "not-a-url"})
 
-        assert r1.status_code == status.HTTP_200_OK
-        assert r2.status_code == status.HTTP_200_OK
-        assert r2.json()["last_seen"] >= r1.json()["last_seen"]
-
-    def test_heartbeat_keeps_online_status(self, client, registered_cfn):
-        """Heartbeat on an already-online engine keeps status online"""
-        ce_id = _register(client, registered_cfn, "CASA")
-
-        # First heartbeat → online
-        client.put(f"/api/cognition-engines/{ce_id}/heartbeat")
-
-        # Second heartbeat → still online
-        resp = client.put(f"/api/cognition-engines/{ce_id}/heartbeat")
-        assert resp.json()["status"] == "online"
-
-    def test_heartbeat_nonexistent_engine(self, client):
-        """Heartbeat for unknown ce_id returns 404"""
-        resp = client.put("/api/cognition-engines/nonexistent-ce/heartbeat")
-        assert resp.status_code == status.HTTP_404_NOT_FOUND
-
-    def test_heartbeat_reflects_in_get(self, client, registered_cfn):
-        """After heartbeat, GET shows updated status and last_seen"""
-        ce_id = _register(client, registered_cfn, "CASA")
-
-        client.put(f"/api/cognition-engines/{ce_id}/heartbeat")
-
-        detail = client.get(f"/api/cognition-engines/{ce_id}").json()
-        assert detail["status"] == "online"
-        assert detail["last_seen"] is not None
-
-    def test_heartbeat_offline_to_online_increments_config_version(self, client, registered_cfn, created_workspace):
-        """A heartbeat that transitions offline→online (e.g. after the stale-engine sweep) triggers a CFN config update."""
-        ce_id = _register(client, registered_cfn, "CASA")
-        _force_offline(ce_id)
-
-        initial_version = client.put(f"/api/cognition-fabric-nodes/{registered_cfn}/heartbeat").json()["config_version"]
-
-        client.put(f"/api/cognition-engines/{ce_id}/heartbeat")
-
-        updated_version = client.put(f"/api/cognition-fabric-nodes/{registered_cfn}/heartbeat").json()["config_version"]
-        assert updated_version > initial_version
-
-    def test_heartbeat_already_online_does_not_increment_config_version(self, client, registered_cfn, created_workspace):
-        """Heartbeat on an already-online CE does not trigger a redundant config update."""
-        ce_id = _register(client, registered_cfn, "CASA")  # online immediately on registration
-
-        stable_version = client.put(f"/api/cognition-fabric-nodes/{registered_cfn}/heartbeat").json()["config_version"]
-
-        client.put(f"/api/cognition-engines/{ce_id}/heartbeat")  # already online — no transition
-
-        after_version = client.put(f"/api/cognition-fabric-nodes/{registered_cfn}/heartbeat").json()["config_version"]
-        assert after_version == stable_version
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
 class TestCognitionEngineEnabled:
@@ -522,7 +886,9 @@ class TestCognitionEngineEnabled:
 
     def test_enabled_present_in_registration_response(self, client, registered_cfn):
         """Registration response includes enabled=true."""
-        resp = client.post("/api/cognition-engines", json=_base_payload(registered_cfn, "CASA", name="enabled-resp-test"))
+        resp = client.post(
+            "/api/cognition-engines", json=_base_payload(registered_cfn, "CASA", name="enabled-resp-test")
+        )
         assert resp.status_code == status.HTTP_201_CREATED
         assert resp.json()["enabled"] is True
 
@@ -600,6 +966,91 @@ class TestCognitionEnginePatch:
 
         assert resp.status_code == status.HTTP_200_OK
         assert resp.json()["enabled"] is True
+
+    @staticmethod
+    def _cfn_config_engine(client, cfn_id: str, ce_id: str) -> dict:
+        """The CE entry in the stored CFN config blob, which is what cfn-svc refreshes from."""
+        config = client.get(f"/api/cognition-fabric-nodes/{cfn_id}").json()["config"]
+        return next(e for e in config["cognition_engines"] if e["id"] == ce_id)
+
+    def test_patch_health_url_refreshes_the_cfn_config(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+        initial_version = _config_version(client, registered_cfn)
+        assert self._cfn_config_engine(client, registered_cfn, ce_id)["health_url"] == (
+            "http://ce.internal:8080/healthz"
+        )
+
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"health_url": "http://new-host:9090/live"})
+
+        assert resp.status_code == status.HTTP_200_OK
+        assert self._cfn_config_engine(client, registered_cfn, ce_id)["health_url"] == "http://new-host:9090/live"
+        assert _config_version(client, registered_cfn) > initial_version
+
+    @pytest.mark.parametrize(
+        "field,value",
+        [
+            ("base_url", "http://elsewhere:8080"),
+            ("endpoint", "/api/other"),
+            ("health_url", "http://elsewhere:8080/healthz"),
+            ("enabled", False),
+        ],
+    )
+    def test_patch_of_cfn_visible_field_bumps_config_version(self, client, registered_cfn, field, value):
+        ce_id = _register(client, registered_cfn, "CASA")
+        before = _config_version(client, registered_cfn)
+
+        client.patch(f"/api/cognition-engines/{ce_id}", json={field: value})
+
+        assert _config_version(client, registered_cfn) == before + 1
+
+    def test_patch_with_unchanged_values_does_not_bump_config_version(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+        before = _config_version(client, registered_cfn)
+
+        client.patch(
+            f"/api/cognition-engines/{ce_id}",
+            json={"base_url": "http://ce.internal:8080", "health_url": "http://ce.internal:8080/healthz"},
+        )
+
+        assert _config_version(client, registered_cfn) == before
+
+    def test_patch_mas_auto_associate_alone_does_not_bump_config_version(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+        before = _config_version(client, registered_cfn)
+
+        client.patch(f"/api/cognition-engines/{ce_id}", json={"mas_auto_associate": True})
+
+        assert _config_version(client, registered_cfn) == before
+
+    def test_disabling_a_ce_marks_it_offline(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+        assert _get_ce(ce_id)["status"] == "online"
+
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"enabled": False})
+
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.json()["status"] == "offline"
+        assert _get_ce(ce_id)["status"] == "offline"
+        assert self._cfn_config_engine(client, registered_cfn, ce_id)["status"] == "offline"
+
+    def test_re_enabling_a_ce_leaves_status_for_the_probe_loop(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+        client.patch(f"/api/cognition-engines/{ce_id}", json={"enabled": False})
+
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"enabled": True})
+
+        assert resp.json()["status"] == "offline"
+        with patch("server.services.cognition_engine_monitor.probe_ce_health", return_value=True):
+            asyncio.run(CognitionEngineMonitor(probe_interval_seconds=1).probe_all())
+        assert _get_ce(ce_id)["status"] == "online"
+
+    def test_disabling_an_already_offline_ce_keeps_it_offline(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn, "CASA")
+        _force_offline(ce_id)
+
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"enabled": False})
+
+        assert resp.json()["status"] == "offline"
 
     def test_patch_mutable_fields(self, client, registered_cfn):
         """PATCH updates mutable fields and returns updated detail."""
@@ -747,7 +1198,9 @@ class TestCognitionEngineMasConfigPerMas:
     def test_association_copies_ce_mas_config_to_junction(self, client, registered_cfn, created_workspace):
         """On association, CE's mas_config is copied into the junction for the MAS."""
         ce_id = _register(
-            client, registered_cfn, "CASA",
+            client,
+            registered_cfn,
+            "CASA",
             mas_config={"schedule": "0 0 * * *"},
         )
         mas_id = _create_mas(client, created_workspace, "mas-config-copy-mas")
@@ -761,7 +1214,9 @@ class TestCognitionEngineMasConfigPerMas:
     def test_mas_update_overrides_per_mas_ce_config(self, client, registered_cfn, created_workspace):
         """PUT MAS with cognition_engine_configs overrides the mas_config for that CE on this MAS only."""
         ce_id = _register(
-            client, registered_cfn, "CASA",
+            client,
+            registered_cfn,
+            "CASA",
             mas_config={"schedule": "0 0 * * *"},
         )
         mas_id = _create_mas(client, created_workspace, "mas-config-override-mas")
@@ -792,7 +1247,9 @@ class TestCognitionEngineMasConfigPerMas:
 
         factory_default = {"schedule": "0 0 * * *"}
         ce_id = _register(
-            client, registered_cfn, "CASA",
+            client,
+            registered_cfn,
+            "CASA",
             mas_config=factory_default,
         )
         mas_id = _create_mas(client, created_workspace, "seed-junction-mas")
@@ -873,18 +1330,13 @@ class TestCognitionEngineCfnValidation:
         resp = client.delete(f"/api/cognition-engines/{ce_id}")
         assert resp.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_heartbeat_rejects_inactive_cfn(self, client, registered_cfn):
-        ce_id = _register(client, registered_cfn, "CASA")
-        _disable_cfn(client, registered_cfn)
-
-        resp = client.put(f"/api/cognition-engines/{ce_id}/heartbeat")
-        assert resp.status_code == status.HTTP_404_NOT_FOUND
-
     def test_registration_allowed_even_with_inactive_cfn(self, client, registered_cfn):
         """Registration does not check CFN active status — it only checks existence."""
         _disable_cfn(client, registered_cfn)
 
-        resp = client.post("/api/cognition-engines", json=_base_payload(registered_cfn, "DETECTIVE", name="inactive-cfn-test"))
+        resp = client.post(
+            "/api/cognition-engines", json=_base_payload(registered_cfn, "DETECTIVE", name="inactive-cfn-test")
+        )
         assert resp.status_code == status.HTTP_201_CREATED
 
 
@@ -1004,9 +1456,7 @@ class TestCognitionEngineMasAssociation:
             f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
             json={"ce_id": ce_id},
         )
-        client.delete(
-            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines/{ce_id}"
-        )
+        client.delete(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines/{ce_id}")
 
         resp = client.post(
             f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines",
@@ -1040,9 +1490,7 @@ class TestCognitionEngineMasAssociation:
 
         initial_version = client.put(f"/api/cognition-fabric-nodes/{registered_cfn}/heartbeat").json()["config_version"]
 
-        client.delete(
-            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines/{ce_id}"
-        )
+        client.delete(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines/{ce_id}")
 
         updated_version = client.put(f"/api/cognition-fabric-nodes/{registered_cfn}/heartbeat").json()["config_version"]
         assert updated_version > initial_version
@@ -1051,7 +1499,9 @@ class TestCognitionEngineMasAssociation:
 class TestCognitionEngineAutoAttachTrigger:
     """Tests for auto-attach trigger logic."""
 
-    def test_register_mas_auto_associate_does_not_attach_to_existing_mas(self, client, registered_cfn, created_workspace):
+    def test_register_mas_auto_associate_does_not_attach_to_existing_mas(
+        self, client, registered_cfn, created_workspace
+    ):
         """CE registration does not auto-attach to pre-existing MAS, even with mas_auto_associate=True."""
         mas_id = _create_mas(client, created_workspace, "pre-existing-mas")
         ce_id = _register(client, registered_cfn, "CASA", mas_auto_associate=True)
@@ -1108,6 +1558,7 @@ class TestCognitionEngineAutoAttachTrigger:
             "ce_type": "CASA",
             "base_url": "http://ce:8080",
             "endpoint": "/api/l9/enforcement",
+            "health_url": "http://ce.internal:8080/healthz",
             "mas_auto_associate": True,
         }
         first = client.post("/api/cognition-engines", json=payload)  # first registration: creates (201)
@@ -1186,9 +1637,7 @@ class TestCognitionEngineAutoAttachTrigger:
             json={"name": "WS Disable Trigger2", "cfn_id": registered_cfn},
         ).json()["id"]
         existing_mas_id = _create_mas(client, ws_id, "existing-mas")
-        client.delete(
-            f"/api/workspaces/{ws_id}/multi-agentic-systems/{existing_mas_id}/cognition-engines/{ce_id}"
-        )
+        client.delete(f"/api/workspaces/{ws_id}/multi-agentic-systems/{existing_mas_id}/cognition-engines/{ce_id}")
         client.patch(f"/api/cognition-engines/{ce_id}", json={"enabled": False})
 
         # Create a new MAS — disabled CE should not be auto-attached
@@ -1277,7 +1726,9 @@ class TestMasCognitionEnginePatch:
     def test_patch_unknown_keys_returns_422(self, client, registered_cfn, created_workspace):
         """PATCH with keys not in the CE factory default is rejected with 422."""
         ce_id = _register(
-            client, registered_cfn, "CASA",
+            client,
+            registered_cfn,
+            "CASA",
             mas_config={"schedule": "0 0 * * *", "top_k": 10},
         )
         mas_id = _create_mas(client, created_workspace, "mas-patch-unknown-keys-mas")
@@ -1297,7 +1748,9 @@ class TestMasCognitionEnginePatch:
     def test_patch_subset_of_keys_allowed(self, client, registered_cfn, created_workspace):
         """PATCH with a subset of factory default keys is valid — not all keys need to be provided."""
         ce_id = _register(
-            client, registered_cfn, "CASA",
+            client,
+            registered_cfn,
+            "CASA",
             mas_config={"schedule": "0 0 * * *", "top_k": 10},
         )
         mas_id = _create_mas(client, created_workspace, "mas-patch-subset-mas")
@@ -1507,9 +1960,7 @@ class TestCognitionEngineVersionUpgradeAssociation:
         assert ce_v2 in _mas_ce_ids(client, created_workspace, mas_id)
 
         # Deliberately disassociate the most recent version from the MAS
-        client.delete(
-            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines/{ce_v2}"
-        )
+        client.delete(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}/cognition-engines/{ce_v2}")
 
         ce_v3 = client.post(
             "/api/cognition-engines",
@@ -1525,7 +1976,11 @@ class TestCognitionEngineVersionUpgradeAssociation:
         from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
 
         ce_v1 = _register(
-            client, registered_cfn, "CASA", name="upgrade-config-ce", version="1.0.0",
+            client,
+            registered_cfn,
+            "CASA",
+            name="upgrade-config-ce",
+            version="1.0.0",
             mas_config={"schedule": "0 0 * * *"},
         )
         mas_id = _create_mas(client, created_workspace, "upgrade-config-mas")
@@ -1611,7 +2066,9 @@ class TestCognitionEngineVersionUpgradeAssociation:
 
         assert ce_v2 not in _mas_ce_ids(client, ws1_id, mas_id)
 
-    def test_new_version_registration_is_atomic_with_carry_forward(self, client, registered_cfn, created_workspace, monkeypatch):
+    def test_new_version_registration_is_atomic_with_carry_forward(
+        self, client, registered_cfn, created_workspace, monkeypatch
+    ):
         """If carrying forward associations fails, the whole registration rolls back — no orphaned CE row
         is left behind with missing associations."""
         from server.services.cognition_engine import cognition_engine_service
@@ -1626,7 +2083,9 @@ class TestCognitionEngineVersionUpgradeAssociation:
         def _boom(self, session, engine, user_id):
             raise RuntimeError("simulated carry-forward failure")
 
-        monkeypatch.setattr(cognition_engine_service, "_carry_forward_mas_associations", _boom.__get__(cognition_engine_service))
+        monkeypatch.setattr(
+            cognition_engine_service, "_carry_forward_mas_associations", _boom.__get__(cognition_engine_service)
+        )
 
         resp = client.post(
             "/api/cognition-engines",

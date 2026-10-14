@@ -1127,6 +1127,7 @@ class CognitionFabricNodeService:
                         "ce_type": e.ce_type,
                         "base_url": e.base_url,
                         "endpoint": e.endpoint,
+                        "health_url": e.health_url,
                         "enabled": e.enabled,
                         "status": e.status,
                         "mas_config": e.mas_config or {},
