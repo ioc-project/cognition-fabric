@@ -4,6 +4,7 @@ Implements the ioc.ce.v1.CognitionEngine service.
 """
 import asyncio
 import logging
+import os
 from concurrent import futures
 from datetime import datetime, timezone
 import uuid
@@ -28,6 +29,9 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
 
     def __init__(self):
         self._loop = asyncio.new_event_loop()
+        self._decision = os.environ.get("DEMO_CE_DECISION", "allow").strip().lower()
+        if self._decision not in {"allow", "deny"}:
+            raise ValueError("DEMO_CE_DECISION must be 'allow' or 'deny'")
 
     def _run_async(self, coro):
         """Run an async coroutine from sync context using a persistent event loop."""
@@ -39,7 +43,7 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
 
         Flow:
         1. Read prior CE findings from Cognition Store (for MAS-level context)
-        2. Make decision (stub: always ALLOW)
+        2. Return the configured demonstration decision
         3. Store current finding in Cognition Store
         4. Return decision
         """
@@ -74,12 +78,20 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
             # TODO: Query Analytics APIs (from OXP) for context (once ready):
             # - Original intent, LLM traces, tool selections, trajectories, knowledge graph
 
-            # 2. Make decision (stub: always ALLOW)
+            # 2. Return a deterministic demonstration decision.
             logger.info("[Evaluate] Making authorization decision...")
+            deny = self._decision == "deny"
             response = ce_pb2.EvaluateResponse(
-                outcome=ce_pb2.DECISION_ALLOW,
-                context_sufficiency=ce_pb2.CONTEXT_SUFFICIENCY_COMPLETE,
-                reason="Stub: all checks passed",
+                outcome=ce_pb2.DECISION_DENY if deny else ce_pb2.DECISION_ALLOW,
+                denial_reason=(
+                    ce_pb2.DENIAL_REASON_DEVIATES_FROM_INTENT
+                    if deny else ce_pb2.DENIAL_REASON_UNSPECIFIED
+                ),
+                context_sufficiency=ce_pb2.CONTEXT_SUFFICIENCY_UNSPECIFIED,
+                reason=(
+                    "Configured demo policy: DENY (simulated intent deviation)"
+                    if deny else "Configured demo policy: ALLOW"
+                ),
                 trace_id=request.trace_id,
                 timestamp=datetime.now(timezone.utc).isoformat(),
             )

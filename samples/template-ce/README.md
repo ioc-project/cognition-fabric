@@ -4,10 +4,17 @@ Demo Cognition Engine implementing the `ioc.ce.v1.CognitionEngine` gRPC contract
 
 ## Overview
 
-Demo CE provides authorization decisions (ALLOW / DENY / MODIFY) for in-scope MAS actions. It integrates with:
+Demo CE returns a configured ALLOW or DENY verdict for in-scope MAS actions.
+It integrates with:
 
 - **CFN** - Receives `Evaluate` requests via gRPC
 - **Cognition Store (OXP)** - Reads prior findings, stores current finding
+
+Its current decision is a configurable demo verdict: `DEMO_CE_DECISION=allow`
+(default) or `DEMO_CE_DECISION=deny`. A forced denial carries a simulated
+intent-deviation reason; this mode does not inspect the tool arguments or make
+a semantic policy judgment, so context sufficiency is unspecified. Restart the
+CE after changing the setting.
 
 ## Quick Start (Docker Compose)
 
@@ -95,6 +102,7 @@ Returns CE metadata.
 | `COGNITION_ENGINE_HOST` | Advertised host for this CE | `localhost` |
 | `CE_HEARTBEAT_INTERVAL_SEC` | Heartbeat interval | `30.0` |
 | `COGNITION_STORE_URL` | Cognition Store API URL | (disabled) |
+| `DEMO_CE_DECISION` | Forced demo verdict: `allow` or `deny` | `allow` |
 
 ### Running Multiple Instances (Upgrade Demo)
 
