@@ -24,14 +24,14 @@ This set follows the org TOME template list. Each file notes its category:
 | [`issues.md`](issues.md) | generated | Issues, risks, and disagreements. |
 | [`status.md`](status.md) | generated | Current health, risks, open decisions, and ready work. |
 | [`actions.md`](actions.md) | generated | Clean next-task snapshot. |
-| [`decision-log.md`](decision-log.md) | generated | Snapshot of decisions and discussions; use the decisions index for current decisions. |
+| [`decision-log.md`](decision-log.md) | generated | Snapshot of decisions and discussions; consult ADRs for accepted CFN decisions. |
 
 ## Supporting documents
 
 | Document | What it is |
 |----------|------------|
 | [`glossary.md`](glossary.md) | Source definitions, one `##` heading per term. **Start here if a term is unfamiliar.** |
-| [`decisions/`](decisions/README.md) | Current CF decision index and numbered ADRs across the workspace repositories. |
+| [`decisions/`](decisions/README.md) | Curated, numbered CFN architecture decision records. |
 | [`specs/`](specs/README.md) | Behavioural specs and API contracts. |
 
 ## Related sources of truth

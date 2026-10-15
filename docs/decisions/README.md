@@ -1,31 +1,26 @@
-# CF decisions
+# Decisions (ADRs)
 
-This is the concise index of current, durable Cognition Fabric decisions across the
-workspace repositories. Read `ioc-scale-cf-deployment/docs/architecture.md` first
-for short-term system behavior, then open only decisions relevant to the task.
-Service documents may also describe longer-term targets or open proposals.
+Tracked architecture decisions — the "why" behind the project's direction. Each decision is
+a short, numbered Markdown file (a lightweight ADR). Superseding decisions reference the
+ones they replace rather than editing history.
 
 ## How decisions are tracked
 
-- Record an agreed choice only when its rationale and consequences need a durable
-  record beyond the architecture. Do not add an entry for every task or plan.
-- Keep this index focused on current decisions. If it grows, group active entries
-  by topic and link to topic indexes rather than loading every decision page.
-- Give each decision a short numbered ADR with **Status**, **Context**,
-  **Decision**, and **Consequences**. When a choice is replaced, mark the old ADR
-  superseded, link it from the replacement, and keep only the current decision
-  in the active index. Historical files and Git preserve the earlier rationale.
-- Keep unresolved topics in [discussions](../discussions/README.md), not in the
-  decision index. The [decision log](../decision-log.md) is a generated view;
-  this index and its linked ADRs are the record to consult.
+- One file per decision, numbered `NNNN-title.md`, with **Status**, **Context**,
+  **Decision**, and **Consequences**.
+- Topics still **under discussion** live in [`../discussions/`](../discussions/README.md) until
+  resolved into an ADR.
+- The combined pending-and-decided view is [`../decision-log.md`](../decision-log.md).
 
-## Current decisions
+## Index
 
-| # | Decision | Status |
-|---|----------|--------|
+| #    | Decision                                                                                 | Status   |
+| ---- | ---------------------------------------------------------------------------------------- | -------- |
 | 0001 | [Persist application_id as masId on the MAS node in the KG](0001-persist-masid-in-kg.md) | Accepted |
 
 ## Template
+
+Use this template when creating a new ADR:
 
 ```markdown
 # NNNN — Title
@@ -34,13 +29,13 @@ Service documents may also describe longer-term targets or open proposals.
 
 ## Context
 
-What prompted this choice?
+What is the issue that we're seeing that is motivating this decision or change?
 
 ## Decision
 
-What was agreed, and why?
+What is the change that we're proposing and/or doing?
 
 ## Consequences
 
-What changes or becomes harder?
+What becomes easier or more difficult to do because of this change?
 ```
