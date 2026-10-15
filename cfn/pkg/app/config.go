@@ -13,14 +13,16 @@ type CfnConfigPayload struct {
 
 // EngineCfg represents a Cognition Engine configuration.
 type EngineCfg struct {
-	ID               string         `json:"id"`
-	CEType           string         `json:"ce_type"` // "CASA" or "DETECTIVE"
-	BaseURL          string         `json:"base_url"`
-	Endpoint         string         `json:"endpoint"`
-	Enabled          bool           `json:"enabled"`
-	Status           string         `json:"status"`
-	MASAutoAssociate bool           `json:"mas_auto_associate"`
-	MASConfig        map[string]any `json:"mas_config"`
+	ID                   string         `json:"id"`
+	CEType               string         `json:"ce_type"` // "CASA" or "DETECTIVE"
+	BaseURL              string         `json:"base_url"`
+	Endpoint             string         `json:"endpoint"`
+	NotificationURL      string         `json:"notification_url"`
+	NotificationEndpoint string         `json:"notification_endpoint"`
+	Enabled              bool           `json:"enabled"`
+	Status               string         `json:"status"`
+	MASAutoAssociate     bool           `json:"mas_auto_associate"`
+	MASConfig            map[string]any `json:"mas_config"`
 }
 
 // WorkspaceCfg represents a workspace configuration.
@@ -34,6 +36,7 @@ type WorkspaceCfg struct {
 type MASCfg struct {
 	ID               string         `json:"id"`
 	Name             string         `json:"name"`
+	LastUpdatedOn    string         `json:"last_updated_on"`
 	CognitionEngines []MASEngineCfg `json:"cognition_engines"`
 }
 
