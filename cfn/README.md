@@ -23,9 +23,8 @@ CF provides:
 
 | Contract | Direction | Purpose |
 |----------|-----------|---------|
-| `ioc.cf.enforcement.v1` | CF → Enforcement Proxy | Enforcement contract — dispositions (allow/block) |
+| `ioc.cf.enforcement.v1.Enforcement/GetDisposition` | Enforcement Proxy → CF | Enforcing API — dispositions (allow/block) |
 | Active API | CEs → CF | Direct MAS engagement |
-| Enforcing API | CEs → CF | Issue dispositions via Enforcement Proxy |
 
 ## Focus areas
 
