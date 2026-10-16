@@ -17,6 +17,8 @@ x-worker-env: &worker-env
   API_BASE_URL: http://host.docker.internal:8081
   NEO4J_HOST: neo4j:7687
   NEO4J_URI: bolt://neo4j:7687
+  NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
+  NEO4J_PASSWORD: ${NEO4J_PASSWORD:-testpassword} # legit:ignore
   UV_LINK_MODE: copy
   UV_PROJECT_ENVIRONMENT: /opt/venv
   PYTHONUNBUFFERED: 1
