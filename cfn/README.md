@@ -11,8 +11,7 @@ a fabric to route those signals to Cognition Engines (CEs) that act on them. CF 
 
 CF provides:
 
-- **Cognition Store** — shared CE memory layer for publishing and consuming findings
-- **Three-tier API surface** — Analytics (read-only), Active (MAS engagement), Enforcing (block/modify/inject)
+- **Two-tier API surface** — Active (MAS engagement) and Enforcing (block/modify/inject). Analytics APIs and the Cognition Store are owned by OXP.
 - **CE routing and chaining** — compose and sequence Cognition Engines across the fabric
 - **OXP integration** — trajectories and cognitive enrichment as first-class fabric signals
 
@@ -33,17 +32,16 @@ CF provides:
 | Area | Description |
 |------|-------------|
 | **OXP core integration** | Refactor CF to integrate OXP as a first-class source of cognitive signal |
-| **Cognition Store** | Build the store as required by COGS and GATS CEs |
-| **Three-tier CF API surface** | Analytics, Active, and Enforcing APIs |
+| **Two-tier CF API surface** | Active and Enforcing APIs. Analytics APIs and Cognition Store are OXP-owned. |
 | **CE support** | Routing and chaining of Cognition Engines across the fabric |
-| **L9 interaction with MAS** | Passive, active, and enforcing modes of L9 interaction |
+| **L9 interaction with MAS** | Active and enforcing modes of L9 interaction |
 
 ## Consumers
 
-- **CASA CE** — publishes/consumes findings via Cognition Store
+- **CASA CE** — publishes/consumes findings via OXP's Cognition Store
 - **Detective Investigations CE** — CE chaining, findings access
 - **GATS CEs** — Enforcing tier dispositions
-- **Security Detections CE** — Analytics tier queries
+- **Security Detections CE** — queries OXP's Analytics APIs directly
 - **Enforcement Proxy** — executes enforcement in-path via `ioc.cf.enforcement.v1`
 
 ## Documentation
