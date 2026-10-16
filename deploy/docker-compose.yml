@@ -687,7 +687,7 @@ services:
   # Port Mapping: 9006:8081 (gRPC), 9005:8082 (HTTP). Host 8081 is oxp-api.
   # Image Link: https://github.com/cisco-eti/ioc-scaling-enforcement-proxy/pkgs/container/ioc-scaling-enforcement-mediation
   ioc-scale-enforcement-proxy-mediation:
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-mediation:${MEDIATION_CORE_TAG:-latest}
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-mediation:${ENFORCEMENT_PROXY_MEDIATION_TAG:-latest}
     container_name: ioc-scale-enforcement-proxy-mediation
     depends_on:
       ioc-scale-db:
