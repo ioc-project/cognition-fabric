@@ -47,6 +47,9 @@ services:
       - CE_POLICY_FILE=/etc/policy-ce/policy.json
       - CFN_URL=http://host.docker.internal:9002
       - OXP_API_URL=http://host.docker.internal:8000
+      - CE_CONTEXT_WAIT=${CE_CONTEXT_WAIT:-1s}
+      - CE_CONTEXT_ATTEMPTS=${CE_CONTEXT_ATTEMPTS:-5}
+      - CE_CONTEXT_RETRY_WAIT=${CE_CONTEXT_RETRY_WAIT:-0.2s}
     volumes:
       - ./policy-ce/config/policy.json:/etc/policy-ce/policy.json:ro
     restart: unless-stopped
