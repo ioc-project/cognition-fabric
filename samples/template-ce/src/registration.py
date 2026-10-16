@@ -48,6 +48,8 @@ class CERegistrationRequest:
     base_url: str  # gRPC address (e.g., "demo-ce:50051")
     endpoint: str  # gRPC service name (e.g., "ioc.ce.v1.CognitionEngine")
     health_url: str  # CFN probes this with an HTTP GET (e.g., "http://demo-ce:8080/healthz")
+    notification_url: Optional[str] = None  # HTTP base URL for notifications (e.g., "http://demo-ce:8080")
+    notification_endpoint: Optional[str] = None  # HTTP path for notifications (e.g., "/notification")
 
 
 @dataclass
@@ -128,6 +130,12 @@ class CELifecycleClient:
             "endpoint": request.endpoint,
             "health_url": request.health_url,
         }
+
+        # Add notification fields if provided
+        if request.notification_url:
+            payload["notification_url"] = request.notification_url
+        if request.notification_endpoint:
+            payload["notification_endpoint"] = request.notification_endpoint
 
         try:
             client = await self._get_client()
@@ -277,6 +285,8 @@ async def register_demo_ce() -> None:
     ce_host = os.getenv("COGNITION_ENGINE_HOST", "localhost")
     grpc_port = os.getenv("GRPC_PORT", DEFAULT_GRPC_PORT)
     health_port = get_health_port()
+    http_port = os.getenv("HTTP_PORT", "8080")  # Notification server port
+    enable_notifications = os.getenv("ENABLE_NOTIFICATIONS", "true").lower() == "true"
 
     if not cfn_url:
         logger.warning(
@@ -291,8 +301,13 @@ async def register_demo_ce() -> None:
     base_url = f"{ce_host}:{grpc_port}"
     health_url = f"http://{ce_host}:{health_port}{HEALTH_PATH}"
 
+    # Notification URL for MAS lifecycle events (HTTP endpoint)
+    notification_url = f"http://{ce_host}:{http_port}" if enable_notifications else None
+    notification_endpoint = "/notification" if enable_notifications else None
+
     logger.info(
-        f"Starting Demo CE registration with cfn_url={cfn_url}, base_url={base_url}, health_url={health_url}"
+        f"Starting Demo CE registration with cfn_url={cfn_url}, base_url={base_url}, "
+        f"health_url={health_url}, notifications={'enabled' if enable_notifications else 'disabled'}"
     )
 
     # Create lifecycle client
@@ -310,6 +325,8 @@ async def register_demo_ce() -> None:
         base_url=base_url,
         endpoint=CE_ENDPOINT,
         health_url=health_url,
+        notification_url=notification_url,
+        notification_endpoint=notification_endpoint,
     )
 
     # Attempt registration
