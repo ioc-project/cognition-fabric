@@ -1,14 +1,15 @@
-// Package cfn is the lifecycle of a CE in CFN: registration, conflict recovery by PATCH and heartbeat.
+// Package cfn is the lifecycle of a CE in CFN: registration and conflict recovery by PATCH. CFN checks that
+// the CE is alive by probing the health_url it declares.
 package cfn
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 	"time"
@@ -16,14 +17,29 @@ import (
 	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/httpjson"
 )
 
-// Lifecycle registers this CE with CFN and keeps it online. CFN is reached over REST.
+// Lifecycle registers this CE with CFN. CFN is reached over REST. HealthURL is the URL CFN probes with a GET
+// to check the CE is alive.
 type Lifecycle struct {
-	Base, Address, Name, Version, Type string
-	Client                             *http.Client
+	Base, Address, HealthURL, Name, Version, Type string
+	Client                                        *http.Client
 }
 
-// Healthy reports whether CFN answers its own health endpoint. The lifecycle loop holds register and
-// heartbeat until it does, so a CFN that is starting or restarting is one message, not an error per second.
+// HealthURL builds the URL CFN probes from the gRPC address, whose host CFN already uses to
+// reach this CE, and the port the HTTP server listens on.
+func HealthURL(advertisedGRPCAddress, httpListenAddress string) (string, error) {
+	host, _, err := net.SplitHostPort(advertisedGRPCAddress)
+	if err != nil || host == "" {
+		return "", fmt.Errorf("advertised gRPC address %q must be host:port", advertisedGRPCAddress)
+	}
+	_, port, err := net.SplitHostPort(httpListenAddress)
+	if err != nil || port == "" {
+		return "", fmt.Errorf("HTTP listen address %q must be host:port or :port", httpListenAddress)
+	}
+	return "http://" + net.JoinHostPort(host, port) + "/healthz", nil
+}
+
+// Healthy reports whether CFN answers its own health endpoint. The lifecycle loop holds registration
+// until it does, so a CFN that is starting or restarting is one message.
 func (l *Lifecycle) Healthy(ctx context.Context) bool {
 	ctx, cancel := context.WithTimeout(ctx, time.Second)
 	defer cancel()
@@ -48,7 +64,7 @@ func (l *Lifecycle) Register(ctx context.Context) (string, error) {
 	if ceType == "" {
 		ceType = "CASA"
 	}
-	body := map[string]any{"name": l.Name, "version": version, "ce_type": ceType, "base_url": l.Address, "endpoint": "ioc.ce.v1.CognitionEngine", "mas_auto_associate": true}
+	body := map[string]any{"name": l.Name, "version": version, "ce_type": ceType, "base_url": l.Address, "endpoint": "ioc.ce.v1.CognitionEngine", "health_url": l.HealthURL, "mas_auto_associate": true}
 	raw, _ := json.Marshal(body)
 	r, err := http.NewRequestWithContext(ctx, "POST", l.Base+"/api/cognition-engine", bytes.NewReader(raw))
 	if err != nil {
@@ -81,7 +97,7 @@ func (l *Lifecycle) Register(ctx context.Context) (string, error) {
 		if id == "" {
 			return "", fmt.Errorf("conflict without CE id")
 		}
-		err := httpjson.Exchange(ctx, l.Client, "PATCH", l.Base+"/api/cognition-engine/"+url.PathEscape(id), map[string]string{"base_url": l.Address, "endpoint": "ioc.ce.v1.CognitionEngine"}, nil)
+		err := httpjson.Exchange(ctx, l.Client, "PATCH", l.Base+"/api/cognition-engine/"+url.PathEscape(id), map[string]string{"base_url": l.Address, "endpoint": "ioc.ce.v1.CognitionEngine", "health_url": l.HealthURL}, nil)
 		return id, err
 	}
 	if result.ID == "" {
@@ -89,40 +105,37 @@ func (l *Lifecycle) Register(ctx context.Context) (string, error) {
 	}
 	return result.ID, nil
 }
-func (l *Lifecycle) Heartbeat(ctx context.Context, id string) error {
-	return httpjson.Exchange(ctx, l.Client, "PUT", l.Base+"/api/cognition-engine/"+url.PathEscape(id)+"/heartbeat", map[string]string{}, nil)
-}
 
-// Run keeps the CE registered until ctx ends: once per second it checks CFN's health, registers when it has
-// no id yet and sends a heartbeat otherwise. setReady is told whether the last step succeeded. A CFN that is
-// starting or restarting is one "waiting" line and one "reachable again" line, not an error per second.
+// Run registers the CE with CFN, once per second while CFN answers its health endpoint, until a registration
+// succeeds, and then waits for ctx to end: CFN probes health_url from then on, so there is nothing more to send.
+// setReady is told whether the CE is registered. A CFN that is starting or restarting is one "waiting" line and
+// one "reachable again" line.
 func (l *Lifecycle) Run(ctx context.Context, setReady func(bool)) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
-	id := ""
 	waiting := false
 	for {
-		var err error
-		healthy := l.Healthy(ctx)
-		switch {
-		case !healthy:
-			err = errors.New("CFN is not healthy yet")
+		if !l.Healthy(ctx) {
 			if !waiting && ctx.Err() == nil {
-				log.Printf("waiting for CFN at %s before registering or sending heartbeats", l.Base)
+				log.Printf("waiting for CFN at %s before registering", l.Base)
 			}
 			waiting = true
-		case id == "":
-			id, err = l.Register(ctx)
-		default:
-			err = l.Heartbeat(ctx, id)
-		}
-		if healthy && waiting {
-			log.Printf("CFN reachable again")
-			waiting = false
-		}
-		setReady(err == nil)
-		if err != nil && healthy && ctx.Err() == nil {
-			log.Printf("CE lifecycle unavailable: %v", err)
+		} else {
+			if waiting {
+				log.Printf("CFN reachable again")
+				waiting = false
+			}
+			id, err := l.Register(ctx)
+			if err == nil {
+				log.Printf("registered with CFN as %s, CFN probes %s", id, l.HealthURL)
+				setReady(true)
+				<-ctx.Done()
+				setReady(false)
+				return
+			}
+			if ctx.Err() == nil {
+				log.Printf("CE registration unavailable: %v", err)
+			}
 		}
 		select {
 		case <-ctx.Done():
