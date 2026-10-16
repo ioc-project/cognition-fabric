@@ -5,9 +5,10 @@ application: it loads identity and content rules per MAS from a JSON file and an
 It carries no demo-specific rules: the policy file is the only thing that says what is allowed.
 
 CFN calls the CE over gRPC (`:18001`, `ce.v1`, the contract comes from the `ioc-scale-cfn-svc` Go module).
-The CE registers itself and sends heartbeats to CFN over REST (`POST /api/cognition-engine`, conflict
-recovery by `PATCH`, `PUT .../heartbeat`), once per second and only while CFN answers
-`/api/internal/diagnostics/health`.
+The CE registers itself with CFN over REST (`POST /api/cognition-engine`, conflict recovery by `PATCH`), once
+per second until it succeeds and only while CFN answers `/api/internal/diagnostics/health`. It declares a
+`health_url` (its `GET /healthz`) and CFN probes it every couple of seconds to decide whether the CE is online,
+so the CE sends no heartbeats.
 
 ## Layout
 
@@ -24,7 +25,7 @@ policy-ce/
 │       ├── a2a/              #   a2a_message_input: A2A message text published before the call
 │       └── events/           #   the inbox judge and event parsing shared by llm, mcp and a2a
 ├── internal/inbox/           # Observe event inbox (POST /events), found again by trace and span
-├── internal/cfn/             # registration, conflict recovery and heartbeat with CFN (REST)
+├── internal/cfn/             # registration and conflict recovery with CFN (REST)
 ├── internal/oxp/             # OXP Cognition Store and live topology client
 ├── internal/httpjson/        # JSON-over-HTTP exchange shared by the clients
 ├── internal/ids/             # trace/span id validation
@@ -56,9 +57,10 @@ Fake CE README the code comes from; nothing about them changed.
 
 | Variable | Default | |
 |---|---|---|
-| `CFN_URL` | `http://ioc-scale-cfn-svc:9002` | CFN base URL (REST, registration and heartbeat) |
+| `CFN_URL` | `http://ioc-scale-cfn-svc:9002` | CFN base URL (REST, registration) |
 | `OXP_API_URL` | empty | OXP base URL (live topology and Cognition Store). Required when a content rule uses `tool_input` evidence; without it the CE judges identity and event evidence only and reads/writes no findings |
 | `ADVERTISED_GRPC_ADDRESS` | `policy-ce:18001` | address CFN uses to call this CE |
+| `ADVERTISED_HEALTH_URL` | `http://<host of ADVERTISED_GRPC_ADDRESS>:<port of HTTP_LISTEN_ADDRESS>/healthz` | URL CFN probes with a GET to check the CE is alive (`health_url` at registration). Set it when CFN reaches the HTTP port under another host or port |
 | `GRPC_LISTEN_ADDRESS` / `HTTP_LISTEN_ADDRESS` | `:18001` / `:18000` | |
 | `CE_NAME` / `CE_VERSION` / `CE_TYPE` | `policy-ce` / `reference-v1` / `CASA` | registration metadata |
 | `CE_POLICY_FILE` / `CE_MAS_FILE` | see above | |

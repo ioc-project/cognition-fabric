@@ -76,7 +76,7 @@ func run() error {
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(200) })
 	mux.HandleFunc("GET /readyz", func(w http.ResponseWriter, _ *http.Request) {
 		if !ready.Load() {
-			http.Error(w, "CF registration/heartbeat pending", 503)
+			http.Error(w, "CF registration pending", 503)
 			return
 		}
 		w.WriteHeader(200)
@@ -88,7 +88,16 @@ func run() error {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(info)
 	})
-	httpServer := &http.Server{Addr: env("HTTP_LISTEN_ADDRESS", ":18000"), Handler: mux, ReadHeaderTimeout: 2 * time.Second, ReadTimeout: 3 * time.Second, WriteTimeout: 3 * time.Second, IdleTimeout: 30 * time.Second}
+	httpListen := env("HTTP_LISTEN_ADDRESS", ":18000")
+	// CFN probes this URL to check the CE is alive. It defaults to the advertised gRPC host and the HTTP port.
+	advertisedGRPC := env("ADVERTISED_GRPC_ADDRESS", "policy-ce:18001")
+	healthURL := os.Getenv("ADVERTISED_HEALTH_URL")
+	if healthURL == "" {
+		if healthURL, err = cfn.HealthURL(advertisedGRPC, httpListen); err != nil {
+			return err
+		}
+	}
+	httpServer := &http.Server{Addr: httpListen, Handler: mux, ReadHeaderTimeout: 2 * time.Second, ReadTimeout: 3 * time.Second, WriteTimeout: 3 * time.Second, IdleTimeout: 30 * time.Second}
 	listener, err := net.Listen("tcp", env("GRPC_LISTEN_ADDRESS", ":18001"))
 	if err != nil {
 		return err
@@ -102,7 +111,7 @@ func run() error {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		l := cfn.Lifecycle{Base: strings.TrimRight(env("CFN_URL", "http://ioc-scale-cfn-svc:9002"), "/"), Address: env("ADVERTISED_GRPC_ADDRESS", "policy-ce:18001"), Name: env("CE_NAME", "policy-ce"), Version: ceVersion, Type: ceType, Client: client}
+		l := cfn.Lifecycle{Base: strings.TrimRight(env("CFN_URL", "http://ioc-scale-cfn-svc:9002"), "/"), Address: advertisedGRPC, HealthURL: healthURL, Name: env("CE_NAME", "policy-ce"), Version: ceVersion, Type: ceType, Client: client}
 		l.Run(ctx, ready.Store)
 	}()
 	identity, content := set.RuleCounts()
