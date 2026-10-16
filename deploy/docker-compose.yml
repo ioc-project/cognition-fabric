@@ -49,7 +49,7 @@ services:
   # Database - AgensGraph + PgVector + Postgres
   # Port Mapping: 5456:5432
   ioc-scale-db:
-    image: ghcr.io/cisco-eti/ioc-scale-db:0.2.0
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-db:${IOC_SCALE_DB_TAG:-0.2.0}
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-db
     environment:
@@ -96,7 +96,7 @@ services:
   # Port Mapping: 9000:9000
   ioc-scale-cf-mgmt-svc:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-mgmt-svc/pkgs/container/ioc-scale-cf-mgmt-svc
-    image: ghcr.io/cisco-eti/ioc-scale-cf-mgmt-svc:2026-09-30-a39ea7b
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-mgmt-svc:${CF_MGMT_SVC_TAG:-latest}
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-mgmt-svc
     ports:
@@ -142,7 +142,7 @@ services:
   # Port Mapping: 9001:9001
   ioc-scale-cf-mgmt-plane-ui:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-ui/pkgs/container/ioc-scale-cf-ui
-    image: ghcr.io/cisco-eti/ioc-scale-cf-ui:2026-09-29-0209699
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-ui:${CF_UI_TAG:-latest}
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-mgmt-plane-ui
     ports:
@@ -163,7 +163,7 @@ services:
   # Port Mapping: 9002:9002 (HTTP)
   ioc-scale-cfn-svc:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cfn-svc/pkgs/container/ioc-scale-cfn-svc
-    image: ghcr.io/cisco-eti/ioc-scale-cfn-svc:2026-10-13-a42bded
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cfn-svc:${CFN_SVC_TAG:-latest}
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cfn-svc
     restart: unless-stopped
@@ -207,7 +207,7 @@ services:
   # Port Mapping: 50051:50051 (gRPC)
   ioc-scale-cf-demo-ce:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-demo-ce/pkgs/container/ioc-scale-cf-demo-ce%2Fce-demo
-    image: ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/ce-demo:2026-09-30-cf57fac
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-demo-ce/ce-demo:${CF_DEMO_CE_TAG:-latest}
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-demo-ce
     ports:
@@ -256,7 +256,7 @@ services:
       start_period: 30s
        
   oxp-api:
-    image: ${OXP_API_IMAGE:-ghcr.io/cisco-eti/oxp/container-images/ioc-analytics-api:0.0.0-48-ge5f5ac7}
+    image: ${OXP_API_IMAGE:-${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/ioc-analytics-api:${OXP_API_IMG_TAG:-latest}}
     platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
     env_file: .env
     container_name: ioc-scale-oxp-api
@@ -629,6 +629,54 @@ services:
     depends_on:
       otel-collector:
         condition: service_started
+
+  # Enforcement proxy mediation core (BFF). Stores its state in the
+  # enforcement_proxy database on ioc-scale-db.
+  # Port Mapping: 9006:8081 (gRPC), 9005:8082 (HTTP). Host 8081 is oxp-api.
+  # Image Link: https://github.com/cisco-eti/ioc-scaling-enforcement-proxy/pkgs/container/ioc-scaling-enforcement-mediation
+  mediation-core:
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-mediation:${MEDIATION_CORE_TAG:-latest}
+    container_name: ioc-scale-mediation-core
+    depends_on:
+      ioc-scale-db:
+        condition: service_healthy
+      ioc-scale-db-init:
+        condition: service_completed_successfully
+    environment:
+      DB_HOST: ioc-scale-db
+      DB_PORT: "5432"
+      DB_USERNAME: ${IOC_SCALE_DB_USER}
+      DB_PASSWORD: ${IOC_SCALE_DB_PASSWORD}
+      DB_NAME: enforcement_proxy
+      BFF_GRPC_ADDRESS: :8081
+      BFF_HTTP_ADDRESS: :8082
+      # Local-development exception to mTLS; keep false anywhere else.
+      BFF_GRPC_ALLOW_INSECURE_LOCAL: ${BFF_GRPC_ALLOW_INSECURE_LOCAL:-true}
+    ports:
+      - "127.0.0.1:${BFF_GRPC_PORT:-9006}:8081"
+      - "127.0.0.1:${BFF_HTTP_PORT:-9005}:8082"
+    restart: unless-stopped
+
+  # Enforcement proxy UI (static assets behind nginx).
+  # Port Mapping: 9004:80. PUBLIC_API_BASE_URL is read by the browser, so it
+  # points at the host-published HTTP port of mediation-core.
+  # Image Link: https://github.com/cisco-eti/ioc-scaling-enforcement-proxy/pkgs/container/ioc-scaling-enforcement-proxy-ui
+  enforcement-proxy-ui:
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-ui:${ENFORCEMENT_PROXY_UI_TAG:-latest}
+    container_name: ioc-scale-enforcement-proxy-ui
+    depends_on:
+      mediation-core:
+        condition: service_started
+    environment:
+      PUBLIC_API_BASE_URL: http://127.0.0.1:${BFF_HTTP_PORT:-9005}
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-9004}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
 
 volumes:
   ioc_scale_db_data:
