@@ -1,0 +1,26 @@
+{
+ "correlation": {
+  "span_id": "25126ed34579dcb1",
+  "trace_flags": 3,
+  "trace_id": "7e8734a26a4f044b62a8682dd6c3fbb7"
+ },
+ "data": {
+  "agent": {
+   "name": "schedule_agent"
+  },
+  "input": {},
+  "tool": {
+   "name": "list_schedule_documents"
+  }
+ },
+ "session": {
+  "id": "noa-trip-planner-mas_ccc6b297-334f-447b-9c02-d13fbe2e874a",
+  "sequence": 8
+ },
+ "source": {
+  "instrumentation_scope": "ioa_observe.runtime_events",
+  "service_name": "noa-trip-planner-mas"
+ },
+ "time": "2026-10-15T11:39:48.497034Z",
+ "type": "tool.started"
+}

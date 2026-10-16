@@ -1,0 +1,30 @@
+{
+ "correlation": {
+  "call_id": "008d5812-fdf6-4b54-9aeb-c3b4c20505d1",
+  "span_id": "f4b967db7d3e0939",
+  "trace_flags": 3,
+  "trace_id": "9192ab26a48e29589ba2383b031c9668"
+ },
+ "data": {
+  "agent": {
+   "name": "moderator"
+  },
+  "input": {
+   "text": "Find morning train departures from Celestia to Luminos using the MCP document tools."
+  },
+  "tool": {
+   "call_id": "008d5812-fdf6-4b54-9aeb-c3b4c20505d1",
+   "name": "a2a_message:schedule_agent"
+  }
+ },
+ "session": {
+  "id": "noa-trip-planner-mas_c91bef4b-17f6-4ba5-99a8-11dc1361137f",
+  "sequence": 8
+ },
+ "source": {
+  "instrumentation_scope": "ioa_observe.runtime_events",
+  "service_name": "noa-trip-planner-mas"
+ },
+ "time": "2026-10-15T12:17:39.821217Z",
+ "type": "tool.started"
+}
