@@ -41,7 +41,7 @@ An invalid or ambiguous file is rejected at startup.
 ## Certificates
 
 `gen-dev-certs.sh` writes the CA, a server certificate (valid for
-`ioc-scale-enforcement-shadi-verifier`, `localhost` and `127.0.0.1`) and one client
+`ioc-scale-enforcement-proxy-shadi-verifier`, `localhost` and `127.0.0.1`) and one client
 certificate per URI you pass, named after its last path segment (`sender.crt`,
 `sender.key`). Give each host its own client certificate and the CA. It never
 overwrites existing files, and the certificates last 30 days by default
@@ -51,7 +51,7 @@ the hosts use to reach the verifier.
 ## Try it
 
 ```bash
-make logs service=enforcement-shadi-verifier
+make logs service=ioc-scale-enforcement-proxy-shadi-verifier
 curl --cacert enforcement/shadi/config/ca.crt \
      --cert enforcement/shadi/config/sender.crt --key enforcement/shadi/config/sender.key \
      https://localhost:9013/metrics

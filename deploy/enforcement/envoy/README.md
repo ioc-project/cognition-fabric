@@ -2,7 +2,7 @@
 
 Envoy in front of an upstream. Each request passes the traceparent Wasm filter
 (adds a `traceparent` if missing), then the Go sidecar filter, which asks CF for a
-decision and writes an audit record to `mediation-core`.
+decision and writes an audit record to `ioc-scale-enforcement-proxy-mediation`.
 
 ```bash
 cp enforcement/envoy/sidecar-spec.example.yaml enforcement/envoy/sidecar-spec.yaml
@@ -33,7 +33,7 @@ authentication for plaintext local use. Production removes it and sets
 
 1. Run the application on the stack network, or reachable from it.
 2. In `envoy.yaml`, point the `upstream` cluster's `address` at it.
-3. Drop the `enforcement-upstream` service from `compose.yaml` if you no longer
+3. Drop the `ioc-scale-enforcement-proxy-upstream` service from `compose.yaml` if you no longer
    want the test echo server.
 4. Send traffic to `127.0.0.1:9010` instead of the application.
 
@@ -42,7 +42,7 @@ authentication for plaintext local use. Production removes it and sets
 ```bash
 curl -i http://127.0.0.1:9010/replace-with-exact-path    # your route path
 curl -s http://127.0.0.1:9012/stats | head               # Envoy admin stats
-make logs service=enforcement-envoy
+make logs service=ioc-scale-enforcement-proxy-envoy
 ```
 
 Tested against the local stack with a route for `/echo` and an unregistered MAS:

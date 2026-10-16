@@ -1,7 +1,7 @@
 # Enforcement (optional)
 
 Optional enforcement flavors for the stack. The base stack already runs the
-control plane (`mediation-core`, `enforcement-proxy-ui`) and CF; this
+control plane (`ioc-scale-enforcement-proxy-mediation`, `ioc-scale-enforcement-proxy-ui`) and CF; this
 directory adds one enforcement point in front of an application. Nothing here
 starts unless you ask for it, so `make up` stays light.
 
@@ -11,7 +11,7 @@ starts unless you ask for it, so `make up` stays light.
 | [`shadi/`](shadi/) | The Go sender-authorization API (verifier) | You gate agent-to-agent sends from trusted SHADi hosts over SLIM |
 
 Pick one. Both talk to CF at `ioc-scale-cfn-svc:9003` and write audit records to
-`mediation-core`, which the UI reads.
+`ioc-scale-enforcement-proxy-mediation`, which the UI reads.
 
 ```bash
 make up enforcement=envoy
@@ -38,13 +38,15 @@ docker compose -f docker-compose.yml -f enforcement/envoy/compose.yaml up -d
 
 ## Services and containers
 
-| Service | Container | Host port | Flavor |
-|---------|-----------|-----------|--------|
-| `enforcement-envoy` | `ioc-scale-enforcement-envoy` | 9010, 9011, 9012 | envoy |
-| `enforcement-upstream` | `ioc-scale-enforcement-upstream` | none | envoy |
-| `enforcement-sidecar-installer` | `ioc-scale-enforcement-sidecar-installer` | none | envoy (runs once) |
-| `enforcement-wasm-installer` | `ioc-scale-enforcement-wasm-installer` | none | envoy (runs once) |
-| `enforcement-shadi-verifier` | `ioc-scale-enforcement-shadi-verifier` | 9013 | shadi |
+Each service has the same name as its container, `ioc-scale-<name>`.
+
+| Service | Host port | Flavor |
+|---------|-----------|--------|
+| `ioc-scale-enforcement-proxy-envoy` | 9010, 9011, 9012 | envoy |
+| `ioc-scale-enforcement-proxy-upstream` | none | envoy |
+| `ioc-scale-enforcement-proxy-sidecar-installer` | none | envoy (runs once) |
+| `ioc-scale-enforcement-proxy-wasm-installer` | none | envoy (runs once) |
+| `ioc-scale-enforcement-proxy-shadi-verifier` | 9013 | shadi |
 
 Use the service name with `make logs service=<name>`.
 
@@ -58,8 +60,8 @@ All have defaults suited to the local stack; set them in `.env` to change them.
 | `CF_ENFORCEMENT_ALLOW_PLAINTEXT` | `true` | Local CF is plaintext; TLS is the client default |
 | `CF_ENFORCEMENT_TIMEOUT` | `2s` | CF call deadline |
 | `ENFORCEMENT_FAILURE_POSTURE` | `fail_closed` | What happens when CF cannot decide |
-| `AUDIT_JOURNAL_ADDRESS` | `mediation-core:8081` | Where audit records go |
-| `AUDIT_JOURNAL_ALLOW_INSECURE_LOCAL` | `true` | Plaintext journal; `mediation-core` must allow it too (`BFF_GRPC_ALLOW_INSECURE_LOCAL`) |
+| `AUDIT_JOURNAL_ADDRESS` | `ioc-scale-enforcement-proxy-mediation:8081` | Where audit records go |
+| `AUDIT_JOURNAL_ALLOW_INSECURE_LOCAL` | `true` | Plaintext journal; `ioc-scale-enforcement-proxy-mediation` must allow it too (`BFF_GRPC_ALLOW_INSECURE_LOCAL`) |
 | `AUDIT_JOURNAL_QUEUE_CAPACITY` | `256` | In-memory queue for final audit records. Overflow is counted, never blocks enforcement |
 | `MAX_MEDIATED_BODY_BYTES` | `1048576` | Largest body mediated |
 | `AUDIT_CAPTURE_MAX_BYTES` | `65536` | Largest body captured for audit |

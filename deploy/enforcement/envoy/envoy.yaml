@@ -1,7 +1,7 @@
 # Example Envoy bootstrap for the enforcement sidecar. Two listeners (inbound 18080,
 # outbound 18081), each running the traceparent Wasm filter, then the Go sidecar
 # filter, then the router. Keep that order. Both read /etc/sidecar/sidecar-spec.yaml.
-# The cluster below points at enforcement-upstream (a test echo server); retarget it
+# The cluster below points at ioc-scale-enforcement-proxy-upstream (a test echo server); retarget it
 # at your real application.
 static_resources:
   listeners:
@@ -102,7 +102,7 @@ static_resources:
           - lb_endpoints:
               - endpoint:
                   address:
-                    socket_address: { address: enforcement-upstream, port_value: 8080 }
+                    socket_address: { address: ioc-scale-enforcement-proxy-upstream, port_value: 8080 }
 admin:
   access_log_path: /tmp/envoy-admin.log
   address:

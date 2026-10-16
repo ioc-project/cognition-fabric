@@ -42,7 +42,9 @@ the only profiled service; everything else starts either way.
 Every image is composed as `${REGISTRY}/<image>:${TAG}`, so registry and tag
 can be overridden in `.env` without editing the compose file:
 
-- CF services (`ioc-scale-db`, `cf-mgmt-svc`, `cf-ui`, `cfn-svc`, `demo-ce`, `mediation-core`, `enforcement-proxy-ui`):
+- CF and enforcement proxy services (`ioc-scale-db`, `ioc-scale-cf-mgmt-svc`,
+  `ioc-scale-cf-mgmt-plane-ui`, `ioc-scale-cfn-svc`, `ioc-scale-cf-demo-ce`,
+  `ioc-scale-enforcement-proxy-mediation`, `ioc-scale-enforcement-proxy-ui`):
   `CF_REGISTRY` plus `IOC_SCALE_DB_TAG`, `CF_MGMT_SVC_TAG`, `CF_UI_TAG`,
   `CFN_SVC_TAG`, `CF_DEMO_CE_TAG`, `MEDIATION_CORE_TAG`,
   `ENFORCEMENT_PROXY_UI_TAG`. Tags default to `latest` (and are set to it in
@@ -99,8 +101,8 @@ for each is in [`enforcement/README.md`](enforcement/README.md).
 | `ioc-scale-cfn-svc` | 9002 (HTTP), 9003 (gRPC) | Cognition Fabric Node |
 | `ioc-scale-cf-demo-ce` | 50051 (gRPC) | Demo Cognition Engine |
 | `ioc-scale-cf-policy-ce` | 18001 (gRPC), 18000 (HTTP), loopback only | Policy-driven Cognition Engine, only with `ce=policy-ce` (it replaces the demo CE). See [Policy CE](#policy-ce-optional) |
-| `mediation-core` | 9006 (gRPC), 9005 (HTTP) | Enforcement proxy mediation core. Uses the `enforcement_proxy` database on `ioc-scale-db`; bound to 127.0.0.1 |
-| `enforcement-proxy-ui` | 9004 (HTTP) | Enforcement proxy UI (nginx). Talks to `mediation-core` on `BFF_HTTP_PORT` from the browser; bound to 127.0.0.1 |
+| `ioc-scale-enforcement-proxy-mediation` | 9006 (gRPC), 9005 (HTTP) | Enforcement proxy mediation core. Uses the `enforcement_proxy` database on `ioc-scale-db`; bound to 127.0.0.1 |
+| `ioc-scale-enforcement-proxy-ui` | 9004 (HTTP) | Enforcement proxy UI (nginx). Talks to `ioc-scale-enforcement-proxy-mediation` on `BFF_HTTP_PORT` from the browser; bound to 127.0.0.1 |
 
 ### OXP infrastructure
 
@@ -178,11 +180,11 @@ See `.env.example` for all available configuration options. Key settings:
 - `IOC_SCALE_DB_*` - Database credentials
 - `ADMIN_USER_PASSWORD` - Admin password for mgmt backend
 - `BFF_GRPC_PORT`, `BFF_HTTP_PORT` - Host ports (bound to 127.0.0.1) for
-  `mediation-core`. The defaults are `9006` (gRPC) and `9005` (HTTP), chosen so they do not
+  `ioc-scale-enforcement-proxy-mediation`. The defaults are `9006` (gRPC) and `9005` (HTTP), chosen so they do not
   clash with `oxp-api` (host `8081`) or the enforcement proxy's own compose
   (`8082`, `18083`). The core uses the `enforcement_proxy` database with the
   `IOC_SCALE_DB_*` credentials.
-- `FRONTEND_PORT` - Host port (127.0.0.1) of `enforcement-proxy-ui`, default `9004`.
+- `FRONTEND_PORT` - Host port (127.0.0.1) of `ioc-scale-enforcement-proxy-ui`, default `9004`.
   The UI reaches the core through `BFF_HTTP_PORT`, so change them together if
   the core is exposed elsewhere.
 - `BFF_GRPC_ALLOW_INSECURE_LOCAL` - Defaults to `true` so the core starts without

@@ -13,7 +13,7 @@ set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 out="${OUT_DIR:-${root}/enforcement/shadi/config}"
-server_dns="${SERVER_DNS:-ioc-scale-enforcement-shadi-verifier}"
+server_dns="${SERVER_DNS:-ioc-scale-enforcement-proxy-shadi-verifier}"
 days="${CERT_DAYS:-30}"
 
 [[ $# -ge 1 ]] || { echo "usage: $0 <host-spiffe-uri>..." >&2; exit 2; }

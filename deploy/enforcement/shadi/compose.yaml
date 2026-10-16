@@ -6,12 +6,12 @@
 # Needs enforcement/shadi/config/ with config.json, ca.crt, server.crt, server.key
 # (see enforcement/shadi/README.md).
 services:
-  enforcement-shadi-verifier:
+  ioc-scale-enforcement-proxy-shadi-verifier:
     image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-shadi-verifier:${ENFORCEMENT_SHADI_TAG:-latest}
     platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
-    container_name: ioc-scale-enforcement-shadi-verifier
+    container_name: ioc-scale-enforcement-proxy-shadi-verifier
     depends_on:
-      mediation-core:
+      ioc-scale-enforcement-proxy-mediation:
         condition: service_started
     environment:
       SHADI_VERIFIER_CONFIG: /run/shadi-verifier/config.json
@@ -23,10 +23,10 @@ services:
       CF_ENFORCEMENT_TIMEOUT: ${CF_ENFORCEMENT_TIMEOUT:-2s}
       CF_ENFORCEMENT_ALLOW_PLAINTEXT: ${CF_ENFORCEMENT_ALLOW_PLAINTEXT:-true}
       ENFORCEMENT_FAILURE_POSTURE: ${ENFORCEMENT_FAILURE_POSTURE:-fail_closed}
-      AUDIT_JOURNAL_ADDRESS: ${AUDIT_JOURNAL_ADDRESS:-mediation-core:8081}
+      AUDIT_JOURNAL_ADDRESS: ${AUDIT_JOURNAL_ADDRESS:-ioc-scale-enforcement-proxy-mediation:8081}
       AUDIT_JOURNAL_QUEUE_CAPACITY: ${AUDIT_JOURNAL_QUEUE_CAPACITY:-256}
       AUDIT_JOURNAL_RPC_TIMEOUT: ${AUDIT_JOURNAL_RPC_TIMEOUT:-2s}
-      # Local development only. mediation-core must allow plaintext too
+      # Local development only. ioc-scale-enforcement-proxy-mediation must allow plaintext too
       # (BFF_GRPC_ALLOW_INSECURE_LOCAL).
       AUDIT_JOURNAL_ALLOW_INSECURE_LOCAL: ${AUDIT_JOURNAL_ALLOW_INSECURE_LOCAL:-true}
       MAX_MEDIATED_BODY_BYTES: ${MAX_MEDIATED_BODY_BYTES:-1048576}
