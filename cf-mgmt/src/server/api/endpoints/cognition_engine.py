@@ -12,7 +12,6 @@ from server.authn.auth import get_auth_user
 from server.authz.authz_service import authz_service
 from server.schemas.cognition_engine import (
     CognitionEngineDetail,
-    CognitionEngineHeartbeatResponse,
     CognitionEngineList,
     CognitionEnginePatchRequest,
     CognitionEngineRegisterRequest,
@@ -111,17 +110,3 @@ def delete_cognition_engine(
     authz_service.require_permission(auth_user, "delete", "cognition_engine")
     user_id = auth_user.get("id", "unknown")
     cognition_engine_service.delete(ce_id, user_id)
-
-
-@router.put(
-    "/cognition-engines/{ce_id}/heartbeat",
-    response_model=CognitionEngineHeartbeatResponse,
-    summary="Cognition Engine Heartbeat",
-    description="Update last_seen and flip status to online. Called by the CE to signal it is alive.",
-)
-def heartbeat_cognition_engine(
-    ce_id: str,
-    auth_user: dict = Depends(get_auth_user),
-):
-    authz_service.require_permission(auth_user, "heartbeat", "cognition_engine")
-    return cognition_engine_service.heartbeat(ce_id)

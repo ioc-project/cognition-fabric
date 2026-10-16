@@ -635,6 +635,7 @@ class TestMASInlineCEAssociation:
                 "ce_type": ce_type,
                 "base_url": f"http://{name}:8080",
                 "endpoint": "/api/l9/enforcement",
+                "health_url": f"http://{name}:8080/healthz",
             },
         )
         assert resp.status_code == 201
