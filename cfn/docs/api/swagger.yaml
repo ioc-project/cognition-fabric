@@ -8,17 +8,21 @@ definitions:
         example: ce_type is required
         type: string
     type: object
-  cognitionengine.HeartbeatResponse:
-    description: CE heartbeat response.
+  cognitionengine.ProbeRequest:
+    description: Request to probe a CE. CFN looks up the CE's registered health_url.
     properties:
-      last_seen:
-        description: Last seen timestamp (RFC3339)
-        example: "2026-08-14T10:30:00Z"
+      ce_id:
+        description: Cognition Engine ID (UUID)
+        example: 550e8400-e29b-41d4-a716-446655440000
         type: string
-      status:
-        description: CE status after heartbeat
-        example: online
-        type: string
+    type: object
+  cognitionengine.ProbeResponse:
+    description: Result of a CE health probe.
+    properties:
+      healthy:
+        description: True when the health URL answered 200 within the probe timeout
+        example: true
+        type: boolean
     type: object
   cognitionengine.RegisterRequest:
     description: CE registration request payload. The CE sends this to CFN, which
@@ -38,6 +42,11 @@ definitions:
       endpoint:
         description: API endpoint path
         example: /authorize
+        type: string
+      health_url:
+        description: Full URL CFN probes with an HTTP GET to check the CE is alive
+          (required, http or https)
+        example: http://casa-ce:8080/healthz
         type: string
       mas_auto_associate:
         description: Auto-associate with all MAS in the workspace (defaults to true
@@ -95,6 +104,10 @@ definitions:
       endpoint:
         description: API endpoint path
         example: /authorize
+        type: string
+      health_url:
+        description: Health check URL probed by CFN
+        example: http://casa-ce:8080/healthz
         type: string
       mas_auto_associate:
         description: Auto-associate with all MAS
@@ -239,7 +252,7 @@ paths:
         name: ceId
         required: true
         type: string
-      - description: Fields to update (base_url, endpoint)
+      - description: Fields to update (base_url, endpoint, health_url)
         in: body
         name: request
         required: true
@@ -273,38 +286,38 @@ paths:
       summary: Update a Cognition Engine
       tags:
       - cognition-engines
-  /api/cognition-engine/{ceId}/heartbeat:
-    put:
-      description: Send heartbeat to maintain CE online status. CFN forwards to management
-        plane.
+  /api/internal/mgmt/cognition-engine/probe:
+    post:
+      consumes:
+      - application/json
+      description: Internal. Looks up the CE's registered health_url and performs
+        an unauthenticated HTTP GET against it. A 200 within the probe timeout is
+        healthy, anything else is unhealthy.
       parameters:
-      - description: Cognition Engine ID (UUID)
-        in: path
-        name: ceId
+      - description: Probe request
+        in: body
+        name: request
         required: true
-        type: string
+        schema:
+          $ref: '#/definitions/cognitionengine.ProbeRequest'
       produces:
       - application/json
       responses:
         "200":
-          description: Heartbeat acknowledged
+          description: Probe result
           schema:
-            $ref: '#/definitions/cognitionengine.HeartbeatResponse'
+            $ref: '#/definitions/cognitionengine.ProbeResponse'
         "400":
-          description: Invalid CE ID
+          description: Invalid request
           schema:
             $ref: '#/definitions/cognitionengine.ErrorResponse'
-        "502":
-          description: Management plane error
+        "404":
+          description: CE not yet in CFN config
           schema:
             $ref: '#/definitions/cognitionengine.ErrorResponse'
-        "503":
-          description: CFN not registered
-          schema:
-            $ref: '#/definitions/cognitionengine.ErrorResponse'
-      summary: CE Heartbeat
+      summary: Probe a Cognition Engine
       tags:
-      - cognition-engines
+      - internal
   /api/multi-agentic-systems/{masId}:
     get:
       description: Get details of a specific Multi-Agentic System. Proxies to management

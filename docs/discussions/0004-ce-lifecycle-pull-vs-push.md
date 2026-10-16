@@ -82,7 +82,7 @@ The CE `last_seen` column can stay as "last successful probe" for display, or be
 **CFN (`ioc-scale-cfn-svc`)**
 
 1. Accept and validate `health_url` in the CE registration and PATCH requests, and forward it to the management plane (`handlers_cognition_engine.go`, `httpapi/cognitionengine/dto.go`).
-2. Add an internal endpoint the management plane calls to probe a CE. It performs the GET against the given `health_url` with the 1s timeout and returns healthy or unhealthy. Place it with the existing internal management plane routes.
+2. Add an internal endpoint the management plane calls to probe a CE by `ce_id`. CFN looks up the CE's registered `health_url` in its config snapshot, performs the GET with the 1s timeout and returns healthy or unhealthy, so callers cannot make CFN probe arbitrary URLs. Place it with the existing internal management plane routes.
 3. Remove the CE heartbeat handler and route (`PUT /api/cognition-engine/{ceId}/heartbeat`)
 
 **Management plane (`ioc-scale-cf-mgmt-svc`)**

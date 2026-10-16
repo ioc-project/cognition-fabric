@@ -120,7 +120,8 @@ The service loads environment variables from a `.env` file if present. See [`.en
 | `CFN_IP` | Advertised IP address (auto-detected if not set) | (auto) |
 | `APP_PORT` | HTTP server port | `9002` |
 | `GRPC_PORT` | gRPC server port (Enforcement API) | `9003` |
-| `HEARTBEAT_INTERVAL_SECONDS` | Interval between heartbeats to mgmt plane | `29` |
+| `HEARTBEAT_INTERVAL_SECONDS` | Interval of CFN's own heartbeat to the mgmt plane (not CE health) | `10` |
+| `CE_PROBE_TIMEOUT_SECONDS` | Timeout (seconds, max 10) for the health probe CFN performs against a CE `health_url`, read once at startup | `1` |
 
 ### Project Structure
 

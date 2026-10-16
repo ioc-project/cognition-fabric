@@ -141,7 +141,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Fields to update (base_url, endpoint)",
+                        "description": "Fields to update (base_url, endpoint, health_url)",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -186,46 +186,45 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/cognition-engine/{ceId}/heartbeat": {
-            "put": {
-                "description": "Send heartbeat to maintain CE online status. CFN forwards to management plane.",
+        "/api/internal/mgmt/cognition-engine/probe": {
+            "post": {
+                "description": "Internal. Looks up the CE's registered health_url and performs an unauthenticated HTTP GET against it. A 200 within the probe timeout is healthy, anything else is unhealthy.",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "application/json"
                 ],
                 "tags": [
-                    "cognition-engines"
+                    "internal"
                 ],
-                "summary": "CE Heartbeat",
+                "summary": "Probe a Cognition Engine",
                 "parameters": [
                     {
-                        "type": "string",
-                        "description": "Cognition Engine ID (UUID)",
-                        "name": "ceId",
-                        "in": "path",
-                        "required": true
+                        "description": "Probe request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/cognitionengine.ProbeRequest"
+                        }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Heartbeat acknowledged",
+                        "description": "Probe result",
                         "schema": {
-                            "$ref": "#/definitions/cognitionengine.HeartbeatResponse"
+                            "$ref": "#/definitions/cognitionengine.ProbeResponse"
                         }
                     },
                     "400": {
-                        "description": "Invalid CE ID",
+                        "description": "Invalid request",
                         "schema": {
                             "$ref": "#/definitions/cognitionengine.ErrorResponse"
                         }
                     },
-                    "502": {
-                        "description": "Management plane error",
-                        "schema": {
-                            "$ref": "#/definitions/cognitionengine.ErrorResponse"
-                        }
-                    },
-                    "503": {
-                        "description": "CFN not registered",
+                    "404": {
+                        "description": "CE not yet in CFN config",
                         "schema": {
                             "$ref": "#/definitions/cognitionengine.ErrorResponse"
                         }
@@ -302,19 +301,25 @@ const docTemplate = `{
                 }
             }
         },
-        "cognitionengine.HeartbeatResponse": {
-            "description": "CE heartbeat response.",
+        "cognitionengine.ProbeRequest": {
+            "description": "Request to probe a CE. CFN looks up the CE's registered health_url.",
             "type": "object",
             "properties": {
-                "last_seen": {
-                    "description": "Last seen timestamp (RFC3339)",
+                "ce_id": {
+                    "description": "Cognition Engine ID (UUID)",
                     "type": "string",
-                    "example": "2026-08-14T10:30:00Z"
-                },
-                "status": {
-                    "description": "CE status after heartbeat",
-                    "type": "string",
-                    "example": "online"
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                }
+            }
+        },
+        "cognitionengine.ProbeResponse": {
+            "description": "Result of a CE health probe.",
+            "type": "object",
+            "properties": {
+                "healthy": {
+                    "description": "True when the health URL answered 200 within the probe timeout",
+                    "type": "boolean",
+                    "example": true
                 }
             }
         },
@@ -340,6 +345,11 @@ const docTemplate = `{
                     "description": "API endpoint path",
                     "type": "string",
                     "example": "/authorize"
+                },
+                "health_url": {
+                    "description": "Full URL CFN probes with an HTTP GET to check the CE is alive (required, http or https)",
+                    "type": "string",
+                    "example": "http://casa-ce:8080/healthz"
                 },
                 "mas_auto_associate": {
                     "description": "Auto-associate with all MAS in the workspace (defaults to true if not specified)",
@@ -411,6 +421,11 @@ const docTemplate = `{
                     "description": "API endpoint path",
                     "type": "string",
                     "example": "/authorize"
+                },
+                "health_url": {
+                    "description": "Health check URL probed by CFN",
+                    "type": "string",
+                    "example": "http://casa-ce:8080/healthz"
                 },
                 "mas_auto_associate": {
                     "description": "Auto-associate with all MAS",
