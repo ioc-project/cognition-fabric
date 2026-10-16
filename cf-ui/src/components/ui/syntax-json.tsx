@@ -31,5 +31,10 @@ export function SyntaxJson({code}: SyntaxJsonProps) {
     .map((part, i) => (i % 2 === 0 ? part.replace(/[{}\[\],]/g, '<span style="color:var(--syntax-punctuation)">$&</span>') : part))
     .join('');
 
-  return <pre className="text-xs leading-relaxed text-muted-foreground p-4 font-mono" dangerouslySetInnerHTML={{__html: withPunctuation}} />;
+  return (
+    <pre
+      className="text-xs leading-relaxed text-muted-foreground p-4 font-mono whitespace-pre-wrap break-words"
+      dangerouslySetInnerHTML={{__html: withPunctuation}}
+    />
+  );
 }
