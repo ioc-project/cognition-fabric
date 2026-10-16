@@ -10,9 +10,9 @@ The architecture of record for Cognition Fabric (CF).
 
 ## Components
 
-### 1. CF OXP + Cognition Store
+### 1. OXP + Cognition Store (OXP-owned)
 
-The data layer providing:
+The data layer (owned by OXP) providing:
 - **Temporal KG** — temporal knowledge graph
 - **Latent space** — vector embeddings
 - **Symbolic space** — symbolic representations
@@ -21,26 +21,27 @@ The data layer providing:
 
 Fed by **Observability/OXP** through realtime ingestion, with **Otel Telemetry** as an upstream source.
 
-### 2. CF APIs (Analytics, Interaction, Enforcement)
+### 2. CF APIs (Active, Enforcing) + OXP Analytics APIs
 
-Three-tier API surface:
+Two-tier CF API surface, with Analytics owned by OXP:
 
-| Tier | APIs | Purpose |
-|------|------|---------|
-| **Analytics** | Analytics Cognition Fabric APIs | Read-only observability — CEs query traces, trajectories, metrics |
-| **Interactive** | Interactive Cognition Fabric APIs | Direct MAS engagement — CEs send messages, query tools |
-| **Enforcing** | Enforcing Cognition Fabric APIs | Block / modify / inject via Enforcement Proxy in-path |
+| Tier | APIs | Owner | Purpose |
+|------|------|-------|---------|
+| **Analytics** | Analytics APIs | OXP | Read-only observability — CEs query traces, trajectories, metrics directly from OXP |
+| **Active** | Active Cognition Fabric APIs | CF | Direct MAS engagement — CEs send messages, query tools |
+| **Enforcing** | Enforcing Cognition Fabric APIs | CF | Block / modify / inject via Enforcement Proxy in-path |
 
 The diagram shows:
-- **Interactive Cognition Fabric APIs** receiving messages to/from MAS and tool calling
+- **Active Cognition Fabric APIs** receiving messages to/from MAS and tool calling
 - **Enforcing Cognition Fabric APIs** handling L9 messages/tool calls with disposition
-- **Analytics Cognition Fabric APIs** providing read access to the Cognition Store
+- **Analytics APIs (OXP-owned)** providing read access to the Cognition Store
 
 ### 3. CF CE Support
 
 Cognition Engines connect to the APIs:
-- **COGS CE1, CE2, CE3** — connected to Interactive APIs
+- **COGS CE1, CE2, CE3** — connected to Active APIs
 - **GAT CE 4, GAT CE 5** — connected to Enforcing APIs
+- CEs needing read-only observability connect directly to OXP's Analytics APIs
 
 ### 4. CF Mgmt. Plane + mgmt. APIs + configuration & settings db.
 
@@ -75,9 +76,9 @@ The **Cognition Fabric Node (CFN)** handles:
 
 ### CE interactions
 
-1. COGS CEs connect to Interactive APIs for direct MAS engagement
+1. COGS CEs connect to Active APIs for direct MAS engagement
 2. GAT CEs connect to Enforcing APIs to issue dispositions
-3. All CEs can query Analytics APIs for read-only access
+3. All CEs can query OXP's Analytics APIs directly for read-only access
 
 ## Key contracts
 
@@ -92,7 +93,7 @@ The **Cognition Fabric Node (CFN)** handles:
 CF deploys as a set of microservices:
 - **CF Management service** — management plane, UI, config
 - **Cognition Fabric Node** — API gateway, CE routing
-- **Cognition Store** — data layer (KG, vector, KV)
+- **Cognition Store (OXP-owned)** — data layer (KG, vector, KV)
 - **Audit service** — compliance logging
 
 ## Related documents

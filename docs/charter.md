@@ -4,7 +4,7 @@
 
 Multi-agent systems generate rich cognitive signals — traces, trajectories, findings — but the
 fabric that sits between those signals and the CEs that act on them is not yet fit for purpose.
-The current Cognition Fabric lacks a robust Cognition Store, a structured three-tier API surface,
+The current Cognition Fabric lacks structured Active and Enforcing API surfaces,
 and the CE routing and chaining capability that Cognition Engines need to reliably compose and
 enforce. The result: CEs like CASA and Detective can observe and report,
 but have no clean, layered way to read shared context, trigger on L9 events, or enforce outcomes
@@ -34,10 +34,11 @@ around an under-specified, fragmented substrate. CF closes that gap.
   is unlocked by the governance and scaling CEs built on top of it, not a near-term serving
   deliverable.
 
-CF owns the **fabric runtime** — the Cognition Store, the three-tier API surface, CE routing and
+CF owns the **fabric runtime** — the two-tier API surface (Active and Enforcing), CE routing and
 chaining, and the L9 interaction plane. The Enforcement Proxy depends on CF's Enforcing API contracts
 to become real; OXP integration is CF's key upstream work item, bringing trajectories and cognitive
-enrichment into the fabric as first-class signals. CF defines the contracts that peer T3s build against.
+enrichment into the fabric as first-class signals. Analytics APIs and the Cognition Store are owned
+by the OXP team. CF defines the contracts that peer T3s build against.
 
 ## Scope, Assumptions & Boundaries
 
@@ -45,13 +46,11 @@ enrichment into the fabric as first-class signals. CF defines the contracts that
 
 * **OXP core integration** — refactor CF to integrate OXP as the primary source of traces, reconstructed trajectories, and semantic metrics; CE authors do not build separate ingestion pipelines.
 
-* **Cognition Store** — build and own the shared CE memory layer: publish findings, consume findings from other CEs, with potential notification support for CEs that subscribe to finding types.
-
-* **Three-tier CF API surface** — Analytics (read-only observability), Active (direct MAS engagement), and Enforcing (block / modify / inject via Enforcement Proxy in-path).
+* **Two-tier CF API surface** — Active (direct MAS engagement) and Enforcing (block / modify / inject via Enforcement Proxy in-path). Analytics APIs are owned by OXP.
 
 * **CE support** — routing and chaining of CEs, including OXP CEs, across the fabric.
 
-* **L9 interaction with MAS** — passive (Analytics), active (Active APIs), and enforcing modes.
+* **L9 interaction with MAS** — active (Active APIs) and enforcing modes.
 
 **Out of scope**
 
@@ -65,7 +64,7 @@ enrichment into the fabric as first-class signals. CF defines the contracts that
 
 * The Enforcing CF API contract is CF's to specify, co-reviewed with the Enforcement Proxy T3 and CE teams.
 
-* The Cognition Store ownership boundary with OXP is an open question — may be partially co-owned.
+* The Cognition Store is owned by OXP.
 
 * CF's guarantees cover traffic and CE interactions that flow through it; bypassing CF is out of scope to prevent.
 
@@ -88,11 +87,11 @@ possible in the IoC architecture.
 
 **Use cases**
 
-* **Analytics tier:** A Security Detections CE or CASA queries CF's Analytics APIs to read OXP-reconstructed trajectories and MAS metrics — no in-path requirement, pure detection and reporting.
+* **Analytics tier (OXP-owned):** A Security Detections CE or CASA queries OXP's Analytics APIs directly to read reconstructed trajectories and MAS metrics — no in-path requirement, pure detection and reporting.
 
 * **Active tier:** A fact-checking CE or Detective Agent's Interrogation CE engages directly with the MAS through CF's Active APIs — querying tools, sending messages — without blocking any in-flight interaction.
 
-* **Enforcing tier:** A GATS CE reads prior findings from the Cognition Store, evaluates an in-flight L9 interaction, and issues an enforce disposition through CF's Enforcing APIs; the Enforcement Proxy applies it in-path (block / modify / inject).
+* **Enforcing tier:** A GATS CE reads prior findings from the Cognition Store (via OXP), evaluates an in-flight L9 interaction, and issues an enforce disposition through CF's Enforcing APIs; the Enforcement Proxy applies it in-path (block / modify / inject).
 
 * **L9 trigger from CEs:** An OXP CE fires an L9 trigger through CF to initiate a corrective agent action based on a reconstructed trajectory anomaly.
 
@@ -106,8 +105,8 @@ TBD — design-partner engagement not yet captured.
 
 The state of the world that means this effort has won:
 
-1. **The Cognition Store is live.** All CEs can publish findings and consume findings from other CEs through a stable, queryable store; COGS and GATS CEs are the initial consumers.
-2. **The three-tier API surface is specified and implemented.** Analytics, Active, and Enforcing APIs are each clearly bounded, documented, and exercised by at least one CE.
+1. **The Cognition Store is live (OXP-owned).** All CEs can publish findings and consume findings from other CEs through OXP's stable, queryable store; COGS and GATS CEs are the initial consumers.
+2. **The two-tier API surface is specified and implemented.** Active and Enforcing APIs are each clearly bounded, documented, and exercised by at least one CE. Analytics APIs are owned and served by OXP.
 3. **CE routing and chaining works.** CEs can be composed and sequenced through the fabric; L9
    triggers from CEs — including OXP CEs — reach their targets.
 4. **The Enforcement tier is unblocked.** The Enforcement API contract is specified and the
@@ -130,8 +129,7 @@ and enforce through a stable substrate. The Enforcing tier becomes real.
    and every CE that programs against it — a late discovery here is expensive across multiple T3s.
 2. **A broken CE routing layer** silently drops or misroutes CE chains, producing incorrect
    governance outcomes without a visible failure signal.
-3. **An unstable Cognition Store** means CEs cannot trust the findings they read, undermining the
+3. **An unstable Cognition Store** (owned by OXP) means CEs cannot trust the findings they read, undermining the
    entire governance stack built on top of CF.
 
-API contract stability, Cognition Store ownership clarity, and CE routing correctness are
-therefore first-order concerns.
+API contract stability and CE routing correctness are therefore first-order concerns.
