@@ -150,7 +150,7 @@ docker build --secret id=github_token,env=GITHUB_TOKEN -t policy-ce:dev .
 or, from the repository root, through compose (builds `policy-ce/Dockerfile`):
 
 ```bash
-docker-compose --profile policy-ce up --build policy-ce
+docker compose up --build
 ```
 
 `GITHUB_TOKEN` must be exported by you and able to read `cisco-eti/ioc-scale-cfn-svc`.
