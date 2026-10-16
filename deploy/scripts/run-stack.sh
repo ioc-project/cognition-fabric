@@ -13,7 +13,7 @@ project="${COMPOSE_PROJECT_NAME:-ioc-scale-cf-deployment}"
 
 usage() {
   cat <<'USAGE'
-Usage: make up|down|status|logs|config|pull|doctor [profile=full-mas] [enforcement=envoy|shadi] [service=<name>]
+Usage: make up|down|status|logs|config|pull|doctor [profile=full-mas] [ce=demo-ce|policy-ce] [enforcement=envoy|shadi] [service=<name>]
        make help
 
 Environment:
@@ -26,6 +26,9 @@ Environment:
 `down` stops and removes containers and the network, and preserves volumes.
 `doctor` checks Docker, the environment file and the rendered Compose config.
 profile=full-mas adds the NOA sample app, which needs AI_GATEWAY_API_KEY.
+ce=demo-ce|policy-ce picks the Cognition Engine the stack runs (default demo-ce). policy-ce replaces
+demo-ce and needs a policy file (policy-ce/policy.json, or POLICY_CE_CONFIG_FILE). One CE at a time:
+`up` refuses while the other is present, so run `down` first.
 enforcement=envoy|shadi adds one optional enforcement flavor from enforcement/;
 it needs that flavor's config files (see enforcement/README.md). Only one flavor
 at a time: `up` refuses while the other is present, so run `down` first. down,
@@ -48,6 +51,11 @@ case "${profile}" in
   ""|full-mas) ;;
   *) die "profile must be empty or full-mas" ;;
 esac
+ce="${STACK_CE:-demo-ce}"
+case "${ce}" in
+  demo-ce|policy-ce) ;;
+  *) die "ce must be demo-ce or policy-ce" ;;
+esac
 enforcement="${STACK_ENFORCEMENT:-}"
 case "${enforcement}" in
   ""|envoy|shadi) ;;
@@ -57,6 +65,18 @@ esac
 export COMPOSE_PROFILES=""
 profile_args=()
 [[ -z "${profile}" ]] || profile_args=(--profile "${profile}")
+# The policy CE is profiled so a plain `docker compose up` still starts the demo CE; selecting it here adds
+# the profile and leaves the demo CE out of what `up` starts and waits for.
+other_ce=policy-ce
+ce_service=ioc-scale-cf-policy-ce
+skipped_service=ioc-scale-cf-demo-ce
+if [[ "${ce}" == "policy-ce" ]]; then
+  profile_args+=(--profile policy-ce)
+else
+  other_ce=demo-ce
+  ce_service=ioc-scale-cf-demo-ce
+  skipped_service=ioc-scale-cf-policy-ce
+fi
 
 compose_base=(docker compose -p "${project}" --project-directory "${root}" --env-file "${stack_env}" -f "${stack_compose}")
 # Selected flavor for up/config/pull/doctor.
@@ -88,6 +108,11 @@ preflight() {
   require_value IOC_SCALE_DB_PASSWORD
   if [[ "${profile}" == "full-mas" ]]; then
     require_value AI_GATEWAY_API_KEY
+  fi
+  if [[ "${ce}" == "policy-ce" ]]; then
+    local policy="${POLICY_CE_CONFIG_FILE:-$(env_value POLICY_CE_CONFIG_FILE)}"
+    policy="${policy:-${root}/policy-ce/policy.json}"
+    [[ -f "${policy}" ]] || die "missing ${policy}; see policy-ce/README.md"
   fi
   case "${enforcement}" in
     envoy)
@@ -123,6 +148,20 @@ refuse_other_flavor() {
   fi
 }
 
+# Only one CE may exist at a time: the other one registers with CFN too. Containers count even when stopped.
+refuse_other_ce() {
+  local existing
+  existing="$("${compose_all[@]}" --profile '*' ps --all --services 2>/dev/null | sort)"
+  if printf '%s\n' "${existing}" | grep -qx "${skipped_service}"; then
+    die "the ${other_ce} CE is present; run 'make down' before starting ce=${ce} (one CE at a time)"
+  fi
+}
+
+# Services of the selected CE, without the CE that is left out.
+selected_services() {
+  "${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} config --services 2>/dev/null | grep -vx "${skipped_service}" || true
+}
+
 # Poll until each container is running/healthy, or exited 0. Workers that lack
 # API keys restart in a loop, so a timeout names the offenders instead of hanging.
 wait_for_stack() {
@@ -134,7 +173,7 @@ wait_for_stack() {
   local services=()
   while IFS= read -r service; do
     services+=("${service}")
-  done < <("${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} config --services 2>/dev/null)
+  done < <(selected_services)
   while :; do
     pending="$("${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} ps --all --format json "${services[@]}" | python3 -c '
 import json, sys
@@ -166,8 +205,11 @@ case "${action}" in
   up)
     require_env
     refuse_other_flavor
+    refuse_other_ce
     preflight
-    "${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} up -d
+    up_services=()
+    while IFS= read -r service; do up_services+=("${service}"); done < <(selected_services)
+    "${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} up -d "${up_services[@]}"
     wait_for_stack
     ;;
   down)

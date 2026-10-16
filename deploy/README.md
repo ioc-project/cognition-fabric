@@ -21,6 +21,7 @@ settings and waits until every service is running, healthy or finished:
 make doctor                  # check Docker, .env and the rendered config
 make up                      # boot the whole stack
 make up profile=full-mas     # also boot the NOA sample app
+make up ce=policy-ce         # run the policy CE instead of the demo CE (edit policy-ce/policy.json first)
 make status                  # list containers
 make logs service=oxp-api    # follow one service (omit service= for all)
 make pull                    # pull the configured images
@@ -57,6 +58,29 @@ can be overridden in `.env` without editing the compose file:
 The one image whose source lives in this repo is the database. See
 [`docker-db/`](docker-db/) for the Dockerfile and how to publish a new tag.
 
+### Policy CE (optional)
+
+`ioc-scale-cf-policy-ce` is the [policy-ce](https://github.com/cisco-eti/ioc-scale-cf-demo-ce/tree/main/policy-ce)
+Cognition Engine: it registers with CFN and decides from a policy file, with
+identity rules and content rules per MAS. The stack runs one CE at a time, the
+demo CE by default; `make up ce=policy-ce` runs the policy CE instead. Both
+register with CFN, so `up` refuses while the other one is present: run
+`make down` before switching. A plain `docker compose up` still starts the demo
+CE; the policy CE needs `--profile policy-ce` there (and leave `ioc-scale-cf-demo-ce` out).
+
+The policy file is [`policy-ce/policy.json`](policy-ce/policy.json), a generic
+starter mounted read-only into the container. Before use, replace
+`replace-with-your-mas-id` with the id of your MAS and the example agent and
+tool identities (`my-agent`, `my-tool`, `my-llm`) with the ones your MAS
+submits; a MAS that is not listed in the file is denied. To use a file of your
+own, set `POLICY_CE_CONFIG_FILE` in `.env`. The file format is described in the
+policy-ce README. `up` stops early if the file is missing.
+
+Other settings: `CF_POLICY_CE_TAG` (image tag), `POLICY_CE_NAME` (name in CFN)
+and `POLICY_CE_EVIDENCE` (`topology`, the default, or `events`). Content rules
+with `llm_input`, `mcp_tool_input` or `a2a_message_input` evidence need the
+application to publish its events to `http://ioc-scale-cf-policy-ce:18000/events`.
+
 ### Enforcement (optional)
 
 [`enforcement/`](enforcement/) holds two optional flavors, `envoy` (Envoy with the
@@ -74,6 +98,7 @@ for each is in [`enforcement/README.md`](enforcement/README.md).
 | `ioc-scale-cf-mgmt-plane-ui` | 9001 | Management plane UI (Next.js) |
 | `ioc-scale-cfn-svc` | 9002 (HTTP), 9003 (gRPC) | Cognition Fabric Node |
 | `ioc-scale-cf-demo-ce` | 50051 (gRPC) | Demo Cognition Engine |
+| `ioc-scale-cf-policy-ce` | 18001 (gRPC), 18000 (HTTP), loopback only | Policy-driven Cognition Engine, only with `ce=policy-ce` (it replaces the demo CE). See [Policy CE](#policy-ce-optional) |
 | `mediation-core` | 9006 (gRPC), 9005 (HTTP) | Enforcement proxy mediation core. Uses the `enforcement_proxy` database on `ioc-scale-db`; bound to 127.0.0.1 |
 | `enforcement-proxy-ui` | 9004 (HTTP) | Enforcement proxy UI (nginx). Talks to `mediation-core` on `BFF_HTTP_PORT` from the browser; bound to 127.0.0.1 |
 

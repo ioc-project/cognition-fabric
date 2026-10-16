@@ -231,6 +231,42 @@ services:
       ioc-scale-cfn-svc:
         condition: service_healthy
 
+  # Policy CE: Cognition Engine driven by a policy file (identity and content rules per MAS).
+  # Runs instead of the demo CE: start it with `make up ce=policy-ce` (profiled so a plain
+  # `docker compose up` still starts the demo CE). Edit policy-ce/policy.json (or point
+  # POLICY_CE_CONFIG_FILE at your own file) with your MAS id and agent identities first.
+  # Port Mapping: 18001:18001 (gRPC), 18000:18000 (HTTP: /events, /healthz, /readyz, /info), host loopback only
+  ioc-scale-cf-policy-ce:
+    # Image Link: https://github.com/cisco-eti/ioc-scale-cf-demo-ce/pkgs/container/ioc-scale-cf-demo-ce%2Fpolicy-ce
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-demo-ce/policy-ce:${CF_POLICY_CE_TAG:-latest}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-cf-policy-ce
+    profiles: ["policy-ce"]
+    ports:
+      - "127.0.0.1:18001:18001"
+      - "127.0.0.1:18000:18000"
+    restart: unless-stopped
+    environment:
+      - CFN_URL=http://ioc-scale-cfn-svc:9002
+      - OXP_API_URL=http://oxp-api:8000
+      - ADVERTISED_GRPC_ADDRESS=ioc-scale-cf-policy-ce:18001
+      - CE_NAME=${POLICY_CE_NAME:-policy-ce}
+      - CE_VERSION=1.0.0
+      - CE_TYPE=CASA
+      - CE_POLICY_FILE=/etc/policy-ce/policy.json
+      - CE_EVIDENCE=${POLICY_CE_EVIDENCE:-topology}
+    volumes:
+      - ${POLICY_CE_CONFIG_FILE:-./policy-ce/policy.json}:/etc/policy-ce/policy.json:ro
+    depends_on:
+      ioc-scale-cfn-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:18000/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
   # ===========================================================================
   # OXP (Observability & Explainability Platform) stack
   # Message broker + Knowledge Graph store + claris-lib pipeline workers.
