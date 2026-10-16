@@ -3,6 +3,7 @@ package engine
 import (
 	"context"
 	"encoding/json"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/identity"
 	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
 	"net/http"
 	"net/http/httptest"
@@ -61,12 +62,12 @@ func sessionPolicy() policy.Policy {
 	}
 }
 
-func newSessionTestEngine(t *testing.T, topology *fakeLiveTopology, wait time.Duration) *sessionEngine {
+func newSessionTestEngine(t *testing.T, topology *fakeLiveTopology, wait time.Duration) *testEngine {
 	t.Helper()
 	server := httptest.NewServer(topology)
 	t.Cleanup(server.Close)
-	base := &engine{policy: sessionPolicy(), masID: func() (string, error) { return "mas", nil }}
-	return newSessionEngine(base, server.URL, wait)
+	id := &identity.Engine{Policy: sessionPolicy(), MasID: func() (string, error) { return "mas", nil }}
+	return &testEngine{newContentEngine(id, contentOptions{OXPURL: server.URL, Wait: wait, ToolPrefix: "noa-"}), nil}
 }
 
 func sessionRequest(destination, spanID string, extra map[string]string) *cev1.EvaluateRequest {

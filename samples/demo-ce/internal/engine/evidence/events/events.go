@@ -1,51 +1,63 @@
-package engine
+// Package events is the judge shared by the evidence the application publishes before it sends a request
+// (llm, mcp and a2a): the event is found in the inbox by the exact trace and span of the submit.
+package events
 
 import (
 	"context"
 	"encoding/json"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
 	"log"
 	"time"
 
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 )
 
-// extractFunc reads the session and the judgeable texts out of one inbox event; ok is false when the
-// event is not the pre-call event this kind of evidence needs.
-type extractFunc func(raw json.RawMessage) (session string, texts []llmText, ok bool)
+// Extract reads the session and the judgeable texts out of one inbox event of the submit r; ok is false
+// when the event is not the pre-call event this kind of evidence needs.
+type Extract func(r *cev1.EvaluateRequest, raw json.RawMessage) (session string, texts []evidence.Text, ok bool)
 
-// evaluateFromInbox is the decision for evidence the application publishes before it sends a request
+// Judge is the decision for evidence published before the call. Kind names the evidence in the log.
+type Judge struct {
+	Inbox   *inbox.Inbox
+	Wait    time.Duration
+	Kind    string
+	Extract Extract
+}
+
+// Evaluate is the decision for evidence the application publishes before it sends a request
 // (llm_input and mcp_tool_input). The event is found by the exact trace and span of the submit, so
 // there is no matching by name. A missing event before CE_CONTEXT_WAIT is RACE, an event of another
 // session than the submitted one is GAP, and both deny.
-func (s *sessionEngine) evaluateFromInbox(ctx context.Context, r *cev1.EvaluateRequest, out *cev1.EvaluateResponse, rules []compiledContentRule, started time.Time, evidence string, extract extractFunc) *cev1.EvaluateResponse {
+func (j *Judge) Evaluate(ctx context.Context, r *cev1.EvaluateRequest, out *cev1.EvaluateResponse, rules []evidence.Rule, started time.Time) *cev1.EvaluateResponse {
 	logOutcome := func(format string, args ...any) {
 		log.Printf("flow component=policy-ce event=oxp_event trace_id=%s span_id=%s evidence=%s "+format+" elapsed_ms=%d",
-			append(append([]any{r.TraceId, r.SpanId, evidence}, args...), time.Since(started).Milliseconds())...)
+			append(append([]any{r.TraceId, r.SpanId, j.Kind}, args...), time.Since(started).Milliseconds())...)
 	}
-	if s.events == nil {
+	if j.Inbox == nil {
 		logOutcome("available=false cause=gap reason=no_inbox")
-		return missingContext(out, cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP, "this CE has no event inbox to read pre-call requests from")
+		return evidence.MissingContext(out, cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP, "this CE has no event inbox to read pre-call requests from")
 	}
 	asserted := r.SessionId
 	if asserted == "" {
 		asserted = r.Extra["ioc.observe.session_id"]
 	}
-	waitCtx, cancel := context.WithTimeout(ctx, s.wait)
+	waitCtx, cancel := context.WithTimeout(ctx, j.Wait)
 	defer cancel()
 	for {
-		for _, raw := range s.events.Lookup(r.TraceId, r.SpanId) {
-			session, texts, ok := extract(raw)
+		for _, raw := range j.Inbox.Lookup(r.TraceId, r.SpanId) {
+			session, texts, ok := j.Extract(r, raw)
 			if !ok {
 				continue
 			}
 			if asserted != "" && session != "" && asserted != session {
 				logOutcome("available=false cause=gap reason=session_mismatch")
-				return missingContext(out, cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP, "the pre-call event belongs to another session than the one submitted")
+				return evidence.MissingContext(out, cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP, "the pre-call event belongs to another session than the one submitted")
 			}
 			hit := ""
 			for _, text := range texts {
 				for _, rule := range rules {
-					if hit == "" && rule.judges(text.role) && rule.re.MatchString(text.text) {
+					if hit == "" && rule.Judges(text.Role) && rule.Re.MatchString(text.Text) {
 						hit = rule.ID
 					}
 				}
@@ -71,7 +83,7 @@ func (s *sessionEngine) evaluateFromInbox(ctx context.Context, r *cev1.EvaluateR
 		select {
 		case <-waitCtx.Done():
 			logOutcome("available=false cause=race")
-			return missingContext(out, cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE,
+			return evidence.MissingContext(out, cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE,
 				"no pre-call event for this trace and span before the wait limit; the event must be emitted before the request is sent")
 		case <-time.After(25 * time.Millisecond):
 		}

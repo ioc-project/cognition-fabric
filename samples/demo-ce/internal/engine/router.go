@@ -5,6 +5,7 @@ package engine
 
 import (
 	"context"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/identity"
 	"log"
 	"time"
 
@@ -40,25 +41,23 @@ type Options struct {
 // denies any other MAS without touching its Cognition Store scope.
 type Router struct {
 	cev1.UnimplementedCognitionEngineServer
-	single *sessionEngine
-	byMAS  map[string]*sessionEngine
+	single *contentEngine
+	byMAS  map[string]*contentEngine
 	order  []string
 }
 
 // New builds the router of a decoded policy file.
 func New(set policy.Set, o Options) *Router {
-	toolPrefix = o.ToolPrefix
-	build := func(p policy.Policy, mas func() (string, error)) *sessionEngine {
-		se := newSessionEngine(&engine{policy: p, masID: mas, store: o.Store, ceType: o.CEType, ceVersion: o.CEVersion}, o.OXPURL, o.Wait)
-		se.events = o.Inbox
-		return se
+	build := func(p policy.Policy, mas func() (string, error)) *contentEngine {
+		id := &identity.Engine{Policy: p, MasID: mas, Store: o.Store, CEType: o.CEType, CEVersion: o.CEVersion}
+		return newContentEngine(id, contentOptions{OXPURL: o.OXPURL, Wait: o.Wait, Inbox: o.Inbox, ToolPrefix: o.ToolPrefix})
 	}
 	rt := &Router{}
 	if set.Single != nil {
 		rt.single = build(*set.Single, o.MasID)
 		return rt
 	}
-	rt.byMAS, rt.order = map[string]*sessionEngine{}, set.Order
+	rt.byMAS, rt.order = map[string]*contentEngine{}, set.Order
 	for _, id := range set.Order {
 		id := id
 		rt.byMAS[id] = build(set.ByMAS[id], func() (string, error) { return id, nil })

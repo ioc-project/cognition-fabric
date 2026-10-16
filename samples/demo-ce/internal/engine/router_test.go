@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/identity"
 	"strings"
 	"testing"
 	"time"
@@ -19,10 +20,10 @@ func TestRouterUsesThePolicyOfTheRequestsMAS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	rt := &Router{byMAS: map[string]*sessionEngine{}, order: set.Order}
+	rt := &Router{byMAS: map[string]*contentEngine{}, order: set.Order}
 	for _, id := range set.Order {
 		id := id
-		rt.byMAS[id] = newSessionEngine(&engine{policy: set.ByMAS[id], masID: func() (string, error) { return id, nil }}, "http://127.0.0.1:1", time.Second)
+		rt.byMAS[id] = newContentEngine(&identity.Engine{Policy: set.ByMAS[id], MasID: func() (string, error) { return id, nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: time.Second})
 	}
 	req := func(mas, dst string) *cev1.EvaluateRequest {
 		return &cev1.EvaluateRequest{MasId: mas, SourceAgentId: "x", DestinationAgentId: dst, TraceId: trace, SpanId: "1111111111111111"}

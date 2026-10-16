@@ -2,6 +2,7 @@ package engine
 
 import (
 	"context"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/identity"
 	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
 	"strings"
 	"testing"
@@ -13,11 +14,10 @@ import (
 // The fixtures are the pre-call tool.started events the event exporter pushed to the CE inbox for two real
 // MCP tools/call requests of the schedule agent, saved unedited.
 
-func mcpEngine(t *testing.T, wait time.Duration) *sessionEngine {
+func mcpEngine(t *testing.T, wait time.Duration) *testEngine {
 	t.Helper()
-	base := &engine{policy: sdkEventsPolicy(t), masID: func() (string, error) { return "mas", nil }}
-	engine := newSessionEngine(base, "http://127.0.0.1:1", wait)
-	engine.events = inbox.New("noa-trip-planner-mas", 16)
+	in := inbox.New("noa-trip-planner-mas", 16)
+	engine := &testEngine{newContentEngine(&identity.Engine{Policy: sdkEventsPolicy(t), MasID: func() (string, error) { return "mas", nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: wait, Inbox: in, ToolPrefix: "noa-"}), in}
 	return engine
 }
 

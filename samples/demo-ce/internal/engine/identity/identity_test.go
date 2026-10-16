@@ -1,4 +1,4 @@
-package engine
+package identity
 
 import (
 	"context"
@@ -30,7 +30,7 @@ func request() *cev1.EvaluateRequest {
 // An always-ALLOW implementation or ignored MAS scope must fail this test.
 func TestEvaluateReferencePolicy(t *testing.T) {
 	p := policy.Policy{Rules: []policy.Rule{{ID: "DELEGATION", Effect: "ALLOW", Reason: "Approved delegation", Sources: []string{"moderator"}, Destinations: []string{"schedule"}}, {ID: "QUARANTINE", Effect: "DENY", Reason: "Agent suspended", Destinations: []string{"concierge"}}}}
-	s := engine{policy: p, masID: func() (string, error) { return "mas", nil }}
+	s := Engine{Policy: p, MasID: func() (string, error) { return "mas", nil }}
 	for _, tc := range []struct {
 		dest, mas string
 		outcome   cev1.Decision
@@ -84,7 +84,7 @@ func TestEvaluateCognitionStore(t *testing.T) {
 			}
 			w.Write([]byte(`{"success":true}`))
 		}))
-		s := engine{policy: policy.Policy{Rules: []policy.Rule{{ID: "OK", Effect: "ALLOW", Reason: "approved", Sources: []string{"moderator"}}}}, masID: func() (string, error) { return "mas", nil }, store: &oxp.Store{Base: api.URL, Client: api.Client()}}
+		s := Engine{Policy: policy.Policy{Rules: []policy.Rule{{ID: "OK", Effect: "ALLOW", Reason: "approved", Sources: []string{"moderator"}}}}, MasID: func() (string, error) { return "mas", nil }, Store: &oxp.Store{Base: api.URL, Client: api.Client()}}
 		got, err := s.Evaluate(context.Background(), request())
 		if fail && status.Code(err) != codes.Unavailable {
 			t.Fatalf("store failure: %v", err)
@@ -99,16 +99,8 @@ func TestEvaluateCognitionStore(t *testing.T) {
 	}
 }
 
-func TestPolicyRejectsUnsafeConfiguration(t *testing.T) {
-	for _, body := range []string{`{"rules":[]}`, `{"rules":[{"id":"X","effect":"ALLOW","reason":"all"}]}`, `{"rules":[{"id":"X","effect":"ALLOW","reason":"ok","sources":["moderator"]}],"content":true}`} {
-		if _, err := policy.Decode(strings.NewReader(body)); err == nil {
-			t.Fatalf("accepted %s", body)
-		}
-	}
-}
-
 func TestOfficialRPCDenyPrecedence(t *testing.T) {
-	s := &engine{policy: policy.Policy{Rules: []policy.Rule{{ID: "OK", Effect: "ALLOW", Reason: "approved", Sources: []string{"moderator"}}, {ID: "SUSPENDED", Effect: "DENY", Reason: "Temporarily suspended agent", Destinations: []string{"schedule"}}}}, masID: func() (string, error) { return "mas", nil }}
+	s := &Engine{Policy: policy.Policy{Rules: []policy.Rule{{ID: "OK", Effect: "ALLOW", Reason: "approved", Sources: []string{"moderator"}}, {ID: "SUSPENDED", Effect: "DENY", Reason: "Temporarily suspended agent", Destinations: []string{"schedule"}}}}, MasID: func() (string, error) { return "mas", nil }}
 	listener := bufconn.Listen(1024 * 1024)
 	g := grpc.NewServer()
 	cev1.RegisterCognitionEngineServer(g, s)
@@ -139,7 +131,7 @@ func TestStoreReadFailureAndCancellation(t *testing.T) {
 			}
 			w.Write([]byte(body))
 		}))
-		s := engine{policy: policy.Policy{Rules: []policy.Rule{{ID: "OK", Effect: "ALLOW", Sources: []string{"moderator"}}}}, masID: func() (string, error) { return "mas", nil }, store: &oxp.Store{Base: api.URL, Client: api.Client()}}
+		s := Engine{Policy: policy.Policy{Rules: []policy.Rule{{ID: "OK", Effect: "ALLOW", Sources: []string{"moderator"}}}}, MasID: func() (string, error) { return "mas", nil }, Store: &oxp.Store{Base: api.URL, Client: api.Client()}}
 		if _, err := s.Evaluate(context.Background(), request()); status.Code(err) != codes.Unavailable {
 			t.Fatalf("read failure: %v", err)
 		}
@@ -147,7 +139,7 @@ func TestStoreReadFailureAndCancellation(t *testing.T) {
 	}
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { <-r.Context().Done() }))
 	defer api.Close()
-	s := engine{masID: func() (string, error) { return "mas", nil }, store: &oxp.Store{Base: api.URL, Client: api.Client()}}
+	s := Engine{MasID: func() (string, error) { return "mas", nil }, Store: &oxp.Store{Base: api.URL, Client: api.Client()}}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
 	defer cancel()
 	started := time.Now()
@@ -163,7 +155,7 @@ func TestForeignMASDoesNotAccessStore(t *testing.T) {
 		w.WriteHeader(403)
 	}))
 	defer api.Close()
-	s := engine{masID: func() (string, error) { return "mas", nil }, store: &oxp.Store{Base: api.URL, Client: api.Client()}}
+	s := Engine{MasID: func() (string, error) { return "mas", nil }, Store: &oxp.Store{Base: api.URL, Client: api.Client()}}
 	r := request()
 	r.MasId = "foreign"
 	got, err := s.Evaluate(context.Background(), r)
@@ -177,7 +169,7 @@ func TestContentRulesDoNotChangeReferenceDecision(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := engine{policy: p, masID: func() (string, error) { return "mas", nil }}
+	s := Engine{Policy: p, MasID: func() (string, error) { return "mas", nil }}
 	got, err := s.Evaluate(context.Background(), request())
 	if err != nil || got.Outcome != cev1.Decision_DECISION_ALLOW || got.ChecksRun[0].CheckId != "APPROVED" {
 		t.Fatalf("content rule changed the identity decision: %+v %v", got, err)

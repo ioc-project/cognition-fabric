@@ -46,7 +46,7 @@ services:
       - CFN_URL=http://host.docker.internal:9002
       - OXP_API_URL=http://host.docker.internal:8000
     volumes:
-      - ./policy-ce/examples/policy.json:/etc/policy-ce/policy.json:ro
+      - ./policy-ce/config/policy.json:/etc/policy-ce/policy.json:ro
     restart: unless-stopped
 
 secrets:

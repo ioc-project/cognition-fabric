@@ -1,8 +1,10 @@
-package engine
+package llm
 
 import (
-	"context"
 	"encoding/json"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence/events"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
 	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
 	"time"
 
@@ -20,10 +22,6 @@ import (
 // response leaves the CE without an event at decision time, which is missing context. The input is accepted in two shapes: the raw request (an object with messages) and the
 // Observe SDK's GenAI messages (a list of {role, parts}). The model's response is not judged here: it only
 // exists after the call, and reaches the CE as part of the next request.
-
-// roleToolInput labels the arguments of an MCP tool call or the text of an A2A message (the roles a rule
-// can name for model requests are in package policy).
-const roleToolInput = "tool_input"
 
 type llmStartedEvent struct {
 	Type    string `json:"type"`
@@ -54,14 +52,9 @@ type llmRequest struct {
 	} `json:"tools"`
 }
 
-type llmText struct {
-	role string
-	text string
-}
-
-// preCallLLMTexts returns the session and every judgeable text of the model request carried by a
+// Texts returns the session and every judgeable text of the model request carried by a
 // pre-call llm.started event, tagged with its role. ok is false for any other event or shape.
-func preCallLLMTexts(raw json.RawMessage) (session string, texts []llmText, ok bool) {
+func Texts(raw json.RawMessage) (session string, texts []evidence.Text, ok bool) {
 	var event llmStartedEvent
 	if json.Unmarshal(raw, &event) != nil || event.Type != "llm.started" {
 		return "", nil, false
@@ -76,17 +69,17 @@ func preCallLLMTexts(raw json.RawMessage) (session string, texts []llmText, ok b
 	}
 	for _, m := range request.Messages {
 		if text := messageText(m.Content); text != "" {
-			texts = append(texts, llmText{m.Role, text})
+			texts = append(texts, evidence.Text{Role: m.Role, Text: text})
 		}
 		for _, call := range m.ToolCalls {
 			if call.Function.Arguments != "" {
-				texts = append(texts, llmText{policy.RoleToolCall, call.Function.Arguments})
+				texts = append(texts, evidence.Text{Role: policy.RoleToolCall, Text: call.Function.Arguments})
 			}
 		}
 	}
 	for _, tool := range request.Tools {
 		if text := (tool.Function.Name + " " + tool.Function.Description); len(text) > 1 {
-			texts = append(texts, llmText{policy.RoleToolDefinition, text})
+			texts = append(texts, evidence.Text{Role: policy.RoleToolDefinition, Text: text})
 		}
 	}
 	return event.Session.ID, texts, true
@@ -95,7 +88,7 @@ func preCallLLMTexts(raw json.RawMessage) (session string, texts []llmText, ok b
 // genAIMessageTexts reads the input in the Observe SDK's GenAI shape: a list of messages with a role and
 // parts. A text part is judged under the message's role, the arguments of a tool_call part under
 // tool_call and the response of a tool_call_response part under tool.
-func genAIMessageTexts(raw json.RawMessage) ([]llmText, bool) {
+func genAIMessageTexts(raw json.RawMessage) ([]evidence.Text, bool) {
 	var messages []struct {
 		Role  string           `json:"role"`
 		Parts []map[string]any `json:"parts"`
@@ -103,7 +96,7 @@ func genAIMessageTexts(raw json.RawMessage) ([]llmText, bool) {
 	if json.Unmarshal(raw, &messages) != nil || len(messages) == 0 {
 		return nil, false
 	}
-	var texts []llmText
+	var texts []evidence.Text
 	for _, m := range messages {
 		for _, part := range m.Parts {
 			role, value := m.Role, part["content"]
@@ -113,7 +106,7 @@ func genAIMessageTexts(raw json.RawMessage) ([]llmText, bool) {
 			case "tool_call_response":
 				role, value = policy.RoleTool, part["response"]
 			}
-			collectStrings(value, func(text string) { texts = append(texts, llmText{role, text}) })
+			events.CollectStrings(value, func(text string) { texts = append(texts, evidence.Text{Role: role, Text: text}) })
 		}
 	}
 	return texts, true
@@ -143,23 +136,7 @@ func messageText(content json.RawMessage) string {
 	return joined
 }
 
-// judges reports whether the rule looks at texts of this role.
-func (r compiledContentRule) judges(role string) bool {
-	if r.EvidenceKind() == policy.EvidenceMCPToolInput || r.EvidenceKind() == policy.EvidenceA2AMessageInput {
-		return role == roleToolInput
-	}
-	roles := r.Roles
-	if len(roles) == 0 {
-		roles = policy.DefaultRoles
-	}
-	for _, candidate := range roles {
-		if candidate == role {
-			return true
-		}
-	}
-	return false
-}
-
-func (s *sessionEngine) evaluateLLM(ctx context.Context, r *cev1.EvaluateRequest, out *cev1.EvaluateResponse, rules []compiledContentRule, started time.Time) *cev1.EvaluateResponse {
-	return s.evaluateFromInbox(ctx, r, out, rules, started, policy.EvidenceLLMInput, preCallLLMTexts)
+// New is the judge of llm_input evidence: the model request published as an llm.started event.
+func New(in *inbox.Inbox, wait time.Duration) *events.Judge {
+	return &events.Judge{Inbox: in, Wait: wait, Kind: policy.EvidenceLLMInput, Extract: func(_ *cev1.EvaluateRequest, raw json.RawMessage) (string, []evidence.Text, bool) { return Texts(raw) }}
 }

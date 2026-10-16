@@ -13,15 +13,22 @@ recovery by `PATCH`, `PUT .../heartbeat`), once per second and only while CFN an
 
 ```
 policy-ce/
-├── cmd/policy-ce/       # main: configuration from env, HTTP and gRPC servers
-├── pkg/policy/          # policy file schema and decoder (public, reusable to validate a policy.json)
-├── internal/engine/     # CognitionEngine: router per MAS, identity layer, content evidence
-├── internal/inbox/      # Observe event inbox (POST /events), found again by trace and span
-├── internal/cfn/        # registration, conflict recovery and heartbeat with CFN (REST)
-├── internal/oxp/        # OXP Cognition Store and live topology client
-├── internal/httpjson/   # JSON-over-HTTP exchange shared by the clients
-├── internal/ids/        # trace/span id validation
-└── examples/            # policy.json: a policy file for two MAS
+├── cmd/policy-ce/            # main: configuration from env, HTTP and gRPC servers
+├── pkg/policy/               # policy file schema and decoder (public, reusable to validate a policy.json)
+├── internal/engine/          # CognitionEngine: router per MAS, then identity, then content
+│   ├── identity/             # identity layer: route decision and Cognition Store findings
+│   └── evidence/             # Judge: what a content rule is judged against, one package per kind
+│       ├── topology/         #   tool_input: the session's tool node in OXP live topology
+│       ├── llm/              #   llm_input: model request published before the call
+│       ├── mcp/              #   mcp_tool_input: MCP tools/call arguments published before the call
+│       ├── a2a/              #   a2a_message_input: A2A message text published before the call
+│       └── events/           #   the inbox judge and event parsing shared by llm, mcp and a2a
+├── internal/inbox/           # Observe event inbox (POST /events), found again by trace and span
+├── internal/cfn/             # registration, conflict recovery and heartbeat with CFN (REST)
+├── internal/oxp/             # OXP Cognition Store and live topology client
+├── internal/httpjson/        # JSON-over-HTTP exchange shared by the clients
+├── internal/ids/             # trace/span id validation
+└── config/                   # policy.json: a policy file for two MAS (mounted by the compose service)
 ```
 
 ## Policy file
@@ -30,7 +37,7 @@ policy-ce/
 
 - **Per MAS** (several allowed): `{"mas": [{"mas_id": "...", "rules": [...], "content_rules": [...]}, ...]}`.
   A request for a MAS that is not listed is denied (`MAS_SCOPE`) without touching its Cognition Store scope.
-  See [examples/policy.json](examples/policy.json).
+  See [config/policy.json](config/policy.json).
 - **Single policy**: `{"rules": [...], "content_rules": [...]}`, bound to the MAS id that `CE_MAS_FILE`
   (default `/var/lib/policy-ce/mas-id`) holds, for setups where a bootstrap writes it after registration.
   ```json
@@ -40,7 +47,7 @@ policy-ce/
 
 Identity rules need a unique `id`, an `ALLOW`/`DENY` effect, a `reason` and literal `sources`/`destinations`.
 DENY overrides ALLOW and an unmatched route is denied. Content rules judge the text of a request by regular
-expression; where the text comes from is the rule's `evidence` (`tool_input`, `a2a_message_input`, `llm_input`,
+expression; where the text comes from is the rule's `evidence`, and each kind has its own `Judge` in `internal/engine/evidence` (`tool_input`, `a2a_message_input`, `llm_input`,
 `mcp_tool_input`) and `CE_EVIDENCE` (`topology`, default, or `events`) selects the evidence profile. The
 behavior of each evidence kind, the event inbox (`POST /events`) and the known limits are described in the
 Fake CE README the code comes from; nothing about them changed.

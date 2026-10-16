@@ -1,4 +1,6 @@
-package engine
+// Package identity is the identity layer of one MAS: its policy decides the route, then the Cognition Store
+// findings are read and written. Content is judged by the evidence judges, above this layer.
+package identity
 
 import (
 	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/ids"
@@ -14,27 +16,29 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-// engine is the identity layer of one MAS: its policy, then the Cognition Store findings.
-type engine struct {
+// Engine is the identity layer of one MAS.
+type Engine struct {
 	cev1.UnimplementedCognitionEngineServer
-	policy policy.Policy
-	masID  func() (string, error)
-	store  *oxp.Store
-	// ceType and ceVersion are what GetInfo reports; empty means CASA and reference-v1.
-	ceType, ceVersion string
+	Policy policy.Policy
+	// MasID is the MAS this engine serves; it may fail until the MAS is known.
+	MasID func() (string, error)
+	// Store is the Cognition Store; nil means findings are neither read nor written.
+	Store *oxp.Store
+	// CEType and CEVersion are what GetInfo reports; empty means CASA and reference-v1.
+	CEType, CEVersion string
 }
 
-func (s *engine) Evaluate(ctx context.Context, r *cev1.EvaluateRequest) (*cev1.EvaluateResponse, error) {
+func (s *Engine) Evaluate(ctx context.Context, r *cev1.EvaluateRequest) (*cev1.EvaluateResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, 1500*time.Millisecond)
 	defer cancel()
 	if r == nil || !ids.Valid(r.TraceId, 32) || !ids.Valid(r.SpanId, 16) || r.MasId == "" || r.SourceAgentId == "" || r.DestinationAgentId == "" {
 		return nil, status.Error(codes.InvalidArgument, "valid trace/span pair and MAS/source/destination identities required")
 	}
-	mas, err := s.masID()
+	mas, err := s.MasID()
 	if err != nil || mas == "" {
 		return nil, status.Error(codes.Unavailable, "configured MAS identity unavailable")
 	}
-	selected := s.policy.Decide(r.SourceAgentId, r.DestinationAgentId)
+	selected := s.Policy.Decide(r.SourceAgentId, r.DestinationAgentId)
 	if r.MasId != mas {
 		selected = policy.Rule{ID: "MAS_SCOPE", Effect: "DENY", Reason: "MAS is outside this CE's configured scope"}
 	}
@@ -47,15 +51,15 @@ func (s *engine) Evaluate(ctx context.Context, r *cev1.EvaluateRequest) (*cev1.E
 	// reports atomic context and never infers native session.id from trace_id.
 	// A scoped CE must not read or write another MAS's findings. Out-of-scope
 	// denial is logged here and by CF, without touching that MAS's Store scope.
-	if s.store != nil && r.MasId == mas {
-		if err := s.store.Read(ctx, r); err != nil {
+	if s.Store != nil && r.MasId == mas {
+		if err := s.Store.Read(ctx, r); err != nil {
 			if ctx.Err() != nil {
 				return nil, status.FromContextError(ctx.Err()).Err()
 			}
 			log.Printf("Cognition Store read failed: %v", err)
 			return nil, status.Error(codes.Unavailable, "Cognition Store read failed")
 		}
-		if err := s.store.Write(ctx, r, out, selected.ID); err != nil {
+		if err := s.Store.Write(ctx, r, out, selected.ID); err != nil {
 			if ctx.Err() != nil {
 				return nil, status.FromContextError(ctx.Err()).Err()
 			}
@@ -69,12 +73,12 @@ func (s *engine) Evaluate(ctx context.Context, r *cev1.EvaluateRequest) (*cev1.E
 	log.Printf("decision trace=%s span=%s source=%s destination=%s outcome=%s rule=%s layer=identity", r.TraceId, r.SpanId, r.SourceAgentId, r.DestinationAgentId, out.Outcome, selected.ID)
 	return out, nil
 }
-func (s *engine) GetInfo(context.Context, *cev1.GetInfoRequest) (*cev1.GetInfoResponse, error) {
+func (s *Engine) GetInfo(context.Context, *cev1.GetInfoRequest) (*cev1.GetInfoResponse, error) {
 	ids := []string{"MAS_SCOPE", "DEFAULT_DENY"}
-	for _, r := range s.policy.Rules {
+	for _, r := range s.Policy.Rules {
 		ids = append(ids, r.ID)
 	}
-	return &cev1.GetInfoResponse{CeType: orDefault(s.ceType, "CASA"), Version: orDefault(s.ceVersion, "reference-v1"), EnabledChecks: ids, MatcherStrategy: "exact-identity-policy; content-not-evaluated"}, nil
+	return &cev1.GetInfoResponse{CeType: orDefault(s.CEType, "CASA"), Version: orDefault(s.CEVersion, "reference-v1"), EnabledChecks: ids, MatcherStrategy: "exact-identity-policy; content-not-evaluated"}, nil
 }
 
 func orDefault(v, fallback string) string {

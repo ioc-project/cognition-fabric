@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/identity"
 	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
 	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
 	"net/http"
@@ -41,11 +42,10 @@ func llmPolicy() policy.Policy {
 	}
 }
 
-func newLLMEngine(t *testing.T, wait time.Duration) (*sessionEngine, *inbox.Inbox) {
+func newLLMEngine(t *testing.T, wait time.Duration) (*testEngine, *inbox.Inbox) {
 	t.Helper()
-	base := &engine{policy: llmPolicy(), masID: func() (string, error) { return "mas", nil }}
-	engine := newSessionEngine(base, "http://127.0.0.1:1", wait)
-	engine.events = inbox.New("noa-trip-planner-mas", 16)
+	in := inbox.New("noa-trip-planner-mas", 16)
+	engine := &testEngine{newContentEngine(&identity.Engine{Policy: llmPolicy(), MasID: func() (string, error) { return "mas", nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: wait, Inbox: in, ToolPrefix: "noa-"}), in}
 	return engine, engine.events
 }
 
@@ -175,9 +175,8 @@ func TestObserveSDKToolCallPartsAreJudgedUnderTheirRoles(t *testing.T) {
 		input := event["data"].(map[string]any)["input"].([]any)
 		input = append(input, map[string]any{"role": "assistant", "parts": []any{part}})
 		event["data"].(map[string]any)["input"] = input
-		base := &engine{policy: sdkEventsPolicy(t), masID: func() (string, error) { return "mas", nil }}
-		engine := newSessionEngine(base, "http://127.0.0.1:1", 100*time.Millisecond)
-		engine.events = inbox.New("noa-trip-planner-mas", 16)
+		in := inbox.New("noa-trip-planner-mas", 16)
+		engine := &testEngine{newContentEngine(&identity.Engine{Policy: sdkEventsPolicy(t), MasID: func() (string, error) { return "mas", nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: 100 * time.Millisecond, Inbox: in, ToolPrefix: "noa-"}), in}
 		pushEvent(t, engine.events, event)
 		out, _ := engine.Evaluate(context.Background(), llmRequestFor(event, nil))
 		if out.Outcome != cev1.Decision_DECISION_DENY {
@@ -224,9 +223,8 @@ func requestOf(event map[string]any) map[string]any {
 
 func evaluateVariant(t *testing.T, rules []policy.ContentRule, mutate func(request map[string]any)) *cev1.EvaluateResponse {
 	t.Helper()
-	base := &engine{policy: policy.Policy{Rules: llmPolicy().Rules, ContentRules: rules}, masID: func() (string, error) { return "mas", nil }}
-	engine := newSessionEngine(base, "http://127.0.0.1:1", 100*time.Millisecond)
-	engine.events = inbox.New("noa-trip-planner-mas", 16)
+	in := inbox.New("noa-trip-planner-mas", 16)
+	engine := &testEngine{newContentEngine(&identity.Engine{Policy: policy.Policy{Rules: llmPolicy().Rules, ContentRules: rules}, MasID: func() (string, error) { return "mas", nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: 100 * time.Millisecond, Inbox: in, ToolPrefix: "noa-"}), in}
 	event := llmFixture(t, "llm_started_benign.json")
 	mutate(requestOf(event))
 	pushEvent(t, engine.events, event)
@@ -348,9 +346,8 @@ func sdkEventsPolicy(t *testing.T) policy.Policy {
 
 func sdkEventsVerdict(t *testing.T, fixture string, mutate func(request map[string]any)) *cev1.EvaluateResponse {
 	t.Helper()
-	base := &engine{policy: sdkEventsPolicy(t), masID: func() (string, error) { return "mas", nil }}
-	engine := newSessionEngine(base, "http://127.0.0.1:1", 100*time.Millisecond)
-	engine.events = inbox.New("noa-trip-planner-mas", 16)
+	in := inbox.New("noa-trip-planner-mas", 16)
+	engine := &testEngine{newContentEngine(&identity.Engine{Policy: sdkEventsPolicy(t), MasID: func() (string, error) { return "mas", nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: 100 * time.Millisecond, Inbox: in, ToolPrefix: "noa-"}), in}
 	event := llmFixture(t, fixture)
 	mutate(requestOf(event))
 	pushEvent(t, engine.events, event)

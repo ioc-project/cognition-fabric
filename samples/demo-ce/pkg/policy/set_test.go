@@ -7,7 +7,7 @@ import (
 )
 
 func TestExamplePolicyIsMultiMAS(t *testing.T) {
-	f, err := os.Open("../../examples/policy.json")
+	f, err := os.Open("../../config/policy.json")
 	if err != nil {
 		t.Fatal(err)
 	}
