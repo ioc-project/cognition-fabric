@@ -1,0 +1,39 @@
+{
+  "mas": [
+    {
+      "mas_id": "replace-with-your-mas-id",
+      "rules": [
+        {
+          "id": "AGENTS_TO_TOOLS",
+          "effect": "ALLOW",
+          "reason": "Agents of this MAS may call its tools",
+          "sources": ["my-agent"],
+          "destinations": ["my-tool"]
+        },
+        {
+          "id": "AGENTS_TO_MODEL",
+          "effect": "ALLOW",
+          "reason": "Agents of this MAS may use the model gateway",
+          "sources": ["my-agent"],
+          "destinations": ["my-llm"]
+        }
+      ],
+      "content_rules": [
+        {
+          "id": "NO_SECRETS_TO_TOOLS",
+          "reason": "A tool call must not carry a password, key or token",
+          "destinations": ["my-tool"],
+          "pattern": "(?i)\\b(?:password|passcode|api[ _-]?key|secret key|access token)\\s*(?:is|[:=])\\s*\\S{4,}",
+          "evidence": "mcp_tool_input"
+        },
+        {
+          "id": "NO_SECRETS_TO_MODEL",
+          "reason": "A model request must not carry a password, key or token",
+          "destinations": ["my-llm"],
+          "pattern": "(?i)\\b(?:password|passcode|api[ _-]?key|secret key|access token)\\s*(?:is|[:=])\\s*\\S{4,}",
+          "evidence": "llm_input"
+        }
+      ]
+    }
+  ]
+}

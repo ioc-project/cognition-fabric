@@ -1,0 +1,87 @@
+# Envoy enforcement flavor: Envoy + Go sidecar filter + traceparent Wasm filter,
+# in front of an upstream. Overlay for the main stack; run from the repo root:
+#   make up enforcement=envoy
+# or: docker compose -f docker-compose.yml -f enforcement/envoy/compose.yaml up -d
+# Needs enforcement/envoy/sidecar-spec.yaml (copy sidecar-spec.example.yaml).
+# ENFORCEMENT_PLATFORM pins every service here to one architecture: the Go plugin
+# the installer copies must match Envoy's. Set linux/amd64 on an Intel host.
+# CF and ioc-scale-enforcement-proxy-mediation are already in the main file and share its network.
+services:
+  ioc-scale-enforcement-proxy-sidecar-installer:
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-sidecar:${ENFORCEMENT_SIDECAR_TAG:-latest}
+    platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-enforcement-proxy-sidecar-installer
+    volumes:
+      - enforcement_sidecar_plugin:/etc/sidecar/plugins
+
+  ioc-scale-enforcement-proxy-wasm-installer:
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-wasm:${ENFORCEMENT_WASM_TAG:-latest}
+    platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-enforcement-proxy-wasm-installer
+    volumes:
+      - enforcement_traceparent_wasm:/etc/sidecar/wasm
+
+  # Test echo server that returns the traceparent it received. Replace it, and the
+  # cluster address in envoy.yaml, with the application you want to protect.
+  ioc-scale-enforcement-proxy-upstream:
+    image: nginx:alpine
+    platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-enforcement-proxy-upstream
+    volumes:
+      - ./enforcement/envoy/upstream-nginx.conf:/etc/nginx/nginx.conf:ro
+
+  ioc-scale-enforcement-proxy-envoy:
+    image: envoyproxy/envoy:contrib-v1.38.0
+    platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-enforcement-proxy-envoy
+    restart: on-failure
+    depends_on:
+      ioc-scale-enforcement-proxy-mediation:
+        condition: service_started
+      ioc-scale-enforcement-proxy-sidecar-installer:
+        condition: service_completed_successfully
+      ioc-scale-enforcement-proxy-wasm-installer:
+        condition: service_completed_successfully
+      ioc-scale-enforcement-proxy-upstream:
+        condition: service_started
+    environment:
+      # CF cfn-svc gRPC endpoint. Local CF is plaintext; TLS is the default elsewhere.
+      CF_ENFORCEMENT_ADDRESS: ${CF_ENFORCEMENT_ADDRESS:-ioc-scale-cfn-svc:9003}
+      CF_ENFORCEMENT_TIMEOUT: ${CF_ENFORCEMENT_TIMEOUT:-2s}
+      CF_ENFORCEMENT_ALLOW_PLAINTEXT: ${CF_ENFORCEMENT_ALLOW_PLAINTEXT:-true}
+      ENFORCEMENT_FAILURE_POSTURE: ${ENFORCEMENT_FAILURE_POSTURE:-fail_closed}
+      AUDIT_JOURNAL_ADDRESS: ${AUDIT_JOURNAL_ADDRESS:-ioc-scale-enforcement-proxy-mediation:8081}
+      AUDIT_JOURNAL_QUEUE_CAPACITY: ${AUDIT_JOURNAL_QUEUE_CAPACITY:-256}
+      AUDIT_JOURNAL_RPC_TIMEOUT: ${AUDIT_JOURNAL_RPC_TIMEOUT:-2s}
+      # Local development only. ioc-scale-enforcement-proxy-mediation must allow plaintext too
+      # (BFF_GRPC_ALLOW_INSECURE_LOCAL).
+      AUDIT_JOURNAL_ALLOW_INSECURE_LOCAL: ${AUDIT_JOURNAL_ALLOW_INSECURE_LOCAL:-true}
+      MAX_MEDIATED_BODY_BYTES: ${MAX_MEDIATED_BODY_BYTES:-1048576}
+      AUDIT_CAPTURE_MAX_BYTES: ${AUDIT_CAPTURE_MAX_BYTES:-65536}
+      AUDIT_REDACT_PATTERNS: ${AUDIT_REDACT_PATTERNS:-["(?i)token=[^&\\s]+","(?i)\"token\"\\s*:\\s*\"[^\"]+\""]}
+    entrypoint: ["/usr/local/bin/envoy"]
+    command: ["-c", "/etc/envoy/envoy.yaml", "--log-level", "info"]
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/envoy", "--mode", "validate", "-c", "/etc/envoy/envoy.yaml"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    ports:
+      - "127.0.0.1:${ENVOY_HTTP_PORT:-9010}:18080"
+      - "127.0.0.1:${ENVOY_OUTBOUND_HTTP_PORT:-9011}:18081"
+      - "127.0.0.1:${ENVOY_ADMIN_PORT:-9012}:19000"
+    volumes:
+      - ./enforcement/envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
+      - type: bind
+        source: ${SIDECAR_SPEC:-./enforcement/envoy/sidecar-spec.yaml}
+        target: /etc/sidecar/sidecar-spec.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - enforcement_sidecar_plugin:/etc/sidecar/plugins:ro
+      - enforcement_traceparent_wasm:/etc/sidecar/wasm:ro
+
+volumes:
+  enforcement_sidecar_plugin:
+  enforcement_traceparent_wasm:

@@ -56,3 +56,9 @@ desktop.ini
 *~
 *.bak
 *.orig
+
+# ---------------------------------------------------------------------------
+# Enforcement flavors: operator-owned config, certificates and keys
+# ---------------------------------------------------------------------------
+enforcement/envoy/sidecar-spec.yaml
+enforcement/shadi/config/

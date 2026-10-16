@@ -14,26 +14,95 @@ Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
    docker compose up -d
    docker compose --profile full-mas up -d   # adds the NOA sample app
    ```
+Or use the Makefile, which wraps the same compose file, checks the required
+settings and waits until every service is running, healthy or finished:
+
+```bash
+make doctor                  # check Docker, .env and the rendered config
+make up                      # boot the whole stack
+make up profile=full-mas     # also boot the NOA sample app
+make up ce=policy-ce         # run the policy CE instead of the demo CE (edit policy-ce/policy.json first)
+make status                  # list containers
+make logs service=oxp-api    # follow one service (omit service= for all)
+make pull                    # pull the configured images
+make up enforcement=envoy    # add an optional enforcement flavor (or shadi)
+make down                    # stop the stack, volumes are preserved
+```
+
+`make up` waits up to 180 seconds (`STACK_WAIT_TIMEOUT`) and names any service
+that is not ready. The OXP workers `embedding`, `mce` and `analysis` restart in
+a loop without `AI_GATEWAY_API_KEY` and `OPENAI_API_KEY`, so they are the usual
+cause. The Compose project name is pinned to `ioc-scale-cf-deployment`, so the
+stack and its default network keep the same names from any checkout.
+See [`scripts/run-stack.sh`](scripts/run-stack.sh).
+
 All images are pulled from GHCR; nothing is built locally. The sample app is
 the only profiled service; everything else starts either way.
 
-`oxp-api` follows `OXP_REGISTRY` + `OXP_IMG_TAG` by default. Set
-`OXP_API_IMAGE` in `.env` only when you need to pin the API image
-independently of worker tags.
+Every image is composed as `${REGISTRY}/<image>:${TAG}`, so registry and tag
+can be overridden in `.env` without editing the compose file:
+
+- CF and enforcement proxy services (`ioc-scale-db`, `ioc-scale-cf-mgmt-svc`,
+  `ioc-scale-cf-mgmt-plane-ui`, `ioc-scale-cfn-svc`, `ioc-scale-cf-demo-ce`,
+  `ioc-scale-enforcement-proxy-mediation`, `ioc-scale-enforcement-proxy-ui`):
+  `CF_REGISTRY` plus `IOC_SCALE_DB_TAG`, `CF_MGMT_SVC_TAG`, `CF_UI_TAG`,
+  `CFN_SVC_TAG`, `CF_DEMO_CE_TAG`, `ENFORCEMENT_PROXY_MEDIATION_TAG`,
+  `ENFORCEMENT_PROXY_UI_TAG`. Tags default to `latest` (and are set to it in
+  `.env.example`), except the database, which stays pinned (`0.2.0`) because
+  it is built from this repo. Pin a tag in `.env` to reproduce a specific build.
+- OXP workers: `OXP_REGISTRY` plus `OXP_IMG_TAG`.
+- `oxp-api`: `OXP_REGISTRY` plus `OXP_API_IMG_TAG`. The API is versioned
+  separately from the workers. Set `OXP_API_IMAGE` only to override the full
+  image reference.
+- NOA sample app: `CLARIS_REGISTRY` plus `NOA_IMAGE_TAG`.
 
 
 The one image whose source lives in this repo is the database. See
 [`docker-db/`](docker-db/) for the Dockerfile and how to publish a new tag.
 
+### Policy CE (optional)
+
+`ioc-scale-cf-policy-ce` is the [policy-ce](https://github.com/cisco-eti/ioc-scale-cf-demo-ce/tree/main/policy-ce)
+Cognition Engine: it registers with CFN and decides from a policy file, with
+identity rules and content rules per MAS. The stack runs one CE at a time, the
+demo CE by default; `make up ce=policy-ce` runs the policy CE instead. Both
+register with CFN, so `up` refuses while the other one is present: run
+`make down` before switching. A plain `docker compose up` still starts the demo
+CE; the policy CE needs `--profile policy-ce` there (and leave `ioc-scale-cf-demo-ce` out).
+
+The policy file is [`policy-ce/policy.json`](policy-ce/policy.json), a generic
+starter mounted read-only into the container. Before use, replace
+`replace-with-your-mas-id` with the id of your MAS and the example agent and
+tool identities (`my-agent`, `my-tool`, `my-llm`) with the ones your MAS
+submits; a MAS that is not listed in the file is denied. To use a file of your
+own, set `POLICY_CE_CONFIG_FILE` in `.env`. The file format is described in the
+policy-ce README. `up` stops early if the file is missing.
+
+Other settings: `CF_POLICY_CE_TAG` (image tag), `POLICY_CE_NAME` (name in CFN)
+and `POLICY_CE_EVIDENCE` (`topology`, the default, or `events`). Content rules
+with `llm_input`, `mcp_tool_input` or `a2a_message_input` evidence need the
+application to publish its events to `http://ioc-scale-cf-policy-ce:18000/events`.
+
+### Enforcement (optional)
+
+[`enforcement/`](enforcement/) holds two optional flavors, `envoy` (Envoy with the
+Go sidecar and Wasm filters) and `shadi` (the sender-authorization verifier), each
+with an overlay compose file and example configs. They are not part of the base
+stack; start one with `make up enforcement=envoy` or `enforcement=shadi`. Setup
+for each is in [`enforcement/README.md`](enforcement/README.md).
+
 ## Services
 
 | Service | Port | Description |
 |---------|------|-------------|
-| `ioc-scale-db` | 5456 | AgensGraph + pgvector + TimescaleDB database. Built from [`docker-db/`](docker-db/) in this repo |
+| `ioc-scale-db` | 5456 | AgensGraph + pgvector + TimescaleDB database. Built from [`docker-db/`](docker-db/) in this repo. Hosts `cfn_mgmt`, `cognition_store`, `cfn_audit` and `enforcement_proxy` |
 | `ioc-scale-cf-mgmt-svc` | 9000 | Management backend API |
 | `ioc-scale-cf-mgmt-plane-ui` | 9001 | Management plane UI (Next.js) |
 | `ioc-scale-cfn-svc` | 9002 (HTTP), 9003 (gRPC) | Cognition Fabric Node |
 | `ioc-scale-cf-demo-ce` | 50051 (gRPC), 8080 (HTTP health) | Demo Cognition Engine |
+| `ioc-scale-cf-policy-ce` | 18001 (gRPC), 18000 (HTTP), loopback only | Policy-driven Cognition Engine, only with `ce=policy-ce` (it replaces the demo CE). See [Policy CE](#policy-ce-optional) |
+| `ioc-scale-enforcement-proxy-mediation` | 9006 (gRPC), 9005 (HTTP) | Enforcement proxy mediation core. Uses the `enforcement_proxy` database on `ioc-scale-db`; bound to 127.0.0.1 |
+| `ioc-scale-enforcement-proxy-ui` | 9004 (HTTP) | Enforcement proxy UI (nginx). Talks to `ioc-scale-enforcement-proxy-mediation` on `BFF_HTTP_PORT` from the browser; bound to 127.0.0.1 |
 
 ### OXP infrastructure
 
@@ -110,7 +179,18 @@ See `.env.example` for all available configuration options. Key settings:
 
 - `IOC_SCALE_DB_*` - Database credentials
 - `ADMIN_USER_PASSWORD` - Admin password for mgmt backend
-- `OXP_REGISTRY`, `OXP_IMG_TAG` - Source and version of the OXP API and worker images
+- `BFF_GRPC_PORT`, `BFF_HTTP_PORT` - Host ports (bound to 127.0.0.1) for
+  `ioc-scale-enforcement-proxy-mediation`. The defaults are `9006` (gRPC) and `9005` (HTTP), chosen so they do not
+  clash with `oxp-api` (host `8081`) or the enforcement proxy's own compose
+  (`8082`, `18083`). The core uses the `enforcement_proxy` database with the
+  `IOC_SCALE_DB_*` credentials.
+- `FRONTEND_PORT` - Host port (127.0.0.1) of `ioc-scale-enforcement-proxy-ui`, default `9004`.
+  The UI reaches the core through `BFF_HTTP_PORT`, so change them together if
+  the core is exposed elsewhere.
+- `BFF_GRPC_ALLOW_INSECURE_LOCAL` - Defaults to `true` so the core starts without
+  mTLS. Local development only; set it to `false` and configure TLS elsewhere.
+- `CF_REGISTRY`, `*_TAG` - Source and version of the CF service images (see above)
+- `OXP_REGISTRY`, `OXP_IMG_TAG`, `OXP_API_IMG_TAG` - Source and version of the OXP worker and API images
 - `AI_GATEWAY_API_KEY`, `OPENAI_API_KEY` - Required by `embedding`, `mce`, and
   `analysis`. Without them those workers exit on startup and restart in a loop.
   The two are read by different workers and can hold the same gateway key.
@@ -119,8 +199,8 @@ See `.env.example` for all available configuration options. Key settings:
 - `CLICKHOUSE_*` - Read by the workers and the OTel collector. `CLICKHOUSE_HOST`
   defaults to the bundled `clickhouse-server`; set it to `host.docker.internal`
   to use an external instance instead.
-- `NEO4J_PASSWORD` - Shared by `neo4j` and `oxp-api`; defaults to
-  `testpassword` when unset.
+- `NEO4J_PASSWORD` - Shared by `neo4j`, `oxp-api` and the OXP workers; defaults to
+  `testpassword` when unset. `NEO4J_USERNAME` (default `neo4j`) is shared the same way.
 - `OXP_INIT_DELAY_SECONDS` - Grace period before automatic ClickHouse/RabbitMQ
   bridge initialization starts. Defaults to 5 seconds.
 - `NOA_*` - The sample app. It reuses `AI_GATEWAY_BASE_URL` and

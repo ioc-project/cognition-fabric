@@ -17,6 +17,8 @@ x-worker-env: &worker-env
   API_BASE_URL: http://host.docker.internal:8081
   NEO4J_HOST: neo4j:7687
   NEO4J_URI: bolt://neo4j:7687
+  NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
+  NEO4J_PASSWORD: ${NEO4J_PASSWORD:-testpassword} # legit:ignore
   UV_LINK_MODE: copy
   UV_PROJECT_ENVIRONMENT: /opt/venv
   PYTHONUNBUFFERED: 1
@@ -49,7 +51,7 @@ services:
   # Database - AgensGraph + PgVector + Postgres
   # Port Mapping: 5456:5432
   ioc-scale-db:
-    image: ghcr.io/cisco-eti/ioc-scale-db:0.2.0
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-db:${IOC_SCALE_DB_TAG:-0.2.0}
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-db
     environment:
@@ -96,7 +98,7 @@ services:
   # Port Mapping: 9000:9000
   ioc-scale-cf-mgmt-svc:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-mgmt-svc/pkgs/container/ioc-scale-cf-mgmt-svc
-    image: ghcr.io/cisco-eti/ioc-scale-cf-mgmt-svc:2026-09-30-a39ea7b
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-mgmt-svc:${CF_MGMT_SVC_TAG:-latest}
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-mgmt-svc
     ports:
@@ -144,7 +146,7 @@ services:
   # Port Mapping: 9001:9001
   ioc-scale-cf-mgmt-plane-ui:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-ui/pkgs/container/ioc-scale-cf-ui
-    image: ghcr.io/cisco-eti/ioc-scale-cf-ui:2026-09-29-0209699
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-ui:${CF_UI_TAG:-latest}
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-mgmt-plane-ui
     ports:
@@ -165,7 +167,7 @@ services:
   # Port Mapping: 9002:9002 (HTTP)
   ioc-scale-cfn-svc:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cfn-svc/pkgs/container/ioc-scale-cfn-svc
-    image: ghcr.io/cisco-eti/ioc-scale-cfn-svc:2026-10-13-a42bded
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cfn-svc:${CFN_SVC_TAG:-latest}
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cfn-svc
     restart: unless-stopped
@@ -211,7 +213,7 @@ services:
   # Port Mapping: 50051:50051 (gRPC), 8080:8080 (HTTP health)
   ioc-scale-cf-demo-ce:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-demo-ce/pkgs/container/ioc-scale-cf-demo-ce%2Fce-demo
-    image: ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/ce-demo:2026-09-30-cf57fac
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-demo-ce/ce-demo:${CF_DEMO_CE_TAG:-latest}
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-demo-ce
     ports:
@@ -235,6 +237,42 @@ services:
     depends_on:
       ioc-scale-cfn-svc:
         condition: service_healthy
+
+  # Policy CE: Cognition Engine driven by a policy file (identity and content rules per MAS).
+  # Runs instead of the demo CE: start it with `make up ce=policy-ce` (profiled so a plain
+  # `docker compose up` still starts the demo CE). Edit policy-ce/policy.json (or point
+  # POLICY_CE_CONFIG_FILE at your own file) with your MAS id and agent identities first.
+  # Port Mapping: 18001:18001 (gRPC), 18000:18000 (HTTP: /events, /healthz, /readyz, /info), host loopback only
+  ioc-scale-cf-policy-ce:
+    # Image Link: https://github.com/cisco-eti/ioc-scale-cf-demo-ce/pkgs/container/ioc-scale-cf-demo-ce%2Fpolicy-ce
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-demo-ce/policy-ce:${CF_POLICY_CE_TAG:-latest}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-cf-policy-ce
+    profiles: ["policy-ce"]
+    ports:
+      - "127.0.0.1:18001:18001"
+      - "127.0.0.1:18000:18000"
+    restart: unless-stopped
+    environment:
+      - CFN_URL=http://ioc-scale-cfn-svc:9002
+      - OXP_API_URL=http://oxp-api:8000
+      - ADVERTISED_GRPC_ADDRESS=ioc-scale-cf-policy-ce:18001
+      - CE_NAME=${POLICY_CE_NAME:-policy-ce}
+      - CE_VERSION=1.0.0
+      - CE_TYPE=CASA
+      - CE_POLICY_FILE=/etc/policy-ce/policy.json
+      - CE_EVIDENCE=${POLICY_CE_EVIDENCE:-topology}
+    volumes:
+      - ${POLICY_CE_CONFIG_FILE:-./policy-ce/policy.json}:/etc/policy-ce/policy.json:ro
+    depends_on:
+      ioc-scale-cfn-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:18000/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
 
   # ===========================================================================
   # OXP (Observability & Explainability Platform) stack
@@ -263,7 +301,7 @@ services:
       start_period: 30s
        
   oxp-api:
-    image: ${OXP_API_IMAGE:-ghcr.io/cisco-eti/oxp/container-images/ioc-analytics-api:0.0.0-48-ge5f5ac7}
+    image: ${OXP_API_IMAGE:-${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/ioc-analytics-api:${OXP_API_IMG_TAG:-latest}}
     platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
     env_file: .env
     container_name: ioc-scale-oxp-api
@@ -288,6 +326,20 @@ services:
     ports:
       - "8081:8000"
     restart: unless-stopped
+    # The image has no curl or wget, so probe with Python. /healthz answers once the
+    # API is serving; the root path returns 404.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
     depends_on:
       redis:
         condition: service_healthy
@@ -636,6 +688,54 @@ services:
     depends_on:
       otel-collector:
         condition: service_started
+
+  # Enforcement proxy mediation core (BFF). Stores its state in the
+  # enforcement_proxy database on ioc-scale-db.
+  # Port Mapping: 9006:8081 (gRPC), 9005:8082 (HTTP). Host 8081 is oxp-api.
+  # Image Link: https://github.com/cisco-eti/ioc-scaling-enforcement-proxy/pkgs/container/ioc-scaling-enforcement-mediation
+  ioc-scale-enforcement-proxy-mediation:
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-mediation:${ENFORCEMENT_PROXY_MEDIATION_TAG:-latest}
+    container_name: ioc-scale-enforcement-proxy-mediation
+    depends_on:
+      ioc-scale-db:
+        condition: service_healthy
+      ioc-scale-db-init:
+        condition: service_completed_successfully
+    environment:
+      DB_HOST: ioc-scale-db
+      DB_PORT: "5432"
+      DB_USERNAME: ${IOC_SCALE_DB_USER}
+      DB_PASSWORD: ${IOC_SCALE_DB_PASSWORD}
+      DB_NAME: enforcement_proxy
+      BFF_GRPC_ADDRESS: :8081
+      BFF_HTTP_ADDRESS: :8082
+      # Local-development exception to mTLS; keep false anywhere else.
+      BFF_GRPC_ALLOW_INSECURE_LOCAL: ${BFF_GRPC_ALLOW_INSECURE_LOCAL:-true}
+    ports:
+      - "127.0.0.1:${BFF_GRPC_PORT:-9006}:8081"
+      - "127.0.0.1:${BFF_HTTP_PORT:-9005}:8082"
+    restart: unless-stopped
+
+  # Enforcement proxy UI (static assets behind nginx).
+  # Port Mapping: 9004:80. PUBLIC_API_BASE_URL is read by the browser, so it
+  # points at the host-published HTTP port of ioc-scale-enforcement-proxy-mediation.
+  # Image Link: https://github.com/cisco-eti/ioc-scaling-enforcement-proxy/pkgs/container/ioc-scaling-enforcement-proxy-ui
+  ioc-scale-enforcement-proxy-ui:
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-ui:${ENFORCEMENT_PROXY_UI_TAG:-latest}
+    container_name: ioc-scale-enforcement-proxy-ui
+    depends_on:
+      ioc-scale-enforcement-proxy-mediation:
+        condition: service_started
+    environment:
+      PUBLIC_API_BASE_URL: http://127.0.0.1:${BFF_HTTP_PORT:-9005}
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-9004}:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
 
 volumes:
   ioc_scale_db_data:
