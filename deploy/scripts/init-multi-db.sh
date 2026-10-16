@@ -7,6 +7,7 @@ psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" <<-EOSQL
     CREATE DATABASE cfn_mgmt;
     CREATE DATABASE cognition_store;
     CREATE DATABASE cfn_audit;
+    CREATE DATABASE enforcement_proxy;
 EOSQL
 
-echo "Databases 'cfn_mgmt', 'cognition_store' and 'cfn_audit' created successfully"
+echo "Databases 'cfn_mgmt', 'cognition_store', 'cfn_audit' and 'enforcement_proxy' created successfully"

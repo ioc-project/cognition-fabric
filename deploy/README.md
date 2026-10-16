@@ -14,26 +14,68 @@ Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
    docker compose up -d
    docker compose --profile full-mas up -d   # adds the NOA sample app
    ```
+Or use the Makefile, which wraps the same compose file, checks the required
+settings and waits until every service is running, healthy or finished:
+
+```bash
+make doctor                  # check Docker, .env and the rendered config
+make up                      # boot the whole stack
+make up profile=full-mas     # also boot the NOA sample app
+make status                  # list containers
+make logs service=oxp-api    # follow one service (omit service= for all)
+make pull                    # pull the configured images
+make up enforcement=envoy    # add an optional enforcement flavor (or shadi)
+make down                    # stop the stack, volumes are preserved
+```
+
+`make up` waits up to 180 seconds (`STACK_WAIT_TIMEOUT`) and names any service
+that is not ready. The OXP workers `embedding`, `mce` and `analysis` restart in
+a loop without `AI_GATEWAY_API_KEY` and `OPENAI_API_KEY`, so they are the usual
+cause. The Compose project name is pinned to `ioc-scale-cf-deployment`, so the
+stack and its default network keep the same names from any checkout.
+See [`scripts/run-stack.sh`](scripts/run-stack.sh).
+
 All images are pulled from GHCR; nothing is built locally. The sample app is
 the only profiled service; everything else starts either way.
 
-`oxp-api` follows `OXP_REGISTRY` + `OXP_IMG_TAG` by default. Set
-`OXP_API_IMAGE` in `.env` only when you need to pin the API image
-independently of worker tags.
+Every image is composed as `${REGISTRY}/<image>:${TAG}`, so registry and tag
+can be overridden in `.env` without editing the compose file:
+
+- CF services (`ioc-scale-db`, `cf-mgmt-svc`, `cf-ui`, `cfn-svc`, `demo-ce`, `mediation-core`, `enforcement-proxy-ui`):
+  `CF_REGISTRY` plus `IOC_SCALE_DB_TAG`, `CF_MGMT_SVC_TAG`, `CF_UI_TAG`,
+  `CFN_SVC_TAG`, `CF_DEMO_CE_TAG`, `MEDIATION_CORE_TAG`,
+  `ENFORCEMENT_PROXY_UI_TAG`. Tags default to `latest` (and are set to it in
+  `.env.example`), except the database, which stays pinned (`0.2.0`) because
+  it is built from this repo. Pin a tag in `.env` to reproduce a specific build.
+- OXP workers: `OXP_REGISTRY` plus `OXP_IMG_TAG`.
+- `oxp-api`: `OXP_REGISTRY` plus `OXP_API_IMG_TAG`. The API is versioned
+  separately from the workers. Set `OXP_API_IMAGE` only to override the full
+  image reference.
+- NOA sample app: `CLARIS_REGISTRY` plus `NOA_IMAGE_TAG`.
 
 
 The one image whose source lives in this repo is the database. See
 [`docker-db/`](docker-db/) for the Dockerfile and how to publish a new tag.
 
+### Enforcement (optional)
+
+[`enforcement/`](enforcement/) holds two optional flavors, `envoy` (Envoy with the
+Go sidecar and Wasm filters) and `shadi` (the sender-authorization verifier), each
+with an overlay compose file and example configs. They are not part of the base
+stack; start one with `make up enforcement=envoy` or `enforcement=shadi`. Setup
+for each is in [`enforcement/README.md`](enforcement/README.md).
+
 ## Services
 
 | Service | Port | Description |
 |---------|------|-------------|
-| `ioc-scale-db` | 5456 | AgensGraph + pgvector + TimescaleDB database. Built from [`docker-db/`](docker-db/) in this repo |
+| `ioc-scale-db` | 5456 | AgensGraph + pgvector + TimescaleDB database. Built from [`docker-db/`](docker-db/) in this repo. Hosts `cfn_mgmt`, `cognition_store`, `cfn_audit` and `enforcement_proxy` |
 | `ioc-scale-cf-mgmt-svc` | 9000 | Management backend API |
 | `ioc-scale-cf-mgmt-plane-ui` | 9001 | Management plane UI (Next.js) |
 | `ioc-scale-cfn-svc` | 9002 (HTTP), 9003 (gRPC) | Cognition Fabric Node |
 | `ioc-scale-cf-demo-ce` | 50051 (gRPC) | Demo Cognition Engine |
+| `mediation-core` | 9006 (gRPC), 9005 (HTTP) | Enforcement proxy mediation core. Uses the `enforcement_proxy` database on `ioc-scale-db`; bound to 127.0.0.1 |
+| `enforcement-proxy-ui` | 9004 (HTTP) | Enforcement proxy UI (nginx). Talks to `mediation-core` on `BFF_HTTP_PORT` from the browser; bound to 127.0.0.1 |
 
 ### OXP infrastructure
 
@@ -110,7 +152,18 @@ See `.env.example` for all available configuration options. Key settings:
 
 - `IOC_SCALE_DB_*` - Database credentials
 - `ADMIN_USER_PASSWORD` - Admin password for mgmt backend
-- `OXP_REGISTRY`, `OXP_IMG_TAG` - Source and version of the OXP API and worker images
+- `BFF_GRPC_PORT`, `BFF_HTTP_PORT` - Host ports (bound to 127.0.0.1) for
+  `mediation-core`. The defaults are `9006` (gRPC) and `9005` (HTTP), chosen so they do not
+  clash with `oxp-api` (host `8081`) or the enforcement proxy's own compose
+  (`8082`, `18083`). The core uses the `enforcement_proxy` database with the
+  `IOC_SCALE_DB_*` credentials.
+- `FRONTEND_PORT` - Host port (127.0.0.1) of `enforcement-proxy-ui`, default `9004`.
+  The UI reaches the core through `BFF_HTTP_PORT`, so change them together if
+  the core is exposed elsewhere.
+- `BFF_GRPC_ALLOW_INSECURE_LOCAL` - Defaults to `true` so the core starts without
+  mTLS. Local development only; set it to `false` and configure TLS elsewhere.
+- `CF_REGISTRY`, `*_TAG` - Source and version of the CF service images (see above)
+- `OXP_REGISTRY`, `OXP_IMG_TAG`, `OXP_API_IMG_TAG` - Source and version of the OXP worker and API images
 - `AI_GATEWAY_API_KEY`, `OPENAI_API_KEY` - Required by `embedding`, `mce`, and
   `analysis`. Without them those workers exit on startup and restart in a loop.
   The two are read by different workers and can hold the same gateway key.

@@ -1,0 +1,32 @@
+# Copy to sidecar-spec.yaml (gitignored) and keep only the routes that should be
+# mediated. The sidecar filter reads the table for the listener's own direction:
+# inbound = 18080 (host 9010), outbound = 18081 (host 9011).
+#
+# upstream_cluster is the Envoy cluster name in envoy.yaml, not a DNS name.
+# This plaintext local setup opts out of source authentication with
+# allow_insecure_local. Production: drop it, set source_uri_san to the caller's
+# certificate URI SAN, and put a client-certificate-validating TLS listener in
+# front (see deployments/helm/ioc-enforcement-proxy/examples/ in the proxy repo).
+mediation:
+  inbound:
+    routes:
+      - path: /replace-with-exact-path
+        upstream_cluster: upstream
+        allow_insecure_local: true
+        mas_id: REPLACE_WITH_MAS_ID
+        source_agent_id: REPLACE_WITH_SOURCE_AGENT_ID
+        destination_agent_id: REPLACE_WITH_DESTINATION_AGENT_ID
+        protocol: http
+        item_kind: tool_call
+        operating_model: black-box
+  outbound:
+    routes:
+      - path: /replace-with-exact-path
+        upstream_cluster: upstream
+        allow_insecure_local: true
+        mas_id: REPLACE_WITH_MAS_ID
+        source_agent_id: REPLACE_WITH_SOURCE_AGENT_ID
+        destination_agent_id: REPLACE_WITH_DESTINATION_AGENT_ID
+        protocol: http
+        item_kind: tool_call
+        operating_model: black-box
