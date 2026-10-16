@@ -283,6 +283,20 @@ services:
     ports:
       - "8081:8000"
     restart: unless-stopped
+    # The image has no curl or wget, so probe with Python. /healthz answers once the
+    # API is serving; the root path returns 404.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
     depends_on:
       redis:
         condition: service_healthy
