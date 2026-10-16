@@ -173,13 +173,135 @@ jobs:
           cache-to: type=gha,mode=max,scope=ce-demo
           provenance: false
 
+  ################################## policy-ce (Go) ##############################
+  ###############################################################################
+  # policy-ce depends on the private module github.com/cisco-eti/ioc-scale-cfn-svc. As in the enforcement proxy
+  # CI, a short-lived GitHub App token scoped to that repository is issued through Vault (./.github/actions/cfn-token,
+  # which needs the vars KEEPER_URL, VAULT_NAMESPACE, VAULT_SECRET_PATH and the secrets VAULT_APPROLE_ROLE_ID
+  # and VAULT_APPROLE_SECRET_ID).
+  policy-ce-unit-tests:
+    name: policy-ce Unit Tests
+    runs-on:
+      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
+    env:
+      GOPRIVATE: github.com/cisco-eti/*
+      GONOSUMDB: github.com/cisco-eti/*
+      GIT_CONFIG_GLOBAL: /tmp/cfn-gitconfig
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: policy-ce/go.mod
+          cache-dependency-path: policy-ce/go.sum
+
+      - name: Generate CFN module token
+        id: cfn-token
+        uses: ./.github/actions/cfn-token
+        with:
+          vault-url: ${{ vars.KEEPER_URL }}
+          vault-namespace: ${{ vars.VAULT_NAMESPACE }}
+          vault-secret-path: ${{ vars.VAULT_SECRET_PATH }}
+          role-id: ${{ secrets.VAULT_APPROLE_ROLE_ID }}
+          secret-id: ${{ secrets.VAULT_APPROLE_SECRET_ID }}
+
+      - name: Authenticate Git for the private CFN module
+        env:
+          CFN_TOKEN: ${{ steps.cfn-token.outputs.token }}
+        run: |
+          git config --global url."https://x-access-token:${CFN_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - name: Run Unit Tests
+        run: |
+          cd policy-ce
+          go vet ./...
+          go test -race ./...
+
+      - name: Remove CFN module credentials
+        if: always()
+        run: rm -f "$GIT_CONFIG_GLOBAL"
+
+  # Tags version demo-ce (see validate-semver), so policy-ce images are only published from main.
+  policy-ce-docker-build-push:
+    name: policy-ce Build & Push Docker Image
+    needs: [ policy-ce-unit-tests ]
+    runs-on:
+      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Generate metadata
+        id: meta
+        run: |
+          echo "short_sha=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+          echo "build_date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate CFN module token
+        id: cfn-token
+        uses: ./.github/actions/cfn-token
+        with:
+          vault-url: ${{ vars.KEEPER_URL }}
+          vault-namespace: ${{ vars.VAULT_NAMESPACE }}
+          vault-secret-path: ${{ vars.VAULT_SECRET_PATH }}
+          role-id: ${{ secrets.VAULT_APPROLE_ROLE_ID }}
+          secret-id: ${{ secrets.VAULT_APPROLE_SECRET_ID }}
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image (validation only)
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: policy-ce
+          file: policy-ce/Dockerfile
+          push: false
+          platforms: linux/amd64
+          secrets: |
+            github_token=${{ steps.cfn-token.outputs.token }}
+          tags: |
+            ghcr.io/${{ github.repository }}/policy-ce:${{ steps.meta.outputs.build_date }}-${{ steps.meta.outputs.short_sha }}
+          cache-from: type=gha,scope=policy-ce
+          cache-to: type=gha,mode=max,scope=policy-ce
+          provenance: false
+
+      - name: Build and push Docker image (main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: policy-ce
+          file: policy-ce/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          secrets: |
+            github_token=${{ steps.cfn-token.outputs.token }}
+          tags: |
+            ghcr.io/${{ github.repository }}/policy-ce:latest
+            ghcr.io/${{ github.repository }}/policy-ce:${{ steps.meta.outputs.build_date }}-${{ steps.meta.outputs.short_sha }}
+          cache-from: type=gha,scope=policy-ce
+          cache-to: type=gha,mode=max,scope=policy-ce
+          provenance: false
+
   ################################## Send Status for PR Checks ###########################
   ########################################################################################
   # This Job is REQUIRED, it is what allows for the WHOLE workflow to show up in the PR status checks as a requirement for branch rules
   reusable-workflow-ci-status:
     name: Reusable Workflow CI Status
     # This should be an array of ALL active jobs that are used/run
-    needs: [ validate-semver, checkout-unit-tests, docker-build-push ]
+    needs: [ validate-semver, checkout-unit-tests, docker-build-push, policy-ce-unit-tests, policy-ce-docker-build-push ]
     if: always()
     runs-on:
       group: ${{ vars.DEFAULT_ARC_RUNNERS }}

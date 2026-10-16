@@ -1,0 +1,42 @@
+name: Private CF module token
+description: Retrieve the existing Vault credentials and issue a repository-scoped short-lived token.
+inputs:
+  vault-url:
+    required: true
+    description: Vault endpoint
+  vault-namespace:
+    required: true
+    description: Vault namespace
+  vault-secret-path:
+    required: true
+    description: Existing GitHub App secret path
+  role-id:
+    required: true
+    description: Vault AppRole role ID
+  secret-id:
+    required: true
+    description: Vault AppRole secret ID
+outputs:
+  token:
+    description: Short-lived token scoped to the private CF module repository
+    value: ${{ steps.token.outputs.token }}
+runs:
+  using: composite
+  steps:
+    - uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+      with:
+        url: ${{ inputs.vault-url }}
+        method: approle
+        roleId: ${{ inputs.role-id }}
+        secretId: ${{ inputs.secret-id }}
+        namespace: ${{ inputs.vault-namespace }}
+        secrets: |
+          ${{ inputs.vault-secret-path }} GITHUB_APP_ID | GITHUB_APP_ID ;
+          ${{ inputs.vault-secret-path }} GITHUB_APP_PRIVATE_KEY | GITHUB_APP_PRIVATE_KEY
+    - uses: actions/create-github-app-token@v1
+      id: token
+      with:
+        app-id: ${{ env.GITHUB_APP_ID }}
+        private-key: ${{ env.GITHUB_APP_PRIVATE_KEY }}
+        owner: cisco-eti
+        repositories: ioc-scale-cfn-svc

@@ -12,6 +12,7 @@ ioc-scale-cf-demo-ce/
 │   ├── tests/            # Unit tests
 │   ├── Dockerfile        # Container build
 │   └── README.md         # Engine-specific docs
+├── policy-ce/            # Policy-driven CE (Go), see policy-ce/README.md
 └── docker-compose.yml    # Run all services locally
 ```
 
@@ -55,6 +56,14 @@ Demo CE Cognition Engine Service implementing the `ioc.ce.v1.CognitionEngine` gR
 
 See [demo-ce/README.md](demo-ce/README.md) for details.
 
+### Policy CE
+
+**Location:** `policy-ce/`  
+**Port:** 18001 (gRPC, `ioc.ce.v1.CognitionEngine`)
+
+Application-agnostic CE that loads identity and content rules for one or several MAS from a `policy.json`.
+Go service derived from the NOA demo's Fake CE. See [policy-ce/README.md](policy-ce/README.md).
+
 ## Development
 
 ### Run Locally (without Docker)
@@ -76,43 +85,37 @@ uv run pytest -v
 
 ### Continuous Integration
 
-CI uses **matrix strategy** to build all CEs in parallel. When you add a new CE, update `.github/workflows/ci.yaml`:
+`.github/workflows/ci.yaml` has one set of jobs per CE (there is no matrix). When you add a new CE, add its own
+unit-test and Docker build jobs and list them in `needs` of `reusable-workflow-ci-status`, the required status job.
 
-```yaml
-strategy:
-  matrix:
-    ce:
-      - name: demo-ce
-        path: demo-ce
-        dockerfile: demo-ce/Dockerfile
-        pyproject: demo-ce/pyproject.toml
-      - name: your-new-ce    # Add your CE here
-        path: your-new-ce
-        dockerfile: your-new-ce/Dockerfile
-        pyproject: your-new-ce/pyproject.toml
-```
+| CE | Jobs | Notes |
+|---|---|---|
+| `demo-ce` (Python) | `checkout-unit-tests`, `docker-build-push` | Tags (`vX.Y.Z`) version this CE; `validate-semver` checks them against `demo-ce/pyproject.toml` |
+| `policy-ce` (Go) | `policy-ce-unit-tests`, `policy-ce-docker-build-push` | Needs a short-lived token for the private `cisco-eti/ioc-scale-cfn-svc` module, issued through Vault by `.github/actions/cfn-token` (vars `KEEPER_URL`, `VAULT_NAMESPACE`, `VAULT_SECRET_PATH`; secrets `VAULT_APPROLE_ROLE_ID`, `VAULT_APPROLE_SECRET_ID`); images are published from `main` only |
 
 CI automatically runs on:
-- **Pull Requests** - Build validation only (no push)
+- **Pull Requests** - Unit tests + Docker build validation (no push)
 - **Main branch** - Build + push `:latest` + `:YYYY-MM-DD-<sha>`
-- **Tags** - Build + push `:<tag-name>` (semantic version)
+- **Tags** - `demo-ce` only: build + push `:<tag-name>` (semantic version)
 
 ### Docker Images
 
 Images are published to GitHub Container Registry:
 
 ```
-ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:latest
-ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:v0.1.0
+ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/ce-demo:latest
+ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/ce-demo:v0.1.0
+ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/policy-ce:latest
 ```
 
 ## Contributing
 
 1. Create your engine in `<name>/`
-2. Add gRPC proto definitions in `<name>/proto/`
-3. Implement the service in `<name>/src/`
-4. Add tests in `<name>/tests/`
-5. Add it to `docker-compose.yml`
-6. Document it in your engine's `README.md`
-7. Test locally
-8. Submit PR
+2. Implement the `ioc.ce.v1.CognitionEngine` contract:
+   - Python (see `demo-ce/`): proto definitions in `<name>/proto/`, service in `<name>/src/`, tests in `<name>/tests/`
+   - Go (see `policy-ce/`): the contract comes from the `ioc-scale-cfn-svc` Go module; `cmd/`, `internal/` and `pkg/`, with the tests next to the code
+3. Add it to `docker-compose.yml`
+4. Add its jobs to `.github/workflows/ci.yaml` and to `needs` of `reusable-workflow-ci-status`
+5. Document it in your engine's `README.md`
+6. Test locally
+7. Submit PR
