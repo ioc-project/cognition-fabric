@@ -41,7 +41,7 @@ docker-compose down
 ### Demo CE Cognition Engine
 
 **Location:** `demo-ce/`  
-**Port:** 50051 (gRPC)  
+**Port:** 50051 (gRPC), 8080 (HTTP health)  
 **Protocol:** gRPC (`ioc.ce.v1.CognitionEngine`)
 
 Demo CE Cognition Engine Service implementing the `ioc.ce.v1.CognitionEngine` gRPC contract.
@@ -51,7 +51,7 @@ Demo CE Cognition Engine Service implementing the `ioc.ce.v1.CognitionEngine` gR
 - `Evaluate` RPC - Authorization decision for in-scope MAS actions
 - `GetInfo` RPC - Returns CE capabilities and enabled checks
 - CFN registration on startup (idempotent)
-- Periodic heartbeats to maintain "online" status
+- `GET /healthz` endpoint that CFN probes to track "online" status
 - Cognition Store integration for MAS-level context
 
 See [demo-ce/README.md](demo-ce/README.md) for details.

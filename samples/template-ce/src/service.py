@@ -148,19 +148,26 @@ def serve(port: int = DEFAULT_PORT, max_workers: int = 10):
 
 
 async def serve_async(port: int = DEFAULT_PORT):
-    """Start gRPC server and register with CFN."""
+    """Start the health endpoint and gRPC server, register with CFN, and run until cancelled."""
+    from health import get_health_port, start_health_server
     from registration import register_demo_ce, shutdown_lifecycle_client
 
-    server = serve(port)
-    await register_demo_ce()
-
+    # The health endpoint must be up before registration so the first CFN probe succeeds. An invalid
+    # HEALTH_PORT or a port that cannot be bound stops startup here, before anything else is started.
+    health_server = start_health_server(get_health_port())
+    server = None
     try:
+        server = serve(port)
+        await register_demo_ce()
+
         while True:
             await asyncio.sleep(3600)
     except (KeyboardInterrupt, asyncio.CancelledError):
         logger.info("Shutting down Demo CE...")
     finally:
+        health_server.close()
         await shutdown_lifecycle_client()
         await shutdown_cognition_store_client()
-        server.stop(grace=5)
+        if server is not None:
+            server.stop(grace=5)
         logger.info("Demo CE stopped")

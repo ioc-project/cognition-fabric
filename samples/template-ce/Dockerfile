@@ -26,8 +26,8 @@ COPY --chown=app:app src/ ./src/
 # Copy proto files and generated code
 COPY --chown=app:app proto/ ./proto/
 
-# Expose gRPC port
-EXPOSE 50051
+# Expose gRPC port and HTTP health port
+EXPOSE 50051 8080
 
 # Command to run gRPC server on container start
 CMD ["uv", "run", "python", "-m", "src"]
