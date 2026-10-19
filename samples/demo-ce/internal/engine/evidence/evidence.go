@@ -1,7 +1,7 @@
 // Package evidence is what a content rule is judged against. A Judge reads one kind of evidence (the
 // "evidence" of a rule in the policy file) and decides whether the request passes the rules that use it.
-// The kinds live in the sub-packages: topology (the session in OXP), llm, mcp and a2a (events the
-// application publishes before the call).
+// The kinds use the correlation resolver, with llm, mcp and a2a parsers for events the
+// application publishes before the call.
 package evidence
 
 import (

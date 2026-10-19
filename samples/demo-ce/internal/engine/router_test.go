@@ -16,7 +16,7 @@ import (
 func TestRouterUsesThePolicyOfTheRequestsMAS(t *testing.T) {
 	set, err := policy.DecodeSet(strings.NewReader(`{"mas":[
 	 {"mas_id":"mas-a","rules":[{"id":"A_OK","effect":"ALLOW","reason":"a","sources":["x"],"destinations":["y"]}]},
-	 {"mas_id":"mas-b","rules":[{"id":"B_OK","effect":"ALLOW","reason":"b","sources":["x"],"destinations":["z"]}]}]}`), policy.ProfileTopology)
+	 {"mas_id":"mas-b","rules":[{"id":"B_OK","effect":"ALLOW","reason":"b","sources":["x"],"destinations":["z"]}]}]}`))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -38,8 +37,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	profile := env("CE_EVIDENCE", policy.ProfileTopology)
-	set, err := policy.DecodeSet(f, profile)
+	set, err := policy.DecodeSet(f)
 	f.Close()
 	if err != nil {
 		return err
@@ -51,23 +49,20 @@ func run() error {
 		raw, err := os.ReadFile(env("CE_MAS_FILE", "/var/lib/policy-ce/mas-id"))
 		return strings.TrimSpace(string(raw)), err
 	}
-	// OXP is the live topology (tool_input evidence) and the Cognition Store. Without it the CE judges
-	// identity and event evidence only and does not read or write findings.
+	// OXP supplies causal span history and the Cognition Store. Without it the CE
+	// can still judge pre-call inputs, but does not read or write findings.
 	oxpURL := strings.TrimRight(os.Getenv("OXP_API_URL"), "/")
-	if oxpURL == "" && set.UsesToolInput() {
-		return fmt.Errorf("OXP_API_URL required: the policy has content rules with tool_input evidence in profile %q", profile)
-	}
 	client := &http.Client{Timeout: time.Second}
-	wait, err := time.ParseDuration(env("CE_CONTEXT_WAIT", "1s"))
-	if err != nil || wait <= 0 || wait > 25*time.Second {
-		return fmt.Errorf("CE_CONTEXT_WAIT must be a duration up to 25s")
+	contextCfg, err := loadContextConfig()
+	if err != nil {
+		return err
 	}
 	var store *oxp.Store
 	if oxpURL != "" {
 		store = &oxp.Store{Base: oxpURL, Client: client}
 	}
 	events := inbox.New(os.Getenv("CE_EVENT_SERVICE"), 4096)
-	server := engine.New(set, engine.Options{MasID: masID, OXPURL: oxpURL, Store: store, Inbox: events, Wait: wait, CEType: ceType, CEVersion: ceVersion, ToolPrefix: os.Getenv("CE_TOOL_PREFIX")})
+	server := engine.New(set, engine.Options{MasID: masID, OXPURL: oxpURL, Store: store, Inbox: events, Wait: contextCfg.wait, Attempts: contextCfg.attempts, RetryWait: contextCfg.retryWait, CEType: ceType, CEVersion: ceVersion})
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -115,7 +110,7 @@ func run() error {
 		l.Run(ctx, ready.Store)
 	}()
 	identity, content := set.RuleCounts()
-	log.Printf("policy-ce started: mas_policies=%d identity_rules=%d content_rules=%d evidence=%s context_wait=%s", max(len(set.ByMAS), 1), identity, content, profile, wait)
+	log.Printf("policy-ce started: mas_policies=%d identity_rules=%d content_rules=%d context_wait=%gs context_attempts=%d context_retry_wait=%gs", max(len(set.ByMAS), 1), identity, content, contextCfg.wait.Seconds(), contextCfg.attempts, contextCfg.retryWait.Seconds())
 	select {
 	case <-ctx.Done():
 	case err = <-failures:

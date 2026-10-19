@@ -1,11 +1,9 @@
-name: Demo CE CI workflow
+name: Policy CE CI workflow
 
 on:
   push:
     branches:
       - 'main'
-    tags:
-      - "*"  # Trigger on any tag
   pull_request:
     branches:
       - 'main'
@@ -18,161 +16,6 @@ permissions:
   packages: write # needed to push docker image to gar or ecr
 
 jobs:
-  ################################## Validate Semantic Version ####################
-  #################################################################################
-  validate-semver:
-    name: Validate Semantic Version Tag
-    if: startsWith(github.ref, 'refs/tags/')
-    runs-on:
-      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Check tag format
-        run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          echo "Validating tag: $TAG"
-
-          # Semantic versioning pattern: vX.Y.Z or vX.Y.Z-prerelease
-          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?$ ]]; then
-            echo "❌ Error: Tag '$TAG' does not follow semantic versioning!"
-            echo "Expected format: v1.2.3 or v1.2.3-alpha.1"
-            exit 1
-          fi
-
-          echo "✅ Tag is valid semantic version: $TAG"
-
-      - name: Verify pyproject.toml version matches tag
-        run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          TAG_VERSION=${TAG#v}  # Remove 'v' prefix
-
-          # Extract version from pyproject.toml
-          PYPROJECT_VERSION=$(grep -m1 '^version = ' demo-ce/pyproject.toml | cut -d'"' -f2)
-
-          echo "Tag version: $TAG_VERSION"
-          echo "pyproject.toml version: $PYPROJECT_VERSION"
-
-          if [[ "$TAG_VERSION" != "$PYPROJECT_VERSION" ]]; then
-            echo "❌ Error: Version mismatch!"
-            echo "Git tag: $TAG_VERSION"
-            echo "pyproject.toml: $PYPROJECT_VERSION"
-            echo "Please update demo-ce/pyproject.toml version to match the tag."
-            exit 1
-          fi
-
-          echo "✅ Version match confirmed!"
-
-  ################################## Code Checkout & Unit Tests ##################
-  ###############################################################################
-  checkout-unit-tests:
-    name: Unit Tests
-    runs-on:
-      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install uv and Run Unit Tests
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          export PATH="$HOME/.local/bin:$PATH"
-          uv --version
-          cd demo-ce
-          uv pip install --system -e ".[test]"
-          uv run --no-project pytest -v
-
-  #################### Docker build & push ######################
-  ###############################################################################
-  docker-build-push:
-    name: Build & Push Docker Image
-    needs: [ validate-semver, checkout-unit-tests ]
-    # Skip if semver validation failed (for tag pushes)
-    # validate-semver is optional (only runs for tags)
-    if: |
-      always() &&
-      (needs.checkout-unit-tests.result == 'success') &&
-      (!startsWith(github.ref, 'refs/tags/') || needs.validate-semver.result == 'success')
-    runs-on:
-      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
-
-    steps:
-      - name: Pre-cleanup Docker images
-        run: docker system prune -af || true
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Generate metadata
-        id: meta
-        run: |
-          echo "tag_name=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
-          echo "short_sha=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
-          echo "build_date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
-
-      - name: Log in to GitHub Container Registry
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build Docker image (PR - validation only)
-        if: github.event_name == 'pull_request'
-        uses: docker/build-push-action@v6
-        with:
-          context: demo-ce
-          file: demo-ce/Dockerfile
-          push: false
-          platforms: linux/amd64
-          tags: |
-            ghcr.io/${{ github.repository }}/ce-demo:pr-${{ github.event.pull_request.number }}
-            ghcr.io/${{ github.repository }}/ce-demo:${{ steps.meta.outputs.build_date }}-${{ steps.meta.outputs.short_sha }}
-          cache-from: type=gha,scope=ce-demo
-          cache-to: type=gha,mode=max,scope=ce-demo
-          provenance: false
-
-      - name: Build and push Docker image (main)
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: docker/build-push-action@v6
-        with:
-          context: demo-ce
-          file: demo-ce/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ghcr.io/${{ github.repository }}/ce-demo:latest
-            ghcr.io/${{ github.repository }}/ce-demo:${{ steps.meta.outputs.build_date }}-${{ steps.meta.outputs.short_sha }}
-          cache-from: type=gha,scope=ce-demo
-          cache-to: type=gha,mode=max,scope=ce-demo
-          provenance: false
-
-      - name: Build and push Docker image (tag)
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: docker/build-push-action@v6
-        with:
-          context: demo-ce
-          file: demo-ce/Dockerfile
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ghcr.io/${{ github.repository }}/ce-demo:${{ steps.meta.outputs.tag_name }}
-          cache-from: type=gha,scope=ce-demo
-          cache-to: type=gha,mode=max,scope=ce-demo
-          provenance: false
-
   ################################## policy-ce (Go) ##############################
   ###############################################################################
   # policy-ce depends on the private module github.com/cisco-eti/ioc-scale-cfn-svc. As in the enforcement proxy
@@ -224,7 +67,7 @@ jobs:
         if: always()
         run: rm -f "$GIT_CONFIG_GLOBAL"
 
-  # Tags version demo-ce (see validate-semver), so policy-ce images are only published from main.
+  # Policy CE images are published from main; PRs and manual runs validate the build.
   policy-ce-docker-build-push:
     name: policy-ce Build & Push Docker Image
     needs: [ policy-ce-unit-tests ]
@@ -301,7 +144,7 @@ jobs:
   reusable-workflow-ci-status:
     name: Reusable Workflow CI Status
     # This should be an array of ALL active jobs that are used/run
-    needs: [ validate-semver, checkout-unit-tests, docker-build-push, policy-ce-unit-tests, policy-ce-docker-build-push ]
+    needs: [ policy-ce-unit-tests, policy-ce-docker-build-push ]
     if: always()
     runs-on:
       group: ${{ vars.DEFAULT_ARC_RUNNERS }}

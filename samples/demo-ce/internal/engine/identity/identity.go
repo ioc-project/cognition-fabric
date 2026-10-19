@@ -1,10 +1,9 @@
-// Package identity is the identity layer of one MAS: its policy decides the route, then the Cognition Store
-// findings are read and written. Content is judged by the evidence judges, above this layer.
+// Package identity decides the route and MAS scope. The outer engine owns
+// Cognition Store I/O and content evaluation before persisting a final decision.
 package identity
 
 import (
 	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/ids"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/oxp"
 	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
 
 	"context"
@@ -22,21 +21,24 @@ type Engine struct {
 	Policy policy.Policy
 	// MasID is the MAS this engine serves; it may fail until the MAS is known.
 	MasID func() (string, error)
-	// Store is the Cognition Store; nil means findings are neither read nor written.
-	Store *oxp.Store
 	// CEType and CEVersion are what GetInfo reports; empty means CASA and reference-v1.
 	CEType, CEVersion string
 }
 
 func (s *Engine) Evaluate(ctx context.Context, r *cev1.EvaluateRequest) (*cev1.EvaluateResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, 1500*time.Millisecond)
-	defer cancel()
+	out, _, err := s.Decide(ctx, r)
+	return out, err
+}
+
+// Decide also returns whether the request belongs to this MAS. Store access must
+// use that resolved scope, without rereading a potentially changing MAS file.
+func (s *Engine) Decide(ctx context.Context, r *cev1.EvaluateRequest) (*cev1.EvaluateResponse, bool, error) {
 	if r == nil || !ids.Valid(r.TraceId, 32) || !ids.Valid(r.SpanId, 16) || r.MasId == "" || r.SourceAgentId == "" || r.DestinationAgentId == "" {
-		return nil, status.Error(codes.InvalidArgument, "valid trace/span pair and MAS/source/destination identities required")
+		return nil, false, status.Error(codes.InvalidArgument, "valid trace/span pair and MAS/source/destination identities required")
 	}
 	mas, err := s.MasID()
 	if err != nil || mas == "" {
-		return nil, status.Error(codes.Unavailable, "configured MAS identity unavailable")
+		return nil, false, status.Error(codes.Unavailable, "configured MAS identity unavailable")
 	}
 	selected := s.Policy.Decide(r.SourceAgentId, r.DestinationAgentId)
 	if r.MasId != mas {
@@ -47,31 +49,11 @@ func (s *Engine) Evaluate(ctx context.Context, r *cev1.EvaluateRequest) (*cev1.E
 		out.Outcome = cev1.Decision_DECISION_DENY
 		out.DenialReason = cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT
 	}
-	// Findings are historical context, not the held message. This profile always
-	// reports atomic context and never infers native session.id from trace_id.
-	// A scoped CE must not read or write another MAS's findings. Out-of-scope
-	// denial is logged here and by CF, without touching that MAS's Store scope.
-	if s.Store != nil && r.MasId == mas {
-		if err := s.Store.Read(ctx, r); err != nil {
-			if ctx.Err() != nil {
-				return nil, status.FromContextError(ctx.Err()).Err()
-			}
-			log.Printf("Cognition Store read failed: %v", err)
-			return nil, status.Error(codes.Unavailable, "Cognition Store read failed")
-		}
-		if err := s.Store.Write(ctx, r, out, selected.ID); err != nil {
-			if ctx.Err() != nil {
-				return nil, status.FromContextError(ctx.Err()).Err()
-			}
-			log.Printf("Cognition Store write failed: %v", err)
-			return nil, status.Error(codes.Unavailable, "Cognition Store write failed")
-		}
-	}
 	if err := ctx.Err(); err != nil {
-		return nil, status.FromContextError(err).Err()
+		return nil, false, status.FromContextError(err).Err()
 	}
 	log.Printf("decision trace=%s span=%s source=%s destination=%s outcome=%s rule=%s layer=identity", r.TraceId, r.SpanId, r.SourceAgentId, r.DestinationAgentId, out.Outcome, selected.ID)
-	return out, nil
+	return out, r.MasId == mas, nil
 }
 func (s *Engine) GetInfo(context.Context, *cev1.GetInfoRequest) (*cev1.GetInfoResponse, error) {
 	ids := []string{"MAS_SCOPE", "DEFAULT_DENY"}

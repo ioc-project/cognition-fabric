@@ -1,4 +1,4 @@
-// Package oxp is the client of OXP: the Cognition Store and the live topology of a session.
+// Package oxp is the client of OXP: the Cognition Store and session spans.
 package oxp
 
 import (
@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 
@@ -15,7 +14,7 @@ import (
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 )
 
-// Client reads live topology.
+// Client reads session span context.
 type Client struct {
 	Base string
 	HTTP *http.Client
@@ -64,42 +63,3 @@ func (s *Store) Write(ctx context.Context, r *cev1.EvaluateRequest, out *cev1.Ev
 	}
 	return nil
 }
-
-// Node is a node of OXP live topology of a session.
-type Node struct {
-	Name      string `json:"name"`
-	Type      string `json:"type"`
-	Status    string `json:"status"`
-	StartTime string `json:"start_time"`
-	Data      struct {
-		Input any `json:"input"`
-	} `json:"data"`
-}
-
-// Topology reads the live topology of a session; a status other than 200 is no nodes.
-func (c *Client) Topology(ctx context.Context, session string) ([]Node, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.Base+"/api/v1/live_topology/sessions/"+url.PathEscape(session)+"/topology", nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Cache-Control", "no-cache")
-	resp, err := c.HTTP.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, nil
-	}
-	var body struct {
-		Nodes []Node `json:"nodes"`
-	}
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 2<<20)).Decode(&body); err != nil {
-		return nil, err
-	}
-	return body.Nodes, nil
-}
-
-// toolPrefix is stripped from a destination identity before it is matched to an Observe tool name
-// (CE_TOOL_PREFIX, empty by default).
-var toolPrefix string

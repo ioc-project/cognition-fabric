@@ -23,7 +23,7 @@ type Set struct {
 	Order  []string
 }
 
-func DecodeSet(r io.Reader, profile string) (Set, error) {
+func DecodeSet(r io.Reader) (Set, error) {
 	raw, err := io.ReadAll(io.LimitReader(r, 1<<20+1))
 	if err != nil {
 		return Set{}, err
@@ -37,7 +37,7 @@ func DecodeSet(r io.Reader, profile string) (Set, error) {
 	}
 	list, multi := top["mas"]
 	if !multi {
-		p, err := DecodeFor(bytes.NewReader(raw), profile)
+		p, err := Decode(bytes.NewReader(raw))
 		return Set{Single: &p}, err
 	}
 	if len(top) != 1 {
@@ -61,7 +61,7 @@ func DecodeSet(r io.Reader, profile string) (Set, error) {
 		if _, dup := set.ByMAS[m.MasID]; dup {
 			return Set{}, fmt.Errorf("mas[%d]: duplicate mas_id %q", n, m.MasID)
 		}
-		p, err := finishPolicy(m.Policy, profile)
+		p, err := finishPolicy(m.Policy)
 		if err != nil {
 			return Set{}, fmt.Errorf("mas %q: %w", m.MasID, err)
 		}
@@ -69,27 +69,6 @@ func DecodeSet(r io.Reader, profile string) (Set, error) {
 		set.Order = append(set.Order, m.MasID)
 	}
 	return set, nil
-}
-
-// UsesToolInput reports whether any content rule that applies reads the session topology from OXP.
-func (s Set) UsesToolInput() bool {
-	uses := func(p Policy) bool {
-		for _, r := range p.ContentRules {
-			if r.Evidence == EvidenceToolInput {
-				return true
-			}
-		}
-		return false
-	}
-	if s.Single != nil && uses(*s.Single) {
-		return true
-	}
-	for _, p := range s.ByMAS {
-		if uses(p) {
-			return true
-		}
-	}
-	return false
 }
 
 func (s Set) RuleCounts() (identity, content int) {

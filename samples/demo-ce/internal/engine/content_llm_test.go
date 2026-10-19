@@ -45,7 +45,7 @@ func llmPolicy() policy.Policy {
 func newLLMEngine(t *testing.T, wait time.Duration) (*testEngine, *inbox.Inbox) {
 	t.Helper()
 	in := inbox.New("noa-trip-planner-mas", 16)
-	engine := &testEngine{newContentEngine(&identity.Engine{Policy: llmPolicy(), MasID: func() (string, error) { return "mas", nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: wait, Inbox: in, ToolPrefix: "noa-"}), in}
+	engine := &testEngine{newContentEngine(&identity.Engine{Policy: llmPolicy(), MasID: func() (string, error) { return "mas", nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: wait, Inbox: in}), in}
 	return engine, engine.events
 }
 
@@ -176,7 +176,7 @@ func TestObserveSDKToolCallPartsAreJudgedUnderTheirRoles(t *testing.T) {
 		input = append(input, map[string]any{"role": "assistant", "parts": []any{part}})
 		event["data"].(map[string]any)["input"] = input
 		in := inbox.New("noa-trip-planner-mas", 16)
-		engine := &testEngine{newContentEngine(&identity.Engine{Policy: sdkEventsPolicy(t), MasID: func() (string, error) { return "mas", nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: 100 * time.Millisecond, Inbox: in, ToolPrefix: "noa-"}), in}
+		engine := &testEngine{newContentEngine(&identity.Engine{Policy: sdkEventsPolicy(t), MasID: func() (string, error) { return "mas", nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: 100 * time.Millisecond, Inbox: in}), in}
 		pushEvent(t, engine.events, event)
 		out, _ := engine.Evaluate(context.Background(), llmRequestFor(event, nil))
 		if out.Outcome != cev1.Decision_DECISION_DENY {
@@ -224,7 +224,7 @@ func requestOf(event map[string]any) map[string]any {
 func evaluateVariant(t *testing.T, rules []policy.ContentRule, mutate func(request map[string]any)) *cev1.EvaluateResponse {
 	t.Helper()
 	in := inbox.New("noa-trip-planner-mas", 16)
-	engine := &testEngine{newContentEngine(&identity.Engine{Policy: policy.Policy{Rules: llmPolicy().Rules, ContentRules: rules}, MasID: func() (string, error) { return "mas", nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: 100 * time.Millisecond, Inbox: in, ToolPrefix: "noa-"}), in}
+	engine := &testEngine{newContentEngine(&identity.Engine{Policy: policy.Policy{Rules: llmPolicy().Rules, ContentRules: rules}, MasID: func() (string, error) { return "mas", nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: time.Second, Inbox: in}), in}
 	event := llmFixture(t, "llm_started_benign.json")
 	mutate(requestOf(event))
 	pushEvent(t, engine.events, event)
@@ -337,7 +337,7 @@ func sdkEventsPolicy(t *testing.T) policy.Policy {
 		t.Fatal(err)
 	}
 	defer file.Close()
-	p, err := policy.DecodeFor(file, policy.ProfileEvents)
+	p, err := policy.Decode(file)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -347,7 +347,7 @@ func sdkEventsPolicy(t *testing.T) policy.Policy {
 func sdkEventsVerdict(t *testing.T, fixture string, mutate func(request map[string]any)) *cev1.EvaluateResponse {
 	t.Helper()
 	in := inbox.New("noa-trip-planner-mas", 16)
-	engine := &testEngine{newContentEngine(&identity.Engine{Policy: sdkEventsPolicy(t), MasID: func() (string, error) { return "mas", nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: 100 * time.Millisecond, Inbox: in, ToolPrefix: "noa-"}), in}
+	engine := &testEngine{newContentEngine(&identity.Engine{Policy: sdkEventsPolicy(t), MasID: func() (string, error) { return "mas", nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: 100 * time.Millisecond, Inbox: in}), in}
 	event := llmFixture(t, fixture)
 	mutate(requestOf(event))
 	pushEvent(t, engine.events, event)
