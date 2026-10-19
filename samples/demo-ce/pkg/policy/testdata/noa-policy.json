@@ -1,0 +1,144 @@
+{
+  "rules": [
+    {
+      "id": "NOA_INGRESS",
+      "effect": "ALLOW",
+      "reason": "The demo caller may reach the NOA planner entry point through SHADi",
+      "sources": [
+        "noa-caller"
+      ],
+      "destinations": [
+        "noa-planner"
+      ]
+    },
+    {
+      "id": "NOA_APPROVED_DELEGATION",
+      "effect": "ALLOW",
+      "reason": "Moderator may delegate travel planning to registered NOA agents",
+      "sources": [
+        "noa-moderator"
+      ],
+      "destinations": [
+        "noa-schedule-agent",
+        "noa-itinerary-agent",
+        "noa-concierge-agent"
+      ]
+    },
+    {
+      "id": "NOA_APPROVED_TOOLS",
+      "effect": "ALLOW",
+      "reason": "Travel specialists may access the configured NOA MCP server",
+      "sources": [
+        "noa-schedule-agent",
+        "noa-itinerary-agent",
+        "noa-concierge-agent"
+      ],
+      "destinations": [
+        "noa-mcp"
+      ]
+    },
+    {
+      "id": "NOA_APPROVED_MODEL",
+      "effect": "ALLOW",
+      "reason": "Registered NOA agents may access the configured model gateway",
+      "sources": [
+        "noa-moderator",
+        "noa-schedule-agent",
+        "noa-itinerary-agent",
+        "noa-concierge-agent"
+      ],
+      "destinations": [
+        "noa-llm"
+      ]
+    }
+  ],
+  "content_rules": [
+    {
+      "id": "NOA_SENSITIVE_EXPORT",
+      "reason": "Travel lookup must not export credentials or passport numbers to a URL.",
+      "destinations": [
+        "noa-schedule-agent",
+        "noa-itinerary-agent",
+        "noa-concierge-agent"
+      ],
+      "pattern": "(?i)\\b(?:send|upload|forward|share|email|post|submit|transmit|envia|enviar|partilha|partilhar)\\b[^.!?\\n]{0,80}?\\b(?:api[ _-]?key|password|passport(?: number)?|n[uú]mero de passaporte|credentials?|access token|secret key)\\b[^.!?\\n]{0,80}?\\b(?:to|para|at|on|via)\\s+https?://",
+      "evidence_by_profile": {
+        "topology": "tool_input",
+        "events": "a2a_message_input"
+      }
+    },
+    {
+      "id": "NOA_PAYMENT_SECRET_COLLECTION",
+      "reason": "Fare lookup must not request or collect a card CVV or PIN.",
+      "destinations": [
+        "noa-concierge-agent"
+      ],
+      "pattern": "(?i)^\\s*(?:please\\s+)?(?:collect|request|ask for)\\s+(?:the customer's\\s+|the user's\\s+|the\\s+)?(?:cvv|card pin)\\b",
+      "evidence_by_profile": {
+        "topology": "tool_input",
+        "events": "a2a_message_input"
+      }
+    },
+    {
+      "id": "NOA_SENSITIVE_DATA_EXPOSURE",
+      "reason": "Personal data (a card or passport number, a password or a key) must not be passed to a specialist agent.",
+      "destinations": [
+        "noa-schedule-agent",
+        "noa-itinerary-agent",
+        "noa-concierge-agent"
+      ],
+      "pattern": "(?i)\\b(?:\\d{4}[ -]?){3}\\d{1,4}\\b|\\bpassport(?: (?:number|no\\.?|id))?\\s*(?:is|[:#=])?\\s*[A-Z]{0,2}\\d{6,9}\\b|\\b(?:password|passcode|api[ _-]?key|secret key|access token)\\s*(?:is|[:=])\\s*\\S{4,}",
+      "evidence_by_profile": {
+        "topology": "tool_input",
+        "events": "a2a_message_input"
+      }
+    },
+    {
+      "id": "NOA_LLM_SENSITIVE_EXPORT",
+      "reason": "A model request must not ask to export credentials or passport numbers to a URL.",
+      "destinations": [
+        "noa-llm"
+      ],
+      "pattern": "(?i)\\b(?:send|upload|forward|share|email|post|submit|transmit)\\b[^.!?\\n]{0,80}?\\b(?:api[ _-]?key|password|passport(?: number)?|credentials?|access token|secret key)\\b[^.!?\\n]{0,80}?\\b(?:to|at|on|via)\\s+https?://",
+      "evidence_by_profile": {
+        "events": "llm_input"
+      }
+    },
+    {
+      "id": "NOA_LLM_SENSITIVE_DATA_EXPOSURE",
+      "roles": [
+        "tool"
+      ],
+      "reason": "Personal data in a tool or specialist result must not be sent on to the model. What the user typed is judged by the specialist rule.",
+      "destinations": [
+        "noa-llm"
+      ],
+      "pattern": "(?i)\\b(?:\\d{4}[ -]?){3}\\d{1,4}\\b|\\bpassport(?: (?:number|no\\.?|id))?\\s*(?:is|[:#=])?\\s*[A-Z]{0,2}\\d{6,9}\\b|\\b(?:password|passcode|api[ _-]?key|secret key|access token)\\s*(?:is|[:=])\\s*\\S{4,}",
+      "evidence_by_profile": {
+        "events": "llm_input"
+      }
+    },
+    {
+      "id": "NOA_MCP_SENSITIVE_DATA_EXPOSURE",
+      "reason": "Personal data (a card or passport number, a password or a key) must not be passed as an argument of an MCP tool call.",
+      "destinations": [
+        "noa-mcp"
+      ],
+      "pattern": "(?i)\\b(?:\\d{4}[ -]?){3}\\d{1,4}\\b|\\bpassport(?: (?:number|no\\.?|id))?\\s*(?:is|[:#=])?\\s*[A-Z]{0,2}\\d{6,9}\\b|\\b(?:password|passcode|api[ _-]?key|secret key|access token)\\s*(?:is|[:=])\\s*\\S{4,}",
+      "evidence_by_profile": {
+        "events": "mcp_tool_input"
+      }
+    },
+    {
+      "id": "NOA_MCP_SENSITIVE_EXPORT",
+      "reason": "An MCP tool call must not ask to export credentials or passport numbers to a URL.",
+      "destinations": [
+        "noa-mcp"
+      ],
+      "pattern": "(?i)\\b(?:send|upload|forward|share|email|post|submit|transmit)\\b[^.!?\\n]{0,80}?\\b(?:api[ _-]?key|password|passport(?: number)?|credentials?|access token|secret key)\\b[^.!?\\n]{0,80}?\\b(?:to|at|on|via)\\s+https?://",
+      "evidence_by_profile": {
+        "events": "mcp_tool_input"
+      }
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "mas": [
+    {
+      "mas_id": "mas-a",
+      "rules": [
+        {
+          "id": "AGENT_TO_TOOLS",
+          "effect": "ALLOW",
+          "reason": "Agents of this MAS may call its tools",
+          "sources": ["planner-agent"],
+          "destinations": ["search-tool"]
+        }
+      ],
+      "content_rules": [
+        {
+          "id": "NO_SECRET_EXPORT",
+          "reason": "A tool call must not carry a password or key",
+          "destinations": ["search-tool"],
+          "pattern": "(?i)\\b(?:password|api[ _-]?key|access token)\\s*(?:is|[:=])\\s*\\S{4,}",
+          "evidence": "mcp_tool_input"
+        }
+      ]
+    },
+    {
+      "mas_id": "mas-b",
+      "rules": [
+        {
+          "id": "ALLOW_ALL_TO_LLM",
+          "effect": "ALLOW",
+          "reason": "Any agent of this MAS may use the model gateway",
+          "destinations": ["llm"]
+        }
+      ]
+    }
+  ]
+}
