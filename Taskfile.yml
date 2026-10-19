@@ -1,0 +1,59 @@
+version: '3'
+
+dotenv:
+  - .env
+
+tasks:
+  test:
+    desc: Run tests in the sibling CF source repositories
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh test
+
+  check:
+    desc: Check formatting, lint, and types before running CF tests
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh check
+
+  infra:up:
+    desc: Start the shared database and OXP stack for local CF source processes
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh infra-up
+
+  infra:down:
+    desc: Stop the shared database and OXP stack without deleting volumes
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh infra-down
+
+  run:cfn-mgmt:
+    desc: Migrate the local management database and run management from source
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh run-cfn-mgmt
+
+  run:cfn:
+    desc: Run CFN from source against the local CF databases
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh run-cfn
+
+  run:cf-ui:
+    desc: Run the management UI from source
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh run-cf-ui
+
+  run:demo-ce:
+    desc: Run the demo CE from source against local CFN and shared OXP
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh run-demo-ce
+
+  run:full-mas:
+    desc: Run NOA in the foreground from its published image or local source
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh run-full-mas

@@ -1,0 +1,150 @@
+INTER-CITY TRAIN SCHEDULE
+=========================
+Valid for all weeks of the year
+
+NOTE: All times are in 24-hour format. Travel times are approximate.
+For ticket prices and fare information, see train_fares.txt.
+
+================================================================================
+ROUTE: CELESTIA TO VERDANTIA
+Distance: 245 km | Travel Time: 3 hours
+================================================================================
+
+MONDAY TO FRIDAY (Weekdays)
+Departure (Celestia) | Arrival (Verdantia) | Train Number | Type
+------------------------------------------------------------------
+06:15               | 09:15                | CV101        | Express
+08:30               | 11:30                | CV103        | Standard
+10:45               | 13:45                | CV105        | Express
+13:00               | 16:00                | CV107        | Standard
+15:30               | 18:30                | CV109        | Express
+17:45               | 20:45                | CV111        | Standard
+19:30               | 22:30                | CV113        | Express
+21:00               | 00:00                | CV115        | Night Train
+
+SATURDAY
+Departure (Celestia) | Arrival (Verdantia) | Train Number | Type
+------------------------------------------------------------------
+07:00               | 10:00                | CV201        | Express
+09:30               | 12:30                | CV203        | Standard
+12:00               | 15:00                | CV205        | Express
+14:30               | 17:30                | CV207        | Standard
+17:00               | 20:00                | CV209        | Express
+19:30               | 22:30                | CV211        | Standard
+
+SUNDAY
+Departure (Celestia) | Arrival (Verdantia) | Train Number | Type
+------------------------------------------------------------------
+08:00               | 11:00                | CV301        | Standard
+11:00               | 14:00                | CV303        | Express
+14:00               | 17:00                | CV305        | Standard
+17:00               | 20:00                | CV307        | Express
+20:00               | 23:00                | CV309        | Standard
+
+
+================================================================================
+ROUTE: VERDANTIA TO LUMINOS
+Distance: 180 km | Travel Time: 2 hours
+================================================================================
+
+MONDAY TO FRIDAY (Weekdays)
+Departure (Verdantia) | Arrival (Luminos) | Train Number | Type
+------------------------------------------------------------------
+06:00                | 08:00              | VL101        | Express
+08:15                | 10:15              | VL103        | Standard
+10:30                | 12:30              | VL105        | Express
+12:45                | 14:45              | VL107        | Standard
+15:00                | 17:00              | VL109        | Express
+17:15                | 19:15              | VL111        | Standard
+19:30                | 21:30              | VL113        | Express
+21:45                | 23:45              | VL115        | Standard
+
+SATURDAY
+Departure (Verdantia) | Arrival (Luminos) | Train Number | Type
+------------------------------------------------------------------
+07:15                | 09:15              | VL201        | Express
+09:45                | 11:45              | VL203        | Standard
+12:15                | 14:15              | VL205        | Express
+14:45                | 16:45              | VL207        | Standard
+17:15                | 19:15              | VL209        | Express
+19:45                | 21:45              | VL211        | Standard
+
+SUNDAY
+Departure (Verdantia) | Arrival (Luminos) | Train Number | Type
+------------------------------------------------------------------
+08:30                | 10:30              | VL301        | Standard
+11:30                | 13:30              | VL303        | Express
+14:30                | 16:30              | VL305        | Standard
+17:30                | 19:30              | VL307        | Express
+20:30                | 22:30              | VL309        | Standard
+
+
+================================================================================
+ROUTE: CELESTIA TO LUMINOS (Direct)
+Distance: 425 km | Travel Time: 5 hours
+================================================================================
+
+MONDAY TO FRIDAY (Weekdays)
+Departure (Celestia) | Arrival (Luminos) | Train Number | Type
+------------------------------------------------------------------
+06:30               | 11:30              | CL101        | Express
+09:00               | 14:00              | CL103        | Standard
+12:30               | 17:30              | CL105        | Express
+16:00               | 21:00              | CL107        | Standard
+18:30               | 23:30              | CL109        | Express
+
+SATURDAY
+Departure (Celestia) | Arrival (Luminos) | Train Number | Type
+------------------------------------------------------------------
+07:30               | 12:30              | CL201        | Express
+11:00               | 16:00              | CL203        | Standard
+15:00               | 20:00              | CL205        | Express
+18:30               | 23:30              | CL207        | Standard
+
+SUNDAY
+Departure (Celestia) | Arrival (Luminos) | Train Number | Type
+------------------------------------------------------------------
+09:00               | 14:00              | CL301        | Standard
+13:00               | 18:00              | CL303        | Express
+17:00               | 22:00              | CL305        | Standard
+
+
+================================================================================
+RETURN ROUTES (Same schedules apply in reverse direction)
+================================================================================
+
+VERDANTIA TO CELESTIA: Same times as Celestia to Verdantia
+LUMINOS TO VERDANTIA: Same times as Verdantia to Luminos
+LUMINOS TO CELESTIA: Same times as Celestia to Luminos
+
+
+================================================================================
+TRAIN TYPES
+================================================================================
+
+EXPRESS TRAINS:
+- Fewer stops, faster service
+- Premium seating available
+- Complimentary WiFi and refreshments
+
+STANDARD TRAINS:
+- More stops, scenic routes
+- Standard seating
+- Cafe car available
+
+NIGHT TRAINS:
+- Sleeping compartments available
+- Arrives early morning at destination
+
+
+================================================================================
+BOOKING INFORMATION
+================================================================================
+
+BOOKING METHODS:
+- Online: www.intercitytrains.com
+- Phone: 1-800-TRAINS-NOW
+- Station ticket offices
+- Mobile app: InterCity Trains
+
+For real-time updates, delays, and fare information, check our website or mobile app.
