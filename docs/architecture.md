@@ -1,8 +1,8 @@
 # Cognition Fabric architecture — Releases 1–3
 
-<!-- kind: source · source of truth: GitHub (this file) -->
+<!-- kind: source · published documentation authority: TOME -->
 
-**Scope:** The first three releases of [IoC Scale](https://cisco-eti.atlassian.net/wiki/spaces/IST/pages/2923462749/Roadmap+Schedule+Milestones). This document describes the component boundaries, data flows, and current integration state. The roadmap owns release dates and detailed deliverables.
+**Scope:** This document describes component boundaries, data flows, and integration state across the first three IoC Scaling releases. **Release 1 and Release 2 are the current short-term focus; Release 3 is later context.** The [IoC Scaling Area roadmap in TOME](https://grid.outshift.io/projects/ioc-scaling/tome/wiki/roadmap.md) is the documentation authority for release dates and deliverables. TOME is the documentation source of truth; this repository document supplies CF architecture detail and should be reconciled when its content differs from the published TOME pages.
 
 Curated architecture decisions, when needed, are recorded as [CFN service ADRs](decisions/README.md). The [longer-term target architecture](target-architecture.md) is separate from this release-scoped description.
 
@@ -154,7 +154,7 @@ An argument-sensitive decision needs evidence before the action executes. ADR 00
 
 ## References
 
-- [IoC Scale roadmap](https://cisco-eti.atlassian.net/wiki/spaces/IST/pages/2923462749/Roadmap+Schedule+Milestones)
+- [IoC Scaling Area roadmap in TOME](https://grid.outshift.io/projects/ioc-scaling/tome/wiki/roadmap.md)
 - [CF management backend README](https://github.com/cisco-eti/ioc-scale-cf-mgmt-svc/blob/main/README.md)
 - [CF management UI README](https://github.com/cisco-eti/ioc-scale-cf-ui/blob/main/README.md)
 - [CFN repository README](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/README.md)
