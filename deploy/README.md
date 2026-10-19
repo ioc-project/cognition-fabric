@@ -2,6 +2,10 @@
 
 Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
 
+For the Kubernetes GitOps smoke test and automated registration procedure,
+see [ArgoCD onboarding](docs/argocd-onboarding.md). The smoke test is separate
+from the Docker Compose CF stack described below.
+
 ## Quick Start
 
 1. Copy `.env.example` to `.env` and fill in your credentials:
