@@ -58,20 +58,32 @@ each have a 1s timeout; Store failures remain fail-closed.
 
 ## Pre-call event by id (OXP realtime)
 
-For `tool_input`, `mcp_tool_input` and `a2a_message_input`, when `OXP_API_URL` is set and the request's
-`extra` names the pre-call event, the CE reads it from the OXP realtime endpoints before looking in the inbox:
+When `OXP_API_URL` is set, the CE reads the pre-call content from the OXP realtime endpoints before looking
+in the inbox.
 
-1. `ioc.observe.precall_event_id` (the `event.id` of the `tool.started`): `GET /api/v1/realtime/events/{id}`
-   and the judged text is its `data.input`.
-2. Otherwise `ioc.observe.event_id` (the id of the `*.message.sent`): `GET /api/v1/realtime/spans/{span_id}/events?event_types=tool.started`
-   and the one `tool.started` whose `correlation.parent_event_id` equals it.
+**`a2a_message_input` and `mcp_tool_input`**, from the request's `extra`:
 
-The event must be a `tool.started` of the request's exact trace and span (and of its A2A `message_id` when
-sent); anything else, or several children with different inputs, is `DENY / MISSING_CONTEXT` (`GAP`).
-A 404 or a missing child means "not ingested yet": the lookup is retried within `CE_CONTEXT_WAIT` and
-`CE_CONTEXT_ATTEMPTS` and ends in `RACE`, without borrowing the span's own input. If the endpoints fail
-(network, 5xx), the CE behaves as without them: inbox first, then the OXP span fallback. A decision from this
-path adds the check `OXP_REALTIME_EVENT`. `llm_input` is unchanged.
+1. `ioc.observe.precall_event_id` (the `event.id` of the `tool.started`): `GET /api/v1/realtime/events/{id}`;
+   the judged text is its `data.input`.
+2. Otherwise `ioc.observe.event_id` (the id of the `*.message.sent`): `GET /api/v1/realtime/events/{id}`.
+   With Observe SDK >= 1.0.57 this event carries the content: the text `parts` of an A2A message
+   (`data.input.messageId` must match `ioc.observe.message_id`) or the `arguments` of an MCP `tools/call`.
+   If it carries none, `GET /api/v1/realtime/spans/{span_id}/events?event_types=tool.started` and the one
+   `tool.started` whose `correlation.parent_event_id` equals it.
+
+`tool_input` uses only the `tool.started` of those two.
+
+**`llm_input`** needs no id: `GET /api/v1/realtime/spans/{span_id}/events?event_types=llm.started`. A span has
+one `llm.started`, whose `data.input` is the prompt, and the trace must be the request's. No event leaves the
+request to the inbox and the span fallback; more than one is ambiguous and is `DENY / MISSING_CONTEXT`
+(`GAP`), never a pick.
+
+The referenced event must be of the request's exact trace (the `tool.started` also of its exact span), of the
+expected type; anything else, or ambiguous children, is `DENY / MISSING_CONTEXT` (`GAP`). For
+`a2a_message_input` and `mcp_tool_input`, a 404 or a missing child means "not ingested yet": retried within
+`CE_CONTEXT_WAIT` and `CE_CONTEXT_ATTEMPTS`, ending in `RACE`, without borrowing the span's own input. If
+the endpoints fail (network, 5xx, malformed answer), the CE behaves as without them: inbox first, then the
+OXP span fallback. A decision from this path adds the check `OXP_REALTIME_EVENT`.
 
 ## Input and causal context
 

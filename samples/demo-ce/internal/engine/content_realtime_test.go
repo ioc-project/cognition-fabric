@@ -37,7 +37,11 @@ type fakeRealtime struct {
 	spanGets  atomic.Int32
 }
 
-func (f *fakeRealtime) add(e map[string]any) { f.mu.Lock(); f.events = append(f.events, e); f.mu.Unlock() }
+func (f *fakeRealtime) add(e map[string]any) {
+	f.mu.Lock()
+	f.events = append(f.events, e)
+	f.mu.Unlock()
+}
 
 func (f *fakeRealtime) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f.mu.Lock()
@@ -140,7 +144,10 @@ func TestRealtimeWaitsForTheEventToBeIngested(t *testing.T) {
 	for name, extra := range map[string]map[string]string{"direct": {"ioc.observe.precall_event_id": "pre1"}, "parent": {"ioc.observe.event_id": "msg1"}} {
 		t.Run(name, func(t *testing.T) {
 			f := &fakeRealtime{}
-			go func() { time.Sleep(80 * time.Millisecond); f.add(realtimeEvent("pre1", "msg1", trace, span, "secret-value")) }()
+			go func() {
+				time.Sleep(80 * time.Millisecond)
+				f.add(realtimeEvent("pre1", "msg1", trace, span, "secret-value"))
+			}()
 			out, err := realtimeEngine(t, policy.EvidenceToolInput, f, nil).Evaluate(context.Background(), realtimeRequest(extra))
 			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.DenialReason != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT {
 				t.Fatalf("%+v %v", out, err)
