@@ -172,7 +172,7 @@ run_cf_checks() {
 
 # NOA source/image selection and enforcement mode are independent settings.
 validate_noa_modes() {
-  export NOA_MODE="${NOA_MODE:-published}"
+  export NOA_MODE="${NOA_MODE:-source}"
   export NOA_ENFORCEMENT_MODE="${NOA_ENFORCEMENT_MODE:-direct}"
   [[ "$NOA_MODE" = published || "$NOA_MODE" = source ]] || fail "Invalid NOA_MODE '$NOA_MODE'. Use published or source."
   [[ "$NOA_ENFORCEMENT_MODE" = direct || "$NOA_ENFORCEMENT_MODE" = proxy ]] || fail "Invalid NOA_ENFORCEMENT_MODE '$NOA_ENFORCEMENT_MODE'. Use direct or proxy."
@@ -396,17 +396,18 @@ case "${1:-}" in
     require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
     require_service http://localhost:8081/healthz 'OXP API'
     require_tool uv
-    [[ -d "$repo/.venv" ]] || fail "Demo CE dependencies are missing. Run 'uv sync --frozen' in $repo."
     export CFN_URL=http://localhost:9002
     export COGNITION_ENGINE_HOST=localhost
     export GRPC_PORT=50051
+    # The demo CE starts separate health and notification servers; both default to 8080.
+    export HEALTH_PORT=8082 HTTP_PORT=8080
     export CE_NAME=demo-ce CE_VERSION=1.0.0 CE_TYPE=CASA
-    export CE_HEARTBEAT_INTERVAL_SEC="${CE_HEARTBEAT_INTERVAL_SEC:-1}"
     export COGNITION_STORE_URL=http://localhost:8081
     export DEMO_CE_DECISION="${DEMO_CE_DECISION:-allow}"
     cd "$repo"
     require_cf_containers_stopped
-    exec uv run --no-sync python -m src
+    # Sync locked runtime dependencies after sibling updates, preserving installed extras.
+    exec uv run --frozen python -m src
     ;;
   run-policy-ce)
     require_local_env

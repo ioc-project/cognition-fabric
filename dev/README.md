@@ -82,7 +82,7 @@ NOA_MODE=source
 NOA_ENFORCEMENT_MODE=direct
 ```
 
-`NOA_MODE` accepts `published` (the default) or `source`.
+`NOA_MODE` accepts `source` (the default) or `published`.
 `NOA_ENFORCEMENT_MODE` accepts `direct` (the default) or `proxy`. Proxy mode
 requires source NOA. Both `infra:up` and `run:full-mas` read these settings;
 no inline environment assignments are needed. The published image is independent
@@ -151,10 +151,47 @@ Start them in order, waiting for each service to become ready:
 1. `task run:cfn-mgmt` — management API on port 9000; applies local database migrations.
 2. `task run:cfn` — CFN HTTP on 9002 and gRPC on 9003.
 3. `task run:cf-ui` — management UI on 9001.
-4. `task run:demo-ce` — demo CE gRPC on 50051.
+4. `task run:demo-ce` — demo CE gRPC on 50051, health on 8082, notifications on 8080.
+
+The demo CE runs separate health and notification HTTP servers. The local task
+sets `HEALTH_PORT=8082` and `HTTP_PORT=8080` to keep their listeners and advertised
+registration addresses aligned; both servers otherwise default to port 8080.
+It synchronizes runtime dependencies from the demo CE's lockfile on startup,
+preserving installed extras, so pulling new dependencies does not leave a stale
+virtual environment. CFN probes the health endpoint; the CE does not send heartbeats.
 
 For the policy-driven Go CE instead of the Python demo CE, use
 `task run:policy-ce` in step 4 after configuring its policy as described below.
+
+### Choose NOA enforcement and CE independently
+
+For all four combinations, set `NOA_MODE=source` in the CFN `.env`:
+
+| `NOA_ENFORCEMENT_MODE` | CE task (choose one) | Tool authorization path |
+| --- | --- | --- |
+| `direct` | `task run:demo-ce` | NOA → CFN → demo CE |
+| `direct` | `task run:policy-ce` | NOA → CFN → policy CE |
+| `proxy` | `task run:demo-ce` | NOA → Envoy → CFN → demo CE |
+| `proxy` | `task run:policy-ce` | NOA → Envoy → CFN → policy CE |
+
+`direct` means the proxy is bypassed; CFN authorization still runs. In proxy
+mode, start Envoy with `task infra:up` before `task run:full-mas`. The latter
+starts the HTTP tool service automatically. Both CE tasks use the same local
+CFN and OXP, regardless of the NOA mode. Demo CE uses gRPC 50051, health 8082,
+and notifications 8080; policy CE uses gRPC 18001 and HTTP 18000. These do not
+overlap the default NOA API/tool ports (8125/8126) or Envoy port (9010).
+
+To switch CEs, stop the previous CE task, disable its record in the management
+UI, and start the chosen CE task. Associate it with your MAS and ensure that
+it is enabled and online. Re-enable an existing CE record if it was disabled
+during a previous switch. CFN selects the first eligible CASA CE; merely
+starting a different CE does not change the MAS's associations or select it.
+The policy CE also requires `CE_POLICY_FILE` and a policy for `NOA_MAS_ID`;
+the demo CE uses `DEMO_CE_DECISION=allow` or `deny`.
+
+To switch NOA modes, stop `task run:full-mas`, change the setting, and restart
+it (run `task infra:up` first when selecting proxy). A proxy left running in
+direct mode is unused. The CE task does not need to change when NOA mode changes.
 
 The management task refuses to run if the management checkout has its own
 `.env`, which could override the local database target. Logs from these four
