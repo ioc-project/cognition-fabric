@@ -52,6 +52,12 @@ tasks:
     cmds:
       - bash deploy/local/cf-local.sh run-demo-ce
 
+  run:policy-ce:
+    desc: Run the policy CE from source using CE_POLICY_FILE against local CFN and OXP
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh run-policy-ce
+
   run:full-mas:
     desc: Run NOA in the foreground from its published image or local source
     silent: true

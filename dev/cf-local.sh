@@ -11,6 +11,7 @@ cf_services=(
   ioc-scale-cf-mgmt-plane-ui
   ioc-scale-cfn-svc
   ioc-scale-cf-demo-ce
+  ioc-scale-cf-policy-ce
 )
 infra_services=(
   ioc-scale-db ioc-scale-db-init
@@ -305,7 +306,45 @@ case "${1:-}" in
     require_cf_containers_stopped
     exec uv run --no-sync python -m src
     ;;
+  run-policy-ce)
+    require_local_env
+    repo="$deployment_dir/../ioc-scale-cf-demo-ce/policy-ce"
+    require_checkout "$deployment_dir/../ioc-scale-cf-demo-ce" policy-ce/go.mod https://github.com/cisco-eti/ioc-scale-cf-demo-ce
+    require_env CE_POLICY_FILE
+    # Task is invoked from CFN; resolve relative policy paths before changing directory.
+    [[ "$CE_POLICY_FILE" = /* ]] || CE_POLICY_FILE="$cfn_dir/$CE_POLICY_FILE"
+    [[ -f "$CE_POLICY_FILE" ]] || fail "Policy file not found at $CE_POLICY_FILE. See deploy/README.md for policy CE setup."
+    export CE_POLICY_FILE
+    if [[ -n "${CE_MAS_FILE:-}" ]]; then
+      [[ "$CE_MAS_FILE" = /* ]] || CE_MAS_FILE="$cfn_dir/$CE_MAS_FILE"
+      export CE_MAS_FILE
+    fi
+    require_docker_compose
+    require_cf_containers_stopped
+    require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
+    require_service http://localhost:8081/healthz 'OXP API'
+    require_tool go
+    export CFN_URL=http://localhost:9002
+    export OXP_API_URL=http://localhost:8081
+    export GRPC_LISTEN_ADDRESS=127.0.0.1:18001
+    export HTTP_LISTEN_ADDRESS=127.0.0.1:18000
+    export ADVERTISED_GRPC_ADDRESS=127.0.0.1:18001
+    export ADVERTISED_HEALTH_URL=http://127.0.0.1:18000/healthz
+    export CE_NAME="${POLICY_CE_NAME:-policy-ce}" CE_VERSION=reference-v1 CE_TYPE=CASA
+    export CGO_ENABLED=0 GOWORK=off
+    # Use sibling CFN contracts without changing either checkout's module files.
+    build_dir="$(mktemp -d "${TMPDIR:-/tmp}/cf-policy-ce.XXXXXX")"
+    trap 'rm -rf "$build_dir"' EXIT
+    cp "$repo/go.mod" "$build_dir/policy-ce.mod"
+    cp "$repo/go.sum" "$build_dir/policy-ce.sum"
+    cd "$repo"
+    go mod edit -modfile="$build_dir/policy-ce.mod" "-replace=github.com/cisco-eti/ioc-scale-cfn-svc=$cfn_dir"
+    printf 'Building policy CE from %s (policy: %s)\n' "$repo" "$CE_POLICY_FILE"
+    go build -mod=mod -modfile="$build_dir/policy-ce.mod" -o "$build_dir/policy-ce" ./cmd/policy-ce
+    require_cf_containers_stopped
+    "$build_dir/policy-ce"
+    ;;
   *)
-    fail "Unknown action '${1:-}'. Use task test, check, infra:up, infra:down, run:cfn-mgmt, run:cfn, run:cf-ui, run:demo-ce, or run:full-mas."
+    fail "Unknown action '${1:-}'. Use task test, check, infra:up, infra:down, run:cfn-mgmt, run:cfn, run:cf-ui, run:demo-ce, run:policy-ce, or run:full-mas."
     ;;
 esac

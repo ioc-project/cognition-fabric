@@ -37,6 +37,7 @@ Install Docker with Compose v2, [Task](https://taskfile.dev/), Go 1.25+, Python
 3.10+, Poetry, [uv](https://docs.astral.sh/uv/), Node.js 20 (at least
 20.9), and npm. The demo CE needs Python 3.11+. The management service
 and demo CE use their own Python environments.
+The optional Go policy CE requires Go 1.25.9+ (or automatic Go toolchain downloads).
 
 Start Docker, then authenticate to the private `cisco-eti` images in GHCR.
 Set `GITHUB_USERNAME` and `GITHUB_TOKEN` to an account and token with package
@@ -118,7 +119,7 @@ running CF services from source. A fresh checkout does not need this step:
 ```bash
 (cd ../ioc-scale-cf-deployment && docker compose stop \
   ioc-scale-cf-mgmt-svc ioc-scale-cf-mgmt-plane-ui \
-  ioc-scale-cfn-svc ioc-scale-cf-demo-ce)
+  ioc-scale-cfn-svc ioc-scale-cf-demo-ce ioc-scale-cf-policy-ce)
 ```
 
 `infra:up` creates `cfn_mgmt_local` and `cfn_audit_local` in the shared Postgres
@@ -134,6 +135,9 @@ Start them in order, waiting for each service to become ready:
 2. `task run:cfn` — CFN HTTP on 9002 and gRPC on 9003.
 3. `task run:cf-ui` — management UI on 9001.
 4. `task run:demo-ce` — demo CE gRPC on 50051.
+
+For the policy-driven Go CE instead of the Python demo CE, use
+`task run:policy-ce` in step 4 after configuring its policy as described below.
 
 The management task refuses to run if the management checkout has its own
 `.env`, which could override the local database target. Logs from these four
@@ -196,6 +200,53 @@ curl 'http://localhost:8081/api/v1/cognition-store/findings?mas_id=YOUR_MAS_ID'
 An empty `findings` array is normal until a CE evaluation stores a finding.
 `context_complete: true` only describes pagination of this response; it does
 not mean telemetry or decision context is complete.
+
+## Run the policy CE
+
+`task run:policy-ce` runs the Go CE from the sibling
+`ioc-scale-cf-demo-ce/policy-ce` checkout. It evaluates JSON identity and
+content rules rather than returning the Python demo CE's forced verdict.
+Start infrastructure, management, and CFN as above, then prepare a local policy:
+
+```bash
+mkdir -p tmp
+cp ../ioc-scale-cf-demo-ce/policy-ce/config/policy.json tmp/policy.json
+```
+
+Edit this copy: replace the sample `mas-a`/`mas-b` IDs with your actual MAS
+IDs, and set source and destination IDs to those sent in `GetDisposition`.
+Remove sample rules you do not need. Unlisted MAS IDs and unmatched routes
+are denied. See the [policy CE README](../../ioc-scale-cf-demo-ce/policy-ce/README.md)
+for the policy schema and content evidence requirements.
+
+The repository's `tmp/` directory is ignored by Git. Set
+`CE_POLICY_FILE=tmp/policy.json` in the CFN `.env` (as in `.env.example`), then run:
+
+```bash
+task run:policy-ce
+```
+
+Paths are absolute or relative to the CFN checkout. For the single-policy
+JSON form, also set `CE_MAS_FILE` to a file containing the actual MAS ID.
+Restart the task after editing its policy or configuration.
+
+The task builds against the sibling CFN checkout using temporary module files,
+then runs in the foreground. It leaves both checkouts' `go.mod` and `go.sum`
+unchanged. The first build may download the Go toolchain and public dependencies.
+It uses CFN at `localhost:9002`, OXP at `localhost:8081`, gRPC at
+`127.0.0.1:18001`, and HTTP at `127.0.0.1:18000`. CFN probes its `/healthz`;
+`/readyz` succeeds after registration. Registration uses the name `policy-ce`
+(override with `POLICY_CE_NAME`), version `reference-v1`, and type `CASA`.
+
+Stop `task run:demo-ce` and disable its CE record in the management UI when
+switching. Associate the policy CE with the MAS and ensure it is online and
+enabled. CFN currently selects the first eligible CASA CE, so leaving both
+eligible can route requests to the Python CE.
+
+The source NOA sample can exercise identity rules. Its adapter does not publish
+the pre-call events or session context required by some content rules; starting
+this task alone does not provide that evidence. Use the policy CE's documented
+evidence inputs when exercising content checks.
 
 ## Checks and shutdown
 
