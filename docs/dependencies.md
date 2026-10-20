@@ -48,7 +48,7 @@ flowchart LR
 
   L9 -->|depends on: L9 message schema| CF
   OXP -->|depends on: trace & trajectory ingestion| CF
-  EP -->|depends on: Enforcement contract ioc.ce.v1| CF
+  EP -->|depends on: Enforcement contract ioc.cf.enforcement.v1| CF
   EP -->|depends on: Tracing contract ioc.cf.tracing.v1| CF
   LAB -->|relates to: validation target| CF
 
@@ -67,7 +67,7 @@ or consume findings until the Cognition Store is live, and GATS cannot enforce u
 Enforcing API contract is specified.**
 
 **The Enforcement Proxy is our primary enforcement counterparty.** CF specifies the Enforcement
-contract (`ioc.ce.v1`) and Tracing contract (`ioc.cf.tracing.v1`); the Enforcement Proxy
+contract (`ioc.cf.enforcement.v1`) and Tracing contract (`ioc.cf.tracing.v1`); the Enforcement Proxy
 executes enforcement in-path.
 
 ## Project-level dependencies
@@ -76,7 +76,7 @@ executes enforcement in-path.
 |---|---|---|---|---|---|
 | P1 | **CF `depends on` L9** for message and interaction semantics | L9 main protocol & CEs T3 | TBD | Ongoing | **At risk** — L9 schema still evolving; CF mediates without owning it |
 | P2 | **CF `depends on` OXP** for **trajectories and cognitive enrichment** — OXP is the primary source of traces and reconstructed trajectories | OXP T3 | TBD | TBD | **Not started** — integration design not yet captured |
-| P3 | **Enforcement Proxy `depends on` CF** for the **Enforcement contract** `ioc.ce.v1` — CF specifies, Proxy executes | Enforcement Proxy T3 | TBD | TBD | **Not started** — contract specification in progress |
+| P3 | **Enforcement Proxy `depends on` CF** for the **Enforcement contract** `ioc.cf.enforcement.v1` — CF specifies, Proxy executes | Enforcement Proxy T3 | TBD | TBD | **Not started** — contract specification in progress |
 | P4 | **Enforcement Proxy `depends on` CF** for the **Tracing contract** `ioc.cf.tracing.v1` | Enforcement Proxy T3 | TBD | TBD | **Not started** — contract not yet written |
 | P5 | **CASA `blocks on` CF** — needs the Cognition Store to publish and consume findings | CASA CE T3 | TBD | TBD | **Not started** |
 | P6 | **Detective Investigations `blocks on` CF** — needs the Cognition Store for CE chaining | Detective Active Investigations CE T3 | TBD | TBD | **Not started** |
@@ -98,7 +98,7 @@ executes enforcement in-path.
 
 | Consumer | Purpose | Contract |
 |----------|---------|----------|
-| `Enforcement Proxy` | In-path enforcement execution | `ioc.ce.v1`, `ioc.cf.tracing.v1` |
+| `Enforcement Proxy` | In-path enforcement execution | `ioc.cf.enforcement.v1`, `ioc.cf.tracing.v1` |
 | Multi-Agent Systems (MAS) | Primary consumers of CFN capabilities | HTTP REST (three-tier API) |
 | CASA CE | Publish/consume findings via Cognition Store | CF APIs |
 | Detective Investigations CE | CE chaining, findings access | CF APIs |

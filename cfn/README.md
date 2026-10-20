@@ -11,8 +11,7 @@ a fabric to route those signals to Cognition Engines (CEs) that act on them. CF 
 
 CF provides:
 
-- **Cognition Store** — shared CE memory layer for publishing and consuming findings
-- **Three-tier API surface** — Analytics (read-only), Active (MAS engagement), Enforcing (block/modify/inject)
+- **Two-tier API surface** — Active (MAS engagement) and Enforcing (block/modify/inject). Analytics APIs and the Cognition Store are owned by OXP.
 - **CE routing and chaining** — compose and sequence Cognition Engines across the fabric
 - **OXP integration** — trajectories and cognitive enrichment as first-class fabric signals
 
@@ -24,27 +23,24 @@ CF provides:
 
 | Contract | Direction | Purpose |
 |----------|-----------|---------|
-| `ioc.cf.enforcement.v1` | CF → Enforcement Proxy | Enforcement contract — dispositions (allow/block) |
-| Analytics API | CEs → CF | Read-only observability queries |
+| `ioc.cf.enforcement.v1.Enforcement/GetDisposition` | Enforcement Proxy → CF | Enforcing API — dispositions (allow/block) |
 | Active API | CEs → CF | Direct MAS engagement |
-| Enforcing API | CEs → CF | Issue dispositions via Enforcement Proxy |
 
 ## Focus areas
 
 | Area | Description |
 |------|-------------|
 | **OXP core integration** | Refactor CF to integrate OXP as a first-class source of cognitive signal |
-| **Cognition Store** | Build the store as required by COGS and GATS CEs |
-| **Three-tier CF API surface** | Analytics, Active, and Enforcing APIs |
+| **Two-tier CF API surface** | Active and Enforcing APIs. Analytics APIs and Cognition Store are OXP-owned. |
 | **CE support** | Routing and chaining of Cognition Engines across the fabric |
-| **L9 interaction with MAS** | Passive, active, and enforcing modes of L9 interaction |
+| **L9 interaction with MAS** | Active and enforcing modes of L9 interaction |
 
 ## Consumers
 
-- **CASA CE** — publishes/consumes findings via Cognition Store
+- **CASA CE** — publishes/consumes findings via OXP's Cognition Store
 - **Detective Investigations CE** — CE chaining, findings access
 - **GATS CEs** — Enforcing tier dispositions
-- **Security Detections CE** — Analytics tier queries
+- **Security Detections CE** — queries OXP's Analytics APIs directly
 - **Enforcement Proxy** — executes enforcement in-path via `ioc.cf.enforcement.v1`
 
 ## Documentation
@@ -123,7 +119,8 @@ The service loads environment variables from a `.env` file if present. See [`.en
 | `CFN_IP` | Advertised IP address (auto-detected if not set) | (auto) |
 | `APP_PORT` | HTTP server port | `9002` |
 | `GRPC_PORT` | gRPC server port (Enforcement API) | `9003` |
-| `HEARTBEAT_INTERVAL_SECONDS` | Interval between heartbeats to mgmt plane | `29` |
+| `HEARTBEAT_INTERVAL_SECONDS` | Interval of CFN's own heartbeat to the mgmt plane (not CE health) | `10` |
+| `CE_PROBE_TIMEOUT_SECONDS` | Timeout (seconds, max 10) for the health probe CFN performs against a CE `health_url`, read once at startup | `1` |
 
 ### Project Structure
 

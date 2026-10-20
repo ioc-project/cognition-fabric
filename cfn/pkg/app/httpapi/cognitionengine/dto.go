@@ -18,6 +18,8 @@ type RegisterRequest struct {
 	BaseURL string `json:"base_url" example:"http://my-ce:8080"`
 	// API endpoint path
 	Endpoint string `json:"endpoint" example:"/authorize"`
+	// Full URL CFN probes with an HTTP GET to check the CE is alive (required, http or https)
+	HealthURL string `json:"health_url" example:"http://casa-ce:8080/healthz"`
 	// Notification base URL for MAS event notifications
 	NotificationURL *string `json:"notification_url,omitempty" example:"http://my-ce:8080"`
 	// Notification endpoint path for MAS event notifications
@@ -45,6 +47,8 @@ type RegisterResponse struct {
 	BaseURL string `json:"base_url" example:"http://my-ce:8080"`
 	// API endpoint path
 	Endpoint string `json:"endpoint" example:"/authorize"`
+	// Health check URL probed by CFN
+	HealthURL string `json:"health_url" example:"http://casa-ce:8080/healthz"`
 	// Notification base URL for MAS event notifications
 	NotificationURL *string `json:"notification_url,omitempty" example:"http://my-ce:8080"`
 	// Notification endpoint path for MAS event notifications
@@ -59,13 +63,18 @@ type RegisterResponse struct {
 	Created bool `json:"created" example:"true"`
 }
 
-// HeartbeatResponse represents the response returned to the CE after a successful heartbeat.
-// @Description CE heartbeat response.
-type HeartbeatResponse struct {
-	// CE status after heartbeat
-	Status string `json:"status" example:"online"`
-	// Last seen timestamp (RFC3339)
-	LastSeen string `json:"last_seen" example:"2026-08-14T10:30:00Z"`
+// ProbeRequest is the internal request the management plane sends to CFN to probe a CE.
+// @Description Request to probe a CE. CFN looks up the CE's registered health_url.
+type ProbeRequest struct {
+	// Cognition Engine ID (UUID)
+	CEID string `json:"ce_id" example:"550e8400-e29b-41d4-a716-446655440000"`
+}
+
+// ProbeResponse is the result of a CE health probe.
+// @Description Result of a CE health probe.
+type ProbeResponse struct {
+	// True when the health URL answered 200 within the probe timeout
+	Healthy bool `json:"healthy" example:"true"`
 }
 
 // ErrorResponse represents an error response.

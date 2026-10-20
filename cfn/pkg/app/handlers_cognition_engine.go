@@ -10,7 +10,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/netip"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -102,6 +104,12 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
+	if err := validateHealthURL(req.HealthURL); err != nil {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
 	// Check if this CFN is registered with the management plane
 	if CfnID == "" {
 		return eh.RespondWithJSON(w, http.StatusServiceUnavailable, map[string]string{
@@ -132,6 +140,7 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 		"ce_type":            req.CEType,
 		"base_url":           req.BaseURL,
 		"endpoint":           req.Endpoint,
+		"health_url":         req.HealthURL,
 		"mas_auto_associate": masAutoAssociate,
 		"mas_config":         masConfig,
 	}
@@ -213,95 +222,6 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 	return eh.RespondWithJSON(w, resp.StatusCode, mgmtResp)
 }
 
-// cognitionEngineHeartbeatHandler handles CE heartbeat requests.
-//
-// @Summary      CE Heartbeat
-// @Description  Send heartbeat to maintain CE online status. CFN forwards to management plane.
-// @Tags         cognition-engines
-// @Produce      json
-// @Param        ceId path string true "Cognition Engine ID (UUID)"
-// @Success      200 {object} cognitionengine.HeartbeatResponse "Heartbeat acknowledged"
-// @Failure      400 {object} cognitionengine.ErrorResponse "Invalid CE ID"
-// @Failure      502 {object} cognitionengine.ErrorResponse "Management plane error"
-// @Failure      503 {object} cognitionengine.ErrorResponse "CFN not registered"
-// @Router       /api/cognition-engine/{ceId}/heartbeat [put]
-func (a *App) cognitionEngineHeartbeatHandler(w http.ResponseWriter, r *http.Request) (int, error) {
-	log := getLogger()
-
-	ceID := eh.PathParam(r, "ceId")
-	if ceID == "" {
-		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "ce_id is required",
-		})
-	}
-
-	// Validate ceID is a valid UUID
-	if _, err := uuid.Parse(ceID); err != nil {
-		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "invalid ce_id format: must be a valid UUID",
-		})
-	}
-
-	// Check if this CFN is registered with the management plane
-	if CfnID == "" {
-		return eh.RespondWithJSON(w, http.StatusServiceUnavailable, map[string]string{
-			"error": "CFN not registered with management plane yet",
-		})
-	}
-
-	// Build the heartbeat URL for management plane
-	mgmtURL := getEnvOrDefault("MGMT_URL", "http://localhost:9000")
-	heartbeatURL := fmt.Sprintf("%s/api/cognition-engines/%s/heartbeat", mgmtURL, ceID)
-
-	log.Debugf("forwarding CE heartbeat to management plane: %s (ce_id=%s)", heartbeatURL, ceID)
-
-	// Forward the heartbeat to the management plane (PUT with no body)
-	client := httpclient.New(10 * time.Second)
-	headers := map[string]string{
-		"Accept": "application/json",
-	}
-
-	ctx := context.Background()
-	resp, err := client.Put(ctx, heartbeatURL, nil, headers)
-	if err != nil {
-		return eh.RespondWithJSON(w, http.StatusBadGateway, map[string]string{
-			"error": fmt.Sprintf("failed to forward heartbeat to management plane: %v", err),
-		})
-	}
-	defer resp.Body.Close()
-
-	// Read management plane response
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return eh.RespondWithJSON(w, http.StatusBadGateway, map[string]string{
-			"error": fmt.Sprintf("failed to read management plane response: %v", err),
-		})
-	}
-
-	// If management plane returned an error status, forward it to the CE
-	if resp.StatusCode != http.StatusOK {
-		var errorResp map[string]any
-		if err := json.Unmarshal(respBody, &errorResp); err != nil {
-			errorResp = map[string]any{"raw": string(respBody)}
-		}
-		log.Errorf("management plane heartbeat failed: status=%d, body=%v", resp.StatusCode, errorResp)
-		return eh.RespondWithJSON(w, resp.StatusCode, errorResp)
-	}
-
-	// Parse successful response
-	var hbResp cognitionengine.HeartbeatResponse
-	if err := json.Unmarshal(respBody, &hbResp); err != nil {
-		return eh.RespondWithJSON(w, http.StatusBadGateway, map[string]string{
-			"error": fmt.Sprintf("failed to parse management plane response: %v", err),
-		})
-	}
-
-	log.Debugf("CE heartbeat acknowledged: ce_id=%s, status=%s", ceID, hbResp.Status)
-
-	// Return the successful response to the CE
-	return eh.RespondWithJSON(w, http.StatusOK, hbResp)
-}
-
 // patchCognitionEngineHandler handles CE update requests.
 //
 // @Summary      Update a Cognition Engine
@@ -310,7 +230,7 @@ func (a *App) cognitionEngineHeartbeatHandler(w http.ResponseWriter, r *http.Req
 // @Accept       json
 // @Produce      json
 // @Param        ceId path string true "Cognition Engine ID (UUID)"
-// @Param        request body map[string]any true "Fields to update (base_url, endpoint)"
+// @Param        request body map[string]any true "Fields to update (base_url, endpoint, health_url)"
 // @Success      200 {object} map[string]any "CE updated successfully"
 // @Failure      400 {object} cognitionengine.ErrorResponse "Invalid request"
 // @Failure      404 {object} cognitionengine.ErrorResponse "CE not found"
@@ -347,6 +267,14 @@ func (a *App) patchCognitionEngineHandler(w http.ResponseWriter, r *http.Request
 		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
 			"error": fmt.Sprintf("invalid JSON body: %v", err),
 		})
+	}
+
+	if v, ok := reqBody["health_url"]; ok {
+		if err := validateHealthURLValue(v); err != nil {
+			return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+				"error": err.Error(),
+			})
+		}
 	}
 
 	// Build the patch URL for management plane
@@ -505,4 +433,181 @@ func (a *App) deleteCognitionEngineHandler(w http.ResponseWriter, r *http.Reques
 	}
 	log.Errorf("cognition engine delete failed: status=%d, body=%v", resp.StatusCode, errorResp)
 	return eh.RespondWithJSON(w, resp.StatusCode, errorResp)
+}
+
+// validateHealthURL checks that a CE health URL is an absolute http or https URL with a hostname
+// and without credentials or a fragment.
+func validateHealthURL(raw string) error {
+	if raw == "" {
+		return fmt.Errorf("health_url is required")
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil || parsed.Hostname() == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+		return fmt.Errorf("invalid health_url: must be an http or https URL (for example http://host:port/healthz)")
+	}
+	if parsed.User != nil {
+		return fmt.Errorf("invalid health_url: credentials are not allowed")
+	}
+	if parsed.Fragment != "" {
+		return fmt.Errorf("invalid health_url: fragments are not allowed")
+	}
+	if addr, err := netip.ParseAddr(parsed.Hostname()); err == nil && addr.IsLinkLocalUnicast() {
+		// Covers the cloud metadata address 169.254.169.254. Private and loopback ranges stay allowed,
+		// since CEs run there.
+		return fmt.Errorf("invalid health_url: link-local addresses are not allowed")
+	}
+	return nil
+}
+
+// validateHealthURLValue validates a health_url taken from a decoded JSON body, where it can be any type.
+func validateHealthURLValue(v any) error {
+	healthURL, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("health_url must be a string")
+	}
+	return validateHealthURL(healthURL)
+}
+
+const (
+	defaultProbeTimeout = time.Second
+	maxProbeTimeout     = 10 * time.Second
+)
+
+// parseProbeTimeout parses a timeout in seconds. It must be positive and at most 10 seconds.
+func parseProbeTimeout(raw string) (time.Duration, error) {
+	secs, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		return 0, fmt.Errorf("not a number: %q", raw)
+	}
+	d := time.Duration(secs * float64(time.Second))
+	if d <= 0 || d > maxProbeTimeout {
+		return 0, fmt.Errorf("must be greater than 0 and at most %s, got %q", maxProbeTimeout, raw)
+	}
+	return d, nil
+}
+
+// probeTimeoutFromEnv reads CE_PROBE_TIMEOUT_SECONDS and falls back to the default if it is
+// unset or invalid. It is called once at startup.
+func probeTimeoutFromEnv() time.Duration {
+	raw := getEnvOrDefault("CE_PROBE_TIMEOUT_SECONDS", "")
+	if raw == "" {
+		return defaultProbeTimeout
+	}
+	d, err := parseProbeTimeout(raw)
+	if err != nil {
+		getLogger().Warnf("invalid CE_PROBE_TIMEOUT_SECONDS, using %s: %v", defaultProbeTimeout, err)
+		return defaultProbeTimeout
+	}
+	return d
+}
+
+// getProbeTimeout returns the configured probe timeout, or the default if none was set.
+func (a *App) getProbeTimeout() time.Duration {
+	if a.probeTimeout <= 0 {
+		return defaultProbeTimeout
+	}
+	return a.probeTimeout
+}
+
+// maxProbeRequestBytes caps the probe request body.
+const maxProbeRequestBytes = 1 << 10
+
+// probeClient is shared by all probes. It does not use httpclient.New because it must not follow
+// redirects (a redirecting health URL is reported unhealthy instead of probing the redirect target)
+// and must not use a proxy.
+var probeClient = &http.Client{
+	Transport:     newProbeTransport(),
+	CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse },
+}
+
+// newProbeTransport returns the default transport without proxy support. CE health URLs are internal
+// addresses probed directly: HTTP_PROXY and HTTPS_PROXY would send the probe to the proxy, which can
+// answer for a CE that is down or cannot reach it.
+func newProbeTransport() *http.Transport {
+	t := http.DefaultTransport.(*http.Transport).Clone()
+	t.Proxy = nil
+	return t
+}
+
+// findEngineHealthURL returns the registered health URL of a CE from the current config snapshot.
+func findEngineHealthURL(ceID string) (string, bool) {
+	cfnConfigMutex.RLock()
+	defer cfnConfigMutex.RUnlock()
+	if ParsedConfig == nil {
+		return "", false
+	}
+	for _, ce := range ParsedConfig.CognitionEngines {
+		if ce.ID == ceID {
+			return ce.HealthURL, true
+		}
+	}
+	return "", false
+}
+
+// probeCognitionEngineHandler probes a registered CE's health URL on behalf of the management plane.
+//
+// @Summary      Probe a Cognition Engine
+// @Description  Internal. Looks up the CE's registered health_url and performs an unauthenticated HTTP GET against it. A 200 within the probe timeout is healthy, anything else is unhealthy.
+// @Tags         internal
+// @Accept       json
+// @Produce      json
+// @Param        request body cognitionengine.ProbeRequest true "Probe request"
+// @Success      200 {object} cognitionengine.ProbeResponse "Probe result"
+// @Failure      400 {object} cognitionengine.ErrorResponse "Invalid request"
+// @Failure      404 {object} cognitionengine.ErrorResponse "CE not yet in CFN config"
+// @Router       /api/internal/mgmt/cognition-engine/probe [post]
+func (a *App) probeCognitionEngineHandler(w http.ResponseWriter, r *http.Request) (int, error) {
+	log := getLogger()
+
+	var req cognitionengine.ProbeRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxProbeRequestBytes)).Decode(&req); err != nil {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": fmt.Sprintf("invalid JSON body: %v", err),
+		})
+	}
+	if _, err := uuid.Parse(req.CEID); err != nil {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid ce_id format: must be a valid UUID",
+		})
+	}
+
+	healthURL, found := findEngineHealthURL(req.CEID)
+	if !found {
+		return eh.RespondWithJSON(w, http.StatusNotFound, map[string]string{
+			"error": "CE not yet in CFN config",
+		})
+	}
+	if err := validateHealthURL(healthURL); err != nil {
+		log.Debugf("probe skipped: ce_id=%s: %v", req.CEID, err)
+		return eh.RespondWithJSON(w, http.StatusOK, cognitionengine.ProbeResponse{Healthy: false})
+	}
+
+	healthy, reason := probeHealthURL(r.Context(), healthURL, a.getProbeTimeout())
+	if !healthy {
+		log.Debugf("probe unhealthy: ce_id=%s health_url=%s reason=%s", req.CEID, healthURL, reason)
+	}
+	return eh.RespondWithJSON(w, http.StatusOK, cognitionengine.ProbeResponse{Healthy: healthy})
+}
+
+// probeHealthURL performs a GET and reports whether it returned 200 within the timeout. When it did
+// not, the second return value says why. The response body is ignored.
+func probeHealthURL(ctx context.Context, healthURL string, timeout time.Duration) (bool, string) {
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, healthURL, nil)
+	if err != nil {
+		return false, err.Error()
+	}
+	resp, err := probeClient.Do(req)
+	if err != nil {
+		return false, err.Error()
+	}
+	defer resp.Body.Close()
+	// Drain a bounded amount so the connection can be reused
+	_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, 4096))
+	if resp.StatusCode != http.StatusOK {
+		return false, fmt.Sprintf("status %d", resp.StatusCode)
+	}
+	return true, ""
 }

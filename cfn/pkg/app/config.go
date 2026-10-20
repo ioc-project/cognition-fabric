@@ -17,6 +17,7 @@ type EngineCfg struct {
 	CEType               string         `json:"ce_type"` // "CASA" or "DETECTIVE"
 	BaseURL              string         `json:"base_url"`
 	Endpoint             string         `json:"endpoint"`
+	HealthURL            string         `json:"health_url"`
 	NotificationURL      string         `json:"notification_url"`
 	NotificationEndpoint string         `json:"notification_endpoint"`
 	Enabled              bool           `json:"enabled"`

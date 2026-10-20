@@ -12,6 +12,8 @@ IoC adds observability and in-path guardrails to an existing multi-agent system 
 
 For Releases 1–3, OXP is deployed with the IoC stack. It contains the Cognition Store, serves telemetry and findings to CEs, and is intended to deliver realtime events directly to them. CFN manages CE integration and routes enforcement requests. CEs use OXP directly for evidence rather than querying it through CFN.
 
+OXP owns and serves the Analytics APIs directly. CF owns the **Active** and **Enforcing** API tiers; Active APIs cover CE-initiated MAS engagement. See [ADR 0002 — Analytics APIs moved from CF to OXP](decisions/0002-analytics-apis-moved-to-oxp.md).
+
 The release sequence advances from CASA in advisory mode to blocking enforcement and then detective capabilities. The current enforcement route selects one available CASA CE associated with the MAS. How additional CE types participate in routing and decisions remains to be defined.
 
 ## Simplified architecture
@@ -61,7 +63,7 @@ The MAS, proxy, and SDK are grouped as one deployment without implying a specifi
 |---|---|
 | **MAS and Observe SDK** | Run the agent application and emit traces and runtime events to OXP through the OTel Collector. |
 | **Enforcement proxy** | Mediate MAS-originated governed communication, request a CFN disposition, and apply the allow/block outcome. Later, receive CE-initiated interactions from CFN, deliver them into the MAS, and return their responses. |
-| **CFN** | Route enforcement to an associated, available CE and return its disposition to the proxy. The planned Interactive API also routes CE-initiated calls toward the MAS through the proxy. |
+| **CFN** | Route enforcement to an associated, available CE and return its disposition to the proxy. The planned Active API also routes CE-initiated calls toward the MAS through the proxy. |
 | **CF management plane** | Maintain workspaces, MAS and agent records, CE associations and configuration, and CE/CFN heartbeat status. Its management data is stored in PostgreSQL. |
 | **OXP** | Ingest and process telemetry; serve traces, graph data and Cognition Store findings; deliver relevant live events to CEs. |
 | **CEs** | Evaluate MAS activity and actions using OXP evidence. CASA handles authorization; detective capabilities are introduced during the release sequence. |
@@ -117,7 +119,7 @@ Proxy holds proposed action
 
 `GetDisposition` carries identifiers and metadata, not the intercepted content. The action reference is `(trace_id, span_id)`. CFN forwards it to CASA, which retrieves the corresponding evidence from OXP. Application instrumentation must therefore publish the proposed action's destination and arguments before authorization; the normal tool-operation span may remain open until the held operation completes.
 
-The Enforcing API carries proxy-originated decision requests toward CEs. The planned Interactive API carries CE-initiated calls through CFN and the proxy toward the MAS, with responses returning along that path. CEs read evidence from OXP directly in this release architecture. The interactive message contract and proxy behavior remain open.
+The Enforcing API carries proxy-originated decision requests toward CEs. The planned Active API carries CE-initiated calls through CFN and the proxy toward the MAS, with responses returning along that path. CEs read evidence from OXP directly in this release architecture. The interactive message contract and proxy behavior remain open.
 
 The executable enforcement outcome is allow/block. The enforcement contract defaults to fail-closed, with explicit fail-open configuration for availability or timeout failures. A missing-context denial is distinct from a timeout. A production decision budget has not yet been defined; the proxy's two-second setting is a development default.
 
