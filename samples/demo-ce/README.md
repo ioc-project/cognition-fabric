@@ -56,6 +56,23 @@ one finding with the final outcome and reason. Content and missing-context denia
 without an earlier identity ALLOW finding. Foreign MAS requests never access the Store. Reads and writes
 each have a 1s timeout; Store failures remain fail-closed.
 
+## Pre-call event by id (OXP realtime)
+
+For `tool_input`, `mcp_tool_input` and `a2a_message_input`, when `OXP_API_URL` is set and the request's
+`extra` names the pre-call event, the CE reads it from the OXP realtime endpoints before looking in the inbox:
+
+1. `ioc.observe.precall_event_id` (the `event.id` of the `tool.started`): `GET /api/v1/realtime/events/{id}`
+   and the judged text is its `data.input`.
+2. Otherwise `ioc.observe.event_id` (the id of the `*.message.sent`): `GET /api/v1/realtime/spans/{span_id}/events?event_types=tool.started`
+   and the one `tool.started` whose `correlation.parent_event_id` equals it.
+
+The event must be a `tool.started` of the request's exact trace and span (and of its A2A `message_id` when
+sent); anything else, or several children with different inputs, is `DENY / MISSING_CONTEXT` (`GAP`).
+A 404 or a missing child means "not ingested yet": the lookup is retried within `CE_CONTEXT_WAIT` and
+`CE_CONTEXT_ATTEMPTS` and ends in `RACE`, without borrowing the span's own input. If the endpoints fail
+(network, 5xx), the CE behaves as without them: inbox first, then the OXP span fallback. A decision from this
+path adds the check `OXP_REALTIME_EVENT`. `llm_input` is unchanged.
+
 ## Input and causal context
 
 1. Look for `tool.started` or `llm.started` in the inbox by the request's exact `trace_id` and `span_id`.

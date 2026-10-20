@@ -32,6 +32,8 @@ type currentEvent struct {
 	texts            []evidence.Text
 	definitionsKnown bool
 	snapshot         []json.RawMessage
+	realtime         bool   // read from the OXP realtime endpoints, not the inbox
+	via              string // how the realtime event was found
 }
 
 var errPreCallAvailable = errors.New("pre-call evidence arrived during OXP lookup")
@@ -44,7 +46,7 @@ func (j *Judge) Evaluate(ctx context.Context, r *cev1.EvaluateRequest, out *cev1
 	if session == "" {
 		session = r.Extra["ioc.observe.session_id"]
 	}
-	if j.Inbox == nil && (j.Client == nil || session == "") {
+	if j.Inbox == nil && (j.Client == nil || session == "") && !j.hasRealtimeRef(r) {
 		return evidence.MissingContext(out, cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP, "no pre-call inbox or OXP session reference")
 	}
 	waitCtx, cancel := context.WithTimeout(ctx, j.Wait)
@@ -77,9 +79,19 @@ func (j *Judge) Evaluate(ctx context.Context, r *cev1.EvaluateRequest, out *cev1
 		if j.Inbox != nil {
 			snapshot = j.Inbox.Lookup(r.TraceId, r.SpanId)
 		}
-		event, present, err := j.current(r)
-		if err != nil {
-			return evidence.MissingContext(out, cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP, err.Error())
+		// A pre-call event named by the request is read from OXP realtime first; the inbox is the
+		// behavior when the request names none, the endpoints fail, or the event is not exposed yet.
+		event, rtState, rtErr := j.realtime(waitCtx, r)
+		if rtErr != nil {
+			return evidence.MissingContext(out, cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP, rtErr.Error())
+		}
+		present := event != nil
+		if event == nil {
+			var err error
+			event, present, err = j.current(r)
+			if err != nil {
+				return evidence.MissingContext(out, cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP, err.Error())
+			}
 		}
 		if event != nil {
 			if session != "" && session != event.session {
@@ -103,7 +115,7 @@ func (j *Judge) Evaluate(ctx context.Context, r *cev1.EvaluateRequest, out *cev1
 			if ready && ctx.Err() == nil {
 				// Reparse only if the inbox changed during I/O. A full conversation
 				// can be large; parsing it twice consumes the hold budget needlessly.
-				if !reflect.DeepEqual(event.snapshot, j.Inbox.Lookup(r.TraceId, r.SpanId)) {
+				if !event.realtime && !reflect.DeepEqual(event.snapshot, j.Inbox.Lookup(r.TraceId, r.SpanId)) {
 					continue
 				}
 				out.ContextSufficiency = cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE
@@ -112,10 +124,14 @@ func (j *Judge) Evaluate(ctx context.Context, r *cev1.EvaluateRequest, out *cev1
 					out.ContextSufficiency = cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC
 					reason = "messages bound by pre-call trace/span; required OXP tool definitions are session/span scoped, trace identity unconfirmed"
 				}
+				if event.realtime {
+					realtimeCheck(out, event.via)
+				}
 				j.recordContext(out, history, true)
 				return j.decide(out, rules, texts, reason)
 			}
-		} else if !present && j.Client != nil && session != "" {
+		} else if !present && j.Client != nil && session != "" && rtState != realtimePending {
+			// A pending realtime event is awaited rather than replaced by the span's own input.
 			history, herr := lookup(session, false, true)
 			// Recheck actual presence: a promotion signal can outlive an event
 			// evicted from the bounded inbox. Absence remains a failed attempt.
