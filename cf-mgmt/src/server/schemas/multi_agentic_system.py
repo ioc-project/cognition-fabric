@@ -14,6 +14,47 @@ class AgentIdentity(BaseModel):
     identifiers: Dict[str, str] = Field(..., description="Provider-specific identifiers (varies by type)")
 
 
+# MCP Server Schemas
+
+
+class MCPToolConfig(BaseModel):
+    """Schema for MCP tool configuration (input)"""
+
+    name: str = Field(..., description="Tool name")
+    description: Optional[str] = Field(None, description="Tool description (used for governance integrity checks)")
+    parameters: Optional[Dict[str, Any]] = Field(None, description="JSON Schema for tool parameters")
+
+
+class MCPToolDetail(BaseModel):
+    """Schema for MCP tool details (output)"""
+
+    id: str = Field(..., description="Unique identifier for the tool")
+    name: str = Field(..., description="Tool name")
+    description: Optional[str] = Field(None, description="Tool description (used for governance integrity checks)")
+    parameters: Optional[Dict[str, Any]] = Field(None, description="JSON Schema for tool parameters")
+
+
+class MCPServerConfig(BaseModel):
+    """Schema for MCP server configuration (input)"""
+
+    name: str = Field(..., description="MCP server name")
+    transport: Optional[str] = Field(None, description="Transport type (e.g. 'stdio', 'sse')")
+    description: Optional[str] = Field(None, description="MCP server description")
+    tools: Optional[List[MCPToolConfig]] = Field(None, description="List of tools provided by this MCP server")
+    config: Optional[Dict[str, Any]] = Field(None, description="MCP server-specific configuration")
+
+
+class MCPServerDetail(BaseModel):
+    """Schema for MCP server details (output)"""
+
+    id: str = Field(..., description="Unique identifier for the MCP server")
+    name: str = Field(..., description="MCP server name")
+    transport: Optional[str] = Field(None, description="Transport type (e.g. 'stdio', 'sse')")
+    description: Optional[str] = Field(None, description="MCP server description")
+    tools: Optional[List[MCPToolDetail]] = Field(None, description="List of tools provided by this MCP server")
+    config: Optional[Dict[str, Any]] = Field(None, description="MCP server-specific configuration")
+
+
 class AgentConfig(BaseModel):
     """Schema for individual agent configuration in MAS (input)"""
 
@@ -21,6 +62,7 @@ class AgentConfig(BaseModel):
         None, description="Unique identifier for the agent (server-generated, ignored on input)"
     )
     name: Optional[str] = Field(None, description="Human-readable agent name")
+    description: Optional[str] = Field(None, description="Agent description (used for governance integrity checks)")
     url: Optional[str] = Field(None, description="Agent endpoint URL")
     identity: Optional[AgentIdentity] = Field(None, description="Identity provider configuration")
     config: Optional[Dict[str, Any]] = Field(None, description="Agent-specific configuration")
@@ -31,6 +73,7 @@ class AgentDetail(BaseModel):
 
     agent_id: str = Field(..., description="Unique identifier for the agent")
     name: Optional[str] = Field(None, description="Human-readable agent name")
+    description: Optional[str] = Field(None, description="Agent description (used for governance integrity checks)")
     url: Optional[str] = Field(None, description="Agent endpoint URL")
     identity: Optional[AgentIdentity] = Field(None, description="Identity provider configuration")
     config: Optional[Dict[str, Any]] = Field(None, description="Agent-specific configuration")
@@ -52,6 +95,10 @@ class MultiAgenticSystemRequest(BaseModel):
     agents: Optional[List[AgentConfig]] = Field(
         None,
         description="List of agents in the system with their configurations",
+    )
+    mcp_servers: Optional[List[MCPServerConfig]] = Field(
+        None,
+        description="List of MCP servers in the system with their tool definitions",
     )
     config: Optional[Dict[str, Any]] = Field(
         None,
@@ -79,6 +126,10 @@ class MultiAgenticSystemUpdate(BaseModel):
     agents: Optional[List[AgentConfig]] = Field(
         None,
         description="Updated list of agents in the system",
+    )
+    mcp_servers: Optional[List[MCPServerConfig]] = Field(
+        None,
+        description="Updated list of MCP servers in the system",
     )
     config: Optional[Dict[str, Any]] = Field(
         None,
@@ -158,6 +209,7 @@ class MultiAgenticSystem(BaseModel):
     name: str
     description: Optional[str] = None
     agents: Optional[List[AgentDetail]] = Field(None, description="List of agents in the system")
+    mcp_servers: Optional[List[MCPServerDetail]] = Field(None, description="List of MCP servers in the system")
     config: Optional[Dict[str, Any]] = None
     cognition_engines: Optional[List[MasCognitionEngineItem]] = None
     created_at: datetime

@@ -16,6 +16,7 @@ class Agent(Base):
     agent_id = Column(String(255), primary_key=True)
     mas_id = Column(String(36), ForeignKey("multi_agentic_system.id", ondelete="CASCADE"), nullable=False)
     name = Column(String(255), nullable=True)
+    description = Column(Text, nullable=True)
     url = Column(Text, nullable=True)
     identity_type = Column(String(50), nullable=True)
     identity_identifiers = Column(JSONB, nullable=True)
