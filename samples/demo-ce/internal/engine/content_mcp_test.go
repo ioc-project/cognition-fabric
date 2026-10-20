@@ -17,7 +17,7 @@ import (
 func mcpEngine(t *testing.T, wait time.Duration) *testEngine {
 	t.Helper()
 	in := inbox.New("noa-trip-planner-mas", 16)
-	engine := &testEngine{newContentEngine(&identity.Engine{Policy: sdkEventsPolicy(t), MasID: func() (string, error) { return "mas", nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: wait, Inbox: in, ToolPrefix: "noa-"}), in}
+	engine := &testEngine{newContentEngine(&identity.Engine{Policy: sdkEventsPolicy(t), MasID: func() (string, error) { return "mas", nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: wait, Inbox: in}), in}
 	return engine
 }
 

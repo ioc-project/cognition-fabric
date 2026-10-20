@@ -1,6 +1,8 @@
 # Demo CE
 
-Demo Cognition Engine implementing the `ioc.ce.v1.CognitionEngine` gRPC contract.
+Template Cognition Engine implementing the `ioc.ce.v1.CognitionEngine` gRPC contract.
+The implementation, Dockerfile and tests are retained for CE teams. The repository's Compose deployment
+runs `policy-ce`; use the local instructions below to run this template.
 
 ## Overview
 
@@ -15,35 +17,6 @@ Its current decision is a configurable demo verdict: `DEMO_CE_DECISION=allow`
 intent-deviation reason; this mode does not inspect the tool arguments or make
 a semantic policy judgment, so context sufficiency is unspecified. Restart the
 CE after changing the setting.
-
-## Quick Start (Docker Compose)
-
-From the repository root:
-
-```bash
-docker compose up --build
-```
-
-This starts the Demo CE on port `50051` with default configuration.
-
-### Configuration
-
-Edit `docker-compose.yml` to configure integrations:
-
-```yaml
-environment:
-  - GRPC_PORT=50051
-  - CFN_URL=http://host.docker.internal:9002        # CFN registration
-  - COGNITION_STORE_URL=http://host.docker.internal:8000  # OXP Cognition Store
-```
-
-When running alongside other services in Docker, use container names instead:
-
-```yaml
-environment:
-  - CFN_URL=http://cfn:9002
-  - COGNITION_STORE_URL=http://oxp-api:8000
-```
 
 ## Run Locally (without Docker)
 

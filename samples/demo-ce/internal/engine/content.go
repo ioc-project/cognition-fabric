@@ -2,15 +2,13 @@ package engine
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence/a2a"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence/llm"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence/mcp"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence/topology"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence/correlation"
 	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/identity"
 	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
 	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/oxp"
@@ -24,16 +22,19 @@ import (
 type contentEngine struct {
 	cev1.UnimplementedCognitionEngineServer
 	identity *identity.Engine
+	store    *oxp.Store
 	rules    []evidence.Rule
 	judges   map[string]evidence.Judge // by the evidence kind of the policy
 }
 
 // contentOptions wires the judges of a contentEngine.
 type contentOptions struct {
-	OXPURL     string        // empty disables tool_input evidence
-	Wait       time.Duration // bounds the wait for context
-	Inbox      *inbox.Inbox  // pre-call events; nil makes event evidence missing context
-	ToolPrefix string        // stripped from a destination to get the Observe tool name
+	OXPURL    string        // empty disables OXP history and span fallback
+	Wait      time.Duration // bounds the wait for context
+	Attempts  int
+	RetryWait time.Duration
+	Inbox     *inbox.Inbox // pre-call events; nil makes event evidence missing context
+	Store     *oxp.Store   // read before content; write only the final decision
 }
 
 func newContentEngine(id *identity.Engine, o contentOptions) *contentEngine {
@@ -41,16 +42,16 @@ func newContentEngine(id *identity.Engine, o contentOptions) *contentEngine {
 	if url := strings.TrimRight(o.OXPURL, "/"); url != "" {
 		client = &oxp.Client{Base: url, HTTP: &http.Client{Timeout: time.Second}}
 	}
-	return &contentEngine{
+	s := &contentEngine{
 		identity: id,
+		store:    o.Store,
 		rules:    evidence.Compile(id.Policy.ContentRules),
-		judges: map[string]evidence.Judge{
-			policy.EvidenceToolInput:       topology.New(client, o.Wait, o.ToolPrefix),
-			policy.EvidenceLLMInput:        llm.New(o.Inbox, o.Wait),
-			policy.EvidenceMCPToolInput:    mcp.New(o.Inbox, o.Wait),
-			policy.EvidenceA2AMessageInput: a2a.New(o.Inbox, o.Wait),
-		},
+		judges:   map[string]evidence.Judge{},
 	}
+	for _, kind := range []string{policy.EvidenceToolInput, policy.EvidenceLLMInput, policy.EvidenceMCPToolInput, policy.EvidenceA2AMessageInput} {
+		s.judges[kind] = &correlation.Judge{Client: client, Inbox: o.Inbox, Wait: o.Wait, Attempts: o.Attempts, RetryWait: o.RetryWait, Kind: kind}
+	}
+	return s
 }
 
 func (s *contentEngine) GetInfo(ctx context.Context, r *cev1.GetInfoRequest) (*cev1.GetInfoResponse, error) {
@@ -61,7 +62,7 @@ func (s *contentEngine) GetInfo(ctx context.Context, r *cev1.GetInfoRequest) (*c
 	for _, rule := range s.rules {
 		info.EnabledChecks = append(info.EnabledChecks, rule.ID)
 	}
-	info.MatcherStrategy = "exact-identity-policy; session context from OXP; content rules by tool name"
+	info.MatcherStrategy = "exact-identity-policy; pre-call trace/span events joined to OXP causal context; session/span fallback"
 	return info, nil
 }
 
@@ -77,14 +78,29 @@ func (s *contentEngine) rulesFor(source, destination string) []evidence.Rule {
 
 func (s *contentEngine) Evaluate(ctx context.Context, r *cev1.EvaluateRequest) (*cev1.EvaluateResponse, error) {
 	started := time.Now()
-	out, err := s.identity.Evaluate(ctx, r)
-	if err != nil || out.Outcome != cev1.Decision_DECISION_ALLOW {
+	out, inScope, err := s.identity.Decide(ctx, r)
+	if err != nil || !inScope {
 		return out, err
 	}
-	rules := s.rulesFor(r.SourceAgentId, r.DestinationAgentId)
-	if len(rules) == 0 || r.ActionClass == cev1.ActionClass_ACTION_CLASS_MCP_TOOL_CALL || r.ActionClass == cev1.ActionClass_ACTION_CLASS_AGENT_RESPONSE {
-		return out, nil
+	if s.store != nil {
+		if err := storeCall(ctx, "read", func(ctx context.Context) error { return s.store.Read(ctx, r) }); err != nil {
+			return nil, err
+		}
 	}
-	// One destination is judged from one kind of evidence (the policy decoder enforces it).
-	return s.judges[rules[0].EvidenceKind()].Evaluate(ctx, r, out, rules, started), nil
+	if out.Outcome == cev1.Decision_DECISION_ALLOW {
+		rules := s.rulesFor(r.SourceAgentId, r.DestinationAgentId)
+		if len(rules) > 0 && r.ActionClass != cev1.ActionClass_ACTION_CLASS_AGENT_RESPONSE {
+			out = s.judges[rules[0].EvidenceKind()].Evaluate(ctx, r, out, rules, started)
+		}
+	}
+	// The final check identifies the layer responsible for this response. In
+	// particular, a content/context denial must not be attributed to identity ALLOW.
+	ruleID := out.ChecksRun[len(out.ChecksRun)-1].CheckId
+	if s.store != nil {
+		if err := storeCall(ctx, "write", func(ctx context.Context) error { return s.store.Write(ctx, r, out, ruleID) }); err != nil {
+			return nil, err
+		}
+	}
+	log.Printf("decision trace=%s span=%s source=%s destination=%s outcome=%s rule=%s layer=policy", r.TraceId, r.SpanId, r.SourceAgentId, r.DestinationAgentId, out.Outcome, ruleID)
+	return out, nil
 }

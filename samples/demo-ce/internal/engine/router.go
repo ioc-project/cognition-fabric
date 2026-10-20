@@ -1,6 +1,5 @@
 // Package engine is the CognitionEngine served to CFN: the identity policy of a MAS first, then the content
-// of the request, judged from the evidence the policy names (session topology in OXP, or an event published
-// before the call and found in the inbox by the exact span).
+// of the request, joining exact pre-call events with causal span history in OXP.
 package engine
 
 import (
@@ -22,7 +21,7 @@ import (
 type Options struct {
 	// MasID resolves the MAS of a single (non per-MAS) policy; it may fail until the MAS is known.
 	MasID func() (string, error)
-	// OXPURL is the OXP base URL; empty disables tool_input evidence and the Cognition Store.
+	// OXPURL is the OXP base URL; empty disables span history and fallback.
 	OXPURL string
 	// Store is the Cognition Store; nil means findings are neither read nor written.
 	Store *oxp.Store
@@ -30,10 +29,12 @@ type Options struct {
 	Inbox *inbox.Inbox
 	// Wait bounds the wait for session context.
 	Wait time.Duration
+	// Attempts includes the initial context lookup; zero defaults to five.
+	Attempts int
+	// RetryWait separates failed context lookups; zero defaults to 0.2s.
+	RetryWait time.Duration
 	// CEType and CEVersion are reported in GetInfo.
 	CEType, CEVersion string
-	// ToolPrefix is stripped from a destination to get the Observe tool name (tool_input evidence).
-	ToolPrefix string
 }
 
 // Router is the CognitionEngine served to CFN. With a single policy it forwards everything to one engine
@@ -49,8 +50,8 @@ type Router struct {
 // New builds the router of a decoded policy file.
 func New(set policy.Set, o Options) *Router {
 	build := func(p policy.Policy, mas func() (string, error)) *contentEngine {
-		id := &identity.Engine{Policy: p, MasID: mas, Store: o.Store, CEType: o.CEType, CEVersion: o.CEVersion}
-		return newContentEngine(id, contentOptions{OXPURL: o.OXPURL, Wait: o.Wait, Inbox: o.Inbox, ToolPrefix: o.ToolPrefix})
+		id := &identity.Engine{Policy: p, MasID: mas, CEType: o.CEType, CEVersion: o.CEVersion}
+		return newContentEngine(id, contentOptions{OXPURL: o.OXPURL, Wait: o.Wait, Attempts: o.Attempts, RetryWait: o.RetryWait, Inbox: o.Inbox, Store: o.Store})
 	}
 	rt := &Router{}
 	if set.Single != nil {

@@ -61,11 +61,8 @@
         "noa-itinerary-agent",
         "noa-concierge-agent"
       ],
-      "pattern": "(?i)\\b(?:send|upload|forward|share|email|post|submit|transmit|envia|enviar|partilha|partilhar)\\b[^.!?\\n]{0,80}?\\b(?:api[ _-]?key|password|passport(?: number)?|n[uú]mero de passaporte|credentials?|access token|secret key)\\b[^.!?\\n]{0,80}?\\b(?:to|para|at|on|via)\\s+https?://",
-      "evidence_by_profile": {
-        "topology": "tool_input",
-        "events": "a2a_message_input"
-      }
+      "pattern": "(?i)\\b(?:send|upload|forward|share|email|post|submit|transmit|envia|enviar|partilha|partilhar)\\b[^.!?\\n]{0,80}?\\b(?:api[ _-]?key|password|passport(?: number)?|n[u\u00fa]mero de passaporte|credentials?|access token|secret key)\\b[^.!?\\n]{0,80}?\\b(?:to|para|at|on|via)\\s+https?://",
+      "evidence": "a2a_message_input"
     },
     {
       "id": "NOA_PAYMENT_SECRET_COLLECTION",
@@ -74,10 +71,7 @@
         "noa-concierge-agent"
       ],
       "pattern": "(?i)^\\s*(?:please\\s+)?(?:collect|request|ask for)\\s+(?:the customer's\\s+|the user's\\s+|the\\s+)?(?:cvv|card pin)\\b",
-      "evidence_by_profile": {
-        "topology": "tool_input",
-        "events": "a2a_message_input"
-      }
+      "evidence": "a2a_message_input"
     },
     {
       "id": "NOA_SENSITIVE_DATA_EXPOSURE",
@@ -88,10 +82,7 @@
         "noa-concierge-agent"
       ],
       "pattern": "(?i)\\b(?:\\d{4}[ -]?){3}\\d{1,4}\\b|\\bpassport(?: (?:number|no\\.?|id))?\\s*(?:is|[:#=])?\\s*[A-Z]{0,2}\\d{6,9}\\b|\\b(?:password|passcode|api[ _-]?key|secret key|access token)\\s*(?:is|[:=])\\s*\\S{4,}",
-      "evidence_by_profile": {
-        "topology": "tool_input",
-        "events": "a2a_message_input"
-      }
+      "evidence": "a2a_message_input"
     },
     {
       "id": "NOA_LLM_SENSITIVE_EXPORT",
@@ -100,9 +91,7 @@
         "noa-llm"
       ],
       "pattern": "(?i)\\b(?:send|upload|forward|share|email|post|submit|transmit)\\b[^.!?\\n]{0,80}?\\b(?:api[ _-]?key|password|passport(?: number)?|credentials?|access token|secret key)\\b[^.!?\\n]{0,80}?\\b(?:to|at|on|via)\\s+https?://",
-      "evidence_by_profile": {
-        "events": "llm_input"
-      }
+      "evidence": "llm_input"
     },
     {
       "id": "NOA_LLM_SENSITIVE_DATA_EXPOSURE",
@@ -114,9 +103,7 @@
         "noa-llm"
       ],
       "pattern": "(?i)\\b(?:\\d{4}[ -]?){3}\\d{1,4}\\b|\\bpassport(?: (?:number|no\\.?|id))?\\s*(?:is|[:#=])?\\s*[A-Z]{0,2}\\d{6,9}\\b|\\b(?:password|passcode|api[ _-]?key|secret key|access token)\\s*(?:is|[:=])\\s*\\S{4,}",
-      "evidence_by_profile": {
-        "events": "llm_input"
-      }
+      "evidence": "llm_input"
     },
     {
       "id": "NOA_MCP_SENSITIVE_DATA_EXPOSURE",
@@ -125,9 +112,7 @@
         "noa-mcp"
       ],
       "pattern": "(?i)\\b(?:\\d{4}[ -]?){3}\\d{1,4}\\b|\\bpassport(?: (?:number|no\\.?|id))?\\s*(?:is|[:#=])?\\s*[A-Z]{0,2}\\d{6,9}\\b|\\b(?:password|passcode|api[ _-]?key|secret key|access token)\\s*(?:is|[:=])\\s*\\S{4,}",
-      "evidence_by_profile": {
-        "events": "mcp_tool_input"
-      }
+      "evidence": "mcp_tool_input"
     },
     {
       "id": "NOA_MCP_SENSITIVE_EXPORT",
@@ -136,9 +121,7 @@
         "noa-mcp"
       ],
       "pattern": "(?i)\\b(?:send|upload|forward|share|email|post|submit|transmit)\\b[^.!?\\n]{0,80}?\\b(?:api[ _-]?key|password|passport(?: number)?|credentials?|access token|secret key)\\b[^.!?\\n]{0,80}?\\b(?:to|at|on|via)\\s+https?://",
-      "evidence_by_profile": {
-        "events": "mcp_tool_input"
-      }
+      "evidence": "mcp_tool_input"
     }
   ]
 }

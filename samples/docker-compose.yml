@@ -1,34 +1,7 @@
-version: '3.8'
-
 services:
-  demo-ce:
-    build:
-      context: ./demo-ce
-      dockerfile: Dockerfile
-    container_name: demo-ce
-    ports:
-      - "50051:50051"
-      - "8080:8080"
-    environment:
-      - LOG_LEVEL=INFO
-      - GRPC_PORT=50051
-      - HEALTH_PORT=8080
-      # CE registration identity
-      - CE_NAME=demo-ce
-      - CE_VERSION=1.0.0
-      - CE_TYPE=CASA
-      # For local development (connecting to services on host machine)
-      - CFN_URL=http://host.docker.internal:9002
-      - COGNITION_STORE_URL=http://host.docker.internal:8000
-      # For Docker network (when running alongside other containers)
-      # - CFN_URL=http://cfn:9002
-      # - COGNITION_STORE_URL=http://oxp-api:8000
-      # - COGNITION_ENGINE_HOST=demo-ce
-    restart: unless-stopped
-
   # Policy-driven CE, built from policy-ce/Dockerfile. The build needs a GitHub token able to read the private
   # cisco-eti/ioc-scale-cfn-svc module: export GITHUB_TOKEN before running.
-  # Opt in with: docker-compose --profile policy-ce up --build policy-ce
+  # Start with: docker compose up --build
   policy-ce:
     build:
       context: ./policy-ce
@@ -37,8 +10,6 @@ services:
         - github_token
     image: policy-ce:dev
     container_name: policy-ce
-    profiles:
-      - policy-ce
     ports:
       - "18001:18001"
     environment:
@@ -47,6 +18,9 @@ services:
       - CE_POLICY_FILE=/etc/policy-ce/policy.json
       - CFN_URL=http://host.docker.internal:9002
       - OXP_API_URL=http://host.docker.internal:8000
+      - CE_CONTEXT_WAIT=${CE_CONTEXT_WAIT:-1s}
+      - CE_CONTEXT_ATTEMPTS=${CE_CONTEXT_ATTEMPTS:-5}
+      - CE_CONTEXT_RETRY_WAIT=${CE_CONTEXT_RETRY_WAIT:-0.2s}
     volumes:
       - ./policy-ce/config/policy.json:/etc/policy-ce/policy.json:ro
     restart: unless-stopped
