@@ -1,7 +1,7 @@
 """Concierge Agent implementation."""
 
 from .base_agent import SpecializedAgent
-from .tools import calculate, create_agent_tools, read_document
+from noa_trip_planner.tool_registry import tools_for_agent
 
 
 class ConciergeAgent(SpecializedAgent):
@@ -14,8 +14,7 @@ class ConciergeAgent(SpecializedAgent):
         Args:
             system_prompt: The system prompt defining the agent's behavior
         """
-        list_documents = create_agent_tools("concierge_agent")
-        tools = [list_documents, read_document, calculate]
+        tools = tools_for_agent("concierge_agent")
         super().__init__(
             name="concierge_agent",
             tools=tools,

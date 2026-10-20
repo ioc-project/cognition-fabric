@@ -17,16 +17,22 @@ tasks:
       - bash deploy/local/cf-local.sh check
 
   infra:up:
-    desc: Start the shared database and OXP stack for local CF source processes
+    desc: Start local infrastructure, including Envoy when NOA_ENFORCEMENT_MODE=proxy
     silent: true
     cmds:
       - bash deploy/local/cf-local.sh infra-up
 
   infra:down:
-    desc: Stop the shared database and OXP stack without deleting volumes
+    desc: Stop local infrastructure and source Envoy without deleting volumes
     silent: true
     cmds:
       - bash deploy/local/cf-local.sh infra-down
+
+  proxy:logs:
+    desc: Follow the local Envoy and mediation service logs
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh proxy-logs
 
   run:cfn-mgmt:
     desc: Migrate the local management database and run management from source
@@ -59,7 +65,7 @@ tasks:
       - bash deploy/local/cf-local.sh run-policy-ce
 
   run:full-mas:
-    desc: Run NOA in the foreground from its published image or local source
+    desc: Run NOA using NOA_MODE and NOA_ENFORCEMENT_MODE from .env
     silent: true
     cmds:
       - bash deploy/local/cf-local.sh run-full-mas

@@ -14,7 +14,8 @@ or observed code, surface the conflict instead of silently following the note.
 
 ## Active guidance
 
-No entries yet.
+- [Local NOA enforcement modes](local-noa-enforcement.md) — source/proxy setup,
+  configuration ownership, and the boundary between routing and content evidence.
 
 ## Maintaining the ledger
 

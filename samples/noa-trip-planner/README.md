@@ -6,7 +6,8 @@ It includes the application, fictional travel data, and dependency lockfile
 from that revision. The local CF workflow runs this copy; it does not require
 an `oxp-sample-apps` checkout.
 
-The local variant adds a direct, synchronous CFN `GetDisposition` call before
+The local variant supports `NOA_ENFORCEMENT_MODE=direct` (default) and `proxy`.
+Direct mode adds a synchronous CFN `GetDisposition` call before
 each LangGraph tool invocation. For every proposed tool call it emits a short
 span containing the tool name and arguments, then sends its trace and span IDs
 to CFN. `ACTION_ALLOW` executes the tool; `ACTION_BLOCK`, unsupported actions,
@@ -23,10 +24,11 @@ Run it from the CFN service repository after starting the local CF services:
 
 ```bash
 (cd deploy/local/noa-trip-planner && uv sync --frozen)
-NOA_MODE=source task run:full-mas
+task run:full-mas
 ```
 
-Set `NOA_MAS_ID` in the CFN repository `.env` to the MAS ID created in the local
+Set `NOA_MODE=source`, `NOA_ENFORCEMENT_MODE=direct`, and `NOA_MAS_ID` in
+the CFN repository `.env`. Use the MAS ID created in the local
 CF management UI. The same ID is used as the Observe application ID so the
 telemetry and enforcement requests refer to the same MAS. The source runner
 sets `NOA_CFN_GRPC_TARGET` to
@@ -36,3 +38,38 @@ MAS ID and does not validate those names against management agent records.
 The vendored `generated/enforcement.proto` matches the CFN gRPC contract at
 the time of this copy. Update it and its generated Python file if that contract
 changes.
+
+## Proxy mode
+
+Set these in the CFN `.env` before `task infra:up`:
+
+```dotenv
+NOA_MODE=source
+NOA_ENFORCEMENT_MODE=proxy
+```
+
+`infra:up` includes Envoy and its audit support, using the deployment repo's
+overlay with CFN-owned configuration. It can run before CFN, NOA, or a MAS exists.
+After the CF source services and CE are running and `NOA_MAS_ID` is configured,
+`task run:full-mas` loads the MAS-specific routes and supervises both NOA and
+its HTTP tool service. Ctrl+C stops both processes.
+
+In this mode, each LangGraph tool call becomes one HTTP POST through Envoy to
+an exact `/tools/<agent>/<tool>` route. Envoy calls CFN and forwards only allowed
+requests to the tool service. The service invokes the same registered Python
+tools and returns their results as LangGraph tool messages. There is no direct
+CFN call or local execution fallback in this path, and no automatic POST retry.
+
+The shared registry preserves `schedule_agent`, `itinerary_agent`,
+`concierge_agent`, and their existing tool names, so the same identity policy
+can be used. The HTTP request carries the proposed-action span's `traceparent`,
+captured before that span closes, plus the session ID when available. The tool
+service emits a child span in that context. This does not establish the
+pre-call event pipeline required for content-sensitive enforcement.
+
+The tool service binds to `NOA_TOOLS_HOST` (default `0.0.0.0`) on
+`NOA_TOOLS_PORT` (default 8126), uses only allowlisted agent/tool pairs, and
+requires a token inserted by Envoy. Generated configuration is under the CFN
+repo's ignored `tmp/enforcement/`. Use `task proxy:logs` for the proxy-side
+requests and audit logs. See the [CF local guide](../../README.md#use-envoy-with-source-noa)
+for ports, configuration, limitations, and shutdown.

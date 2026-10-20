@@ -38,16 +38,13 @@ require_env() {
 }
 
 require_local_env() {
-  local local_env="$cfn_dir/.env" compose_env="$deployment_dir/.env"
-  [[ -f "$local_env" ]] || fail "Missing $local_env. Run cp .env.example .env in the CFN repository and configure it."
-  if [[ -L "$compose_env" && ! -e "$compose_env" ]]; then
-    fail "The deployment .env symlink is broken. Recreate it to point to ../ioc-scale-cfn-svc/.env."
-  fi
-  if [[ ! -e "$compose_env" ]]; then
-    ln -s ../ioc-scale-cfn-svc/.env "$compose_env" || fail "Could not link the CFN .env into the deployment checkout for Compose."
-  elif ! cmp -s "$local_env" "$compose_env"; then
-    fail "The CFN and deployment .env files differ. Make the deployment .env point to ../ioc-scale-cfn-svc/.env or reconcile their contents before running local CF."
-  fi
+  [[ -f "$cfn_dir/.env" ]] || fail "Missing $cfn_dir/.env. Run cp .env.example .env in the CFN repository and configure it."
+}
+
+compose() {
+  docker compose --project-directory "$deployment_dir" \
+    -p "${COMPOSE_PROJECT_NAME:-ioc-scale-cf-deployment}" \
+    --env-file "$cfn_dir/.env" -f "$deployment_dir/docker-compose.yml" "$@"
 }
 
 require_checkout() {
@@ -62,7 +59,7 @@ require_docker_compose() {
 
 require_cf_containers_stopped() {
   local running
-  if ! running="$(cd "$deployment_dir" && docker compose ps --status running --services "${cf_services[@]}")"; then
+  if ! running="$(cd "$deployment_dir" && compose ps --status running --services "${cf_services[@]}")"; then
     fail "Could not inspect published CF containers. Check Docker Compose."
   fi
   if [[ -n "$running" ]]; then
@@ -86,7 +83,7 @@ set_local_postgres() {
 }
 
 ensure_local_databases() {
-  docker compose exec -T ioc-scale-db sh -ec '
+  compose exec -T ioc-scale-db sh -ec '
     export PGPASSWORD="$POSTGRES_PASSWORD"
     for db_name in cfn_mgmt_local cfn_audit_local; do
       existing="$(psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM pg_database WHERE datname = '\''$db_name'\''")"
@@ -114,10 +111,10 @@ prepare_management_test_db() {
   require_tool poetry
   [[ ! -f "$deployment_dir/../ioc-scale-cf-mgmt-svc/.env" ]] || fail "The management checkout .env can override test database settings. Move it aside before running tests."
 
-  running="$(docker compose ps --status running --services ioc-scale-db)" || fail "Could not inspect the local Postgres container."
+  running="$(compose ps --status running --services ioc-scale-db)" || fail "Could not inspect the local Postgres container."
   [[ "$running" = ioc-scale-db ]] || fail "Local Postgres is not running. Run 'task infra:up' before running CF tests."
   set_local_postgres
-  mapped_port="$(docker compose port ioc-scale-db 5432)" || fail "Could not inspect the local Postgres port."
+  mapped_port="$(compose port ioc-scale-db 5432)" || fail "Could not inspect the local Postgres port."
   [[ "${mapped_port##*:}" = "$POSTGRES_PORT" ]] || fail "Local Postgres is not published on port $POSTGRES_PORT. Check IOC_SCALE_DB_PORT in the CFN .env."
   export POSTGRES_DB=ioc_test
 
@@ -163,7 +160,7 @@ run_cf_checks() {
   [[ -x "$deployment_dir/../ioc-scale-cf-ui/node_modules/.bin/tsc" ]] || fail "UI dependencies are missing. Run 'npm ci' in the sibling ioc-scale-cf-ui checkout."
 
   printf 'CF checks: deployment Compose configuration\n'
-  docker compose config --quiet
+  compose config --quiet
   printf 'CF checks: management formatting and lint\n'
   (cd "$deployment_dir/../ioc-scale-cf-mgmt-svc" && task lint-check)
   printf 'CF checks: CFN formatting and vet\n'
@@ -171,6 +168,95 @@ run_cf_checks() {
   printf 'CF checks: UI lint, Prettier, and types\n'
   (cd "$deployment_dir/../ioc-scale-cf-ui" && npm run lint:check && ./node_modules/.bin/tsc --noEmit)
   run_cf_tests
+}
+
+# NOA source/image selection and enforcement mode are independent settings.
+validate_noa_modes() {
+  export NOA_MODE="${NOA_MODE:-published}"
+  export NOA_ENFORCEMENT_MODE="${NOA_ENFORCEMENT_MODE:-direct}"
+  [[ "$NOA_MODE" = published || "$NOA_MODE" = source ]] || fail "Invalid NOA_MODE '$NOA_MODE'. Use published or source."
+  [[ "$NOA_ENFORCEMENT_MODE" = direct || "$NOA_ENFORCEMENT_MODE" = proxy ]] || fail "Invalid NOA_ENFORCEMENT_MODE '$NOA_ENFORCEMENT_MODE'. Use direct or proxy."
+  [[ "$NOA_MODE:$NOA_ENFORCEMENT_MODE" != published:proxy ]] || fail "Proxy enforcement requires NOA_MODE=source in the CFN .env."
+}
+
+proxy_settings() {
+  export CFN_PROXY_CONFIG_DIR="$cfn_dir/tmp/enforcement"
+  export NOA_TOOLS_PORT="${NOA_TOOLS_PORT:-8126}"
+  export NOA_TOOLS_HOST="${NOA_TOOLS_HOST:-0.0.0.0}"
+  export NOA_ENFORCEMENT_PROXY_URL="${NOA_ENFORCEMENT_PROXY_URL:-http://127.0.0.1:${ENVOY_HTTP_PORT:-9010}}"
+  export NOA_TOOL_TOKEN_FILE="$CFN_PROXY_CONFIG_DIR/tool-token"
+}
+
+proxy_compose() {
+  compose -f "$deployment_dir/enforcement/envoy/compose.yaml" \
+    -f "$cfn_dir/deploy/local/enforcement/compose.override.yaml" "$@"
+}
+
+require_proxy_ownership() {
+  local mounted
+  if mounted="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/etc/envoy/envoy.yaml"}}{{.Source}}{{end}}{{end}}' ioc-scale-enforcement-proxy-envoy 2>/dev/null)"; then
+    [[ "$mounted" = "$CFN_PROXY_CONFIG_DIR/envoy.json" ]] || fail "An Envoy container from another workflow exists. Stop/remove it before starting the CFN source proxy."
+  fi
+}
+
+render_proxy_config() {
+  require_tool python3
+  PYTHONPATH="$cfn_dir/deploy/local/noa-trip-planner/src" python3 -m noa_trip_planner.proxy_config \
+    --directory "$CFN_PROXY_CONFIG_DIR" --mas-id "${NOA_MAS_ID:-}" --tools-port "$NOA_TOOLS_PORT"
+}
+
+wait_for_local_proxy() {
+  local attempt
+  require_tool curl
+  for ((attempt=0; attempt<30; attempt++)); do
+    if curl --noproxy '*' --fail --silent --max-time 1 "http://127.0.0.1:${ENVOY_HTTP_PORT:-9010}/healthz" >/dev/null; then
+      return
+    fi
+    sleep 1
+  done
+  fail "Local Envoy did not become ready. Inspect it with 'task proxy:logs'."
+}
+
+start_local_proxy() {
+  local other
+  proxy_settings
+  require_cf_containers_stopped
+  require_proxy_ownership
+  other="$(docker ps -a --filter 'name=^/ioc-scale-enforcement-proxy-shadi-verifier$' --format '{{.Names}}')"
+  [[ -z "$other" ]] || fail "A SHADi enforcement container exists. Stop/remove it before using the local Envoy workflow."
+  render_proxy_config
+  # The source CFN and NOA are started later. No published CF dependencies or
+  # example echo upstream are started by these explicit --no-deps calls.
+  proxy_compose stop ioc-scale-enforcement-proxy-envoy
+  proxy_compose up -d --no-deps ioc-scale-enforcement-proxy-mediation
+  proxy_compose up --no-deps --abort-on-container-exit --exit-code-from ioc-scale-enforcement-proxy-sidecar-installer ioc-scale-enforcement-proxy-sidecar-installer
+  proxy_compose up --no-deps --abort-on-container-exit --exit-code-from ioc-scale-enforcement-proxy-wasm-installer ioc-scale-enforcement-proxy-wasm-installer
+  proxy_compose up -d --no-deps --force-recreate ioc-scale-enforcement-proxy-envoy
+  wait_for_local_proxy
+  printf 'Local proxy ready on port %s; source CFN and NOA may be started next.\n' "${ENVOY_HTTP_PORT:-9010}"
+}
+
+stop_local_proxy() {
+  proxy_settings
+  if [[ -f "$CFN_PROXY_CONFIG_DIR/state.json" ]]; then
+    require_proxy_ownership
+    proxy_compose stop ioc-scale-enforcement-proxy-envoy \
+      ioc-scale-enforcement-proxy-sidecar-installer ioc-scale-enforcement-proxy-wasm-installer \
+      ioc-scale-enforcement-proxy-mediation
+  fi
+}
+
+prepare_noa_proxy() {
+  local running
+  proxy_settings
+  require_proxy_ownership
+  running="$(proxy_compose ps --status running --services ioc-scale-enforcement-proxy-envoy)"
+  [[ "$running" = ioc-scale-enforcement-proxy-envoy ]] || fail "Proxy mode is selected but Envoy is not running. Run 'task infra:up' with the same CFN .env first."
+  # The MAS may have been created after infra:up. Recreate Envoy to load the
+  # exact generated routes and new file mounts; no infrastructure is started.
+  render_proxy_config
+  proxy_compose up -d --no-deps --force-recreate ioc-scale-enforcement-proxy-envoy
+  wait_for_local_proxy
 }
 
 case "${1:-}" in
@@ -182,15 +268,26 @@ case "${1:-}" in
     ;;
   infra-up)
     require_local_env
+    validate_noa_modes
     require_docker_compose
-    docker compose up -d "${infra_services[@]}"
+    compose up -d "${infra_services[@]}"
     ensure_local_databases
+    if [[ "$NOA_ENFORCEMENT_MODE" = proxy ]]; then
+      start_local_proxy
+    fi
     ;;
   infra-down)
     require_local_env
     require_docker_compose
     require_cf_containers_stopped
-    docker compose stop "${infra_services[@]}"
+    stop_local_proxy
+    compose stop "${infra_services[@]}"
+    ;;
+  proxy-logs)
+    require_local_env
+    require_docker_compose
+    proxy_settings
+    proxy_compose logs -f --tail=100 ioc-scale-enforcement-proxy-envoy ioc-scale-enforcement-proxy-mediation
     ;;
   run-cfn-mgmt)
     require_local_env
@@ -258,19 +355,19 @@ case "${1:-}" in
     exec npm run dev
     ;;
   run-full-mas)
-    mode="${NOA_MODE:-published}"
-    [[ "$mode" = published || "$mode" = source ]] || fail "Invalid NOA_MODE '$mode'. Use published (default) or source."
     require_local_env
+    validate_noa_modes
+    mode="$NOA_MODE"
     require_docker_compose
     require_cf_containers_stopped
     if [[ "$mode" = published ]]; then
-      docker compose --profile full-mas up --no-build --no-deps noa-trip-planner
+      compose --profile full-mas up --no-build --no-deps noa-trip-planner
     else
       repo="$cfn_dir/deploy/local/noa-trip-planner"
       [[ -f "$repo/pyproject.toml" && -f "$repo/src/noa_trip_planner/enforcement.py" ]] || fail "Missing CF-owned NOA source at $repo. Check the CFN service checkout."
-      running="$(docker compose --profile full-mas ps --status running --services noa-trip-planner)" || fail "Could not inspect the NOA container. Check Docker Compose."
+      running="$(compose --profile full-mas ps --status running --services noa-trip-planner)" || fail "Could not inspect the NOA container. Check Docker Compose."
       [[ -z "$running" ]] || fail "The published NOA container is running. Stop it with: docker compose --profile full-mas stop noa-trip-planner"
-      running="$(docker compose ps --status running --services otel-collector)" || fail "Could not inspect the OTel collector. Check Docker Compose."
+      running="$(compose ps --status running --services otel-collector)" || fail "Could not inspect the OTel collector. Check Docker Compose."
       [[ "$running" = otel-collector ]] || fail "OTel collector is not running. Run 'task infra:up' first."
       require_tool uv
       require_env AI_GATEWAY_BASE_URL AI_GATEWAY_API_KEY
@@ -281,6 +378,11 @@ case "${1:-}" in
       export NOA_API_PORT="${NOA_API_PORT:-8125}"
       export NOA_CFN_GRPC_TARGET=127.0.0.1:9003
       export OTLP_HTTP_ENDPOINT=http://localhost:4318
+      if [[ "$NOA_ENFORCEMENT_MODE" = proxy ]]; then
+        prepare_noa_proxy
+        cd "$repo"
+        exec uv run --no-sync python -m noa_trip_planner.proxy_runtime
+      fi
       cd "$repo"
       exec uv run --no-sync main
     fi
@@ -345,6 +447,6 @@ case "${1:-}" in
     "$build_dir/policy-ce"
     ;;
   *)
-    fail "Unknown action '${1:-}'. Use task test, check, infra:up, infra:down, run:cfn-mgmt, run:cfn, run:cf-ui, run:demo-ce, run:policy-ce, or run:full-mas."
+    fail "Unknown action '${1:-}'. Use task test, check, infra:up, infra:down, run:cfn-mgmt, run:cfn, run:cf-ui, run:demo-ce, run:policy-ce, run:full-mas, or proxy:logs."
     ;;
 esac

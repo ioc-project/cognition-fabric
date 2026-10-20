@@ -1,7 +1,7 @@
 """Schedule Agent implementation."""
 
 from .base_agent import SpecializedAgent
-from .tools import create_agent_tools, read_document
+from noa_trip_planner.tool_registry import tools_for_agent
 
 class ScheduleAgent(SpecializedAgent):
     """Agent specialized in scheduling and information gathering."""
@@ -13,8 +13,7 @@ class ScheduleAgent(SpecializedAgent):
         Args:
             system_prompt: The system prompt defining the agent's behavior
         """
-        list_documents = create_agent_tools("schedule_agent")
-        tools = [list_documents, read_document]
+        tools = tools_for_agent("schedule_agent")
         super().__init__(
             name="schedule_agent",
             tools=tools,

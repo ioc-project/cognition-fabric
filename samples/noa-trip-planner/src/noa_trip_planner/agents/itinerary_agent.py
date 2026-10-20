@@ -1,7 +1,7 @@
 """Itinerary Agent implementation."""
 
 from .base_agent import SpecializedAgent
-from .tools import calculate, query_graph_database
+from noa_trip_planner.tool_registry import tools_for_agent
 
 
 class ItineraryAgent(SpecializedAgent):
@@ -14,7 +14,7 @@ class ItineraryAgent(SpecializedAgent):
         Args:
             system_prompt: The system prompt defining the agent's behavior
         """
-        tools = [query_graph_database, calculate]
+        tools = tools_for_agent("itinerary_agent")
         super().__init__(
             name="itinerary_agent",
             tools=tools,

@@ -71,10 +71,22 @@ models remain mismatched, OXP workers or the sample MAS can fail even while the
 other services start. `.env.sample` only covers CFN alone and is insufficient
 for this workflow.
 
-The tasks load the CFN `.env`. On first use, they create an ignored
-`../ioc-scale-cf-deployment/.env` symlink to it for Compose. If the deployment
-checkout already has a different `.env`, a task stops with an error: reconcile
-the two configurations or point the deployment `.env` at the CFN one.
+The tasks load the CFN `.env` and pass it explicitly to Compose. They do not
+create or modify files in the deployment checkout. An existing deployment
+`.env` symlink can remain, but is not required by these tasks.
+
+Select both the NOA implementation and its enforcement mode in the CFN `.env`:
+
+```dotenv
+NOA_MODE=source
+NOA_ENFORCEMENT_MODE=direct
+```
+
+`NOA_MODE` accepts `published` (the default) or `source`.
+`NOA_ENFORCEMENT_MODE` accepts `direct` (the default) or `proxy`. Proxy mode
+requires source NOA. Both `infra:up` and `run:full-mas` read these settings;
+no inline environment assignments are needed. The published image is independent
+and does not gain the source adapter's direct enforcement behavior.
 
 On Apple Silicon, the template runs OXP infrastructure as arm64 while the
 published OXP workers and database image use amd64. On an Intel/AMD host, set
@@ -122,6 +134,11 @@ running CF services from source. A fresh checkout does not need this step:
   ioc-scale-cfn-svc ioc-scale-cf-demo-ce ioc-scale-cf-policy-ce)
 ```
 
+In proxy mode, `infra:up` also starts Envoy, its plugin installer jobs, and
+the mediation service used for proxy audit records. It does not start published
+CF containers or require the source CFN or NOA to be running. The source NOA
+task applies the MAS-specific proxy routes when the MAS ID is available.
+
 `infra:up` creates `cfn_mgmt_local` and `cfn_audit_local` in the shared Postgres
 server. They are separate from the published CF databases. Both modes use the
 same OXP services and data stores. `infra:up` leaves published CF containers
@@ -161,19 +178,20 @@ Multi-Agentic System, add its agents, and associate the demo CE after it
 registers and appears online. Copy the MAS ID from its details page.
 
 Stop a previously running published NOA container first, then set
-`NOA_MAS_ID` to the new MAS ID in the CFN `.env` and start the CF-owned source
-copy in a fifth terminal:
+`NOA_MAS_ID` to the new MAS ID and `NOA_MODE=source` in the CFN `.env`, and
+start the CF-owned source copy in a fifth terminal:
 
 ```bash
 (cd ../ioc-scale-cf-deployment && docker compose --profile full-mas stop noa-trip-planner)
-NOA_MODE=source task run:full-mas
+task run:full-mas
 ```
 
 The source sample serves `/ask` on `${NOA_API_PORT:-8125}` and emits telemetry
-to the OTel collector on `localhost:4318`. Before each proposed tool call it
-sends `GetDisposition` to the local CFN and waits for a response. This direct
-call simulates the enforcement proxy decision path; it is not network proxy
-integration. The published sample image does not exercise this direct path.
+to the OTel collector on `localhost:4318`. In direct mode, before each proposed
+tool call it sends `GetDisposition` to the local CFN and waits for a response.
+This direct call simulates the enforcement proxy decision path. Proxy mode
+uses an actual HTTP interception boundary, described below. The published sample
+image does not exercise the source adapter's enforcement paths.
 
 ```bash
 curl -X POST http://localhost:8125/ask \
@@ -200,6 +218,64 @@ curl 'http://localhost:8081/api/v1/cognition-store/findings?mas_id=YOUR_MAS_ID'
 An empty `findings` array is normal until a CE evaluation stores a finding.
 `context_complete: true` only describes pagination of this response; it does
 not mean telemetry or decision context is complete.
+
+## Use Envoy with source NOA
+
+Set both modes in the CFN `.env`:
+
+```dotenv
+NOA_MODE=source
+NOA_ENFORCEMENT_MODE=proxy
+```
+
+Run `task infra:up`, then start the source management service, CFN, UI, and
+your CE as usual. Register the MAS and associate an enabled, online CE. Set
+`NOA_MAS_ID` in `.env`, then run `task run:full-mas`.
+
+The NOA task generates exact routes for that MAS and the existing NOA agent/tool
+identities, reloads Envoy, starts its HTTP tool service, waits for it to become
+ready, and starts NOA. Both source processes share its foreground terminal;
+Ctrl+C stops both. No separate tool-service task is required.
+
+```text
+Source NOA -> Envoy :9010 -> source CFN :9003 -> associated CE
+                |
+                +-- ALLOW -> NOA tools :8126 -> result to NOA
+                +-- blocked/unavailable -> tool error to NOA
+```
+
+Proxy mode sends each tool request once and does not call CFN directly or fall
+back to local tool execution. The same proposed-call trace context is carried
+in the HTTP request. Unknown paths are rejected. A generated local token allows
+the host tool service to accept execution requests forwarded by Envoy; this
+is local development configuration, not production workload authentication.
+
+Envoy reaches the source CFN and tool service through Docker Desktop's
+`host.docker.internal`. The tool listener defaults to `0.0.0.0:8126` so Docker
+can reach it. Proxy HTTP is exposed on host loopback port 9010. Use
+`NOA_TOOLS_PORT`, `NOA_TOOLS_HOST`, and `ENVOY_HTTP_PORT` to change the local
+ports/binding; `NOA_ENFORCEMENT_PROXY_URL`, when nonempty, overrides the client's
+proxy origin. On Intel/AMD, set `ENFORCEMENT_PLATFORM=linux/amd64`. This workflow
+uses POSIX process supervision and requires Docker-to-host connectivity; native
+Linux may need its own `host.docker.internal` mapping.
+
+Inspect proxy and mediation logs with `task proxy:logs`. The generated routes,
+Envoy configuration, and local tool token live in ignored `tmp/enforcement/`.
+The launcher reuses the deployment repo's published images and Compose overlay,
+with a [CFN-owned override](local/enforcement/compose.override.yaml). It does not
+write to the deployment repo or start the example echo upstream.
+
+The current proxy uses HTTP 403 for both policy blocks and some fail-closed
+availability errors. NOA reports a proxy block without inventing a CE denial
+reason. Other transport failures produce an unavailable-tool error. A timeout
+can happen after an upstream tool started, so failed requests are never retried
+automatically. This mode exercises identity-based allow/block. OXP runtime-event
+delivery and qualification of content rules remain separate integration work.
+
+To switch back, stop NOA, set `NOA_ENFORCEMENT_MODE=direct`, and rerun
+`task run:full-mas`. An already-running proxy can remain idle until
+`task infra:down`. That task also stops the source proxy components even when
+the setting has been changed back to direct, and preserves database volumes.
 
 ## Run the policy CE
 
