@@ -38,7 +38,7 @@ class CognitionEngine(Base):
     # Webhook configuration for MAS lifecycle notifications
     notification_url = Column(String(512), nullable=True)  # Webhook base URL
     notification_endpoint = Column(String(255), nullable=True)  # Webhook endpoint path
-    notification_protocol = Column(String(10), nullable=False, default="http")
+    notification_protocol = Column(String(10), nullable=True, default="http")
 
     # Lifecycle
     enabled = Column(Boolean, nullable=False, default=True)
