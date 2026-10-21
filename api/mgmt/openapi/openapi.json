@@ -2139,7 +2139,14 @@
       "CognitionEngineDetail": {
         "properties": {
           "enforcing_url": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Enforcing Url"
           },
           "enforcing_endpoint": {
@@ -2154,14 +2161,6 @@
             "title": "Enforcing Endpoint"
           },
           "enforcing_protocol": {
-            "type": "string",
-            "title": "Enforcing Protocol"
-          },
-          "health_url": {
-            "type": "string",
-            "title": "Health Url"
-          },
-          "health_endpoint": {
             "anyOf": [
               {
                 "type": "string"
@@ -2170,6 +2169,14 @@
                 "type": "null"
               }
             ],
+            "title": "Enforcing Protocol"
+          },
+          "health_url": {
+            "type": "string",
+            "title": "Health Url"
+          },
+          "health_endpoint": {
+            "type": "string",
             "title": "Health Endpoint"
           },
           "health_protocol": {
@@ -2199,7 +2206,14 @@
             "title": "Notification Endpoint"
           },
           "notification_protocol": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Notification Protocol"
           },
           "id": {
@@ -2277,11 +2291,9 @@
         },
         "type": "object",
         "required": [
-          "enforcing_url",
-          "enforcing_protocol",
           "health_url",
+          "health_endpoint",
           "health_protocol",
-          "notification_protocol",
           "id",
           "cfn_id",
           "name",
@@ -2323,7 +2335,14 @@
       "CognitionEngineListItem": {
         "properties": {
           "enforcing_url": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Enforcing Url"
           },
           "enforcing_endpoint": {
@@ -2338,14 +2357,6 @@
             "title": "Enforcing Endpoint"
           },
           "enforcing_protocol": {
-            "type": "string",
-            "title": "Enforcing Protocol"
-          },
-          "health_url": {
-            "type": "string",
-            "title": "Health Url"
-          },
-          "health_endpoint": {
             "anyOf": [
               {
                 "type": "string"
@@ -2354,6 +2365,14 @@
                 "type": "null"
               }
             ],
+            "title": "Enforcing Protocol"
+          },
+          "health_url": {
+            "type": "string",
+            "title": "Health Url"
+          },
+          "health_endpoint": {
+            "type": "string",
             "title": "Health Endpoint"
           },
           "health_protocol": {
@@ -2383,7 +2402,14 @@
             "title": "Notification Endpoint"
           },
           "notification_protocol": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Notification Protocol"
           },
           "id": {
@@ -2449,11 +2475,9 @@
         },
         "type": "object",
         "required": [
-          "enforcing_url",
-          "enforcing_protocol",
           "health_url",
+          "health_endpoint",
           "health_protocol",
-          "notification_protocol",
           "id",
           "cfn_id",
           "name",
@@ -2532,7 +2556,7 @@
               }
             ],
             "title": "Health Endpoint",
-            "description": "Reserved. Send null to clear. Must start with '/'"
+            "description": "Health probe path. Must start with '/'"
           },
           "health_protocol": {
             "anyOf": [
@@ -2713,16 +2737,9 @@
             "description": "URL CFN probes with an HTTP GET to check liveness (e.g., 'http://demo-ce:8080/healthz')"
           },
           "health_endpoint": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Health Endpoint",
-            "description": "Reserved. CFN probes health_url as given. Must start with '/'."
+            "description": "Health probe path (e.g., '/healthz'). Must start with '/'."
           },
           "health_protocol": {
             "type": "string",
@@ -2789,7 +2806,8 @@
           "version",
           "ce_type",
           "enforcing_url",
-          "health_url"
+          "health_url",
+          "health_endpoint"
         ],
         "title": "CognitionEngineRegisterRequest",
         "description": "Schema for CE self-registration.\n\nPOST behavior:\n- If (cfn_id, name, version) exists: returns 409 Conflict with existing_ce_id\n- If (cfn_id, name) exists with different version: creates new CE record\n- Otherwise: creates new CE record"
@@ -2797,7 +2815,14 @@
       "CognitionEngineResponse": {
         "properties": {
           "enforcing_url": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Enforcing Url"
           },
           "enforcing_endpoint": {
@@ -2812,14 +2837,6 @@
             "title": "Enforcing Endpoint"
           },
           "enforcing_protocol": {
-            "type": "string",
-            "title": "Enforcing Protocol"
-          },
-          "health_url": {
-            "type": "string",
-            "title": "Health Url"
-          },
-          "health_endpoint": {
             "anyOf": [
               {
                 "type": "string"
@@ -2828,6 +2845,14 @@
                 "type": "null"
               }
             ],
+            "title": "Enforcing Protocol"
+          },
+          "health_url": {
+            "type": "string",
+            "title": "Health Url"
+          },
+          "health_endpoint": {
+            "type": "string",
             "title": "Health Endpoint"
           },
           "health_protocol": {
@@ -2857,7 +2882,14 @@
             "title": "Notification Endpoint"
           },
           "notification_protocol": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Notification Protocol"
           },
           "ce_id": {
@@ -2899,11 +2931,9 @@
         },
         "type": "object",
         "required": [
-          "enforcing_url",
-          "enforcing_protocol",
           "health_url",
+          "health_endpoint",
           "health_protocol",
-          "notification_protocol",
           "ce_id",
           "cfn_id",
           "name",
@@ -3526,7 +3556,14 @@
       "MasCognitionEngineItem": {
         "properties": {
           "enforcing_url": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Enforcing Url"
           },
           "enforcing_endpoint": {
@@ -3541,14 +3578,6 @@
             "title": "Enforcing Endpoint"
           },
           "enforcing_protocol": {
-            "type": "string",
-            "title": "Enforcing Protocol"
-          },
-          "health_url": {
-            "type": "string",
-            "title": "Health Url"
-          },
-          "health_endpoint": {
             "anyOf": [
               {
                 "type": "string"
@@ -3557,6 +3586,14 @@
                 "type": "null"
               }
             ],
+            "title": "Enforcing Protocol"
+          },
+          "health_url": {
+            "type": "string",
+            "title": "Health Url"
+          },
+          "health_endpoint": {
+            "type": "string",
             "title": "Health Endpoint"
           },
           "health_protocol": {
@@ -3586,7 +3623,14 @@
             "title": "Notification Endpoint"
           },
           "notification_protocol": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Notification Protocol"
           },
           "ce_id": {
@@ -3628,11 +3672,9 @@
         },
         "type": "object",
         "required": [
-          "enforcing_url",
-          "enforcing_protocol",
           "health_url",
+          "health_endpoint",
           "health_protocol",
-          "notification_protocol",
           "ce_id",
           "name",
           "version",
