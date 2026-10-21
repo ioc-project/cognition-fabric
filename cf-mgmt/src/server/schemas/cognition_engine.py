@@ -34,7 +34,7 @@ def ce_connection(source) -> dict:
 
 def connection_error(
     enforcing_endpoint: Optional[str],
-    health_endpoint: Optional[str],
+    health_endpoint: str,
     notification_url: Optional[str],
     notification_endpoint: Optional[str],
 ) -> Optional[str]:
@@ -45,6 +45,8 @@ def connection_error(
     # CFN joins notification_url and notification_endpoint, and skips the CE unless both are set
     if bool(notification_url) != bool(notification_endpoint):
         return "notification_url and notification_endpoint must be set together"
+    if not health_endpoint:
+        return "health_endpoint is required"
     # health and notification are HTTP, where the endpoint is a path
     for name, value in (("health_endpoint", health_endpoint), ("notification_endpoint", notification_endpoint)):
         if value and not value.startswith("/"):
@@ -55,15 +57,15 @@ def connection_error(
 class CEConnection(BaseModel):
     """How CFN reaches a CE: one url, endpoint and protocol per purpose."""
 
-    enforcing_url: str
+    enforcing_url: Optional[str] = None
     enforcing_endpoint: Optional[str] = None
-    enforcing_protocol: str
+    enforcing_protocol: Optional[str] = None
     health_url: str
-    health_endpoint: Optional[str] = None
+    health_endpoint: str
     health_protocol: str
     notification_url: Optional[str] = None
     notification_endpoint: Optional[str] = None
-    notification_protocol: str
+    notification_protocol: Optional[str] = None
 
 
 class CEType(str, Enum):
@@ -104,9 +106,7 @@ class CognitionEngineRegisterRequest(BaseModel):
         max_length=512,
         description="URL CFN probes with an HTTP GET to check liveness (e.g., 'http://demo-ce:8080/healthz')",
     )
-    health_endpoint: Optional[str] = Field(
-        None, description="Reserved. CFN probes health_url as given. Must start with '/'."
-    )
+    health_endpoint: str = Field(..., description="Health probe path (e.g., '/healthz'). Must start with '/'.")
     health_protocol: Literal["http"] = Field("http", description="Health probe protocol")
     mas_auto_associate: bool = Field(
         False, description="If true, CE is auto-associated with all MAS under the same CFN's workspaces"
@@ -204,7 +204,7 @@ class CognitionEnginePatchRequest(BaseModel):
         max_length=512,
         description="URL CFN probes with an HTTP GET to check liveness",
     )
-    health_endpoint: Optional[str] = Field(None, description="Reserved. Send null to clear. Must start with '/'")
+    health_endpoint: Optional[str] = Field(None, description="Health probe path. Must start with '/'")
     health_protocol: Optional[Literal["http"]] = Field(None, description="Health probe protocol")
     notification_url: Optional[str] = Field(
         None, description="Base URL for lifecycle event notifications. Send null to clear"
