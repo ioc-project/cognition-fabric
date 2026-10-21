@@ -4,7 +4,7 @@
 
 """MCP Server database model - stores MCP server definitions for MAS"""
 
-from sqlalchemy import Column, String, DateTime, Text, text, Index, ForeignKey
+from sqlalchemy import Column, String, DateTime, Text, text, Index, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 
 from server.database.relational_db.models import Base
@@ -21,11 +21,10 @@ class MCPServer(Base):
     config = Column(JSONB, nullable=True)
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
     updated_at = Column(DateTime, nullable=True, server_default=text("CURRENT_TIMESTAMP"))
-    created_by = Column(String(255), nullable=True)
-    updated_by = Column(String(255), nullable=True)
 
     __table_args__ = (
         Index("idx_mcp_server_mas_id", "mas_id"),
+        UniqueConstraint("mas_id", "name", name="uq_mcp_server_mas_name"),
     )
 
     def __repr__(self):
