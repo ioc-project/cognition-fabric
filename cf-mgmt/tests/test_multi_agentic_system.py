@@ -815,3 +815,277 @@ class TestMASInlineCEAssociation:
         ce_ids_in_resp = {c["ce_id"] for c in ces}
         assert ce2_id in ce_ids_in_resp
         assert ce1_id not in ce_ids_in_resp
+
+
+class TestMASMCPServers:
+    """Test cases for MCP server management within MAS."""
+
+    def test_create_mas_with_mcp_servers(self, client, created_workspace):
+        """Test creating MAS with MCP servers and tools."""
+        mas_data = {
+            "name": "MCP Server MAS",
+            "mcp_servers": [
+                {
+                    "name": "filesystem-server",
+                    "transport": "stdio",
+                    "description": "File system access server",
+                    "tools": [
+                        {
+                            "name": "read_file",
+                            "description": "Read contents of a file",
+                            "parameters": {"type": "object", "properties": {"path": {"type": "string"}}},
+                        },
+                        {
+                            "name": "write_file",
+                            "description": "Write contents to a file",
+                            "parameters": {"type": "object", "properties": {"path": {"type": "string"}, "content": {"type": "string"}}},
+                        },
+                    ],
+                },
+            ],
+        }
+
+        response = client.post(f"/api/workspaces/{created_workspace}/multi-agentic-systems", json=mas_data)
+        assert response.status_code == 201
+        mas_id = response.json()["id"]
+
+        # GET and verify
+        get_response = client.get(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}")
+        assert get_response.status_code == 200
+        data = get_response.json()
+
+        assert len(data["mcp_servers"]) == 1
+        server = data["mcp_servers"][0]
+        assert server["name"] == "filesystem-server"
+        assert server["transport"] == "stdio"
+        assert server["description"] == "File system access server"
+        assert "id" in server
+        assert len(server["tools"]) == 2
+
+        tool_names = {t["name"] for t in server["tools"]}
+        assert tool_names == {"read_file", "write_file"}
+
+    def test_create_mas_with_multiple_mcp_servers(self, client, created_workspace):
+        """Test creating MAS with multiple MCP servers."""
+        mas_data = {
+            "name": "Multi MCP MAS",
+            "mcp_servers": [
+                {"name": "server-1", "tools": [{"name": "tool-a"}]},
+                {"name": "server-2", "tools": [{"name": "tool-b"}]},
+            ],
+        }
+
+        response = client.post(f"/api/workspaces/{created_workspace}/multi-agentic-systems", json=mas_data)
+        assert response.status_code == 201
+        mas_id = response.json()["id"]
+
+        get_response = client.get(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}")
+        assert get_response.status_code == 200
+        servers = get_response.json()["mcp_servers"]
+        assert len(servers) == 2
+        server_names = {s["name"] for s in servers}
+        assert server_names == {"server-1", "server-2"}
+
+    def test_create_mas_duplicate_mcp_server_names_returns_422(self, client, created_workspace):
+        """Test that duplicate MCP server names in the same MAS return 422."""
+        mas_data = {
+            "name": "Duplicate Server MAS",
+            "mcp_servers": [
+                {"name": "server-1", "tools": []},
+                {"name": "server-1", "tools": []},
+            ],
+        }
+
+        response = client.post(f"/api/workspaces/{created_workspace}/multi-agentic-systems", json=mas_data)
+        assert response.status_code == 422
+        assert "Duplicate MCP server name" in response.json()["detail"]
+
+    def test_create_mas_duplicate_tool_names_returns_422(self, client, created_workspace):
+        """Test that duplicate tool names within a server return 422."""
+        mas_data = {
+            "name": "Duplicate Tool MAS",
+            "mcp_servers": [
+                {
+                    "name": "server-1",
+                    "tools": [
+                        {"name": "tool-a"},
+                        {"name": "tool-a"},
+                    ],
+                },
+            ],
+        }
+
+        response = client.post(f"/api/workspaces/{created_workspace}/multi-agentic-systems", json=mas_data)
+        assert response.status_code == 422
+        assert "Duplicate tool name" in response.json()["detail"]
+
+    def test_list_mas_includes_mcp_servers(self, client, created_workspace):
+        """Test that listing MAS includes MCP servers."""
+        mas_data = {
+            "name": "Listed MCP MAS",
+            "mcp_servers": [
+                {"name": "list-server", "tools": [{"name": "list-tool"}]},
+            ],
+        }
+        client.post(f"/api/workspaces/{created_workspace}/multi-agentic-systems", json=mas_data)
+
+        list_response = client.get(f"/api/workspaces/{created_workspace}/multi-agentic-systems")
+        assert list_response.status_code == 200
+        systems = list_response.json()["systems"]
+        assert len(systems) == 1
+        assert len(systems[0]["mcp_servers"]) == 1
+        assert systems[0]["mcp_servers"][0]["name"] == "list-server"
+
+    def test_update_mas_add_mcp_server(self, client, created_workspace):
+        """Test updating MAS to add an MCP server."""
+        # Create MAS without MCP servers
+        mas_id = client.post(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems",
+            json={"name": "Update Add MCP MAS"},
+        ).json()["id"]
+
+        # Update to add MCP server
+        update_response = client.put(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}",
+            json={"mcp_servers": [{"name": "new-server", "tools": [{"name": "new-tool"}]}]},
+        )
+        assert update_response.status_code == 200
+        servers = update_response.json()["mcp_servers"]
+        assert len(servers) == 1
+        assert servers[0]["name"] == "new-server"
+
+    def test_update_mas_preserves_mcp_server_id(self, client, created_workspace):
+        """Test that updating MCP server by name preserves its ID."""
+        mas_data = {
+            "name": "Preserve ID MAS",
+            "mcp_servers": [{"name": "stable-server", "description": "Original"}],
+        }
+        mas_id = client.post(f"/api/workspaces/{created_workspace}/multi-agentic-systems", json=mas_data).json()["id"]
+
+        # Get original server ID
+        get_response = client.get(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}")
+        original_server_id = get_response.json()["mcp_servers"][0]["id"]
+
+        # Update the server description
+        update_response = client.put(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}",
+            json={"mcp_servers": [{"name": "stable-server", "description": "Updated"}]},
+        )
+        assert update_response.status_code == 200
+        updated_server = update_response.json()["mcp_servers"][0]
+
+        # ID should be preserved, description should be updated
+        assert updated_server["id"] == original_server_id
+        assert updated_server["description"] == "Updated"
+
+    def test_update_mas_preserves_mcp_server_config_when_not_sent(self, client, created_workspace):
+        """Test that updating MCP server without config preserves existing config."""
+        mas_data = {
+            "name": "Preserve Config MAS",
+            "mcp_servers": [{"name": "config-server", "config": {"key": "value"}}],
+        }
+        mas_id = client.post(f"/api/workspaces/{created_workspace}/multi-agentic-systems", json=mas_data).json()["id"]
+
+        # Update without sending config
+        update_response = client.put(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}",
+            json={"mcp_servers": [{"name": "config-server", "description": "Updated desc"}]},
+        )
+        assert update_response.status_code == 200
+        server = update_response.json()["mcp_servers"][0]
+
+        # Config should be preserved
+        assert server["config"] == {"key": "value"}
+        assert server["description"] == "Updated desc"
+
+    def test_update_mas_removes_mcp_server(self, client, created_workspace):
+        """Test updating MAS to remove an MCP server."""
+        mas_data = {
+            "name": "Remove Server MAS",
+            "mcp_servers": [
+                {"name": "server-1"},
+                {"name": "server-2"},
+            ],
+        }
+        mas_id = client.post(f"/api/workspaces/{created_workspace}/multi-agentic-systems", json=mas_data).json()["id"]
+
+        # Update to remove server-2
+        update_response = client.put(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}",
+            json={"mcp_servers": [{"name": "server-1"}]},
+        )
+        assert update_response.status_code == 200
+        servers = update_response.json()["mcp_servers"]
+        assert len(servers) == 1
+        assert servers[0]["name"] == "server-1"
+
+    def test_update_mas_duplicate_mcp_server_names_returns_422(self, client, created_workspace):
+        """Test that updating with duplicate server names returns 422."""
+        mas_data = {
+            "name": "Update Dup Server MAS",
+            "mcp_servers": [{"name": "server-1"}],
+        }
+        mas_id = client.post(f"/api/workspaces/{created_workspace}/multi-agentic-systems", json=mas_data).json()["id"]
+
+        # Try to update with duplicate names
+        update_response = client.put(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}",
+            json={"mcp_servers": [{"name": "server-1"}, {"name": "server-1"}]},
+        )
+        assert update_response.status_code == 422
+
+    def test_delete_mas_cascades_to_mcp_servers(self, client, created_workspace):
+        """Test that deleting MAS also deletes its MCP servers."""
+        mas_data = {
+            "name": "Cascade Delete MAS",
+            "mcp_servers": [{"name": "cascade-server", "tools": [{"name": "cascade-tool"}]}],
+        }
+        mas_id = client.post(f"/api/workspaces/{created_workspace}/multi-agentic-systems", json=mas_data).json()["id"]
+
+        # Delete MAS
+        delete_response = client.delete(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}")
+        assert delete_response.status_code == 200
+
+        # MAS should no longer exist
+        get_response = client.get(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}")
+        assert get_response.status_code == 404
+
+    def test_create_mas_mcp_server_without_tools(self, client, created_workspace):
+        """Test creating MAS with MCP server that has no tools."""
+        mas_data = {
+            "name": "No Tools MAS",
+            "mcp_servers": [{"name": "empty-server"}],
+        }
+
+        response = client.post(f"/api/workspaces/{created_workspace}/multi-agentic-systems", json=mas_data)
+        assert response.status_code == 201
+        mas_id = response.json()["id"]
+
+        get_response = client.get(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}")
+        server = get_response.json()["mcp_servers"][0]
+        assert server["name"] == "empty-server"
+        assert server["tools"] is None or server["tools"] == []
+
+    def test_query_mas_by_identity_includes_mcp_servers(self, client, created_workspace):
+        """Test that querying MAS by identity includes MCP servers in response."""
+        mas_data = {
+            "name": "Query MCP MAS",
+            "agents": [
+                {
+                    "agent_id": "query-agent",
+                    "identity": {"type": "claude", "identifiers": {"org": "test"}},
+                },
+            ],
+            "mcp_servers": [{"name": "query-server", "tools": [{"name": "query-tool"}]}],
+        }
+        client.post(f"/api/workspaces/{created_workspace}/multi-agentic-systems", json=mas_data)
+
+        response = client.post(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems/query",
+            json={"identity_type": "claude"},
+        )
+        assert response.status_code == 200
+        systems = response.json()["systems"]
+        assert len(systems) == 1
+        assert len(systems[0]["mcp_servers"]) == 1
+        assert systems[0]["mcp_servers"][0]["name"] == "query-server"
