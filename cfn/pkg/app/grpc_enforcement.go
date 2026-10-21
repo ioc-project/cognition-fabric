@@ -134,6 +134,9 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 			offlineCount++
 			continue
 		}
+		if ce.EnforcingURL == "" {
+			continue
+		}
 		casaCE = ce
 		break
 	}

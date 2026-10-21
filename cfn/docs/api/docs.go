@@ -141,7 +141,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Fields to update (enforcing_*, health_*, notification_*). Send null to clear notification_url or notification_endpoint",
+                        "description": "Fields to update (enforcing_*, health_*, notification_*). Send null to clear enforcing_url, enforcing_endpoint, notification_url or notification_endpoint",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -337,7 +337,7 @@ const docTemplate = `{
                     "example": "CASA"
                 },
                 "enforcing_endpoint": {
-                    "description": "gRPC service name for enforcement (required for gRPC)",
+                    "description": "gRPC service name for enforcement (required when enforcing_url is set)",
                     "type": "string",
                     "example": "ioc.ce.v1.CognitionEngine"
                 },
@@ -350,7 +350,7 @@ const docTemplate = `{
                     "example": "grpc"
                 },
                 "enforcing_url": {
-                    "description": "Address CFN sends enforcement requests to (gRPC host:port, e.g. \"my-ce:50051\")",
+                    "description": "Address CFN sends enforcement requests to (gRPC host:port, e.g. \"my-ce:50051\"). Optional, but set together with enforcing_endpoint",
                     "type": "string",
                     "example": "my-ce:50051"
                 },
@@ -457,7 +457,7 @@ const docTemplate = `{
                     "example": "my-ce:50051"
                 },
                 "health_endpoint": {
-                    "description": "Reserved. Health checks are HTTP, so CFN probes health_url as given",
+                    "description": "Health probe path appended to health_url",
                     "type": "string",
                     "example": "/healthz"
                 },

@@ -36,7 +36,8 @@ definitions:
         example: CASA
         type: string
       enforcing_endpoint:
-        description: gRPC service name for enforcement (required for gRPC)
+        description: gRPC service name for enforcement (required when enforcing_url
+          is set)
         example: ioc.ce.v1.CognitionEngine
         type: string
       enforcing_protocol:
@@ -48,7 +49,7 @@ definitions:
         type: string
       enforcing_url:
         description: Address CFN sends enforcement requests to (gRPC host:port, e.g.
-          "my-ce:50051")
+          "my-ce:50051"). Optional, but set together with enforcing_endpoint
         example: my-ce:50051
         type: string
       health_endpoint:
@@ -137,8 +138,7 @@ definitions:
         example: my-ce:50051
         type: string
       health_endpoint:
-        description: Reserved. Health checks are HTTP, so CFN probes health_url as
-          given
+        description: Health probe path appended to health_url
         example: /healthz
         type: string
       health_protocol:
@@ -299,7 +299,7 @@ paths:
         required: true
         type: string
       - description: Fields to update (enforcing_*, health_*, notification_*). Send
-          null to clear notification_url or notification_endpoint
+          null to clear enforcing_url, enforcing_endpoint, notification_url or notification_endpoint
         in: body
         name: request
         required: true

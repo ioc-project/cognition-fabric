@@ -127,7 +127,7 @@ func TestRegisterCognitionEngineHandler_InvalidCEType(t *testing.T) {
 	}
 }
 
-func TestRegisterCognitionEngineHandler_MissingEnforcingURL(t *testing.T) {
+func TestRegisterCognitionEngineHandler_EndpointWithoutEnforcingURL(t *testing.T) {
 	CfnID = "test-cfn-id"
 
 	a := &App{}
@@ -149,8 +149,8 @@ func TestRegisterCognitionEngineHandler_MissingEnforcingURL(t *testing.T) {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	if resp["error"] != "enforcing_url is required" {
-		t.Errorf("expected error 'enforcing_url is required', got '%s'", resp["error"])
+	if resp["error"] != "enforcing_url and enforcing_endpoint must be set together" {
+		t.Errorf("unexpected error message: '%s'", resp["error"])
 	}
 }
 
@@ -204,8 +204,8 @@ func TestRegisterCognitionEngineHandler_MissingEndpoint(t *testing.T) {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	if resp["error"] != "enforcing_endpoint is required when enforcing_protocol is 'grpc'" {
-		t.Errorf("expected error 'enforcing_endpoint is required when enforcing_protocol is 'grpc'', got '%s'", resp["error"])
+	if resp["error"] != "enforcing_url and enforcing_endpoint must be set together" {
+		t.Errorf("unexpected error message: '%s'", resp["error"])
 	}
 }
 
@@ -279,6 +279,36 @@ func TestRegisterCognitionEngineHandler_CASATypeAccepted(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Errorf("expected status %d, got %d, body=%s", http.StatusOK, w.Code, w.Body.String())
+	}
+}
+
+func TestRegisterCognitionEngineHandler_EnforcingOptional(t *testing.T) {
+	CfnID = "test-cfn-id"
+
+	var receivedPayload map[string]any
+	mockMgmtPlane := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&receivedPayload)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(`{"ce_id":"test-ce-id","cfn_id":"test-cfn-id","name":"test-ce","version":"1.0.0","ce_type":"DETECTIVE","enabled":true,"status":"online","created":true}`))
+	}))
+	defer mockMgmtPlane.Close()
+	t.Setenv("MGMT_URL", mockMgmtPlane.URL)
+
+	a := &App{}
+	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
+
+	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "DETECTIVE", "health_url": "http://localhost:8080", "health_endpoint": "/healthz"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("expected status %d, got %d, body=%s", http.StatusCreated, w.Code, w.Body.String())
+	}
+	if _, sent := receivedPayload["enforcing_url"]; sent {
+		t.Errorf("enforcing_url should not be forwarded when omitted: %v", receivedPayload)
 	}
 }
 

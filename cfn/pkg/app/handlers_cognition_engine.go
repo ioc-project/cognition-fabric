@@ -110,12 +110,6 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 			"error": fmt.Sprintf("ce_type must be one of: CASA, DETECTIVE (got: %s)", req.CEType),
 		})
 	}
-	if req.EnforcingURL == "" {
-		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "enforcing_url is required",
-		})
-	}
-
 	// Each purpose has one supported protocol today. An omitted protocol takes that default.
 	if req.EnforcingProtocol == "" {
 		req.EnforcingProtocol = protocolGRPC
@@ -138,30 +132,32 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	// A gRPC address (host:port) has no service name, so gRPC endpoints must carry one
-	if req.EnforcingEndpoint == "" {
+	// Enforcing is optional, but its url and endpoint go together: a gRPC address (host:port) has no service name
+	if (req.EnforcingURL == "") != (req.EnforcingEndpoint == "") {
 		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "enforcing_endpoint is required when enforcing_protocol is 'grpc'",
+			"error": "enforcing_url and enforcing_endpoint must be set together",
 		})
 	}
 
-	// Validate enforcing_url format
+	// Validate enforcing_url format when given
 	// Accept either URL format (http://host:port) or gRPC address format (host:port)
 	enforcingURL := req.EnforcingURL
-	if !strings.Contains(enforcingURL, "://") {
-		// Assume gRPC address format (host:port), validate it has host and port
-		if !strings.Contains(enforcingURL, ":") {
-			return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "invalid enforcing_url format: must be host:port (for gRPC) or http://host:port (for HTTP)",
-			})
-		}
-	} else {
-		// URL format - validate scheme and host
-		parsedURL, err := url.Parse(enforcingURL)
-		if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
-			return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "invalid enforcing_url format: must be host:port (for gRPC) or http://host:port (for HTTP)",
-			})
+	if enforcingURL != "" {
+		if !strings.Contains(enforcingURL, "://") {
+			// Assume gRPC address format (host:port), validate it has host and port
+			if !strings.Contains(enforcingURL, ":") {
+				return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+					"error": "invalid enforcing_url format: must be host:port (for gRPC) or http://host:port (for HTTP)",
+				})
+			}
+		} else {
+			// URL format - validate scheme and host
+			parsedURL, err := url.Parse(enforcingURL)
+			if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+				return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+					"error": "invalid enforcing_url format: must be host:port (for gRPC) or http://host:port (for HTTP)",
+				})
+			}
 		}
 	}
 
@@ -221,8 +217,6 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 		"name":                  req.Name,
 		"version":               req.Version,
 		"ce_type":               req.CEType,
-		"enforcing_url":         req.EnforcingURL,
-		"enforcing_endpoint":    req.EnforcingEndpoint,
 		"enforcing_protocol":    req.EnforcingProtocol,
 		"health_url":            req.HealthURL,
 		"health_endpoint":       req.HealthEndpoint,
@@ -230,6 +224,11 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 		"notification_protocol": req.NotificationProtocol,
 		"mas_auto_associate":    masAutoAssociate,
 		"mas_config":            masConfig,
+	}
+
+	if req.EnforcingURL != "" {
+		payload["enforcing_url"] = req.EnforcingURL
+		payload["enforcing_endpoint"] = req.EnforcingEndpoint
 	}
 
 	// Add notification fields if provided
@@ -317,7 +316,7 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 // @Accept       json
 // @Produce      json
 // @Param        ceId path string true "Cognition Engine ID (UUID)"
-// @Param        request body map[string]any true "Fields to update (enforcing_*, health_*, notification_*). Send null to clear notification_url or notification_endpoint"
+// @Param        request body map[string]any true "Fields to update (enforcing_*, health_*, notification_*). Send null to clear enforcing_url, enforcing_endpoint, notification_url or notification_endpoint"
 // @Success      200 {object} map[string]any "CE updated successfully"
 // @Failure      400 {object} cognitionengine.ErrorResponse "Invalid request"
 // @Failure      404 {object} cognitionengine.ErrorResponse "CE not found"

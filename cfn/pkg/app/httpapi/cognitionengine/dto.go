@@ -14,9 +14,9 @@ type RegisterRequest struct {
 	Version string `json:"version" example:"1.0.0"`
 	// CE type - must be "CASA" or "DETECTIVE"
 	CEType string `json:"ce_type" example:"CASA" enums:"CASA,DETECTIVE"`
-	// Address CFN sends enforcement requests to (gRPC host:port, e.g. "my-ce:50051")
-	EnforcingURL string `json:"enforcing_url" example:"my-ce:50051"`
-	// gRPC service name for enforcement (required for gRPC)
+	// Address CFN sends enforcement requests to (gRPC host:port, e.g. "my-ce:50051"). Optional, but set together with enforcing_endpoint
+	EnforcingURL string `json:"enforcing_url,omitempty" example:"my-ce:50051"`
+	// gRPC service name for enforcement (required when enforcing_url is set)
 	EnforcingEndpoint string `json:"enforcing_endpoint,omitempty" example:"ioc.ce.v1.CognitionEngine"`
 	// Enforcement protocol. Only "grpc" is supported today (default "grpc")
 	EnforcingProtocol string `json:"enforcing_protocol,omitempty" example:"grpc" enums:"grpc"`
@@ -52,15 +52,15 @@ type RegisterResponse struct {
 	// CE type
 	CEType string `json:"ce_type" example:"CASA"`
 	// Address CFN sends enforcement requests to
-	EnforcingURL string `json:"enforcing_url" example:"my-ce:50051"`
+	EnforcingURL *string `json:"enforcing_url,omitempty" example:"my-ce:50051"`
 	// gRPC service name for enforcement
 	EnforcingEndpoint *string `json:"enforcing_endpoint,omitempty" example:"ioc.ce.v1.CognitionEngine"`
 	// Enforcement protocol
 	EnforcingProtocol string `json:"enforcing_protocol" example:"grpc"`
 	// Health check URL probed by CFN
 	HealthURL string `json:"health_url" example:"http://my-ce:8080"`
-	// Reserved. Health checks are HTTP, so CFN probes health_url as given
-	HealthEndpoint *string `json:"health_endpoint,omitempty" example:"/healthz"`
+	// Health probe path appended to health_url
+	HealthEndpoint string `json:"health_endpoint" example:"/healthz"`
 	// Health protocol
 	HealthProtocol string `json:"health_protocol" example:"http"`
 	// Notification base URL for MAS event notifications
