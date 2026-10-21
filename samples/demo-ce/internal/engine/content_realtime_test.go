@@ -101,21 +101,6 @@ func hasCheck(out *cev1.EvaluateResponse, id string) bool {
 	return false
 }
 
-func TestRealtimeDirectEventIDJudgesItsInput(t *testing.T) {
-	for query, want := range map[string]cev1.Decision{"ordinary trip": cev1.Decision_DECISION_ALLOW, "secret-value": cev1.Decision_DECISION_DENY} {
-		f := &fakeRealtime{}
-		f.add(realtimeEvent("pre1", "msg1", trace, span, query))
-		f.add(realtimeEvent("other", "msg1", trace, span, "unrelated"))
-		out, err := realtimeEngine(t, policy.EvidenceToolInput, f, nil).Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.precall_event_id": "pre1", "ioc.observe.event_id": "msg1"}))
-		if err != nil || out.Outcome != want || !hasCheck(out, "OXP_REALTIME_EVENT") || out.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
-			t.Fatalf("%s: %+v %v", query, out, err)
-		}
-		if f.spanGets.Load() != 0 {
-			t.Fatal("the direct id must not list the span")
-		}
-	}
-}
-
 func TestRealtimeParentFallbackSeparatesParallelRequestsOfOneSpan(t *testing.T) {
 	f := &fakeRealtime{}
 	want := map[string]cev1.Decision{}
@@ -141,7 +126,7 @@ func TestRealtimeParentFallbackSeparatesParallelRequestsOfOneSpan(t *testing.T) 
 }
 
 func TestRealtimeWaitsForTheEventToBeIngested(t *testing.T) {
-	for name, extra := range map[string]map[string]string{"direct": {"ioc.observe.precall_event_id": "pre1"}, "parent": {"ioc.observe.event_id": "msg1"}} {
+	for name, extra := range map[string]map[string]string{"parent": {"ioc.observe.event_id": "msg1"}} {
 		t.Run(name, func(t *testing.T) {
 			f := &fakeRealtime{}
 			go func() {
@@ -187,7 +172,7 @@ func TestRealtimeFailureKeepsTheInboxBehavior(t *testing.T) {
 		refs := event["correlation"].(map[string]any)
 		r := spanRequest(refs["span_id"].(string))
 		r.TraceId = refs["trace_id"].(string)
-		r.Extra = map[string]string{"ioc.observe.session_id": event["session"].(map[string]any)["id"].(string), "ioc.observe.precall_event_id": "pre1", "ioc.observe.event_id": "msg1"}
+		r.Extra = map[string]string{"ioc.observe.session_id": event["session"].(map[string]any)["id"].(string), "ioc.observe.event_id": "msg1"}
 		out, err := realtimeEngine(t, policy.EvidenceA2AMessageInput, f, in).Evaluate(context.Background(), r)
 		if err != nil || out.Outcome != cev1.Decision_DECISION_ALLOW || hasCheck(out, "OXP_REALTIME_EVENT") || out.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
 			t.Fatalf("status %d: %+v %v", status, out, err)
@@ -196,18 +181,10 @@ func TestRealtimeFailureKeepsTheInboxBehavior(t *testing.T) {
 }
 
 func TestRealtimeContradictoryReferencesAreAGap(t *testing.T) {
-	other := "fedcba9876543210"
 	for name, tc := range map[string]struct {
 		events []map[string]any
 		extra  map[string]string
 	}{
-		"wrong span":  {[]map[string]any{realtimeEvent("pre1", "msg1", trace, other, "ordinary trip")}, map[string]string{"ioc.observe.precall_event_id": "pre1"}},
-		"wrong trace": {[]map[string]any{realtimeEvent("pre1", "msg1", "ffffffffffffffffffffffffffffffff", span, "ordinary trip")}, map[string]string{"ioc.observe.precall_event_id": "pre1"}},
-		"wrong type": {[]map[string]any{func() map[string]any {
-			e := realtimeEvent("pre1", "msg1", trace, span, "x")
-			e["type"] = "tool.completed"
-			return e
-		}()}, map[string]string{"ioc.observe.precall_event_id": "pre1"}},
 		"ambiguous children": {[]map[string]any{realtimeEvent("a", "msg1", trace, span, "ordinary trip"), realtimeEvent("b", "msg1", trace, span, "secret-value")}, map[string]string{"ioc.observe.event_id": "msg1"}},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -220,12 +197,13 @@ func TestRealtimeContradictoryReferencesAreAGap(t *testing.T) {
 	}
 }
 
-func TestRealtimeDirectIDWinsOverTheParentLookup(t *testing.T) {
+// An id other than the carrier's event.id (the proxy used to forward a pre-call id) is never read.
+func TestRealtimePrecallEventIDInTheExtraIsIgnored(t *testing.T) {
 	f := &fakeRealtime{}
-	f.add(realtimeEvent("pre1", "msg1", trace, span, "ordinary trip"))
+	f.add(realtimeEvent("pre1", "other-msg", trace, span, "ordinary trip"))
 	f.add(realtimeEvent("pre2", "msg1", trace, span, "secret-value"))
 	out, err := realtimeEngine(t, policy.EvidenceToolInput, f, nil).Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.precall_event_id": "pre1", "ioc.observe.event_id": "msg1"}))
-	if err != nil || out.Outcome != cev1.Decision_DECISION_ALLOW {
+	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY {
 		t.Fatalf("%+v %v", out, err)
 	}
 }

@@ -63,15 +63,16 @@ in the inbox.
 
 **`a2a_message_input` and `mcp_tool_input`**, from the request's `extra`:
 
-1. `ioc.observe.precall_event_id` (the `event.id` of the `tool.started`): `GET /api/v1/realtime/events/{id}`;
-   the judged text is its `data.input`.
-2. Otherwise `ioc.observe.event_id` (the id of the `*.message.sent`): `GET /api/v1/realtime/events/{id}`.
-   With Observe SDK >= 1.0.57 this event carries the content: the text `parts` of an A2A message
-   (`data.input.messageId` must match `ioc.observe.message_id`) or the `arguments` of an MCP `tools/call`.
-   If it carries none, `GET /api/v1/realtime/spans/{span_id}/events?event_types=tool.started` and the one
-   `tool.started` whose `correlation.parent_event_id` equals it.
+`ioc.observe.event_id` is the `event.id` of the carrier, always the id of the `*.message.sent` event:
+`GET /api/v1/realtime/events/{id}`. With Observe SDK >= 1.0.57 this event carries the content: the text
+`parts` of an A2A message (`data.input.messageId` must match `ioc.observe.message_id`) or the `arguments` of
+an MCP `tools/call`. If it carries none (SDK <= 1.0.56),
+`GET /api/v1/realtime/spans/{span_id}/events?event_types=tool.started` and the one `tool.started` whose
+`correlation.parent_event_id` equals it. The SDK 1.0.58 A2A carrier also holds the `tool.started` id in
+`metadata.observe["tool.event.id"]` and the MCP carrier none; the CE does not use them, and an
+`ioc.observe.precall_event_id` in the `extra` is ignored.
 
-`tool_input` uses only the `tool.started` of those two.
+`tool_input` uses only the `tool.started` child.
 
 **`llm_input`** needs no id: `GET /api/v1/realtime/spans/{span_id}/events?event_types=llm.started`. A span has
 one `llm.started`, whose `data.input` is the prompt, and the trace must be the request's. No event leaves the

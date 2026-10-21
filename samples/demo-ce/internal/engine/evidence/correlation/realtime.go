@@ -16,14 +16,12 @@ import (
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 )
 
-// Keys of the request's extra map that name the pre-call event. The CFN passes them from the proxy, which
-// reads them from the carrier of the intercepted request.
-const (
-	// ExtraPrecallEventID is the event.id of the tool.started event that holds the content: read directly.
-	ExtraPrecallEventID = "ioc.observe.precall_event_id"
-	// ExtraEventID is the id of the message.sent event, parent of the tool.started that holds the content.
-	ExtraEventID = "ioc.observe.event_id"
-)
+// ExtraEventID is the key of the request's extra map that names the carrier's event. The CFN passes it from
+// the proxy, which reads it from the carrier of the intercepted request. The carrier's event.id is always the
+// id of the *.message.sent event, parent of the tool.started that holds the content in older SDKs. The A2A
+// carrier of Observe SDK 1.0.58 also holds the tool.started id in metadata.observe["tool.event.id"] and the
+// MCP carrier holds none: the CE uses neither, so any other id in the extra is ignored.
+const ExtraEventID = "ioc.observe.event_id"
 
 type realtimeState int
 
@@ -34,16 +32,16 @@ const (
 )
 
 // hasRealtimeRef reports whether the request can be resolved through OXP realtime: a model request always
-// can (its span holds the llm.started event), the others when they name their pre-call event.
+// can (its span holds the llm.started event), the others when they name the carrier's event.
 func (j *Judge) hasRealtimeRef(r *cev1.EvaluateRequest) bool {
 	if j.Client == nil {
 		return false
 	}
-	return j.Kind == policy.EvidenceLLMInput || r.Extra[ExtraPrecallEventID] != "" || r.Extra[ExtraEventID] != ""
+	return j.Kind == policy.EvidenceLLMInput || r.Extra[ExtraEventID] != ""
 }
 
-// realtime resolves the pre-call tool.started event through the OXP realtime endpoints. The direct id wins;
-// otherwise the span's tool.started events are searched for the one whose parent is the carrier's event.id.
+// realtime resolves the pre-call content through the OXP realtime endpoints: the carrier's message.sent event
+// when it holds the content, otherwise the span's tool.started event whose parent is the carrier's event.id.
 // The returned error means the reference is contradictory (wrong trace, span or message, or ambiguous
 // candidates), which is never retried. An endpoint failure is reported as realtimeNone.
 func (j *Judge) realtime(ctx context.Context, r *cev1.EvaluateRequest) (*currentEvent, realtimeState, error) {
@@ -52,18 +50,6 @@ func (j *Judge) realtime(ctx context.Context, r *cev1.EvaluateRequest) (*current
 	}
 	if j.Kind == policy.EvidenceLLMInput {
 		return j.realtimeModel(ctx, r)
-	}
-	if id := r.Extra[ExtraPrecallEventID]; id != "" {
-		event, err := j.Client.Event(ctx, id)
-		if err != nil {
-			return j.realtimeFailure(r, "event", err)
-		}
-		current, err := j.realtimeCandidate(r, event)
-		if err != nil {
-			return nil, realtimeNone, err
-		}
-		current.via = "direct event " + id
-		return current, realtimeFound, nil
 	}
 	parent := r.Extra[ExtraEventID]
 	if j.Kind != policy.EvidenceToolInput {
@@ -121,17 +107,17 @@ func (j *Judge) realtimeFailure(r *cev1.EvaluateRequest, what string, err error)
 
 func (j *Judge) realtimeCandidate(r *cev1.EvaluateRequest, event oxp.RealtimeEvent) (*currentEvent, error) {
 	if event.Type != "tool.started" {
-		return nil, fmt.Errorf("referenced event is %s, not tool.started", event.Type)
+		return nil, fmt.Errorf("pre-call event is %s, not tool.started", event.Type)
 	}
 	if event.TraceID != r.TraceId || event.SpanID != r.SpanId {
-		return nil, errors.New("referenced pre-call event belongs to a different trace or span")
+		return nil, errors.New("pre-call event belongs to a different trace or span")
 	}
 	session, callID, texts, ok := events.ToolEvent(event.Raw)
 	if !ok {
-		return nil, errors.New("referenced pre-call event has no tool input")
+		return nil, errors.New("pre-call event has no tool input")
 	}
 	if want := r.Extra["ioc.observe.message_id"]; j.Kind == policy.EvidenceA2AMessageInput && want != "" && callID != "" && want != callID {
-		return nil, errors.New("referenced pre-call event belongs to a different message")
+		return nil, errors.New("pre-call event belongs to a different message")
 	}
 	sortTexts(texts)
 	return &currentEvent{session: session, texts: texts, realtime: true}, nil
