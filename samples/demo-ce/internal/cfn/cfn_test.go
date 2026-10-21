@@ -28,7 +28,7 @@ func TestRegistrationSendsHealthURL(t *testing.T) {
 	if err != nil || id != "ce-1" {
 		t.Fatalf("register %s %v", id, err)
 	}
-	if posted["health_url"] != "http://poc-ce:18000/healthz" || posted["base_url"] != "poc-ce:18001" {
+	if posted["health_url"] != "http://poc-ce:18000/healthz" || posted["enforcing_url"] != "poc-ce:18001" {
 		t.Fatalf("registration body %v", posted)
 	}
 }
@@ -54,7 +54,7 @@ func TestRegistrationConflictUpdatesEndpointAndHealthURL(t *testing.T) {
 	if err != nil || id != "ce-1" {
 		t.Fatalf("register %s %v", id, err)
 	}
-	if patched["base_url"] != "poc-ce:18001" || patched["health_url"] != "http://poc-ce:18000/healthz" {
+	if patched["enforcing_url"] != "poc-ce:18001" || patched["health_url"] != "http://poc-ce:18000/healthz" {
 		t.Fatalf("patch body %v", patched)
 	}
 }

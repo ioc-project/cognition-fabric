@@ -32,16 +32,16 @@ class TestCERegistrationRequest:
             name="demo-ce",
             version="1.0.0",
             ce_type="CASA",
-            base_url="localhost:50051",
-            endpoint="ioc.ce.v1.CognitionEngine",
+            enforcing_url="localhost:50051",
+            enforcing_endpoint="ioc.ce.v1.CognitionEngine",
             health_url="http://localhost:8080/healthz",
         )
 
         assert request.name == "demo-ce"
         assert request.version == "1.0.0"
         assert request.ce_type == "CASA"
-        assert request.base_url == "localhost:50051"
-        assert request.endpoint == "ioc.ce.v1.CognitionEngine"
+        assert request.enforcing_url == "localhost:50051"
+        assert request.enforcing_endpoint == "ioc.ce.v1.CognitionEngine"
         assert request.health_url == "http://localhost:8080/healthz"
 
 
@@ -56,8 +56,8 @@ class TestCERegistrationResponse:
             name="demo-ce",
             version="1.0.0",
             ce_type="CASA",
-            base_url="http://localhost:8000",
-            endpoint="/authorize",
+            enforcing_url="http://localhost:8000",
+            enforcing_endpoint="/authorize",
             enabled=True,
             status="offline",
             created=True,
@@ -68,8 +68,8 @@ class TestCERegistrationResponse:
         assert response.name == "demo-ce"
         assert response.version == "1.0.0"
         assert response.ce_type == "CASA"
-        assert response.base_url == "http://localhost:8000"
-        assert response.endpoint == "/authorize"
+        assert response.enforcing_url == "http://localhost:8000"
+        assert response.enforcing_endpoint == "/authorize"
         assert response.enabled is True
         assert response.status == "offline"
         assert response.created is True
@@ -114,16 +114,16 @@ class TestHealthURLInPayloads:
             name="demo-ce",
             version="1.0.0",
             ce_type="CASA",
-            base_url="demo-ce:50051",
-            endpoint="ioc.ce.v1.CognitionEngine",
+            enforcing_url="demo-ce:50051",
+            enforcing_endpoint="ioc.ce.v1.CognitionEngine",
             health_url="http://demo-ce:8080/healthz",
         )
 
     def _ce_json(self, key):
         return {
             key: "ce-123", "cfn_id": "cfn-1", "name": "demo-ce", "version": "1.0.0",
-            "ce_type": "CASA", "base_url": "demo-ce:50051",
-            "endpoint": "ioc.ce.v1.CognitionEngine", "enabled": True, "status": "online",
+            "ce_type": "CASA", "enforcing_url": "demo-ce:50051",
+            "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "enabled": True, "status": "online",
         }
 
     async def test_post_includes_health_url(self):
@@ -172,8 +172,8 @@ class TestRegisterDemoCE:
             name=CE_NAME,
             version=CE_VERSION,
             ce_type=CE_TYPE,
-            base_url="http://localhost:8000",
-            endpoint=CE_ENDPOINT,
+            enforcing_url="http://localhost:8000",
+            enforcing_endpoint=CE_ENDPOINT,
             enabled=True,
             status="offline",
             created=True,
@@ -197,7 +197,7 @@ class TestRegisterDemoCE:
     @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002","COGNITION_ENGINE_HOST": "example.com", "COGNITION_ENGINE_PORT": "9999"}, clear=True)
     @patch('registration.CELifecycleClient')
     async def test_custom_ce_url(self, mock_client_class):
-        """Test CE base_url constructed from environment variables."""
+        """Test CE enforcing_url constructed from environment variables."""
         mock_client = AsyncMock()
         mock_client.register = AsyncMock(return_value=CERegistrationResponse(
             ce_id="ce-123",
@@ -205,8 +205,8 @@ class TestRegisterDemoCE:
             name=CE_NAME,
             version=CE_VERSION,
             ce_type=CE_TYPE,
-            base_url="http://example.com:9999",
-            endpoint=CE_ENDPOINT,
+            enforcing_url="http://example.com:9999",
+            enforcing_endpoint=CE_ENDPOINT,
             enabled=True,
             status="offline",
             created=True,
@@ -215,10 +215,10 @@ class TestRegisterDemoCE:
 
         await register_demo_ce()
 
-        # Verify register was called with correct CE base_url
+        # Verify register was called with correct CE enforcing_url
         register_call = mock_client.register.call_args[0][0]
         # gRPC endpoint format: host:port (no http:// prefix)
-        assert register_call.base_url == "example.com:50051"
+        assert register_call.enforcing_url == "example.com:50051"
 
     @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"}, clear=True)
     @patch('registration.CELifecycleClient')
@@ -276,8 +276,8 @@ class TestShutdownLifecycleClient:
             name=CE_NAME,
             version=CE_VERSION,
             ce_type=CE_TYPE,
-            base_url="http://localhost:8000",
-            endpoint=CE_ENDPOINT,
+            enforcing_url="http://localhost:8000",
+            enforcing_endpoint=CE_ENDPOINT,
             enabled=True,
             status="offline",
             created=True,
@@ -330,8 +330,8 @@ class TestDemoCEConfiguration:
             name=CE_NAME,
             version=CE_VERSION,
             ce_type=CE_TYPE,
-            base_url="http://localhost:8000",
-            endpoint=CE_ENDPOINT,
+            enforcing_url="http://localhost:8000",
+            enforcing_endpoint=CE_ENDPOINT,
             enabled=True,
             status="offline",
             created=True,
@@ -348,5 +348,5 @@ class TestDemoCEConfiguration:
         assert register_call.version == CE_VERSION
         assert register_call.ce_type == CE_TYPE
         # gRPC endpoint format: host:port (no http:// prefix)
-        assert register_call.base_url == "localhost:50051"
-        assert register_call.endpoint == CE_ENDPOINT
+        assert register_call.enforcing_url == "localhost:50051"
+        assert register_call.enforcing_endpoint == CE_ENDPOINT

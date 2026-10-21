@@ -64,7 +64,7 @@ func (l *Lifecycle) Register(ctx context.Context) (string, error) {
 	if ceType == "" {
 		ceType = "CASA"
 	}
-	body := map[string]any{"name": l.Name, "version": version, "ce_type": ceType, "base_url": l.Address, "endpoint": "ioc.ce.v1.CognitionEngine", "health_url": l.HealthURL, "mas_auto_associate": true}
+	body := map[string]any{"name": l.Name, "version": version, "ce_type": ceType, "enforcing_url": l.Address, "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "health_url": l.HealthURL, "mas_auto_associate": true}
 	raw, _ := json.Marshal(body)
 	r, err := http.NewRequestWithContext(ctx, "POST", l.Base+"/api/cognition-engine", bytes.NewReader(raw))
 	if err != nil {
@@ -97,7 +97,7 @@ func (l *Lifecycle) Register(ctx context.Context) (string, error) {
 		if id == "" {
 			return "", fmt.Errorf("conflict without CE id")
 		}
-		err := httpjson.Exchange(ctx, l.Client, "PATCH", l.Base+"/api/cognition-engine/"+url.PathEscape(id), map[string]string{"base_url": l.Address, "endpoint": "ioc.ce.v1.CognitionEngine", "health_url": l.HealthURL}, nil)
+		err := httpjson.Exchange(ctx, l.Client, "PATCH", l.Base+"/api/cognition-engine/"+url.PathEscape(id), map[string]string{"enforcing_url": l.Address, "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "health_url": l.HealthURL}, nil)
 		return id, err
 	}
 	if result.ID == "" {
