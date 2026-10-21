@@ -1004,6 +1004,7 @@ class TestCFNConfigCognitionEngines:
                 "enforcing_url": "http://ce.internal:9004",
                 "enforcing_endpoint": "/api/l9/enforcement",
                 "health_url": "http://ce.internal:9004/healthz",
+                "health_endpoint": "/healthz",
             },
         )
         assert resp.status_code == 201
@@ -1080,6 +1081,7 @@ class TestCFNConfigCognitionEngines:
                 "enforcing_url": "http://ce.internal:9004",
                 "enforcing_endpoint": "/api/l9/enforcement",
                 "health_url": "http://ce.internal:9004/healthz",
+                "health_endpoint": "/healthz",
                 "mas_auto_associate": True,
             },
         ).json()["ce_id"]

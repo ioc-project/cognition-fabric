@@ -29,6 +29,7 @@ def _base_payload(cfn_id: str, ce_type: str = "CASA", name: str = "test-ce", ver
         "enforcing_url": "http://ce.internal:8080",
         "enforcing_endpoint": "/api/l9/enforcement",
         "health_url": "http://ce.internal:8080/healthz",
+        "health_endpoint": "/healthz",
     }
 
 
@@ -165,6 +166,7 @@ class TestCognitionEngineRegister:
             "enforcing_url": "https://detective.internal:9090",
             "enforcing_endpoint": "/api/l9/detective",
             "health_url": "http://ce.internal:8080/healthz",
+            "health_endpoint": "/healthz",
             "mas_config": {"timeout": 30, "max_requests": 3000},
         }
 
@@ -188,6 +190,7 @@ class TestCognitionEngineRegister:
             "enforcing_url": "https://casa.internal:9090",
             "enforcing_endpoint": "/api/l9/enforcement",
             "health_url": "http://ce.internal:8080/healthz",
+            "health_endpoint": "/healthz",
         }
 
         response = client.post("/api/cognition-engines", json=payload)
@@ -206,6 +209,7 @@ class TestCognitionEngineRegister:
             "enforcing_url": "https://detective.internal:9090",
             "enforcing_endpoint": "/api/l9/detective",
             "health_url": "http://ce.internal:8080/healthz",
+            "health_endpoint": "/healthz",
         }
 
         response = client.post("/api/cognition-engines", json=payload)
@@ -885,7 +889,7 @@ class TestCognitionEngineEndpointProtocol:
         assert body["enforcing_protocol"] == "grpc"
         assert body["health_protocol"] == "http"
         assert body["notification_protocol"] == "http"
-        assert body["health_endpoint"] is None
+        assert body["health_endpoint"] == "/healthz"
 
         detail = client.get(f"/api/cognition-engines/{body['ce_id']}").json()
         assert detail["enforcing_protocol"] == "grpc"
@@ -961,6 +965,12 @@ class TestCognitionEngineEndpointProtocol:
         resp = client.post("/api/cognition-engines", json=payload)
         assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
         assert "must be set together" in resp.text
+
+    def test_register_requires_health_endpoint(self, client, registered_cfn):
+        payload = _base_payload(registered_cfn, name="no-health-endpoint-ce")
+        del payload["health_endpoint"]
+        resp = client.post("/api/cognition-engines", json=payload)
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
     @pytest.mark.parametrize("field", ["health_endpoint", "notification_endpoint"])
     def test_register_rejects_endpoint_without_leading_slash(self, client, registered_cfn, field):
@@ -1753,6 +1763,7 @@ class TestCognitionEngineAutoAttachTrigger:
             "enforcing_url": "http://ce:8080",
             "enforcing_endpoint": "/api/l9/enforcement",
             "health_url": "http://ce.internal:8080/healthz",
+            "health_endpoint": "/healthz",
             "mas_auto_associate": True,
         }
         first = client.post("/api/cognition-engines", json=payload)  # first registration: creates (201)

@@ -636,6 +636,7 @@ class TestMASInlineCEAssociation:
                 "enforcing_url": f"http://{name}:8080",
                 "enforcing_endpoint": "/api/l9/enforcement",
                 "health_url": f"http://{name}:8080/healthz",
+                "health_endpoint": "/healthz",
             },
         )
         assert resp.status_code == 201
@@ -778,6 +779,7 @@ class TestMASInlineCEAssociation:
                 "enforcing_url": "full-fields-ce:50051",
                 "enforcing_endpoint": "ioc.ce.v1.CognitionEngine",
                 "health_url": "http://full-fields-ce:8080/healthz",
+                "health_endpoint": "/healthz",
                 "notification_url": "http://full-fields-ce:8080",
                 "notification_endpoint": "/notification/mas-lifecycle",
             },
