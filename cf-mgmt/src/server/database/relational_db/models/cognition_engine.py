@@ -32,7 +32,7 @@ class CognitionEngine(Base):
     enforcing_endpoint = Column(String(255), nullable=True)  # gRPC service name
     enforcing_protocol = Column(String(10), nullable=True, default="grpc")
     health_url = Column(String(512), nullable=False)  # URL CFN probes with GET (e.g., http://casa-ce:8080)
-    health_endpoint = Column(String(255), nullable=True)
+    health_endpoint = Column(String(255), nullable=False)
     health_protocol = Column(String(10), nullable=False, default="http")
 
     # Webhook configuration for MAS lifecycle notifications
