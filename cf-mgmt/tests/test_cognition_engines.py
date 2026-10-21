@@ -353,7 +353,7 @@ class TestCognitionEngineGet:
             client,
             registered_cfn,
             "DETECTIVE",
-            endpoint="/api/l9/detective",
+            enforcing_endpoint="/api/l9/detective",
         )
 
         response = client.get(f"/api/cognition-engines/{ce_id}")
@@ -1275,7 +1275,9 @@ class TestCognitionEnginePatch:
 
     def test_patch_notification_url(self, client, registered_cfn):
         """PATCH can update the CE notification_url."""
-        ce_id = _register(client, registered_cfn, "CASA")
+        ce_id = _register(
+            client, registered_cfn, "CASA", notification_url="http://old-notification:9999", notification_endpoint="/n"
+        )
 
         resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"notification_url": "http://new-notification:9999"})
         assert resp.status_code == status.HTTP_200_OK
@@ -1283,7 +1285,9 @@ class TestCognitionEnginePatch:
 
     def test_patch_notification_endpoint(self, client, registered_cfn):
         """PATCH can update the CE notification_endpoint."""
-        ce_id = _register(client, registered_cfn, "CASA")
+        ce_id = _register(
+            client, registered_cfn, "CASA", notification_url="http://ce.internal:8080", notification_endpoint="/n"
+        )
 
         resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"notification_endpoint": "/notification/v2/mas-events"})
         assert resp.status_code == status.HTTP_200_OK
