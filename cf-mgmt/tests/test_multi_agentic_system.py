@@ -1044,7 +1044,7 @@ class TestMASMCPServers:
 
         # Delete MAS
         delete_response = client.delete(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}")
-        assert delete_response.status_code == 200
+        assert delete_response.status_code == 204
 
         # MAS should no longer exist
         get_response = client.get(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}")
