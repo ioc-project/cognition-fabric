@@ -31,7 +31,7 @@ from server.utils import generate_uuid
 _IMMUTABLE_CE_FIELDS = {"cfn_id", "name", "version", "ce_type"}
 
 # An explicit null clears these on PATCH. A null on any other field is ignored.
-_CLEARABLE_CE_FIELDS = {"notification_url", "notification_endpoint"}
+_CLEARABLE_CE_FIELDS = {"enforcing_url", "enforcing_endpoint", "notification_url", "notification_endpoint"}
 
 
 class CognitionEngineService:
@@ -422,6 +422,7 @@ class CognitionEngineService:
                 # so older rows don't block other patches
                 if provided.keys() & set(CE_CONNECTION_FIELDS):
                     error = connection_error(
+                        engine.enforcing_url,
                         engine.enforcing_endpoint,
                         engine.health_endpoint,
                         engine.notification_url,

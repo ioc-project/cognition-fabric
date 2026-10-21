@@ -33,15 +33,16 @@ def ce_connection(source) -> dict:
 
 
 def connection_error(
+    enforcing_url: Optional[str],
     enforcing_endpoint: Optional[str],
     health_endpoint: str,
     notification_url: Optional[str],
     notification_endpoint: Optional[str],
 ) -> Optional[str]:
     """Return why a CE's endpoints are inconsistent, or None."""
-    # Enforcing is gRPC only today, and a gRPC address (host:port) has no service name
-    if not enforcing_endpoint:
-        return "enforcing_endpoint is required when enforcing_protocol is 'grpc'"
+    # Enforcing is optional, but it is gRPC only today and a gRPC address (host:port) has no service name
+    if bool(enforcing_url) != bool(enforcing_endpoint):
+        return "enforcing_url and enforcing_endpoint must be set together"
     # CFN joins notification_url and notification_endpoint, and skips the CE unless both are set
     if bool(notification_url) != bool(notification_endpoint):
         return "notification_url and notification_endpoint must be set together"
@@ -92,12 +93,12 @@ class CognitionEngineRegisterRequest(BaseModel):
     name: str = Field(..., description="CE name (e.g., 'demo-ce')")
     version: str = Field(..., description="CE version (e.g., '1.0.0')")
     ce_type: CEType = Field(..., description="Type of Cognition Engine: CASA or DETECTIVE")
-    enforcing_url: str = Field(
-        ..., description="gRPC address CFN sends enforcement requests to (e.g., 'demo-ce:50051')"
+    enforcing_url: Optional[str] = Field(
+        None, description="gRPC address CFN sends enforcement requests to (e.g., 'demo-ce:50051'). Optional"
     )
     enforcing_endpoint: Optional[str] = Field(
         None,
-        description="gRPC service name (e.g., 'ioc.ce.v1.CognitionEngine'). Required.",
+        description="gRPC service name (e.g., 'ioc.ce.v1.CognitionEngine'). Required when enforcing_url is set.",
     )
     enforcing_protocol: Literal["grpc"] = Field("grpc", description="Enforcement protocol")
     health_url: str = Field(
@@ -125,7 +126,11 @@ class CognitionEngineRegisterRequest(BaseModel):
     @model_validator(mode="after")
     def _check_endpoints(self):
         error = connection_error(
-            self.enforcing_endpoint, self.health_endpoint, self.notification_url, self.notification_endpoint
+            self.enforcing_url,
+            self.enforcing_endpoint,
+            self.health_endpoint,
+            self.notification_url,
+            self.notification_endpoint,
         )
         if error:
             raise ValueError(error)
@@ -195,8 +200,10 @@ class CognitionEnginePatchRequest(BaseModel):
     """
 
     # Mutable fields — all optional, only provided fields are updated
-    enforcing_url: Optional[str] = Field(None, description="gRPC address CFN sends enforcement requests to")
-    enforcing_endpoint: Optional[str] = Field(None, description="gRPC service name for enforcement")
+    enforcing_url: Optional[str] = Field(
+        None, description="gRPC address CFN sends enforcement requests to. Send null to clear"
+    )
+    enforcing_endpoint: Optional[str] = Field(None, description="gRPC service name for enforcement. Send null to clear")
     enforcing_protocol: Optional[Literal["grpc"]] = Field(None, description="Enforcement protocol")
     health_url: Optional[str] = Field(
         None,

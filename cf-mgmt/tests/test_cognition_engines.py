@@ -918,12 +918,29 @@ class TestCognitionEngineEndpointProtocol:
         assert listed["notification_url"] == "http://ce.internal:8080"
         assert listed["notification_endpoint"] == "/notification/mas-lifecycle"
 
-    def test_register_requires_enforcing_endpoint_for_grpc(self, client, registered_cfn):
-        payload = _base_payload(registered_cfn, name="no-endpoint-ce")
-        del payload["enforcing_endpoint"]
+    @pytest.mark.parametrize("missing", ["enforcing_endpoint", "enforcing_url"])
+    def test_register_requires_enforcing_url_and_endpoint_together(self, client, registered_cfn, missing):
+        payload = _base_payload(registered_cfn, name=f"half-enforcing-{missing}")
+        del payload[missing]
         resp = client.post("/api/cognition-engines", json=payload)
         assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
-        assert "enforcing_endpoint is required when enforcing_protocol is 'grpc'" in resp.text
+        assert "enforcing_url and enforcing_endpoint must be set together" in resp.text
+
+    def test_register_without_enforcing_succeeds(self, client, registered_cfn):
+        payload = _base_payload(registered_cfn, name="no-enforcing-ce")
+        del payload["enforcing_url"], payload["enforcing_endpoint"]
+        resp = client.post("/api/cognition-engines", json=payload)
+        assert resp.status_code == status.HTTP_201_CREATED
+        body = client.get(f"/api/cognition-engines/{resp.json()['ce_id']}").json()
+        assert body["enforcing_url"] is None
+        assert body["enforcing_endpoint"] is None
+
+    def test_patch_clears_enforcing_url_and_endpoint_together(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn)
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"enforcing_url": None, "enforcing_endpoint": None})
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.json()["enforcing_url"] is None
+        assert resp.json()["enforcing_endpoint"] is None
 
     @pytest.mark.parametrize(
         "field,value",
@@ -1025,11 +1042,16 @@ class TestCognitionEngineEndpointProtocol:
         resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"notification_endpoint": None})
         assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
 
+    def test_patch_clearing_only_enforcing_url_is_rejected(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn)
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"enforcing_url": None})
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
     def test_patch_null_on_required_field_is_ignored(self, client, registered_cfn):
         ce_id = _register(client, registered_cfn)
-        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"enforcing_url": None, "enabled": True})
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"health_url": None, "enabled": True})
         assert resp.status_code == status.HTTP_200_OK
-        assert resp.json()["enforcing_url"] == "http://ce.internal:8080"
+        assert resp.json()["health_url"] == "http://ce.internal:8080/healthz"
 
     def test_patch_rejects_endpoint_without_leading_slash(self, client, registered_cfn):
         ce_id = _register(client, registered_cfn)

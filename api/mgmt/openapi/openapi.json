@@ -2505,7 +2505,7 @@
               }
             ],
             "title": "Enforcing Url",
-            "description": "gRPC address CFN sends enforcement requests to"
+            "description": "gRPC address CFN sends enforcement requests to. Send null to clear"
           },
           "enforcing_endpoint": {
             "anyOf": [
@@ -2517,7 +2517,7 @@
               }
             ],
             "title": "Enforcing Endpoint",
-            "description": "gRPC service name for enforcement"
+            "description": "gRPC service name for enforcement. Send null to clear"
           },
           "enforcing_protocol": {
             "anyOf": [
@@ -2706,9 +2706,16 @@
             "description": "Type of Cognition Engine: CASA or DETECTIVE"
           },
           "enforcing_url": {
-            "type": "string",
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Enforcing Url",
-            "description": "gRPC address CFN sends enforcement requests to (e.g., 'demo-ce:50051')"
+            "description": "gRPC address CFN sends enforcement requests to (e.g., 'demo-ce:50051'). Optional"
           },
           "enforcing_endpoint": {
             "anyOf": [
@@ -2720,7 +2727,7 @@
               }
             ],
             "title": "Enforcing Endpoint",
-            "description": "gRPC service name (e.g., 'ioc.ce.v1.CognitionEngine'). Required."
+            "description": "gRPC service name (e.g., 'ioc.ce.v1.CognitionEngine'). Required when enforcing_url is set."
           },
           "enforcing_protocol": {
             "type": "string",
@@ -2805,7 +2812,6 @@
           "name",
           "version",
           "ce_type",
-          "enforcing_url",
           "health_url",
           "health_endpoint"
         ],
