@@ -46,6 +46,5 @@ ensure_db() {
 ensure_db cfn_mgmt
 ensure_db cognition_store
 ensure_db cfn_audit
-ensure_db enforcement_proxy
 
 echo "Database bootstrap complete"

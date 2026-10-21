@@ -689,24 +689,17 @@ services:
       otel-collector:
         condition: service_started
 
-  # Enforcement proxy mediation core (BFF). Stores its state in the
-  # enforcement_proxy database on ioc-scale-db.
+  # Enforcement proxy mediation core (BFF). Audit destination is CFN.
   # Port Mapping: 9006:8081 (gRPC), 9005:8082 (HTTP). Host 8081 is oxp-api.
   # Image Link: https://github.com/cisco-eti/ioc-scaling-enforcement-proxy/pkgs/container/ioc-scaling-enforcement-mediation
   ioc-scale-enforcement-proxy-mediation:
     image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-mediation:${ENFORCEMENT_PROXY_MEDIATION_TAG:-latest}
     container_name: ioc-scale-enforcement-proxy-mediation
-    depends_on:
-      ioc-scale-db:
-        condition: service_healthy
-      ioc-scale-db-init:
-        condition: service_completed_successfully
     environment:
-      DB_HOST: ioc-scale-db
-      DB_PORT: "5432"
-      DB_USERNAME: ${IOC_SCALE_DB_USER}
-      DB_PASSWORD: ${IOC_SCALE_DB_PASSWORD}
-      DB_NAME: enforcement_proxy
+      AUDIT_PERSISTENCE_MODE: AUDIT_PERSISTENCE_MODE_CFN
+      CF_ENFORCEMENT_ADDRESS: ${CF_ENFORCEMENT_ADDRESS:-ioc-scale-cfn-svc:9003}
+      CF_ENFORCEMENT_TIMEOUT: ${CF_ENFORCEMENT_TIMEOUT:-2s}
+      CF_ENFORCEMENT_ALLOW_PLAINTEXT: ${CF_ENFORCEMENT_ALLOW_PLAINTEXT:-true}
       BFF_GRPC_ADDRESS: :8081
       BFF_HTTP_ADDRESS: :8082
       # Local-development exception to mTLS; keep false anywhere else.
@@ -714,27 +707,6 @@ services:
     ports:
       - "127.0.0.1:${BFF_GRPC_PORT:-9006}:8081"
       - "127.0.0.1:${BFF_HTTP_PORT:-9005}:8082"
-    restart: unless-stopped
-
-  # Enforcement proxy UI (static assets behind nginx).
-  # Port Mapping: 9004:80. PUBLIC_API_BASE_URL is read by the browser, so it
-  # points at the host-published HTTP port of ioc-scale-enforcement-proxy-mediation.
-  # Image Link: https://github.com/cisco-eti/ioc-scaling-enforcement-proxy/pkgs/container/ioc-scaling-enforcement-proxy-ui
-  ioc-scale-enforcement-proxy-ui:
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-ui:${ENFORCEMENT_PROXY_UI_TAG:-latest}
-    container_name: ioc-scale-enforcement-proxy-ui
-    depends_on:
-      ioc-scale-enforcement-proxy-mediation:
-        condition: service_started
-    environment:
-      PUBLIC_API_BASE_URL: http://127.0.0.1:${BFF_HTTP_PORT:-9005}
-    ports:
-      - "127.0.0.1:${FRONTEND_PORT:-9004}:80"
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1/"]
-      interval: 5s
-      timeout: 3s
-      retries: 12
     restart: unless-stopped
 
 volumes:

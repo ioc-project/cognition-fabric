@@ -1,7 +1,7 @@
 # Enforcement (optional)
 
 Optional enforcement flavors for the stack. The base stack already runs the
-control plane (`ioc-scale-enforcement-proxy-mediation`, `ioc-scale-enforcement-proxy-ui`) and CF; this
+control plane (`ioc-scale-enforcement-proxy-mediation`) and CF; this
 directory adds one enforcement point in front of an application. Nothing here
 starts unless you ask for it, so `make up` stays light.
 
@@ -11,7 +11,7 @@ starts unless you ask for it, so `make up` stays light.
 | [`shadi/`](shadi/) | The Go sender-authorization API (verifier) | You gate agent-to-agent sends from trusted SHADi hosts over SLIM |
 
 Pick one. Both talk to CF at `ioc-scale-cfn-svc:9003` and write audit records to
-`ioc-scale-enforcement-proxy-mediation`, which the UI reads.
+`ioc-scale-enforcement-proxy-mediation`.
 
 ```bash
 make up enforcement=envoy

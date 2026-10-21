@@ -44,10 +44,10 @@ can be overridden in `.env` without editing the compose file:
 
 - CF and enforcement proxy services (`ioc-scale-db`, `ioc-scale-cf-mgmt-svc`,
   `ioc-scale-cf-mgmt-plane-ui`, `ioc-scale-cfn-svc`, `ioc-scale-cf-demo-ce`,
-  `ioc-scale-enforcement-proxy-mediation`, `ioc-scale-enforcement-proxy-ui`):
+  `ioc-scale-enforcement-proxy-mediation`):
   `CF_REGISTRY` plus `IOC_SCALE_DB_TAG`, `CF_MGMT_SVC_TAG`, `CF_UI_TAG`,
-  `CFN_SVC_TAG`, `CF_DEMO_CE_TAG`, `ENFORCEMENT_PROXY_MEDIATION_TAG`,
-  `ENFORCEMENT_PROXY_UI_TAG`. Tags default to `latest` (and are set to it in
+  `CFN_SVC_TAG`, `CF_DEMO_CE_TAG`, `ENFORCEMENT_PROXY_MEDIATION_TAG`.
+  Tags default to `latest` (and are set to it in
   `.env.example`), except the database, which stays pinned (`0.2.0`) because
   it is built from this repo. Pin a tag in `.env` to reproduce a specific build.
 - OXP workers: `OXP_REGISTRY` plus `OXP_IMG_TAG`.
@@ -95,14 +95,13 @@ for each is in [`enforcement/README.md`](enforcement/README.md).
 
 | Service | Port | Description |
 |---------|------|-------------|
-| `ioc-scale-db` | 5456 | AgensGraph + pgvector + TimescaleDB database. Built from [`docker-db/`](docker-db/) in this repo. Hosts `cfn_mgmt`, `cognition_store`, `cfn_audit` and `enforcement_proxy` |
+| `ioc-scale-db` | 5456 | AgensGraph + pgvector + TimescaleDB database. Built from [`docker-db/`](docker-db/) in this repo. Hosts `cfn_mgmt`, `cognition_store` and `cfn_audit` |
 | `ioc-scale-cf-mgmt-svc` | 9000 | Management backend API |
 | `ioc-scale-cf-mgmt-plane-ui` | 9001 | Management plane UI (Next.js) |
 | `ioc-scale-cfn-svc` | 9002 (HTTP), 9003 (gRPC) | Cognition Fabric Node |
 | `ioc-scale-cf-demo-ce` | 50051 (gRPC), 8080 (HTTP health) | Demo Cognition Engine |
 | `ioc-scale-cf-policy-ce` | 18001 (gRPC), 18000 (HTTP), loopback only | Policy-driven Cognition Engine, only with `ce=policy-ce` (it replaces the demo CE). See [Policy CE](#policy-ce-optional) |
-| `ioc-scale-enforcement-proxy-mediation` | 9006 (gRPC), 9005 (HTTP) | Enforcement proxy mediation core. Uses the `enforcement_proxy` database on `ioc-scale-db`; bound to 127.0.0.1 |
-| `ioc-scale-enforcement-proxy-ui` | 9004 (HTTP) | Enforcement proxy UI (nginx). Talks to `ioc-scale-enforcement-proxy-mediation` on `BFF_HTTP_PORT` from the browser; bound to 127.0.0.1 |
+| `ioc-scale-enforcement-proxy-mediation` | 9006 (gRPC), 9005 (HTTP) | Enforcement proxy mediation core. Audit destination is CFN; no internal database configured. Bound to 127.0.0.1 |
 
 ### OXP infrastructure
 
@@ -182,13 +181,15 @@ See `.env.example` for all available configuration options. Key settings:
 - `BFF_GRPC_PORT`, `BFF_HTTP_PORT` - Host ports (bound to 127.0.0.1) for
   `ioc-scale-enforcement-proxy-mediation`. The defaults are `9006` (gRPC) and `9005` (HTTP), chosen so they do not
   clash with `oxp-api` (host `8081`) or the enforcement proxy's own compose
-  (`8082`, `18083`). The core uses the `enforcement_proxy` database with the
-  `IOC_SCALE_DB_*` credentials.
-- `FRONTEND_PORT` - Host port (127.0.0.1) of `ioc-scale-enforcement-proxy-ui`, default `9004`.
-  The UI reaches the core through `BFF_HTTP_PORT`, so change them together if
-  the core is exposed elsewhere.
+  (`8082`, `18083`).
 - `BFF_GRPC_ALLOW_INSECURE_LOCAL` - Defaults to `true` so the core starts without
   mTLS. Local development only; set it to `false` and configure TLS elsewhere.
+- Audit persistence in `ioc-scale-enforcement-proxy-mediation` is fixed to `AUDIT_PERSISTENCE_MODE_CFN`
+  at startup in Compose. CFN audit ingestion is not implemented yet, so this mode
+  currently stores no new audit records.
+- `CF_ENFORCEMENT_ADDRESS`, `CF_ENFORCEMENT_TIMEOUT`, `CF_ENFORCEMENT_ALLOW_PLAINTEXT` -
+  CFN gRPC connection settings passed to mediation and enforcement adapters.
+  Defaults are `ioc-scale-cfn-svc:9003`, `2s` and `true` for the local stack.
 - `CF_REGISTRY`, `*_TAG` - Source and version of the CF service images (see above)
 - `OXP_REGISTRY`, `OXP_IMG_TAG`, `OXP_API_IMG_TAG` - Source and version of the OXP worker and API images
 - `AI_GATEWAY_API_KEY`, `OPENAI_API_KEY` - Required by `embedding`, `mce`, and
