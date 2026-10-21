@@ -1,7 +1,7 @@
 # `scripts/`
 
 [`init-multi-db.sh`](init-multi-db.sh) runs automatically on the first init of
-`ioc-scale-db` and creates the `cfn_mgmt`, `cognition_store`, `cfn_audit`, and `enforcement_proxy`
+`ioc-scale-db` and creates the `cfn_mgmt`, `cognition_store`, and `cfn_audit`
 databases.
 
 [`ensure-databases.sh`](ensure-databases.sh) runs as one-shot service
