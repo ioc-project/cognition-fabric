@@ -47,7 +47,8 @@ class CERegistrationRequest:
     ce_type: str  # "CASA" or "DETECTIVE"
     enforcing_url: str  # gRPC address (e.g., "demo-ce:50051")
     enforcing_endpoint: str  # gRPC service name (e.g., "ioc.ce.v1.CognitionEngine")
-    health_url: str  # CFN probes this with an HTTP GET (e.g., "http://demo-ce:8080/healthz")
+    health_url: str  # HTTP base URL CFN probes (e.g., "http://demo-ce:8080")
+    health_endpoint: str = HEALTH_PATH  # HTTP path appended to health_url (e.g., "/healthz")
     notification_url: Optional[str] = None  # HTTP base URL for notifications (e.g., "http://demo-ce:8080")
     notification_endpoint: Optional[str] = None  # HTTP path for notifications (e.g., "/notification")
 
@@ -129,6 +130,7 @@ class CELifecycleClient:
             "enforcing_url": request.enforcing_url,
             "enforcing_endpoint": request.enforcing_endpoint,
             "health_url": request.health_url,
+            "health_endpoint": request.health_endpoint,
         }
 
         # Add notification fields if provided
@@ -200,6 +202,7 @@ class CELifecycleClient:
             "enforcing_url": request.enforcing_url,
             "enforcing_endpoint": request.enforcing_endpoint,
             "health_url": request.health_url,
+            "health_endpoint": request.health_endpoint,
         }
 
         try:
@@ -299,7 +302,7 @@ async def register_demo_ce() -> None:
     # enforcing_url format for registration (CFN expects URL with scheme)
     # For gRPC services, we use the host:port that CFN will dial
     enforcing_url = f"{ce_host}:{grpc_port}"
-    health_url = f"http://{ce_host}:{health_port}{HEALTH_PATH}"
+    health_url = f"http://{ce_host}:{health_port}"
 
     # Notification URL for MAS lifecycle events (HTTP endpoint)
     notification_url = f"http://{ce_host}:{http_port}" if enable_notifications else None

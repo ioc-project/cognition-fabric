@@ -34,7 +34,7 @@ class TestCERegistrationRequest:
             ce_type="CASA",
             enforcing_url="localhost:50051",
             enforcing_endpoint="ioc.ce.v1.CognitionEngine",
-            health_url="http://localhost:8080/healthz",
+            health_url="http://localhost:8080",
         )
 
         assert request.name == "demo-ce"
@@ -42,7 +42,7 @@ class TestCERegistrationRequest:
         assert request.ce_type == "CASA"
         assert request.enforcing_url == "localhost:50051"
         assert request.enforcing_endpoint == "ioc.ce.v1.CognitionEngine"
-        assert request.health_url == "http://localhost:8080/healthz"
+        assert request.health_url == "http://localhost:8080"
 
 
 class TestCERegistrationResponse:
@@ -116,7 +116,7 @@ class TestHealthURLInPayloads:
             ce_type="CASA",
             enforcing_url="demo-ce:50051",
             enforcing_endpoint="ioc.ce.v1.CognitionEngine",
-            health_url="http://demo-ce:8080/healthz",
+            health_url="http://demo-ce:8080",
         )
 
     def _ce_json(self, key):
@@ -134,7 +134,8 @@ class TestHealthURLInPayloads:
 
         await client.register(self._request())
 
-        assert http.post.call_args[1]["json"]["health_url"] == "http://demo-ce:8080/healthz"
+        assert http.post.call_args[1]["json"]["health_url"] == "http://demo-ce:8080"
+        assert http.post.call_args[1]["json"]["health_endpoint"] == "/healthz"
 
     async def test_patch_after_409_includes_health_url(self):
         client = CELifecycleClient("http://cfn:9002")
@@ -147,7 +148,7 @@ class TestHealthURLInPayloads:
 
         await client.register(self._request())
 
-        assert http.patch.call_args[1]["json"]["health_url"] == "http://demo-ce:8080/healthz"
+        assert http.patch.call_args[1]["json"]["health_url"] == "http://demo-ce:8080"
 
 
 @pytest.mark.asyncio
@@ -192,7 +193,7 @@ class TestRegisterDemoCE:
 
         # Verify health_url is sent in the registration request
         register_call = mock_client.register.call_args[0][0]
-        assert register_call.health_url == "http://localhost:8080/healthz"
+        assert register_call.health_url == "http://localhost:8080"
 
     @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002","COGNITION_ENGINE_HOST": "example.com", "COGNITION_ENGINE_PORT": "9999"}, clear=True)
     @patch('registration.CELifecycleClient')
@@ -247,7 +248,7 @@ class TestHealthUrlConfiguration:
 
         await register_demo_ce()
 
-        assert mock_client.register.call_args[0][0].health_url == "http://localhost:8081/healthz"
+        assert mock_client.register.call_args[0][0].health_url == "http://localhost:8081"
 
     @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002", "HEALTH_PORT": "nope"}, clear=True)
     @pytest.mark.asyncio
