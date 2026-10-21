@@ -4,7 +4,7 @@
 
 """MCP Tool database model - stores tool definitions for MCP servers"""
 
-from sqlalchemy import Column, String, DateTime, Text, text, Index, ForeignKey
+from sqlalchemy import Column, String, DateTime, Text, text, Index, ForeignKey, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 
 from server.database.relational_db.models import Base
@@ -23,6 +23,7 @@ class MCPTool(Base):
 
     __table_args__ = (
         Index("idx_mcp_tool_server_id", "mcp_server_id"),
+        UniqueConstraint("mcp_server_id", "name", name="uq_mcp_tool_server_name"),
     )
 
     def __repr__(self):

@@ -221,10 +221,39 @@ class MultiAgenticSystemService:
             if agent_id not in incoming_ids:
                 session.delete(row)
 
+    def _validate_mcp_server_names(self, mcp_servers_data) -> None:
+        """Validate no duplicate server names in the request."""
+        if not mcp_servers_data:
+            return
+
+        seen_names = set()
+        for server_cfg in mcp_servers_data:
+            if server_cfg.name:
+                if server_cfg.name in seen_names:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=f"Duplicate MCP server name in request: '{server_cfg.name}'",
+                    )
+                seen_names.add(server_cfg.name)
+
+                # Validate tool names within each server
+                if server_cfg.tools:
+                    seen_tool_names = set()
+                    for tool_cfg in server_cfg.tools:
+                        if tool_cfg.name:
+                            if tool_cfg.name in seen_tool_names:
+                                raise HTTPException(
+                                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                                    detail=f"Duplicate tool name '{tool_cfg.name}' in MCP server '{server_cfg.name}'",
+                                )
+                            seen_tool_names.add(tool_cfg.name)
+
     def _save_mcp_servers(self, session, mas_id: str, mcp_servers_data) -> list:
         """Create MCP server and tool rows. Returns the created MCPServerModel instances."""
         if not mcp_servers_data:
             return []
+
+        self._validate_mcp_server_names(mcp_servers_data)
 
         server_rows = []
         for server_cfg in mcp_servers_data:
@@ -255,10 +284,92 @@ class MultiAgenticSystemService:
         return server_rows
 
     def _sync_mcp_servers(self, session, mas_id: str, incoming_servers) -> None:
-        """Diff-based MCP server sync: replace all servers and tools."""
-        # For simplicity, delete all existing servers (cascade deletes tools) and recreate
-        session.query(MCPServerModel).filter(MCPServerModel.mas_id == mas_id).delete()
-        self._save_mcp_servers(session, mas_id, incoming_servers)
+        """Diff-based MCP server sync: insert new, update existing, delete removed. Preserves server IDs and config."""
+        now = datetime.now(timezone.utc)
+
+        self._validate_mcp_server_names(incoming_servers)
+
+        existing_rows = session.query(MCPServerModel).filter(MCPServerModel.mas_id == mas_id).all()
+        existing_map = {row.name: row for row in existing_rows}
+
+        incoming_names = set()
+        for server_cfg in incoming_servers:
+            incoming_names.add(server_cfg.name)
+
+            if server_cfg.name in existing_map:
+                # Update existing server
+                row = existing_map[server_cfg.name]
+                row.transport = server_cfg.transport
+                row.description = server_cfg.description
+                # Preserve config if incoming is None
+                if server_cfg.config is not None:
+                    row.config = server_cfg.config
+                row.updated_at = now
+
+                # Sync tools for this server
+                self._sync_mcp_tools(session, row.id, server_cfg.tools or [])
+            else:
+                # Create new server
+                server_id = generate_uuid()
+                server_row = MCPServerModel(
+                    id=server_id,
+                    mas_id=mas_id,
+                    name=server_cfg.name,
+                    transport=server_cfg.transport,
+                    description=server_cfg.description,
+                    config=server_cfg.config,
+                )
+                session.add(server_row)
+
+                # Create tools for new server
+                if server_cfg.tools:
+                    for tool_cfg in server_cfg.tools:
+                        tool_row = MCPToolModel(
+                            id=generate_uuid(),
+                            mcp_server_id=server_id,
+                            name=tool_cfg.name,
+                            description=tool_cfg.description,
+                            parameters=tool_cfg.parameters,
+                        )
+                        session.add(tool_row)
+
+        # Delete servers not in incoming list (cascade deletes tools)
+        for name, row in existing_map.items():
+            if name not in incoming_names:
+                session.delete(row)
+
+    def _sync_mcp_tools(self, session, server_id: str, incoming_tools) -> None:
+        """Diff-based MCP tool sync within a server: insert new, update existing, delete removed."""
+        now = datetime.now(timezone.utc)
+
+        existing_tools = session.query(MCPToolModel).filter(MCPToolModel.mcp_server_id == server_id).all()
+        existing_map = {tool.name: tool for tool in existing_tools}
+
+        incoming_names = set()
+        for tool_cfg in incoming_tools:
+            incoming_names.add(tool_cfg.name)
+
+            if tool_cfg.name in existing_map:
+                # Update existing tool
+                tool = existing_map[tool_cfg.name]
+                tool.description = tool_cfg.description
+                tool.parameters = tool_cfg.parameters
+                tool.updated_at = now
+            else:
+                # Create new tool
+                tool_row = MCPToolModel(
+                    id=generate_uuid(),
+                    mcp_server_id=server_id,
+                    name=tool_cfg.name,
+                    description=tool_cfg.description,
+                    parameters=tool_cfg.parameters,
+                )
+                session.add(tool_row)
+
+        # Delete tools not in incoming list
+        for name, tool in existing_map.items():
+            if name not in incoming_names:
+                session.delete(tool)
 
     def _fetch_mcp_servers_for_mas(self, session, mas_id: str) -> list[MCPServerDetail]:
         """Fetch MCP servers and their tools for a MAS."""
