@@ -141,7 +141,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Fields to update (enforcing_*, health_*, notification_*). Send null to clear health_endpoint, notification_url or notification_endpoint",
+                        "description": "Fields to update (enforcing_*, health_*, notification_*). Send null to clear notification_url or notification_endpoint",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -355,7 +355,7 @@ const docTemplate = `{
                     "example": "my-ce:50051"
                 },
                 "health_endpoint": {
-                    "description": "Reserved. Health checks are HTTP, so CFN probes health_url as given. Must start with \"/\"",
+                    "description": "Health probe path, appended to health_url (required). Must start with \"/\"",
                     "type": "string",
                     "example": "/healthz"
                 },
@@ -368,9 +368,9 @@ const docTemplate = `{
                     "example": "http"
                 },
                 "health_url": {
-                    "description": "URL CFN probes with an HTTP GET to check the CE is alive (required, http or https)",
+                    "description": "Base URL CFN probes with an HTTP GET to check the CE is alive (required, http or https)",
                     "type": "string",
-                    "example": "http://my-ce:8080/healthz"
+                    "example": "http://my-ce:8080"
                 },
                 "mas_auto_associate": {
                     "description": "Auto-associate with all MAS in the workspace (defaults to true if not specified)",
@@ -469,7 +469,7 @@ const docTemplate = `{
                 "health_url": {
                     "description": "Health check URL probed by CFN",
                     "type": "string",
-                    "example": "http://my-ce:8080/healthz"
+                    "example": "http://my-ce:8080"
                 },
                 "mas_auto_associate": {
                     "description": "Auto-associate with all MAS",

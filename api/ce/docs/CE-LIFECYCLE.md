@@ -79,7 +79,7 @@ stateDiagram-v2
 
 The CE is responsible for:
 - **Registration**: On startup, POST to `/api/cognition-engine` with identity (name, version, ce_type), its enforcing address (`enforcing_url`, `enforcing_endpoint`) and a required `health_url`. See [Endpoint fields](#endpoint-fields)
-- **Health endpoint**: Serve `health_url` (for example `GET /healthz`) unauthenticated and return `200` while the CE is up. The body is ignored.
+- **Health endpoint**: Serve `health_endpoint` on `health_url` (for example `GET /healthz`) unauthenticated and return `200` while the CE is up. The body is ignored.
 - **Graceful shutdown**: Stop serving the health endpoint (CE will be marked offline after threshold)
 
 ### 2. Cognition Fabric Node (CFN)
@@ -103,15 +103,15 @@ A CE declares one address per purpose. Each has the same shape, a `*_url`, an op
 | Purpose | Fields | Protocol | Notes |
 |---------|--------|----------|-------|
 | Enforcing | `enforcing_url`, `enforcing_endpoint`, `enforcing_protocol` | `grpc` (default) | `enforcing_url` is a gRPC `host:port`, `enforcing_endpoint` is the gRPC service name (for example `ioc.ce.v1.CognitionEngine`) and is required |
-| Health | `health_url`, `health_endpoint`, `health_protocol` | `http` (default) | `health_url` is the full URL CFN probes with a GET. `health_endpoint` is reserved and not used by the probe |
+| Health | `health_url`, `health_endpoint`, `health_protocol` | `http` (default) | `health_url` is the base URL and `health_endpoint` the path; CFN probes their join with a GET |
 | Notification (optional) | `notification_url`, `notification_endpoint`, `notification_protocol` | `http` (default) | `notification_url` is a base URL and `notification_endpoint` is the path |
 
 Validation:
 - `enforcing_endpoint` is required, because a gRPC address has no service name.
-- `health_endpoint` and `notification_endpoint` must start with `/`.
+- `health_endpoint` (required) and `notification_endpoint` must start with `/`.
 - `notification_url` and `notification_endpoint` must be set together, since CFN skips a CE that has only one.
 - Each purpose accepts only the protocol CFN speaks for it today. Any other value is a 400.
-- On `PATCH`, an explicit `null` clears `health_endpoint`, `notification_url` or `notification_endpoint`.
+- On `PATCH`, an explicit `null` clears `notification_url` or `notification_endpoint`.
 
 `enforcing_url` and `enforcing_endpoint` replace the earlier `base_url` and `endpoint`.
 

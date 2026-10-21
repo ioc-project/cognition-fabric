@@ -20,10 +20,10 @@ type RegisterRequest struct {
 	EnforcingEndpoint string `json:"enforcing_endpoint,omitempty" example:"ioc.ce.v1.CognitionEngine"`
 	// Enforcement protocol. Only "grpc" is supported today (default "grpc")
 	EnforcingProtocol string `json:"enforcing_protocol,omitempty" example:"grpc" enums:"grpc"`
-	// URL CFN probes with an HTTP GET to check the CE is alive (required, http or https)
-	HealthURL string `json:"health_url" example:"http://my-ce:8080/healthz"`
-	// Reserved. Health checks are HTTP, so CFN probes health_url as given. Must start with "/"
-	HealthEndpoint string `json:"health_endpoint,omitempty" example:"/healthz"`
+	// Base URL CFN probes with an HTTP GET to check the CE is alive (required, http or https)
+	HealthURL string `json:"health_url" example:"http://my-ce:8080"`
+	// Health probe path, appended to health_url (required). Must start with "/"
+	HealthEndpoint string `json:"health_endpoint" example:"/healthz"`
 	// Health protocol. Only "http" is supported today (default "http")
 	HealthProtocol string `json:"health_protocol,omitempty" example:"http" enums:"http"`
 	// Notification base URL for MAS event notifications
@@ -58,7 +58,7 @@ type RegisterResponse struct {
 	// Enforcement protocol
 	EnforcingProtocol string `json:"enforcing_protocol" example:"grpc"`
 	// Health check URL probed by CFN
-	HealthURL string `json:"health_url" example:"http://my-ce:8080/healthz"`
+	HealthURL string `json:"health_url" example:"http://my-ce:8080"`
 	// Reserved. Health checks are HTTP, so CFN probes health_url as given
 	HealthEndpoint *string `json:"health_endpoint,omitempty" example:"/healthz"`
 	// Health protocol

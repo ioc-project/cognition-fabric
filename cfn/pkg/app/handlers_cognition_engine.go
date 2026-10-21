@@ -170,6 +170,11 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 			"error": err.Error(),
 		})
 	}
+	if req.HealthEndpoint == "" {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "health_endpoint is required",
+		})
+	}
 	if err := validateHTTPEndpoint("health_endpoint", req.HealthEndpoint); err != nil {
 		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
 			"error": err.Error(),
@@ -220,14 +225,11 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 		"enforcing_endpoint":    req.EnforcingEndpoint,
 		"enforcing_protocol":    req.EnforcingProtocol,
 		"health_url":            req.HealthURL,
+		"health_endpoint":       req.HealthEndpoint,
 		"health_protocol":       req.HealthProtocol,
 		"notification_protocol": req.NotificationProtocol,
 		"mas_auto_associate":    masAutoAssociate,
 		"mas_config":            masConfig,
-	}
-
-	if req.HealthEndpoint != "" {
-		payload["health_endpoint"] = req.HealthEndpoint
 	}
 
 	// Add notification fields if provided
@@ -315,7 +317,7 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 // @Accept       json
 // @Produce      json
 // @Param        ceId path string true "Cognition Engine ID (UUID)"
-// @Param        request body map[string]any true "Fields to update (enforcing_*, health_*, notification_*). Send null to clear health_endpoint, notification_url or notification_endpoint"
+// @Param        request body map[string]any true "Fields to update (enforcing_*, health_*, notification_*). Send null to clear notification_url or notification_endpoint"
 // @Success      200 {object} map[string]any "CE updated successfully"
 // @Failure      400 {object} cognitionengine.ErrorResponse "Invalid request"
 // @Failure      404 {object} cognitionengine.ErrorResponse "CE not found"
@@ -376,6 +378,12 @@ func (a *App) patchCognitionEngineHandler(w http.ResponseWriter, r *http.Request
 				})
 			}
 		}
+	}
+
+	if v, ok := reqBody["health_endpoint"]; ok && v == nil {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "health_endpoint is required and cannot be cleared",
+		})
 	}
 
 	// A patch cannot see the stored row, so the "set together" rule is enforced by the management plane.
@@ -556,7 +564,7 @@ func validateHealthURL(raw string) error {
 	}
 	parsed, err := url.Parse(raw)
 	if err != nil || parsed.Hostname() == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
-		return fmt.Errorf("invalid health_url: must be an http or https URL (for example http://host:port/healthz)")
+		return fmt.Errorf("invalid health_url: must be an http or https URL (for example http://host:port)")
 	}
 	if parsed.User != nil {
 		return fmt.Errorf("invalid health_url: credentials are not allowed")
@@ -642,7 +650,8 @@ func newProbeTransport() *http.Transport {
 	return t
 }
 
-// findEngineHealthURL returns the registered health URL of a CE from the current config snapshot.
+// findEngineHealthURL returns the registered health URL of a CE (health_url joined with health_endpoint)
+// from the current config snapshot.
 func findEngineHealthURL(ceID string) (string, bool) {
 	cfnConfigMutex.RLock()
 	defer cfnConfigMutex.RUnlock()
@@ -651,7 +660,7 @@ func findEngineHealthURL(ceID string) (string, bool) {
 	}
 	for _, ce := range ParsedConfig.CognitionEngines {
 		if ce.ID == ceID {
-			return ce.HealthURL, true
+			return strings.TrimRight(ce.HealthURL, "/") + ce.HealthEndpoint, true
 		}
 	}
 	return "", false

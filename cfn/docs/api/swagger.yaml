@@ -52,8 +52,8 @@ definitions:
         example: my-ce:50051
         type: string
       health_endpoint:
-        description: Reserved. Health checks are HTTP, so CFN probes health_url as
-          given. Must start with "/"
+        description: Health probe path, appended to health_url (required). Must start
+          with "/"
         example: /healthz
         type: string
       health_protocol:
@@ -63,9 +63,9 @@ definitions:
         example: http
         type: string
       health_url:
-        description: URL CFN probes with an HTTP GET to check the CE is alive (required,
-          http or https)
-        example: http://my-ce:8080/healthz
+        description: Base URL CFN probes with an HTTP GET to check the CE is alive
+          (required, http or https)
+        example: http://my-ce:8080
         type: string
       mas_auto_associate:
         description: Auto-associate with all MAS in the workspace (defaults to true
@@ -147,7 +147,7 @@ definitions:
         type: string
       health_url:
         description: Health check URL probed by CFN
-        example: http://my-ce:8080/healthz
+        example: http://my-ce:8080
         type: string
       mas_auto_associate:
         description: Auto-associate with all MAS
@@ -299,7 +299,7 @@ paths:
         required: true
         type: string
       - description: Fields to update (enforcing_*, health_*, notification_*). Send
-          null to clear health_endpoint, notification_url or notification_endpoint
+          null to clear notification_url or notification_endpoint
         in: body
         name: request
         required: true

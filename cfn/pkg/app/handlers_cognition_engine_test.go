@@ -25,7 +25,7 @@ func TestRegisterCognitionEngineHandler_MissingName(t *testing.T) {
 	a := &App{}
 	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
 
-	body := `{"version": "1.0.0", "ce_type": "CASA", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080/healthz"}`
+	body := `{"version": "1.0.0", "ce_type": "CASA", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080", "health_endpoint": "/healthz"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -52,7 +52,7 @@ func TestRegisterCognitionEngineHandler_MissingVersion(t *testing.T) {
 	a := &App{}
 	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
 
-	body := `{"name": "test-ce", "ce_type": "CASA", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080/healthz"}`
+	body := `{"name": "test-ce", "ce_type": "CASA", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080", "health_endpoint": "/healthz"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -79,7 +79,7 @@ func TestRegisterCognitionEngineHandler_MissingCEType(t *testing.T) {
 	a := &App{}
 	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
 
-	body := `{"name": "test-ce", "version": "1.0.0", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080/healthz"}`
+	body := `{"name": "test-ce", "version": "1.0.0", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080", "health_endpoint": "/healthz"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -106,7 +106,7 @@ func TestRegisterCognitionEngineHandler_InvalidCEType(t *testing.T) {
 	a := &App{}
 	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
 
-	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "INVALID", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080/healthz"}`
+	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "INVALID", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080", "health_endpoint": "/healthz"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -133,7 +133,7 @@ func TestRegisterCognitionEngineHandler_MissingEnforcingURL(t *testing.T) {
 	a := &App{}
 	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
 
-	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080/healthz"}`
+	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080", "health_endpoint": "/healthz"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -161,7 +161,7 @@ func TestRegisterCognitionEngineHandler_InvalidEnforcingURL(t *testing.T) {
 	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
 
 	// "not-a-url" has no colon, so it's invalid for both gRPC (host:port) and HTTP formats
-	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "not-a-url", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080/healthz"}`
+	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "not-a-url", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080", "health_endpoint": "/healthz"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -216,7 +216,7 @@ func TestRegisterCognitionEngineHandler_CFNNotRegistered(t *testing.T) {
 	a := &App{}
 	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
 
-	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080/healthz"}`
+	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080", "health_endpoint": "/healthz"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -270,7 +270,7 @@ func TestRegisterCognitionEngineHandler_CASATypeAccepted(t *testing.T) {
 	a := &App{}
 	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
 
-	body := `{"name": "casa-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080/healthz"}`
+	body := `{"name": "casa-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080", "health_endpoint": "/healthz"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -302,7 +302,7 @@ func TestRegisterCognitionEngineHandler_MASAutoAssociateDefault(t *testing.T) {
 	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
 
 	// Request without mas_auto_associate field
-	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080/healthz"}`
+	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080", "health_endpoint": "/healthz"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -339,7 +339,7 @@ func TestRegisterCognitionEngineHandler_MASAutoAssociateExplicitFalse(t *testing
 	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
 
 	// Request with explicit mas_auto_associate: false
-	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080/healthz", "mas_auto_associate": false}`
+	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080", "health_endpoint": "/healthz", "mas_auto_associate": false}`
 	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -376,7 +376,7 @@ func TestRegisterCognitionEngineHandler_MASAutoAssociateExplicitTrue(t *testing.
 	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
 
 	// Request with explicit mas_auto_associate: true
-	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080/healthz", "mas_auto_associate": true}`
+	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "http://localhost:8080", "enforcing_endpoint": "/api/test", "health_url": "http://localhost:8080", "health_endpoint": "/healthz", "mas_auto_associate": true}`
 	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
@@ -739,6 +739,40 @@ func TestRegisterCognitionEngineHandler_MissingHealthURL(t *testing.T) {
 	}
 }
 
+func TestRegisterCognitionEngineHandler_MissingHealthEndpoint(t *testing.T) {
+	CfnID = "test-cfn-id"
+	a := &App{}
+	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
+
+	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "localhost:50051", "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "health_url": "http://localhost:8080"}`
+	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest || !strings.Contains(w.Body.String(), "health_endpoint is required") {
+		t.Fatalf("expected 400 health_endpoint is required, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestFindEngineHealthURL_JoinsEndpoint(t *testing.T) {
+	for _, base := range []string{"http://ce:8080", "http://ce:8080/"} {
+		cfnConfigMutex.Lock()
+		prev := ParsedConfig
+		ParsedConfig = &CfnConfigPayload{CognitionEngines: []EngineCfg{{ID: probeTestCEID, HealthURL: base, HealthEndpoint: "/healthz"}}}
+		cfnConfigMutex.Unlock()
+
+		got, found := findEngineHealthURL(probeTestCEID)
+
+		cfnConfigMutex.Lock()
+		ParsedConfig = prev
+		cfnConfigMutex.Unlock()
+		if !found || got != "http://ce:8080/healthz" {
+			t.Errorf("base %q: got %q (found=%v)", base, got, found)
+		}
+	}
+}
+
 func TestRegisterCognitionEngineHandler_InvalidHealthURL(t *testing.T) {
 	for _, healthURL := range invalidHealthURLs {
 		a := &App{}
@@ -1022,7 +1056,7 @@ func TestRegisterCognitionEngineHandler_ProtocolDefaultsForwarded(t *testing.T) 
 	a := &App{}
 	handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
 
-	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "localhost:50051", "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "health_url": "http://localhost:8080/healthz"}`
+	body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "localhost:50051", "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "health_url": "http://localhost:8080", "health_endpoint": "/healthz"}`
 	req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -1063,7 +1097,7 @@ func TestRegisterCognitionEngineHandler_UnsupportedProtocol(t *testing.T) {
 			a := &App{}
 			handler := easyhttp.WrapHandler(a.registerCognitionEngineHandler)
 
-			body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "localhost:50051", "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "health_url": "http://localhost:8080/healthz", ` + tt.extra + `}`
+			body := `{"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "localhost:50051", "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "health_url": "http://localhost:8080", "health_endpoint": "/healthz", ` + tt.extra + `}`
 			req := httptest.NewRequest(http.MethodPost, "/api/cognition-engine", bytes.NewBufferString(body))
 			w := httptest.NewRecorder()
 			handler.ServeHTTP(w, req)
@@ -1093,6 +1127,7 @@ func TestPatchCognitionEngineHandler_ProtocolValidation(t *testing.T) {
 		{"valid protocol accepted", `{"health_protocol": "http"}`, http.StatusOK},
 		{"unsupported protocol rejected", `{"enforcing_protocol": "http"}`, http.StatusBadRequest},
 		{"non-string protocol rejected", `{"notification_protocol": 1}`, http.StatusBadRequest},
+		{"health_endpoint cannot be cleared", `{"health_endpoint": null}`, http.StatusBadRequest},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -1121,7 +1156,7 @@ func TestPatchCognitionEngineHandler_ProtocolValidation(t *testing.T) {
 func TestRegisterCognitionEngineHandler_EndpointRules(t *testing.T) {
 	CfnID = "test-cfn-id"
 
-	const base = `"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "localhost:50051", "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "health_url": "http://localhost:8080/healthz"`
+	const base = `"name": "test-ce", "version": "1.0.0", "ce_type": "CASA", "enforcing_url": "localhost:50051", "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "health_url": "http://localhost:8080", "health_endpoint": "/healthz"`
 	tests := []struct {
 		name  string
 		extra string
