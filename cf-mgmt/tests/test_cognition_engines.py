@@ -26,8 +26,8 @@ def _base_payload(cfn_id: str, ce_type: str = "CASA", name: str = "test-ce", ver
         "name": name,
         "version": version,
         "ce_type": ce_type,
-        "base_url": "http://ce.internal:8080",
-        "endpoint": "/api/l9/enforcement",
+        "enforcing_url": "http://ce.internal:8080",
+        "enforcing_endpoint": "/api/l9/enforcement",
         "health_url": "http://ce.internal:8080/healthz",
     }
 
@@ -93,8 +93,8 @@ class TestCognitionEngineRegister:
         assert data["name"] == "new-engine-test"
         assert data["version"] == "1.0.0"
         assert data["ce_type"] == "CASA"
-        assert data["base_url"] == "http://ce.internal:8080"
-        assert data["endpoint"] == "/api/l9/enforcement"
+        assert data["enforcing_url"] == "http://ce.internal:8080"
+        assert data["enforcing_endpoint"] == "/api/l9/enforcement"
         assert data["status"] == "online"
         assert data["created"] is True
 
@@ -108,7 +108,7 @@ class TestCognitionEngineRegister:
 
         second = client.post(
             "/api/cognition-engines",
-            json={**payload, "base_url": "http://ce-updated.internal:8080"},
+            json={**payload, "enforcing_url": "http://ce-updated.internal:8080"},
         )
 
         assert second.status_code == status.HTTP_409_CONFLICT
@@ -162,8 +162,8 @@ class TestCognitionEngineRegister:
             "name": "full-payload-ce",
             "version": "2.0.0",
             "ce_type": "DETECTIVE",
-            "base_url": "https://detective.internal:9090",
-            "endpoint": "/api/l9/detective",
+            "enforcing_url": "https://detective.internal:9090",
+            "enforcing_endpoint": "/api/l9/detective",
             "health_url": "http://ce.internal:8080/healthz",
             "mas_config": {"timeout": 30, "max_requests": 3000},
         }
@@ -175,7 +175,7 @@ class TestCognitionEngineRegister:
         assert data["name"] == "full-payload-ce"
         assert data["version"] == "2.0.0"
         assert data["ce_type"] == "DETECTIVE"
-        assert data["endpoint"] == "/api/l9/detective"
+        assert data["enforcing_endpoint"] == "/api/l9/detective"
         assert data["created"] is True
 
     def test_register_casa_ce_type(self, client, registered_cfn):
@@ -185,8 +185,8 @@ class TestCognitionEngineRegister:
             "name": "casa-type-test",
             "version": "1.0.0",
             "ce_type": "CASA",
-            "base_url": "https://casa.internal:9090",
-            "endpoint": "/api/l9/enforcement",
+            "enforcing_url": "https://casa.internal:9090",
+            "enforcing_endpoint": "/api/l9/enforcement",
             "health_url": "http://ce.internal:8080/healthz",
         }
 
@@ -203,8 +203,8 @@ class TestCognitionEngineRegister:
             "name": "detective-type-test",
             "version": "1.0.0",
             "ce_type": "DETECTIVE",
-            "base_url": "https://detective.internal:9090",
-            "endpoint": "/api/l9/detective",
+            "enforcing_url": "https://detective.internal:9090",
+            "enforcing_endpoint": "/api/l9/detective",
             "health_url": "http://ce.internal:8080/healthz",
         }
 
@@ -335,8 +335,8 @@ class TestCognitionEngineList:
             "name",
             "version",
             "ce_type",
-            "base_url",
-            "endpoint",
+            "enforcing_url",
+            "enforcing_endpoint",
             "enabled",
             "status",
             "mas_config",
@@ -363,7 +363,7 @@ class TestCognitionEngineGet:
         assert data["id"] == ce_id
         assert data["cfn_id"] == registered_cfn
         assert data["ce_type"] == "DETECTIVE"
-        assert data["endpoint"] == "/api/l9/detective"
+        assert data["enforcing_endpoint"] == "/api/l9/detective"
         assert data["status"] == "online"
         assert "created_at" in data
         assert "updated_at" in data
@@ -874,6 +874,165 @@ class TestCognitionEngineHealthUrl:
         assert resp.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
 
+class TestCognitionEngineEndpointProtocol:
+    """Each purpose (enforcing, health, notification) has a url, an endpoint and a protocol."""
+
+    def test_protocol_defaults_on_register_and_read(self, client, registered_cfn):
+        payload = _base_payload(registered_cfn, name="protocol-defaults-ce")
+        resp = client.post("/api/cognition-engines", json=payload)
+        assert resp.status_code == status.HTTP_201_CREATED
+        body = resp.json()
+        assert body["enforcing_protocol"] == "grpc"
+        assert body["health_protocol"] == "http"
+        assert body["notification_protocol"] == "http"
+        assert body["health_endpoint"] is None
+
+        detail = client.get(f"/api/cognition-engines/{body['ce_id']}").json()
+        assert detail["enforcing_protocol"] == "grpc"
+        assert detail["health_protocol"] == "http"
+        assert detail["notification_protocol"] == "http"
+
+        listed = next(
+            ce for ce in client.get(f"/api/cognition-engines?cfn_id={registered_cfn}").json()["cognition_engines"]
+            if ce["id"] == body["ce_id"]
+        )
+        assert listed["health_url"] == payload["health_url"]
+        assert listed["enforcing_protocol"] == "grpc"
+
+    def test_list_includes_notification_fields(self, client, registered_cfn):
+        payload = {
+            **_base_payload(registered_cfn, name="list-notification-ce"),
+            "notification_url": "http://ce.internal:8080",
+            "notification_endpoint": "/notification/mas-lifecycle",
+        }
+        ce_id = client.post("/api/cognition-engines", json=payload).json()["ce_id"]
+
+        listed = next(
+            ce for ce in client.get(f"/api/cognition-engines?cfn_id={registered_cfn}").json()["cognition_engines"]
+            if ce["id"] == ce_id
+        )
+        assert listed["notification_url"] == "http://ce.internal:8080"
+        assert listed["notification_endpoint"] == "/notification/mas-lifecycle"
+
+    def test_register_requires_enforcing_endpoint_for_grpc(self, client, registered_cfn):
+        payload = _base_payload(registered_cfn, name="no-endpoint-ce")
+        del payload["enforcing_endpoint"]
+        resp = client.post("/api/cognition-engines", json=payload)
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert "enforcing_endpoint is required when enforcing_protocol is 'grpc'" in resp.text
+
+    @pytest.mark.parametrize(
+        "field,value",
+        [
+            ("enforcing_protocol", "http"),
+            ("health_protocol", "grpc"),
+            ("notification_protocol", "grpc"),
+        ],
+    )
+    def test_register_rejects_unsupported_protocol(self, client, registered_cfn, field, value):
+        payload = {**_base_payload(registered_cfn, name=f"bad-{field}-ce"), field: value}
+        resp = client.post("/api/cognition-engines", json=payload)
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def test_register_stores_health_endpoint(self, client, registered_cfn):
+        payload = {**_base_payload(registered_cfn, name="health-endpoint-ce"), "health_endpoint": "/healthz"}
+        ce_id = client.post("/api/cognition-engines", json=payload).json()["ce_id"]
+        assert client.get(f"/api/cognition-engines/{ce_id}").json()["health_endpoint"] == "/healthz"
+
+    def test_patch_updates_endpoints(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn)
+        resp = client.patch(
+            f"/api/cognition-engines/{ce_id}",
+            json={"enforcing_endpoint": "ioc.ce.v2.CognitionEngine", "health_endpoint": "/ready"},
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.json()["enforcing_endpoint"] == "ioc.ce.v2.CognitionEngine"
+        assert resp.json()["health_endpoint"] == "/ready"
+
+    @pytest.mark.parametrize(
+        "extra",
+        [
+            {"notification_url": "http://ce.internal:8080"},
+            {"notification_endpoint": "/notifications"},
+        ],
+    )
+    def test_register_requires_notification_url_and_endpoint_together(self, client, registered_cfn, extra):
+        payload = {**_base_payload(registered_cfn, name="half-notification-ce"), **extra}
+        resp = client.post("/api/cognition-engines", json=payload)
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert "must be set together" in resp.text
+
+    @pytest.mark.parametrize("field", ["health_endpoint", "notification_endpoint"])
+    def test_register_rejects_endpoint_without_leading_slash(self, client, registered_cfn, field):
+        payload = {
+            **_base_payload(registered_cfn, name=f"no-slash-{field}"),
+            "notification_url": "http://ce.internal:8080",
+            "notification_endpoint": "/notifications",
+            field: "no-slash",
+        }
+        resp = client.post("/api/cognition-engines", json=payload)
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert f"{field} must start with '/'" in resp.text
+
+    def test_patch_sets_notification_url_and_endpoint_together(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn)
+        resp = client.patch(
+            f"/api/cognition-engines/{ce_id}",
+            json={"notification_url": "http://ce.internal:8080", "notification_endpoint": "/notifications"},
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.json()["notification_endpoint"] == "/notifications"
+
+    def test_patch_rejects_half_notification(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn)
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"notification_url": "http://ce.internal:8080"})
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert "must be set together" in resp.text
+        # The rejected patch must not have been saved
+        assert client.get(f"/api/cognition-engines/{ce_id}").json()["notification_url"] is None
+
+    def test_patch_null_clears_notification(self, client, registered_cfn):
+        ce_id = _register(
+            client,
+            registered_cfn,
+            notification_url="http://ce.internal:8080",
+            notification_endpoint="/notifications",
+        )
+        resp = client.patch(
+            f"/api/cognition-engines/{ce_id}", json={"notification_url": None, "notification_endpoint": None}
+        )
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.json()["notification_url"] is None
+        assert resp.json()["notification_endpoint"] is None
+
+    def test_patch_clearing_only_one_notification_field_is_rejected(self, client, registered_cfn):
+        ce_id = _register(
+            client,
+            registered_cfn,
+            notification_url="http://ce.internal:8080",
+            notification_endpoint="/notifications",
+        )
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"notification_endpoint": None})
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+    def test_patch_null_on_required_field_is_ignored(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn)
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"enforcing_url": None, "enabled": True})
+        assert resp.status_code == status.HTTP_200_OK
+        assert resp.json()["enforcing_url"] == "http://ce.internal:8080"
+
+    def test_patch_rejects_endpoint_without_leading_slash(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn)
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"health_endpoint": "healthz"})
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+        assert "health_endpoint must start with '/'" in resp.text
+
+    def test_patch_rejects_unsupported_protocol(self, client, registered_cfn):
+        ce_id = _register(client, registered_cfn)
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"enforcing_protocol": "http"})
+        assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
 class TestCognitionEngineEnabled:
     """enabled is a lifecycle field set by the service — not the caller."""
 
@@ -989,8 +1148,8 @@ class TestCognitionEnginePatch:
     @pytest.mark.parametrize(
         "field,value",
         [
-            ("base_url", "http://elsewhere:8080"),
-            ("endpoint", "/api/other"),
+            ("enforcing_url", "http://elsewhere:8080"),
+            ("enforcing_endpoint", "/api/other"),
             ("health_url", "http://elsewhere:8080/healthz"),
             ("enabled", False),
         ],
@@ -1009,7 +1168,7 @@ class TestCognitionEnginePatch:
 
         client.patch(
             f"/api/cognition-engines/{ce_id}",
-            json={"base_url": "http://ce.internal:8080", "health_url": "http://ce.internal:8080/healthz"},
+            json={"enforcing_url": "http://ce.internal:8080", "health_url": "http://ce.internal:8080/healthz"},
         )
 
         assert _config_version(client, registered_cfn) == before
@@ -1059,15 +1218,15 @@ class TestCognitionEnginePatch:
         resp = client.patch(
             f"/api/cognition-engines/{ce_id}",
             json={
-                "base_url": "http://new-url:9090",
-                "endpoint": "/api/v2/enforcement",
+                "enforcing_url": "http://new-url:9090",
+                "enforcing_endpoint": "/api/v2/enforcement",
             },
         )
 
         assert resp.status_code == status.HTTP_200_OK
         data = resp.json()
-        assert data["base_url"] == "http://new-url:9090"
-        assert data["endpoint"] == "/api/v2/enforcement"
+        assert data["enforcing_url"] == "http://new-url:9090"
+        assert data["enforcing_endpoint"] == "/api/v2/enforcement"
 
     def test_patch_only_provided_fields_updated(self, client, registered_cfn):
         """Unprovided fields are not changed."""
@@ -1098,21 +1257,21 @@ class TestCognitionEnginePatch:
         resp = client.patch("/api/cognition-engines/nonexistent-id", json={"enabled": False})
         assert resp.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_patch_base_url(self, client, registered_cfn):
-        """PATCH can update the CE base_url."""
+    def test_patch_enforcing_url(self, client, registered_cfn):
+        """PATCH can update the CE enforcing_url."""
         ce_id = _register(client, registered_cfn, "CASA")
 
-        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"base_url": "http://new-url:9090"})
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"enforcing_url": "http://new-url:9090"})
         assert resp.status_code == status.HTTP_200_OK
-        assert resp.json()["base_url"] == "http://new-url:9090"
+        assert resp.json()["enforcing_url"] == "http://new-url:9090"
 
     def test_patch_endpoint(self, client, registered_cfn):
         """PATCH can update the CE endpoint."""
         ce_id = _register(client, registered_cfn, "CASA")
 
-        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"endpoint": "/api/v2/enforcement"})
+        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"enforcing_endpoint": "/api/v2/enforcement"})
         assert resp.status_code == status.HTTP_200_OK
-        assert resp.json()["endpoint"] == "/api/v2/enforcement"
+        assert resp.json()["enforcing_endpoint"] == "/api/v2/enforcement"
 
     def test_patch_notification_url(self, client, registered_cfn):
         """PATCH can update the CE notification_url."""
@@ -1587,8 +1746,8 @@ class TestCognitionEngineAutoAttachTrigger:
             "name": "auto-assoc-dup-ce",
             "version": "1.0.0",
             "ce_type": "CASA",
-            "base_url": "http://ce:8080",
-            "endpoint": "/api/l9/enforcement",
+            "enforcing_url": "http://ce:8080",
+            "enforcing_endpoint": "/api/l9/enforcement",
             "health_url": "http://ce.internal:8080/healthz",
             "mas_auto_associate": True,
         }
