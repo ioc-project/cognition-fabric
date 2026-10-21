@@ -19,6 +19,7 @@ from server.database.relational_db.models.cognition_fabric_node import (
     CognitionFabricNode as CognitionFabricNodeModel,
 )
 from server.database.relational_db.models.workspace import Workspace as WorkspaceModel
+from server.schemas.cognition_engine import ce_connection
 from server.schemas.cognition_fabric_node import (
     CognitionFabricNodeHeartbeatResponse,
     CognitionFabricNodeList,
@@ -1125,11 +1126,7 @@ class CognitionFabricNodeService:
                         "name": e.name,
                         "version": e.version,
                         "ce_type": e.ce_type,
-                        "base_url": e.base_url,
-                        "endpoint": e.endpoint,
-                        "health_url": e.health_url,
-                        "notification_url": e.notification_url,
-                        "notification_endpoint": e.notification_endpoint,
+                        **ce_connection(e),
                         "enabled": e.enabled,
                         "status": e.status,
                         "mas_config": e.mas_config or {},
