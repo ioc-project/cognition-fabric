@@ -113,7 +113,7 @@ func setupTestEnvWithCASA(t *testing.T, masResponse map[string]any, casaResponse
 	// Inject CASA address into MAS response
 	if masResponse != nil {
 		if ces, ok := masResponse["cognition_engines"].([]map[string]any); ok && len(ces) > 0 {
-			ces[0]["base_url"] = casaAddr
+			ces[0]["enforcing_url"] = casaAddr
 		}
 	}
 
@@ -430,12 +430,12 @@ func TestGetDisposition_CASACEDisabled(t *testing.T) {
 		"name":         "Test MAS",
 		"cognition_engines": []map[string]any{
 			{
-				"ce_id":    "ce-casa-1",
-				"ce_type":  "CASA",
-				"base_url": "localhost:50051",
-				"endpoint": "ioc.ce.v1.CognitionEngine",
-				"enabled":  false, // Disabled
-				"status":   "online",
+				"ce_id":              "ce-casa-1",
+				"ce_type":            "CASA",
+				"enforcing_url":      "localhost:50051",
+				"enforcing_endpoint": "ioc.ce.v1.CognitionEngine",
+				"enabled":            false, // Disabled
+				"status":             "online",
 			},
 		},
 	}
@@ -481,12 +481,12 @@ func TestGetDisposition_CASACEOffline(t *testing.T) {
 		"name":         "Test MAS",
 		"cognition_engines": []map[string]any{
 			{
-				"ce_id":    "ce-casa-1",
-				"ce_type":  "CASA",
-				"base_url": "localhost:50051",
-				"endpoint": "ioc.ce.v1.CognitionEngine",
-				"enabled":  true,
-				"status":   "offline", // Offline
+				"ce_id":              "ce-casa-1",
+				"ce_type":            "CASA",
+				"enforcing_url":      "localhost:50051",
+				"enforcing_endpoint": "ioc.ce.v1.CognitionEngine",
+				"enabled":            true,
+				"status":             "offline", // Offline
 			},
 		},
 	}
@@ -532,20 +532,20 @@ func TestGetDisposition_CASACEMixedUnhealthy(t *testing.T) {
 		"name":         "Test MAS",
 		"cognition_engines": []map[string]any{
 			{
-				"ce_id":    "ce-casa-1",
-				"ce_type":  "CASA",
-				"base_url": "localhost:50051",
-				"endpoint": "ioc.ce.v1.CognitionEngine",
-				"enabled":  false, // Disabled
-				"status":   "online",
+				"ce_id":              "ce-casa-1",
+				"ce_type":            "CASA",
+				"enforcing_url":      "localhost:50051",
+				"enforcing_endpoint": "ioc.ce.v1.CognitionEngine",
+				"enabled":            false, // Disabled
+				"status":             "online",
 			},
 			{
-				"ce_id":    "ce-casa-2",
-				"ce_type":  "CASA",
-				"base_url": "localhost:50052",
-				"endpoint": "ioc.ce.v1.CognitionEngine",
-				"enabled":  true,
-				"status":   "offline", // Offline
+				"ce_id":              "ce-casa-2",
+				"ce_type":            "CASA",
+				"enforcing_url":      "localhost:50052",
+				"enforcing_endpoint": "ioc.ce.v1.CognitionEngine",
+				"enabled":            true,
+				"status":             "offline", // Offline
 			},
 		},
 	}
@@ -591,12 +591,12 @@ func TestGetDisposition_Success_Allow(t *testing.T) {
 		"name":         "Test MAS",
 		"cognition_engines": []map[string]any{
 			{
-				"ce_id":    "ce-casa-1",
-				"ce_type":  "CASA",
-				"base_url": "will-be-replaced",
-				"endpoint": "ioc.ce.v1.CognitionEngine",
-				"enabled":  true,
-				"status":   "online",
+				"ce_id":              "ce-casa-1",
+				"ce_type":            "CASA",
+				"enforcing_url":      "will-be-replaced",
+				"enforcing_endpoint": "ioc.ce.v1.CognitionEngine",
+				"enabled":            true,
+				"status":             "online",
 			},
 		},
 	}
@@ -637,12 +637,12 @@ func TestGetDisposition_Success_Deny(t *testing.T) {
 		"name":         "Test MAS",
 		"cognition_engines": []map[string]any{
 			{
-				"ce_id":    "ce-casa-1",
-				"ce_type":  "CASA",
-				"base_url": "will-be-replaced",
-				"endpoint": "ioc.ce.v1.CognitionEngine",
-				"enabled":  true,
-				"status":   "online",
+				"ce_id":              "ce-casa-1",
+				"ce_type":            "CASA",
+				"enforcing_url":      "will-be-replaced",
+				"enforcing_endpoint": "ioc.ce.v1.CognitionEngine",
+				"enabled":            true,
+				"status":             "online",
 			},
 		},
 	}
@@ -684,12 +684,12 @@ func TestGetDisposition_Success_Modify(t *testing.T) {
 		"name":         "Test MAS",
 		"cognition_engines": []map[string]any{
 			{
-				"ce_id":    "ce-casa-1",
-				"ce_type":  "CASA",
-				"base_url": "will-be-replaced",
-				"endpoint": "ioc.ce.v1.CognitionEngine",
-				"enabled":  true,
-				"status":   "online",
+				"ce_id":              "ce-casa-1",
+				"ce_type":            "CASA",
+				"enforcing_url":      "will-be-replaced",
+				"enforcing_endpoint": "ioc.ce.v1.CognitionEngine",
+				"enabled":            true,
+				"status":             "online",
 			},
 		},
 	}
@@ -738,12 +738,12 @@ func TestGetDisposition_CASACEError(t *testing.T) {
 		"name":         "Test MAS",
 		"cognition_engines": []map[string]any{
 			{
-				"ce_id":    "ce-casa-1",
-				"ce_type":  "CASA",
-				"base_url": "will-be-replaced",
-				"endpoint": "ioc.ce.v1.CognitionEngine",
-				"enabled":  true,
-				"status":   "online",
+				"ce_id":              "ce-casa-1",
+				"ce_type":            "CASA",
+				"enforcing_url":      "will-be-replaced",
+				"enforcing_endpoint": "ioc.ce.v1.CognitionEngine",
+				"enabled":            true,
+				"status":             "online",
 			},
 		},
 	}
@@ -808,12 +808,12 @@ func TestEnforcementServer_WaitBlocksForInFlightAuditWrite(t *testing.T) {
 		"name":         "Test MAS",
 		"cognition_engines": []map[string]any{
 			{
-				"ce_id":    "ce-casa-1",
-				"ce_type":  "CASA",
-				"base_url": "will-be-replaced",
-				"endpoint": "ioc.ce.v1.CognitionEngine",
-				"enabled":  true,
-				"status":   "online",
+				"ce_id":              "ce-casa-1",
+				"ce_type":            "CASA",
+				"enforcing_url":      "will-be-replaced",
+				"enforcing_endpoint": "ioc.ce.v1.CognitionEngine",
+				"enabled":            true,
+				"status":             "online",
 			},
 		},
 	}
@@ -878,12 +878,12 @@ func TestEnforcementServer_WaitTimeoutReturnsFalseOnHungWrite(t *testing.T) {
 		"name":         "Test MAS",
 		"cognition_engines": []map[string]any{
 			{
-				"ce_id":    "ce-casa-1",
-				"ce_type":  "CASA",
-				"base_url": "will-be-replaced",
-				"endpoint": "ioc.ce.v1.CognitionEngine",
-				"enabled":  true,
-				"status":   "online",
+				"ce_id":              "ce-casa-1",
+				"ce_type":            "CASA",
+				"enforcing_url":      "will-be-replaced",
+				"enforcing_endpoint": "ioc.ce.v1.CognitionEngine",
+				"enabled":            true,
+				"status":             "online",
 			},
 		},
 	}

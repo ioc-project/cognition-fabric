@@ -28,10 +28,6 @@ definitions:
     description: CE registration request payload. The CE sends this to CFN, which
       adds cfn_id and forwards to management plane.
     properties:
-      base_url:
-        description: Base URL for the CE service
-        example: http://my-ce:8080
-        type: string
       ce_type:
         description: CE type - must be "CASA" or "DETECTIVE"
         enum:
@@ -39,14 +35,37 @@ definitions:
         - DETECTIVE
         example: CASA
         type: string
-      endpoint:
-        description: API endpoint path
-        example: /authorize
+      enforcing_endpoint:
+        description: gRPC service name for enforcement (required for gRPC)
+        example: ioc.ce.v1.CognitionEngine
+        type: string
+      enforcing_protocol:
+        description: Enforcement protocol. Only "grpc" is supported today (default
+          "grpc")
+        enum:
+        - grpc
+        example: grpc
+        type: string
+      enforcing_url:
+        description: Address CFN sends enforcement requests to (gRPC host:port, e.g.
+          "my-ce:50051")
+        example: my-ce:50051
+        type: string
+      health_endpoint:
+        description: Reserved. Health checks are HTTP, so CFN probes health_url as
+          given. Must start with "/"
+        example: /healthz
+        type: string
+      health_protocol:
+        description: Health protocol. Only "http" is supported today (default "http")
+        enum:
+        - http
+        example: http
         type: string
       health_url:
-        description: Full URL CFN probes with an HTTP GET to check the CE is alive
-          (required, http or https)
-        example: http://casa-ce:8080/healthz
+        description: URL CFN probes with an HTTP GET to check the CE is alive (required,
+          http or https)
+        example: http://my-ce:8080/healthz
         type: string
       mas_auto_associate:
         description: Auto-associate with all MAS in the workspace (defaults to true
@@ -62,8 +81,16 @@ definitions:
         example: my-ce
         type: string
       notification_endpoint:
-        description: Notification endpoint path for MAS event notifications
+        description: Path CFN appends to notification_url. Must start with "/" and
+          be set together with notification_url
         example: /notification/mas-lifecycle
+        type: string
+      notification_protocol:
+        description: Notification protocol. Only "http" is supported today (default
+          "http")
+        enum:
+        - http
+        example: http
         type: string
       notification_url:
         description: Notification base URL for MAS event notifications
@@ -77,10 +104,6 @@ definitions:
   cognitionengine.RegisterResponse:
     description: CE registration response from management plane.
     properties:
-      base_url:
-        description: Base URL for the CE service
-        example: http://my-ce:8080
-        type: string
       ce_id:
         description: Cognition Engine ID (UUID)
         example: 550e8400-e29b-41d4-a716-446655440000
@@ -101,13 +124,30 @@ definitions:
         description: Whether the CE is enabled
         example: true
         type: boolean
-      endpoint:
-        description: API endpoint path
-        example: /authorize
+      enforcing_endpoint:
+        description: gRPC service name for enforcement
+        example: ioc.ce.v1.CognitionEngine
+        type: string
+      enforcing_protocol:
+        description: Enforcement protocol
+        example: grpc
+        type: string
+      enforcing_url:
+        description: Address CFN sends enforcement requests to
+        example: my-ce:50051
+        type: string
+      health_endpoint:
+        description: Reserved. Health checks are HTTP, so CFN probes health_url as
+          given
+        example: /healthz
+        type: string
+      health_protocol:
+        description: Health protocol
+        example: http
         type: string
       health_url:
         description: Health check URL probed by CFN
-        example: http://casa-ce:8080/healthz
+        example: http://my-ce:8080/healthz
         type: string
       mas_auto_associate:
         description: Auto-associate with all MAS
@@ -120,6 +160,10 @@ definitions:
       notification_endpoint:
         description: Notification endpoint path for MAS event notifications
         example: /notification/mas-lifecycle
+        type: string
+      notification_protocol:
+        description: Notification protocol
+        example: http
         type: string
       notification_url:
         description: Notification base URL for MAS event notifications
@@ -136,15 +180,17 @@ definitions:
     type: object
   mgmt.MASCognitionEngine:
     properties:
-      base_url:
-        type: string
       ce_id:
         type: string
       ce_type:
         type: string
       enabled:
         type: boolean
-      endpoint:
+      enforcing_endpoint:
+        type: string
+      enforcing_protocol:
+        type: string
+      enforcing_url:
         type: string
       status:
         type: string
@@ -252,7 +298,8 @@ paths:
         name: ceId
         required: true
         type: string
-      - description: Fields to update (base_url, endpoint, health_url)
+      - description: Fields to update (enforcing_*, health_*, notification_*). Send
+          null to clear health_endpoint, notification_url or notification_endpoint
         in: body
         name: request
         required: true

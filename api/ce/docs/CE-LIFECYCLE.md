@@ -13,7 +13,7 @@ sequenceDiagram
     participant Mgmt as Mgmt Plane
 
     Note over CE,Mgmt: Registration Phase
-    CE->>CFN: POST /api/cognition-engine<br/>(name, version, ce_type, base_url, endpoint, health_url)
+    CE->>CFN: POST /api/cognition-engine<br/>(name, version, ce_type, enforcing_url, enforcing_endpoint, health_url)
     CFN->>Mgmt: Forward + add cfn_id
     Mgmt-->>CFN: 201 Created (ce_id, status=online)
     CFN-->>CE: Return ce_id
@@ -78,7 +78,7 @@ stateDiagram-v2
 ### 1. Cognition Engine (CE)
 
 The CE is responsible for:
-- **Registration**: On startup, POST to `/api/cognition-engine` with identity (name, version, ce_type, base_url, endpoint) and a required `health_url`
+- **Registration**: On startup, POST to `/api/cognition-engine` with identity (name, version, ce_type), its enforcing address (`enforcing_url`, `enforcing_endpoint`) and a required `health_url`. See [Endpoint fields](#endpoint-fields)
 - **Health endpoint**: Serve `health_url` (for example `GET /healthz`) unauthenticated and return `200` while the CE is up. The body is ignored.
 - **Graceful shutdown**: Stop serving the health endpoint (CE will be marked offline after threshold)
 
@@ -95,6 +95,25 @@ The Management Plane is the source of truth for CE status:
 - Stores CE records in the database
 - Runs a background monitor that asks CFN to probe every enabled CE and sets `status` from the result
 - Keeps `last_seen` as the time of the last successful probe
+
+## Endpoint fields
+
+A CE declares one address per purpose. Each has the same shape, a `*_url`, an optional `*_endpoint` and a `*_protocol`:
+
+| Purpose | Fields | Protocol | Notes |
+|---------|--------|----------|-------|
+| Enforcing | `enforcing_url`, `enforcing_endpoint`, `enforcing_protocol` | `grpc` (default) | `enforcing_url` is a gRPC `host:port`, `enforcing_endpoint` is the gRPC service name (for example `ioc.ce.v1.CognitionEngine`) and is required |
+| Health | `health_url`, `health_endpoint`, `health_protocol` | `http` (default) | `health_url` is the full URL CFN probes with a GET. `health_endpoint` is reserved and not used by the probe |
+| Notification (optional) | `notification_url`, `notification_endpoint`, `notification_protocol` | `http` (default) | `notification_url` is a base URL and `notification_endpoint` is the path |
+
+Validation:
+- `enforcing_endpoint` is required, because a gRPC address has no service name.
+- `health_endpoint` and `notification_endpoint` must start with `/`.
+- `notification_url` and `notification_endpoint` must be set together, since CFN skips a CE that has only one.
+- Each purpose accepts only the protocol CFN speaks for it today. Any other value is a 400.
+- On `PATCH`, an explicit `null` clears `health_endpoint`, `notification_url` or `notification_endpoint`.
+
+`enforcing_url` and `enforcing_endpoint` replace the earlier `base_url` and `endpoint`.
 
 ## Configuration
 
@@ -148,7 +167,7 @@ sequenceDiagram
     CFN-->>CE: 409 Conflict (existing_ce_id)
     
     Note over CE: Extract existing_ce_id
-    CE->>CFN: PATCH /api/cognition-engine/{existing_ce_id}<br/>(base_url, endpoint, health_url)
+    CE->>CFN: PATCH /api/cognition-engine/{existing_ce_id}<br/>(enforcing_url, enforcing_endpoint, health_url)
     CFN->>Mgmt: Forward PATCH
     Mgmt-->>CFN: 200 OK (updated CE)
     CFN-->>CE: 200 OK

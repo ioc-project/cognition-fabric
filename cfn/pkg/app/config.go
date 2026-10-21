@@ -15,11 +15,15 @@ type CfnConfigPayload struct {
 type EngineCfg struct {
 	ID                   string         `json:"id"`
 	CEType               string         `json:"ce_type"` // "CASA" or "DETECTIVE"
-	BaseURL              string         `json:"base_url"`
-	Endpoint             string         `json:"endpoint"`
+	EnforcingURL         string         `json:"enforcing_url"`
+	EnforcingEndpoint    string         `json:"enforcing_endpoint"`
+	EnforcingProtocol    string         `json:"enforcing_protocol"`
 	HealthURL            string         `json:"health_url"`
+	HealthEndpoint       string         `json:"health_endpoint"`
+	HealthProtocol       string         `json:"health_protocol"`
 	NotificationURL      string         `json:"notification_url"`
 	NotificationEndpoint string         `json:"notification_endpoint"`
+	NotificationProtocol string         `json:"notification_protocol"`
 	Enabled              bool           `json:"enabled"`
 	Status               string         `json:"status"`
 	MASAutoAssociate     bool           `json:"mas_auto_associate"`

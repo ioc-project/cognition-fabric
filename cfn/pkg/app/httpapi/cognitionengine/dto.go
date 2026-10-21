@@ -14,16 +14,24 @@ type RegisterRequest struct {
 	Version string `json:"version" example:"1.0.0"`
 	// CE type - must be "CASA" or "DETECTIVE"
 	CEType string `json:"ce_type" example:"CASA" enums:"CASA,DETECTIVE"`
-	// Base URL for the CE service
-	BaseURL string `json:"base_url" example:"http://my-ce:8080"`
-	// API endpoint path
-	Endpoint string `json:"endpoint" example:"/authorize"`
-	// Full URL CFN probes with an HTTP GET to check the CE is alive (required, http or https)
-	HealthURL string `json:"health_url" example:"http://casa-ce:8080/healthz"`
+	// Address CFN sends enforcement requests to (gRPC host:port, e.g. "my-ce:50051")
+	EnforcingURL string `json:"enforcing_url" example:"my-ce:50051"`
+	// gRPC service name for enforcement (required for gRPC)
+	EnforcingEndpoint string `json:"enforcing_endpoint,omitempty" example:"ioc.ce.v1.CognitionEngine"`
+	// Enforcement protocol. Only "grpc" is supported today (default "grpc")
+	EnforcingProtocol string `json:"enforcing_protocol,omitempty" example:"grpc" enums:"grpc"`
+	// URL CFN probes with an HTTP GET to check the CE is alive (required, http or https)
+	HealthURL string `json:"health_url" example:"http://my-ce:8080/healthz"`
+	// Reserved. Health checks are HTTP, so CFN probes health_url as given. Must start with "/"
+	HealthEndpoint string `json:"health_endpoint,omitempty" example:"/healthz"`
+	// Health protocol. Only "http" is supported today (default "http")
+	HealthProtocol string `json:"health_protocol,omitempty" example:"http" enums:"http"`
 	// Notification base URL for MAS event notifications
 	NotificationURL *string `json:"notification_url,omitempty" example:"http://my-ce:8080"`
-	// Notification endpoint path for MAS event notifications
+	// Path CFN appends to notification_url. Must start with "/" and be set together with notification_url
 	NotificationEndpoint *string `json:"notification_endpoint,omitempty" example:"/notification/mas-lifecycle"`
+	// Notification protocol. Only "http" is supported today (default "http")
+	NotificationProtocol string `json:"notification_protocol,omitempty" example:"http" enums:"http"`
 	// Auto-associate with all MAS in the workspace (defaults to true if not specified)
 	MASAutoAssociate *bool `json:"mas_auto_associate,omitempty" example:"true"`
 	// Factory defaults for per-MAS configuration
@@ -43,16 +51,24 @@ type RegisterResponse struct {
 	Version string `json:"version" example:"1.0.0"`
 	// CE type
 	CEType string `json:"ce_type" example:"CASA"`
-	// Base URL for the CE service
-	BaseURL string `json:"base_url" example:"http://my-ce:8080"`
-	// API endpoint path
-	Endpoint string `json:"endpoint" example:"/authorize"`
+	// Address CFN sends enforcement requests to
+	EnforcingURL string `json:"enforcing_url" example:"my-ce:50051"`
+	// gRPC service name for enforcement
+	EnforcingEndpoint *string `json:"enforcing_endpoint,omitempty" example:"ioc.ce.v1.CognitionEngine"`
+	// Enforcement protocol
+	EnforcingProtocol string `json:"enforcing_protocol" example:"grpc"`
 	// Health check URL probed by CFN
-	HealthURL string `json:"health_url" example:"http://casa-ce:8080/healthz"`
+	HealthURL string `json:"health_url" example:"http://my-ce:8080/healthz"`
+	// Reserved. Health checks are HTTP, so CFN probes health_url as given
+	HealthEndpoint *string `json:"health_endpoint,omitempty" example:"/healthz"`
+	// Health protocol
+	HealthProtocol string `json:"health_protocol" example:"http"`
 	// Notification base URL for MAS event notifications
 	NotificationURL *string `json:"notification_url,omitempty" example:"http://my-ce:8080"`
 	// Notification endpoint path for MAS event notifications
 	NotificationEndpoint *string `json:"notification_endpoint,omitempty" example:"/notification/mas-lifecycle"`
+	// Notification protocol
+	NotificationProtocol string `json:"notification_protocol" example:"http"`
 	// Whether the CE is enabled
 	Enabled bool `json:"enabled" example:"true"`
 	// Auto-associate with all MAS

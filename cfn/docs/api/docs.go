@@ -141,7 +141,7 @@ const docTemplate = `{
                         "required": true
                     },
                     {
-                        "description": "Fields to update (base_url, endpoint, health_url)",
+                        "description": "Fields to update (enforcing_*, health_*, notification_*). Send null to clear health_endpoint, notification_url or notification_endpoint",
                         "name": "request",
                         "in": "body",
                         "required": true,
@@ -327,11 +327,6 @@ const docTemplate = `{
             "description": "CE registration request payload. The CE sends this to CFN, which adds cfn_id and forwards to management plane.",
             "type": "object",
             "properties": {
-                "base_url": {
-                    "description": "Base URL for the CE service",
-                    "type": "string",
-                    "example": "http://my-ce:8080"
-                },
                 "ce_type": {
                     "description": "CE type - must be \"CASA\" or \"DETECTIVE\"",
                     "type": "string",
@@ -341,15 +336,41 @@ const docTemplate = `{
                     ],
                     "example": "CASA"
                 },
-                "endpoint": {
-                    "description": "API endpoint path",
+                "enforcing_endpoint": {
+                    "description": "gRPC service name for enforcement (required for gRPC)",
                     "type": "string",
-                    "example": "/authorize"
+                    "example": "ioc.ce.v1.CognitionEngine"
+                },
+                "enforcing_protocol": {
+                    "description": "Enforcement protocol. Only \"grpc\" is supported today (default \"grpc\")",
+                    "type": "string",
+                    "enum": [
+                        "grpc"
+                    ],
+                    "example": "grpc"
+                },
+                "enforcing_url": {
+                    "description": "Address CFN sends enforcement requests to (gRPC host:port, e.g. \"my-ce:50051\")",
+                    "type": "string",
+                    "example": "my-ce:50051"
+                },
+                "health_endpoint": {
+                    "description": "Reserved. Health checks are HTTP, so CFN probes health_url as given. Must start with \"/\"",
+                    "type": "string",
+                    "example": "/healthz"
+                },
+                "health_protocol": {
+                    "description": "Health protocol. Only \"http\" is supported today (default \"http\")",
+                    "type": "string",
+                    "enum": [
+                        "http"
+                    ],
+                    "example": "http"
                 },
                 "health_url": {
-                    "description": "Full URL CFN probes with an HTTP GET to check the CE is alive (required, http or https)",
+                    "description": "URL CFN probes with an HTTP GET to check the CE is alive (required, http or https)",
                     "type": "string",
-                    "example": "http://casa-ce:8080/healthz"
+                    "example": "http://my-ce:8080/healthz"
                 },
                 "mas_auto_associate": {
                     "description": "Auto-associate with all MAS in the workspace (defaults to true if not specified)",
@@ -367,9 +388,17 @@ const docTemplate = `{
                     "example": "my-ce"
                 },
                 "notification_endpoint": {
-                    "description": "Notification endpoint path for MAS event notifications",
+                    "description": "Path CFN appends to notification_url. Must start with \"/\" and be set together with notification_url",
                     "type": "string",
                     "example": "/notification/mas-lifecycle"
+                },
+                "notification_protocol": {
+                    "description": "Notification protocol. Only \"http\" is supported today (default \"http\")",
+                    "type": "string",
+                    "enum": [
+                        "http"
+                    ],
+                    "example": "http"
                 },
                 "notification_url": {
                     "description": "Notification base URL for MAS event notifications",
@@ -387,11 +416,6 @@ const docTemplate = `{
             "description": "CE registration response from management plane.",
             "type": "object",
             "properties": {
-                "base_url": {
-                    "description": "Base URL for the CE service",
-                    "type": "string",
-                    "example": "http://my-ce:8080"
-                },
                 "ce_id": {
                     "description": "Cognition Engine ID (UUID)",
                     "type": "string",
@@ -417,15 +441,35 @@ const docTemplate = `{
                     "type": "boolean",
                     "example": true
                 },
-                "endpoint": {
-                    "description": "API endpoint path",
+                "enforcing_endpoint": {
+                    "description": "gRPC service name for enforcement",
                     "type": "string",
-                    "example": "/authorize"
+                    "example": "ioc.ce.v1.CognitionEngine"
+                },
+                "enforcing_protocol": {
+                    "description": "Enforcement protocol",
+                    "type": "string",
+                    "example": "grpc"
+                },
+                "enforcing_url": {
+                    "description": "Address CFN sends enforcement requests to",
+                    "type": "string",
+                    "example": "my-ce:50051"
+                },
+                "health_endpoint": {
+                    "description": "Reserved. Health checks are HTTP, so CFN probes health_url as given",
+                    "type": "string",
+                    "example": "/healthz"
+                },
+                "health_protocol": {
+                    "description": "Health protocol",
+                    "type": "string",
+                    "example": "http"
                 },
                 "health_url": {
                     "description": "Health check URL probed by CFN",
                     "type": "string",
-                    "example": "http://casa-ce:8080/healthz"
+                    "example": "http://my-ce:8080/healthz"
                 },
                 "mas_auto_associate": {
                     "description": "Auto-associate with all MAS",
@@ -441,6 +485,11 @@ const docTemplate = `{
                     "description": "Notification endpoint path for MAS event notifications",
                     "type": "string",
                     "example": "/notification/mas-lifecycle"
+                },
+                "notification_protocol": {
+                    "description": "Notification protocol",
+                    "type": "string",
+                    "example": "http"
                 },
                 "notification_url": {
                     "description": "Notification base URL for MAS event notifications",
@@ -462,9 +511,6 @@ const docTemplate = `{
         "mgmt.MASCognitionEngine": {
             "type": "object",
             "properties": {
-                "base_url": {
-                    "type": "string"
-                },
                 "ce_id": {
                     "type": "string"
                 },
@@ -474,7 +520,13 @@ const docTemplate = `{
                 "enabled": {
                     "type": "boolean"
                 },
-                "endpoint": {
+                "enforcing_endpoint": {
+                    "type": "string"
+                },
+                "enforcing_protocol": {
+                    "type": "string"
+                },
+                "enforcing_url": {
                     "type": "string"
                 },
                 "status": {
