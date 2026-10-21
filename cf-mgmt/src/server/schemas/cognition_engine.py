@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field, model_validator
 HEALTH_URL_PATTERN = r"^https?://\S+$"
 
 
-# The nine enforcing/health/notification fields every CE row carries
+# The enforcing, health and notification fields of a CE
 CE_CONNECTION_FIELDS = (
     "enforcing_url",
     "enforcing_endpoint",
@@ -38,7 +38,7 @@ def connection_error(
     notification_url: Optional[str],
     notification_endpoint: Optional[str],
 ) -> Optional[str]:
-    """Return why a CE's endpoints are inconsistent, or None. Used on register and on the merged PATCH result."""
+    """Return why a CE's endpoints are inconsistent, or None."""
     # Enforcing is gRPC only today, and a gRPC address (host:port) has no service name
     if not enforcing_endpoint:
         return "enforcing_endpoint is required when enforcing_protocol is 'grpc'"
@@ -53,7 +53,7 @@ def connection_error(
 
 
 class CEConnection(BaseModel):
-    """Where and how CFN reaches a CE, one url/endpoint/protocol trio per purpose."""
+    """How CFN reaches a CE: one url, endpoint and protocol per purpose."""
 
     enforcing_url: str
     enforcing_endpoint: Optional[str] = None
@@ -91,12 +91,13 @@ class CognitionEngineRegisterRequest(BaseModel):
     version: str = Field(..., description="CE version (e.g., '1.0.0')")
     ce_type: CEType = Field(..., description="Type of Cognition Engine: CASA or DETECTIVE")
     enforcing_url: str = Field(
-        ..., description="Address CFN uses to send enforcement requests (gRPC: 'demo-ce:50051', HTTP: 'http://demo-ce:8080')"
+        ..., description="gRPC address CFN sends enforcement requests to (e.g., 'demo-ce:50051')"
     )
     enforcing_endpoint: Optional[str] = Field(
-        None, description="gRPC service name (e.g., 'ioc.ce.v1.CognitionEngine'). Required while enforcing is gRPC."
+        None,
+        description="gRPC service name (e.g., 'ioc.ce.v1.CognitionEngine'). Required.",
     )
-    enforcing_protocol: Literal["grpc"] = Field("grpc", description="Protocol CFN uses for enforcement requests")
+    enforcing_protocol: Literal["grpc"] = Field("grpc", description="Enforcement protocol")
     health_url: str = Field(
         ...,
         pattern=HEALTH_URL_PATTERN,
@@ -104,9 +105,9 @@ class CognitionEngineRegisterRequest(BaseModel):
         description="URL CFN probes with an HTTP GET to check liveness (e.g., 'http://demo-ce:8080/healthz')",
     )
     health_endpoint: Optional[str] = Field(
-        None, description="Reserved. Health checks are HTTP, so CFN probes health_url as given. Must start with '/'."
+        None, description="Reserved. CFN probes health_url as given. Must start with '/'."
     )
-    health_protocol: Literal["http"] = Field("http", description="Protocol CFN uses for health probes")
+    health_protocol: Literal["http"] = Field("http", description="Health probe protocol")
     mas_auto_associate: bool = Field(
         False, description="If true, CE is auto-associated with all MAS under the same CFN's workspaces"
     )
@@ -117,9 +118,9 @@ class CognitionEngineRegisterRequest(BaseModel):
     notification_url: Optional[str] = Field(None, description="Webhook base URL for MAS lifecycle notifications")
     notification_endpoint: Optional[str] = Field(
         None,
-        description="Path CFN appends to notification_url (e.g., '/notifications'). Must start with '/' and be set together with notification_url.",  # noqa: E501
+        description="Path appended to notification_url (e.g., '/notifications'). Must start with '/'.",
     )
-    notification_protocol: Literal["http"] = Field("http", description="Protocol CFN uses for notifications")
+    notification_protocol: Literal["http"] = Field("http", description="Notification protocol")
 
     @model_validator(mode="after")
     def _check_endpoints(self):
@@ -194,9 +195,9 @@ class CognitionEnginePatchRequest(BaseModel):
     """
 
     # Mutable fields — all optional, only provided fields are updated
-    enforcing_url: Optional[str] = Field(None, description="Address CFN uses to send enforcement requests")
-    enforcing_endpoint: Optional[str] = Field(None, description="gRPC service name or HTTP path for enforcement")
-    enforcing_protocol: Optional[Literal["grpc"]] = Field(None, description="Protocol for enforcement requests")
+    enforcing_url: Optional[str] = Field(None, description="gRPC address CFN sends enforcement requests to")
+    enforcing_endpoint: Optional[str] = Field(None, description="gRPC service name for enforcement")
+    enforcing_protocol: Optional[Literal["grpc"]] = Field(None, description="Enforcement protocol")
     health_url: Optional[str] = Field(
         None,
         pattern=HEALTH_URL_PATTERN,
@@ -204,14 +205,14 @@ class CognitionEnginePatchRequest(BaseModel):
         description="URL CFN probes with an HTTP GET to check liveness",
     )
     health_endpoint: Optional[str] = Field(None, description="Reserved. Send null to clear. Must start with '/'")
-    health_protocol: Optional[Literal["http"]] = Field(None, description="Protocol for health probes")
+    health_protocol: Optional[Literal["http"]] = Field(None, description="Health probe protocol")
     notification_url: Optional[str] = Field(
-        None, description="Base URL for lifecycle event notifications. Send null to clear (together with the endpoint)"
+        None, description="Base URL for lifecycle event notifications. Send null to clear"
     )
     notification_endpoint: Optional[str] = Field(
         None, description="Path appended to notification_url. Must start with '/'. Send null to clear"
     )
-    notification_protocol: Optional[Literal["http"]] = Field(None, description="Protocol for notifications")
+    notification_protocol: Optional[Literal["http"]] = Field(None, description="Notification protocol")
     enabled: Optional[bool] = Field(None, description="Enable or disable the CE")
     mas_auto_associate: Optional[bool] = Field(None, description="Enable or disable auto-association to new MAS")
 

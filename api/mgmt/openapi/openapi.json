@@ -2481,7 +2481,7 @@
               }
             ],
             "title": "Enforcing Url",
-            "description": "Address CFN uses to send enforcement requests"
+            "description": "gRPC address CFN sends enforcement requests to"
           },
           "enforcing_endpoint": {
             "anyOf": [
@@ -2493,7 +2493,7 @@
               }
             ],
             "title": "Enforcing Endpoint",
-            "description": "gRPC service name or HTTP path for enforcement"
+            "description": "gRPC service name for enforcement"
           },
           "enforcing_protocol": {
             "anyOf": [
@@ -2506,7 +2506,7 @@
               }
             ],
             "title": "Enforcing Protocol",
-            "description": "Protocol for enforcement requests"
+            "description": "Enforcement protocol"
           },
           "health_url": {
             "anyOf": [
@@ -2545,7 +2545,7 @@
               }
             ],
             "title": "Health Protocol",
-            "description": "Protocol for health probes"
+            "description": "Health probe protocol"
           },
           "notification_url": {
             "anyOf": [
@@ -2557,7 +2557,7 @@
               }
             ],
             "title": "Notification Url",
-            "description": "Base URL for lifecycle event notifications. Send null to clear (together with the endpoint)"
+            "description": "Base URL for lifecycle event notifications. Send null to clear"
           },
           "notification_endpoint": {
             "anyOf": [
@@ -2582,7 +2582,7 @@
               }
             ],
             "title": "Notification Protocol",
-            "description": "Protocol for notifications"
+            "description": "Notification protocol"
           },
           "enabled": {
             "anyOf": [
@@ -2684,7 +2684,7 @@
           "enforcing_url": {
             "type": "string",
             "title": "Enforcing Url",
-            "description": "Address CFN uses to send enforcement requests (gRPC: 'demo-ce:50051', HTTP: 'http://demo-ce:8080')"
+            "description": "gRPC address CFN sends enforcement requests to (e.g., 'demo-ce:50051')"
           },
           "enforcing_endpoint": {
             "anyOf": [
@@ -2696,13 +2696,13 @@
               }
             ],
             "title": "Enforcing Endpoint",
-            "description": "gRPC service name (e.g., 'ioc.ce.v1.CognitionEngine'). Required while enforcing is gRPC."
+            "description": "gRPC service name (e.g., 'ioc.ce.v1.CognitionEngine'). Required."
           },
           "enforcing_protocol": {
             "type": "string",
             "const": "grpc",
             "title": "Enforcing Protocol",
-            "description": "Protocol CFN uses for enforcement requests",
+            "description": "Enforcement protocol",
             "default": "grpc"
           },
           "health_url": {
@@ -2722,13 +2722,13 @@
               }
             ],
             "title": "Health Endpoint",
-            "description": "Reserved. Health checks are HTTP, so CFN probes health_url as given. Must start with '/'."
+            "description": "Reserved. CFN probes health_url as given. Must start with '/'."
           },
           "health_protocol": {
             "type": "string",
             "const": "http",
             "title": "Health Protocol",
-            "description": "Protocol CFN uses for health probes",
+            "description": "Health probe protocol",
             "default": "http"
           },
           "mas_auto_associate": {
@@ -2772,13 +2772,13 @@
               }
             ],
             "title": "Notification Endpoint",
-            "description": "Path CFN appends to notification_url (e.g., '/notifications'). Must start with '/' and be set together with notification_url."
+            "description": "Path appended to notification_url (e.g., '/notifications'). Must start with '/'."
           },
           "notification_protocol": {
             "type": "string",
             "const": "http",
             "title": "Notification Protocol",
-            "description": "Protocol CFN uses for notifications",
+            "description": "Notification protocol",
             "default": "http"
           }
         },

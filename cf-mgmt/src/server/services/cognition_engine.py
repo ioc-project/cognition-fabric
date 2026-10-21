@@ -30,7 +30,7 @@ from server.utils import generate_uuid
 
 _IMMUTABLE_CE_FIELDS = {"cfn_id", "name", "version", "ce_type"}
 
-# An explicit null clears these on PATCH (JSON Merge Patch). A null on any other field is ignored.
+# An explicit null clears these on PATCH. A null on any other field is ignored.
 _CLEARABLE_CE_FIELDS = {"health_endpoint", "notification_url", "notification_endpoint"}
 
 
@@ -418,8 +418,8 @@ class CognitionEngineService:
                 if "mas_auto_associate" in provided:
                     engine.mas_auto_associate = provided["mas_auto_associate"]
 
-                # Re-check the merged row, since a patch can leave the endpoints inconsistent. Rows are only checked
-                # when a connection field was sent, so an unrelated patch is never blocked by an older row.
+                # Re-check the merged row, but only when a connection field was sent,
+                # so older rows don't block other patches
                 if provided.keys() & set(CE_CONNECTION_FIELDS):
                     error = connection_error(
                         engine.enforcing_endpoint,

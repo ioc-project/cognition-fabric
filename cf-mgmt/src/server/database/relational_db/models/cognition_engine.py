@@ -28,8 +28,8 @@ class CognitionEngine(Base):
     ce_type = Column(String(20), nullable=False)
 
     # Connection info, one url/endpoint/protocol triple per purpose
-    enforcing_url = Column(String(512), nullable=False)  # gRPC "casa-ce:50051" or HTTP "http://casa-ce:8080"
-    enforcing_endpoint = Column(String(255), nullable=True)  # gRPC service name (required for gRPC) or HTTP path
+    enforcing_url = Column(String(512), nullable=False)  # gRPC address, e.g. casa-ce:50051
+    enforcing_endpoint = Column(String(255), nullable=True)  # gRPC service name
     enforcing_protocol = Column(String(10), nullable=False, default="grpc")
     health_url = Column(String(512), nullable=False)  # URL CFN probes with GET (e.g., http://casa-ce:8080/healthz)
     health_endpoint = Column(String(255), nullable=True)
