@@ -23,6 +23,43 @@ import (
 )
 
 // Valid CE types
+const (
+	protocolGRPC = "grpc"
+	protocolHTTP = "http"
+)
+
+// supportedProtocols is the protocol CFN can speak for each endpoint purpose today.
+var supportedProtocols = map[string]string{
+	"enforcing_protocol":    protocolGRPC,
+	"health_protocol":       protocolHTTP,
+	"notification_protocol": protocolHTTP,
+}
+
+// validateProtocol rejects any protocol CFN cannot speak for the given purpose.
+func validateProtocol(field, value string) error {
+	if want := supportedProtocols[field]; value != want {
+		return fmt.Errorf("%s must be '%s' (got: %q)", field, want, value)
+	}
+	return nil
+}
+
+// validateHTTPEndpoint requires an HTTP endpoint to be a path, since CFN appends it to the URL.
+func validateHTTPEndpoint(field, value string) error {
+	if value != "" && !strings.HasPrefix(value, "/") {
+		return fmt.Errorf("%s must start with '/'", field)
+	}
+	return nil
+}
+
+// validateNotification requires notification_url and notification_endpoint to be set together,
+// because CFN skips a CE unless it has both.
+func validateNotification(notificationURL, notificationEndpoint string) error {
+	if (notificationURL == "") != (notificationEndpoint == "") {
+		return fmt.Errorf("notification_url and notification_endpoint must be set together")
+	}
+	return validateHTTPEndpoint("notification_endpoint", notificationEndpoint)
+}
+
 var validCETypes = map[string]bool{
 	"CASA":      true,
 	"DETECTIVE": true,
@@ -73,38 +110,80 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 			"error": fmt.Sprintf("ce_type must be one of: CASA, DETECTIVE (got: %s)", req.CEType),
 		})
 	}
-	if req.BaseURL == "" {
-		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "base_url is required",
-		})
+	// Each purpose has one supported protocol today. An omitted protocol takes that default.
+	if req.EnforcingProtocol == "" {
+		req.EnforcingProtocol = protocolGRPC
 	}
-	if req.Endpoint == "" {
+	if req.HealthProtocol == "" {
+		req.HealthProtocol = protocolHTTP
+	}
+	if req.NotificationProtocol == "" {
+		req.NotificationProtocol = protocolHTTP
+	}
+	for field, value := range map[string]string{
+		"enforcing_protocol":    req.EnforcingProtocol,
+		"health_protocol":       req.HealthProtocol,
+		"notification_protocol": req.NotificationProtocol,
+	} {
+		if err := validateProtocol(field, value); err != nil {
+			return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+				"error": err.Error(),
+			})
+		}
+	}
+
+	// Enforcing is optional, but its url and endpoint go together: a gRPC address (host:port) has no service name
+	if (req.EnforcingURL == "") != (req.EnforcingEndpoint == "") {
 		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
-			"error": "endpoint is required",
+			"error": "enforcing_url and enforcing_endpoint must be set together",
 		})
 	}
 
-	// Validate base_url format
+	// Validate enforcing_url format when given
 	// Accept either URL format (http://host:port) or gRPC address format (host:port)
-	baseURL := req.BaseURL
-	if !strings.Contains(baseURL, "://") {
-		// Assume gRPC address format (host:port), validate it has host and port
-		if !strings.Contains(baseURL, ":") {
-			return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "invalid base_url format: must be host:port (for gRPC) or http://host:port (for HTTP)",
-			})
-		}
-	} else {
-		// URL format - validate scheme and host
-		parsedURL, err := url.Parse(baseURL)
-		if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
-			return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
-				"error": "invalid base_url format: must be host:port (for gRPC) or http://host:port (for HTTP)",
-			})
+	enforcingURL := req.EnforcingURL
+	if enforcingURL != "" {
+		if !strings.Contains(enforcingURL, "://") {
+			// Assume gRPC address format (host:port), validate it has host and port
+			if !strings.Contains(enforcingURL, ":") {
+				return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+					"error": "invalid enforcing_url format: must be host:port (for gRPC) or http://host:port (for HTTP)",
+				})
+			}
+		} else {
+			// URL format - validate scheme and host
+			parsedURL, err := url.Parse(enforcingURL)
+			if err != nil || parsedURL.Scheme == "" || parsedURL.Host == "" {
+				return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+					"error": "invalid enforcing_url format: must be host:port (for gRPC) or http://host:port (for HTTP)",
+				})
+			}
 		}
 	}
 
 	if err := validateHealthURL(req.HealthURL); err != nil {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": err.Error(),
+		})
+	}
+	if req.HealthEndpoint == "" {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "health_endpoint is required",
+		})
+	}
+	if err := validateHTTPEndpoint("health_endpoint", req.HealthEndpoint); err != nil {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": err.Error(),
+		})
+	}
+	var notificationURL, notificationEndpoint string
+	if req.NotificationURL != nil {
+		notificationURL = *req.NotificationURL
+	}
+	if req.NotificationEndpoint != nil {
+		notificationEndpoint = *req.NotificationEndpoint
+	}
+	if err := validateNotification(notificationURL, notificationEndpoint); err != nil {
 		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
 			"error": err.Error(),
 		})
@@ -134,15 +213,22 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	payload := map[string]any{
-		"cfn_id":             CfnID,
-		"name":               req.Name,
-		"version":            req.Version,
-		"ce_type":            req.CEType,
-		"base_url":           req.BaseURL,
-		"endpoint":           req.Endpoint,
-		"health_url":         req.HealthURL,
-		"mas_auto_associate": masAutoAssociate,
-		"mas_config":         masConfig,
+		"cfn_id":                CfnID,
+		"name":                  req.Name,
+		"version":               req.Version,
+		"ce_type":               req.CEType,
+		"enforcing_protocol":    req.EnforcingProtocol,
+		"health_url":            req.HealthURL,
+		"health_endpoint":       req.HealthEndpoint,
+		"health_protocol":       req.HealthProtocol,
+		"notification_protocol": req.NotificationProtocol,
+		"mas_auto_associate":    masAutoAssociate,
+		"mas_config":            masConfig,
+	}
+
+	if req.EnforcingURL != "" {
+		payload["enforcing_url"] = req.EnforcingURL
+		payload["enforcing_endpoint"] = req.EnforcingEndpoint
 	}
 
 	// Add notification fields if provided
@@ -230,7 +316,7 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 // @Accept       json
 // @Produce      json
 // @Param        ceId path string true "Cognition Engine ID (UUID)"
-// @Param        request body map[string]any true "Fields to update (base_url, endpoint, health_url)"
+// @Param        request body map[string]any true "Fields to update (enforcing_*, health_*, notification_*). Send null to clear enforcing_url, enforcing_endpoint, notification_url or notification_endpoint"
 // @Success      200 {object} map[string]any "CE updated successfully"
 // @Failure      400 {object} cognitionengine.ErrorResponse "Invalid request"
 // @Failure      404 {object} cognitionengine.ErrorResponse "CE not found"
@@ -274,6 +360,40 @@ func (a *App) patchCognitionEngineHandler(w http.ResponseWriter, r *http.Request
 			return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
 				"error": err.Error(),
 			})
+		}
+	}
+
+	for _, field := range []string{"enforcing_protocol", "health_protocol", "notification_protocol"} {
+		if v, ok := reqBody[field]; ok {
+			value, isString := v.(string)
+			if !isString {
+				return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+					"error": fmt.Sprintf("%s must be a string", field),
+				})
+			}
+			if err := validateProtocol(field, value); err != nil {
+				return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+					"error": err.Error(),
+				})
+			}
+		}
+	}
+
+	if v, ok := reqBody["health_endpoint"]; ok && v == nil {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "health_endpoint is required and cannot be cleared",
+		})
+	}
+
+	// A patch cannot see the stored row, so the "set together" rule is enforced by the management plane.
+	// An explicit null clears a field, so only a string endpoint needs the path check.
+	for _, field := range []string{"health_endpoint", "notification_endpoint"} {
+		if value, ok := reqBody[field].(string); ok {
+			if err := validateHTTPEndpoint(field, value); err != nil {
+				return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+					"error": err.Error(),
+				})
+			}
 		}
 	}
 
@@ -443,7 +563,7 @@ func validateHealthURL(raw string) error {
 	}
 	parsed, err := url.Parse(raw)
 	if err != nil || parsed.Hostname() == "" || (parsed.Scheme != "http" && parsed.Scheme != "https") {
-		return fmt.Errorf("invalid health_url: must be an http or https URL (for example http://host:port/healthz)")
+		return fmt.Errorf("invalid health_url: must be an http or https URL (for example http://host:port)")
 	}
 	if parsed.User != nil {
 		return fmt.Errorf("invalid health_url: credentials are not allowed")
@@ -529,7 +649,8 @@ func newProbeTransport() *http.Transport {
 	return t
 }
 
-// findEngineHealthURL returns the registered health URL of a CE from the current config snapshot.
+// findEngineHealthURL returns the registered health URL of a CE (health_url joined with health_endpoint)
+// from the current config snapshot.
 func findEngineHealthURL(ceID string) (string, bool) {
 	cfnConfigMutex.RLock()
 	defer cfnConfigMutex.RUnlock()
@@ -538,7 +659,7 @@ func findEngineHealthURL(ceID string) (string, bool) {
 	}
 	for _, ce := range ParsedConfig.CognitionEngines {
 		if ce.ID == ceID {
-			return ce.HealthURL, true
+			return strings.TrimRight(ce.HealthURL, "/") + ce.HealthEndpoint, true
 		}
 	}
 	return "", false

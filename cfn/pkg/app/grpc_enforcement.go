@@ -134,6 +134,9 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 			offlineCount++
 			continue
 		}
+		if ce.EnforcingURL == "" {
+			continue
+		}
 		casaCE = ce
 		break
 	}
@@ -151,12 +154,12 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 		return nil, status.Errorf(codes.Unavailable, "no healthy CASA CE available for MAS: %s (disabled=%d, offline=%d)", req.Payload.MasId, disabledCount, offlineCount)
 	}
 
-	log.Infof("calling CASA CE: ce_id=%s base_url=%s endpoint=%s", casaCE.CEID, casaCE.BaseURL, casaCE.Endpoint)
+	log.Infof("calling CASA CE: ce_id=%s enforcing_url=%s enforcing_endpoint=%s", casaCE.CEID, casaCE.EnforcingURL, casaCE.EnforcingEndpoint)
 
 	// Create CASA CE gRPC client
-	// BaseURL is the gRPC address (e.g., "casa-ce:50051")
-	// Endpoint is the gRPC service name (e.g., "ioc.ce.v1.CognitionEngine") - reserved for future use
-	casaClient := casa.New(casaCE.BaseURL, casaCE.Endpoint, 30*time.Second)
+	// EnforcingURL is the gRPC address (e.g., "casa-ce:50051")
+	// EnforcingEndpoint is the gRPC service name (e.g., "ioc.ce.v1.CognitionEngine") - reserved for future use
+	casaClient := casa.New(casaCE.EnforcingURL, casaCE.EnforcingEndpoint, 30*time.Second)
 
 	// Connect to CASA CE
 	if err := casaClient.Connect(ctx); err != nil {
