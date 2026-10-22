@@ -1001,9 +1001,10 @@ class TestCFNConfigCognitionEngines:
                 "name": f"test-ce-{TestCFNConfigCognitionEngines._ce_counter}",
                 "version": "1.0.0",
                 "ce_type": ce_type,
-                "base_url": "http://ce.internal:9004",
-                "endpoint": "/api/l9/enforcement",
+                "enforcing_url": "http://ce.internal:9004",
+                "enforcing_endpoint": "/api/l9/enforcement",
                 "health_url": "http://ce.internal:9004/healthz",
+                "health_endpoint": "/healthz",
             },
         )
         assert resp.status_code == 201
@@ -1024,7 +1025,7 @@ class TestCFNConfigCognitionEngines:
         self._register_ce(client, cfn_id)
 
         engine = client.get(f"/api/cognitive-fabric-node/{cfn_id}/workspaces").json()["cognition_engines"][0]
-        for field in ("id", "ce_type", "base_url", "endpoint", "health_url", "enabled", "status", "mas_config"):
+        for field in ("id", "ce_type", "enforcing_url", "enforcing_endpoint", "health_url", "enabled", "status", "mas_config"):
             assert field in engine
 
     def test_workspaces_config_ce_includes_health_url(self, client, created_cfn):
@@ -1077,9 +1078,10 @@ class TestCFNConfigCognitionEngines:
                 "name": f"test-ce-{TestCFNConfigCognitionEngines._ce_counter}",
                 "version": "1.0.0",
                 "ce_type": "CASA",
-                "base_url": "http://ce.internal:9004",
-                "endpoint": "/api/l9/enforcement",
+                "enforcing_url": "http://ce.internal:9004",
+                "enforcing_endpoint": "/api/l9/enforcement",
                 "health_url": "http://ce.internal:9004/healthz",
+                "health_endpoint": "/healthz",
                 "mas_auto_associate": True,
             },
         ).json()["ce_id"]

@@ -633,9 +633,10 @@ class TestMASInlineCEAssociation:
                 "name": name,
                 "version": "1.0.0",
                 "ce_type": ce_type,
-                "base_url": f"http://{name}:8080",
-                "endpoint": "/api/l9/enforcement",
+                "enforcing_url": f"http://{name}:8080",
+                "enforcing_endpoint": "/api/l9/enforcement",
                 "health_url": f"http://{name}:8080/healthz",
+                "health_endpoint": "/healthz",
             },
         )
         assert resp.status_code == 201
@@ -766,6 +767,45 @@ class TestMASInlineCEAssociation:
         assert "cognition_engines" in mas
         assert mas["cognition_engines"] == []
 
+    def test_mas_ce_items_include_health_and_notification_fields(self, client, registered_cfn, created_workspace):
+        """CE items inside MAS responses carry every endpoint field, not just the enforcing address."""
+        resp = client.post(
+            "/api/cognition-engines",
+            json={
+                "cfn_id": registered_cfn,
+                "name": "full-fields-ce",
+                "version": "1.0.0",
+                "ce_type": "CASA",
+                "enforcing_url": "full-fields-ce:50051",
+                "enforcing_endpoint": "ioc.ce.v1.CognitionEngine",
+                "health_url": "http://full-fields-ce:8080/healthz",
+                "health_endpoint": "/healthz",
+                "notification_url": "http://full-fields-ce:8080",
+                "notification_endpoint": "/notification/mas-lifecycle",
+            },
+        )
+        assert resp.status_code == 201
+        ce_id = resp.json()["ce_id"]
+
+        mas_id = client.post(
+            f"/api/workspaces/{created_workspace}/multi-agentic-systems",
+            json={"name": "full-fields-mas", "cognition_engine_ids": [ce_id]},
+        ).json()["id"]
+
+        detail = client.get(f"/api/workspaces/{created_workspace}/multi-agentic-systems/{mas_id}").json()
+        listed = next(
+            s for s in client.get(f"/api/workspaces/{created_workspace}/multi-agentic-systems").json()["systems"]
+            if s["id"] == mas_id
+        )
+        for ce in (detail["cognition_engines"][0], listed["cognition_engines"][0]):
+            assert ce["enforcing_url"] == "full-fields-ce:50051"
+            assert ce["enforcing_protocol"] == "grpc"
+            assert ce["health_url"] == "http://full-fields-ce:8080/healthz"
+            assert ce["health_protocol"] == "http"
+            assert ce["notification_url"] == "http://full-fields-ce:8080"
+            assert ce["notification_endpoint"] == "/notification/mas-lifecycle"
+            assert ce["notification_protocol"] == "http"
+
     def test_associated_ces_appear_in_mas_response(self, client, registered_cfn, created_workspace):
         """CEs associated via cognition_engine_ids show up in the MAS detail and list responses."""
         ce_id = self._register_ce(client, registered_cfn, "response-ce")
@@ -782,8 +822,8 @@ class TestMASInlineCEAssociation:
         assert len(ces) == 1
         assert ces[0]["ce_id"] == ce_id
         assert ces[0]["ce_type"] in ("CASA", "DETECTIVE")
-        assert ces[0]["base_url"] == "http://response-ce:8080"
-        assert ces[0]["endpoint"] == "/api/l9/enforcement"
+        assert ces[0]["enforcing_url"] == "http://response-ce:8080"
+        assert ces[0]["enforcing_endpoint"] == "/api/l9/enforcement"
         assert isinstance(ces[0]["enabled"], bool)
         assert "status" in ces[0]
         assert "mas_config" in ces[0]
