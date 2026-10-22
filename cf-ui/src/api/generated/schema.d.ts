@@ -949,6 +949,24 @@ export interface components {
          * @description Schema for detailed cognition engine information
          */
         CognitionEngineDetail: {
+            /** Enforcing Url */
+            enforcing_url?: string | null;
+            /** Enforcing Endpoint */
+            enforcing_endpoint?: string | null;
+            /** Enforcing Protocol */
+            enforcing_protocol?: string | null;
+            /** Health Url */
+            health_url: string;
+            /** Health Endpoint */
+            health_endpoint: string;
+            /** Health Protocol */
+            health_protocol: string;
+            /** Notification Url */
+            notification_url?: string | null;
+            /** Notification Endpoint */
+            notification_endpoint?: string | null;
+            /** Notification Protocol */
+            notification_protocol?: string | null;
             /** Id */
             id: string;
             /** Cfn Id */
@@ -958,12 +976,6 @@ export interface components {
             /** Version */
             version: string;
             ce_type: components["schemas"]["CEType"];
-            /** Base Url */
-            base_url: string;
-            /** Endpoint */
-            endpoint: string;
-            /** Health Url */
-            health_url: string;
             /** Enabled */
             enabled: boolean;
             /** Mas Auto Associate */
@@ -999,6 +1011,24 @@ export interface components {
          * @description Schema for a cognition engine in the list response
          */
         CognitionEngineListItem: {
+            /** Enforcing Url */
+            enforcing_url?: string | null;
+            /** Enforcing Endpoint */
+            enforcing_endpoint?: string | null;
+            /** Enforcing Protocol */
+            enforcing_protocol?: string | null;
+            /** Health Url */
+            health_url: string;
+            /** Health Endpoint */
+            health_endpoint: string;
+            /** Health Protocol */
+            health_protocol: string;
+            /** Notification Url */
+            notification_url?: string | null;
+            /** Notification Endpoint */
+            notification_endpoint?: string | null;
+            /** Notification Protocol */
+            notification_protocol?: string | null;
             /** Id */
             id: string;
             /** Cfn Id */
@@ -1008,12 +1038,6 @@ export interface components {
             /** Version */
             version: string;
             ce_type: components["schemas"]["CEType"];
-            /** Base Url */
-            base_url: string;
-            /** Endpoint */
-            endpoint: string;
-            /** Health Url */
-            health_url: string;
             /** Enabled */
             enabled: boolean;
             /** Mas Auto Associate */
@@ -1042,20 +1066,50 @@ export interface components {
          */
         CognitionEnginePatchRequest: {
             /**
-             * Base Url
-             * @description Base URL for the CFN to reach this engine
+             * Enforcing Url
+             * @description gRPC address CFN sends enforcement requests to. Send null to clear
              */
-            base_url?: string | null;
+            enforcing_url?: string | null;
             /**
-             * Endpoint
-             * @description API endpoint path for request forwarding
+             * Enforcing Endpoint
+             * @description gRPC service name for enforcement. Send null to clear
              */
-            endpoint?: string | null;
+            enforcing_endpoint?: string | null;
+            /**
+             * Enforcing Protocol
+             * @description Enforcement protocol
+             */
+            enforcing_protocol?: "grpc" | null;
             /**
              * Health Url
-             * @description Full URL CFN probes with an HTTP GET to check liveness
+             * @description URL CFN probes with an HTTP GET to check liveness
              */
             health_url?: string | null;
+            /**
+             * Health Endpoint
+             * @description Health probe path. Must start with '/'
+             */
+            health_endpoint?: string | null;
+            /**
+             * Health Protocol
+             * @description Health probe protocol
+             */
+            health_protocol?: "http" | null;
+            /**
+             * Notification Url
+             * @description Base URL for lifecycle event notifications. Send null to clear
+             */
+            notification_url?: string | null;
+            /**
+             * Notification Endpoint
+             * @description Path appended to notification_url. Must start with '/'. Send null to clear
+             */
+            notification_endpoint?: string | null;
+            /**
+             * Notification Protocol
+             * @description Notification protocol
+             */
+            notification_protocol?: "http" | null;
             /**
              * Enabled
              * @description Enable or disable the CE
@@ -1112,20 +1166,39 @@ export interface components {
             /** @description Type of Cognition Engine: CASA or DETECTIVE */
             ce_type: components["schemas"]["CEType"];
             /**
-             * Base Url
-             * @description Base URL for the CFN to reach this engine (e.g., 'http://demo-ce:8080')
+             * Enforcing Url
+             * @description gRPC address CFN sends enforcement requests to (e.g., 'demo-ce:50051'). Optional
              */
-            base_url: string;
+            enforcing_url?: string | null;
             /**
-             * Endpoint
-             * @description API endpoint path for request forwarding (e.g., '/api/l9/enforcement')
+             * Enforcing Endpoint
+             * @description gRPC service name (e.g., 'ioc.ce.v1.CognitionEngine'). Required when enforcing_url is set.
              */
-            endpoint: string;
+            enforcing_endpoint?: string | null;
+            /**
+             * Enforcing Protocol
+             * @description Enforcement protocol
+             * @default grpc
+             * @constant
+             */
+            enforcing_protocol: "grpc";
             /**
              * Health Url
-             * @description Full URL CFN probes with an HTTP GET to check liveness (e.g., 'http://demo-ce:8080/healthz')
+             * @description URL CFN probes with an HTTP GET to check liveness (e.g., 'http://demo-ce:8080/healthz')
              */
             health_url: string;
+            /**
+             * Health Endpoint
+             * @description Health probe path (e.g., '/healthz'). Must start with '/'.
+             */
+            health_endpoint: string;
+            /**
+             * Health Protocol
+             * @description Health probe protocol
+             * @default http
+             * @constant
+             */
+            health_protocol: "http";
             /**
              * Mas Auto Associate
              * @description If true, CE is auto-associated with all MAS under the same CFN's workspaces
@@ -1139,12 +1212,47 @@ export interface components {
             mas_config?: {
                 [key: string]: unknown;
             } | null;
+            /**
+             * Notification Url
+             * @description Webhook base URL for MAS lifecycle notifications
+             */
+            notification_url?: string | null;
+            /**
+             * Notification Endpoint
+             * @description Path appended to notification_url (e.g., '/notifications'). Must start with '/'.
+             */
+            notification_endpoint?: string | null;
+            /**
+             * Notification Protocol
+             * @description Notification protocol
+             * @default http
+             * @constant
+             */
+            notification_protocol: "http";
         };
         /**
          * CognitionEngineResponse
          * @description Schema for CE registration response
          */
         CognitionEngineResponse: {
+            /** Enforcing Url */
+            enforcing_url?: string | null;
+            /** Enforcing Endpoint */
+            enforcing_endpoint?: string | null;
+            /** Enforcing Protocol */
+            enforcing_protocol?: string | null;
+            /** Health Url */
+            health_url: string;
+            /** Health Endpoint */
+            health_endpoint: string;
+            /** Health Protocol */
+            health_protocol: string;
+            /** Notification Url */
+            notification_url?: string | null;
+            /** Notification Endpoint */
+            notification_endpoint?: string | null;
+            /** Notification Protocol */
+            notification_protocol?: string | null;
             /** Ce Id */
             ce_id: string;
             /** Cfn Id */
@@ -1154,12 +1262,6 @@ export interface components {
             /** Version */
             version: string;
             ce_type: components["schemas"]["CEType"];
-            /** Base Url */
-            base_url: string;
-            /** Endpoint */
-            endpoint: string;
-            /** Health Url */
-            health_url: string;
             /** Enabled */
             enabled: boolean;
             /** Mas Auto Associate */
@@ -1530,6 +1632,24 @@ export interface components {
          * @description Schema for a cognition engine associated with a MAS
          */
         MasCognitionEngineItem: {
+            /** Enforcing Url */
+            enforcing_url?: string | null;
+            /** Enforcing Endpoint */
+            enforcing_endpoint?: string | null;
+            /** Enforcing Protocol */
+            enforcing_protocol?: string | null;
+            /** Health Url */
+            health_url: string;
+            /** Health Endpoint */
+            health_endpoint: string;
+            /** Health Protocol */
+            health_protocol: string;
+            /** Notification Url */
+            notification_url?: string | null;
+            /** Notification Endpoint */
+            notification_endpoint?: string | null;
+            /** Notification Protocol */
+            notification_protocol?: string | null;
             /** Ce Id */
             ce_id: string;
             /** Name */
@@ -1538,10 +1658,6 @@ export interface components {
             version: string;
             /** Ce Type */
             ce_type: string;
-            /** Base Url */
-            base_url: string;
-            /** Endpoint */
-            endpoint: string;
             /** Enabled */
             enabled: boolean;
             /** Status */

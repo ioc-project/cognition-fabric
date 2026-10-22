@@ -19,17 +19,18 @@ import {useCognitionEngine} from '@/hooks/useCognitionEngines';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {useCEToggleFlow} from '@/hooks/useCEToggleFlow';
 import {useCEDeleteFlow} from '@/hooks/useCEDeleteFlow';
-import {cognitionEngineApi} from '@/api/endpoints/cognition-engine';
+import {cognitionEngineApi, type CognitionEngineDetail} from '@/api/endpoints/cognition-engine';
 import {cfnApi} from '@/api/endpoints';
 import {swrKeys} from '@/lib/swr-config';
 import useSWR from 'swr';
 import {CognitionEngineDialogs} from '@/components/cognitive-agents/cognition-engine-dialogs';
-import {UpdateCEFormSchema, type FormValues} from '@/components/cognitive-agents/cognition-engine-form-fields';
+import {CE_PURPOSES, UpdateCEFormSchema, type FormValues} from '@/components/cognitive-agents/cognition-engine-form-fields';
 import {toast} from 'sonner';
 import {StatusDot} from '@/components/ui/status-dot';
 import {DetailTabs} from '@/components/ui/detail-tabs';
 import {IdHoverCard} from '@/components/ui/id-hover-card';
 import {CollapsibleJsonField} from '@/components/mas/collapsible-json-field';
+import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
 import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import {MetaCard} from '@/components/ui/meta-card';
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from '@/components/ui/tooltip';
@@ -67,6 +68,23 @@ function ToggleDisplay({active, onClick}: {active: boolean; onClick?: () => void
   );
 }
 
+function toFormValues(ce: CognitionEngineDetail | undefined): FormValues {
+  return {
+    enforcing_url: ce?.enforcing_url ?? '',
+    enforcing_endpoint: ce?.enforcing_endpoint ?? '',
+    // Each purpose supports one protocol today, so the form always carries it
+    enforcing_protocol: 'grpc',
+    health_url: ce?.health_url ?? '',
+    health_endpoint: ce?.health_endpoint ?? '',
+    health_protocol: 'http',
+    notification_url: ce?.notification_url ?? '',
+    notification_endpoint: ce?.notification_endpoint ?? '',
+    notification_protocol: 'http',
+    enabled: ce ? (ce.enabled ? 'true' : 'false') : 'true',
+    mas_auto_associate: ce?.mas_auto_associate ? 'true' : 'false'
+  };
+}
+
 export default function CognitiveAgentDetailsPage() {
   const router = useRouter();
   const params = useParams();
@@ -92,7 +110,7 @@ export default function CognitiveAgentDetailsPage() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(UpdateCEFormSchema),
-    defaultValues: {base_url: '', endpoint: '', enabled: 'true', mas_auto_associate: 'false'}
+    defaultValues: toFormValues(undefined)
   });
 
   useEffect(() => {
@@ -109,12 +127,7 @@ export default function CognitiveAgentDetailsPage() {
 
   useEffect(() => {
     if (ce) {
-      form.reset({
-        base_url: ce.base_url || '',
-        endpoint: ce.endpoint || '',
-        enabled: ce.enabled ? 'true' : 'false',
-        mas_auto_associate: ce.mas_auto_associate ? 'true' : 'false'
-      });
+      form.reset(toFormValues(ce));
     }
   }, [ce, form]);
 
@@ -128,8 +141,17 @@ export default function CognitiveAgentDetailsPage() {
   const handleSave = async (values: FormValues) => {
     try {
       const updated = await cognitionEngineApi.patch(cognitiveAgentId as string, {
-        base_url: values.base_url || undefined,
-        endpoint: values.endpoint || undefined,
+        // An empty value is sent as null, which clears it on the server
+        enforcing_url: values.enforcing_url || null,
+        enforcing_endpoint: values.enforcing_endpoint || null,
+        enforcing_protocol: values.enforcing_protocol,
+        health_url: values.health_url,
+        health_endpoint: values.health_endpoint,
+        health_protocol: values.health_protocol,
+        // An empty value is sent as null, which clears it on the server
+        notification_url: values.notification_url || null,
+        notification_endpoint: values.notification_endpoint || null,
+        notification_protocol: values.notification_protocol,
         enabled: values.enabled === 'true',
         mas_auto_associate: values.mas_auto_associate === 'true'
       });
@@ -146,12 +168,7 @@ export default function CognitiveAgentDetailsPage() {
   const handleCancelEdit = () => {
     setIsEditMode(false);
     if (ce) {
-      form.reset({
-        base_url: ce.base_url || '',
-        endpoint: ce.endpoint || '',
-        enabled: ce.enabled ? 'true' : 'false',
-        mas_auto_associate: ce.mas_auto_associate ? 'true' : 'false'
-      });
+      form.reset(toFormValues(ce));
     }
   };
 
@@ -233,55 +250,6 @@ export default function CognitiveAgentDetailsPage() {
                     <InfoRow label="Type" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
                       <span className="text-sm text-foreground font-mono">{ce?.ce_type || '-'}</span>
                     </InfoRow>
-                    <InfoRow label="Base URL">
-                      {isEditMode ? (
-                        <FormField
-                          control={form.control}
-                          name="base_url"
-                          render={({field}) => (
-                            <FormItem className="flex-1 space-y-1">
-                              <FormControl>
-                                <input
-                                  {...field}
-                                  className="h-8 text-sm font-mono w-full border rounded px-2"
-                                  placeholder="https://..."
-                                  autoComplete="off"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ) : (
-                        <span className="text-sm text-foreground font-mono">{ce?.base_url || '-'}</span>
-                      )}
-                    </InfoRow>
-                    <InfoRow label="Endpoint">
-                      {isEditMode ? (
-                        <FormField
-                          control={form.control}
-                          name="endpoint"
-                          render={({field}) => (
-                            <FormItem className="flex-1 space-y-1">
-                              <FormControl>
-                                <input
-                                  {...field}
-                                  className="h-8 text-sm font-mono w-full border rounded px-2"
-                                  placeholder="/api/v1"
-                                  autoComplete="off"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      ) : (
-                        <span className="text-sm text-foreground font-mono">{ce?.endpoint || '-'}</span>
-                      )}
-                    </InfoRow>
-                    <InfoRow label="Health URL" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
-                      <span className="text-sm text-foreground font-mono">{ce?.health_url || '-'}</span>
-                    </InfoRow>
                     <InfoRow label="CFN" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
                       <span className="text-sm text-foreground">{cfn?.name || '-'}</span>
                     </InfoRow>
@@ -326,6 +294,94 @@ export default function CognitiveAgentDetailsPage() {
                       </InfoRow>
                     )}
                   </InfoPanel>
+
+                  {CE_PURPOSES.map((purpose) => (
+                    <div key={purpose.key} className="space-y-2">
+                      <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        {purpose.title}
+                        {isEditMode && purpose.optional && <span className="ml-2 normal-case font-normal">Optional</span>}
+                      </h3>
+                      <InfoPanel>
+                        <InfoRow label="Protocol">
+                          {isEditMode ? (
+                            <FormField
+                              control={form.control}
+                              name={`${purpose.key}_protocol`}
+                              render={({field}) => (
+                                <FormItem className="flex-1 space-y-1">
+                                  <Select onValueChange={field.onChange} value={field.value} disabled={purpose.protocols.length < 2}>
+                                    <FormControl>
+                                      <SelectTrigger className="h-8 w-40 text-sm font-mono">
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      {purpose.protocols.map((protocol) => (
+                                        <SelectItem key={protocol} value={protocol}>
+                                          {protocol.toUpperCase()}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          ) : (
+                            <span className="text-sm text-foreground font-mono">{ce?.[`${purpose.key}_protocol`]?.toUpperCase() || '-'}</span>
+                          )}
+                        </InfoRow>
+                        <InfoRow label={purpose.urlLabel}>
+                          {isEditMode ? (
+                            <FormField
+                              control={form.control}
+                              name={`${purpose.key}_url`}
+                              render={({field}) => (
+                                <FormItem className="flex-1 space-y-1">
+                                  <FormControl>
+                                    <input
+                                      {...field}
+                                      className="h-8 text-sm font-mono w-full border rounded px-2"
+                                      placeholder={purpose.urlPlaceholder}
+                                      autoComplete="off"
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          ) : (
+                            <span className="text-sm text-foreground font-mono">{ce?.[`${purpose.key}_url`] || '-'}</span>
+                          )}
+                        </InfoRow>
+                        {purpose.hasEndpoint && (
+                          <InfoRow label={purpose.endpointLabel}>
+                            {isEditMode ? (
+                              <FormField
+                                control={form.control}
+                                name={`${purpose.key}_endpoint`}
+                                render={({field}) => (
+                                  <FormItem className="flex-1 space-y-1">
+                                    <FormControl>
+                                      <input
+                                        {...field}
+                                        className="h-8 text-sm font-mono w-full border rounded px-2"
+                                        placeholder={purpose.endpointPlaceholder}
+                                        autoComplete="off"
+                                      />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            ) : (
+                              <span className="text-sm text-foreground font-mono">{ce?.[`${purpose.key}_endpoint`] || '-'}</span>
+                            )}
+                          </InfoRow>
+                        )}
+                      </InfoPanel>
+                    </div>
+                  ))}
 
                   <div className="grid grid-cols-3 gap-3">
                     {ce?.created_at && (
