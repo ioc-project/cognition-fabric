@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
 
+from server.schemas.cognition_engine import ce_connection
 from server.schemas.multi_agentic_system import (
     MultiAgenticSystemRequest,
     MultiAgenticSystemUpdate,
@@ -549,8 +550,7 @@ class MultiAgenticSystemService:
                                 name=ce.name,
                                 version=ce.version,
                                 ce_type=ce.ce_type,
-                                base_url=ce.base_url,
-                                endpoint=ce.endpoint,
+                                **ce_connection(ce),
                                 enabled=ce.enabled,
                                 status=ce.status,
                                 mas_config=junc.mas_config,
@@ -640,8 +640,7 @@ class MultiAgenticSystemService:
                         name=ce.name,
                         version=ce.version,
                         ce_type=ce.ce_type,
-                        base_url=ce.base_url,
-                        endpoint=ce.endpoint,
+                        **ce_connection(ce),
                         enabled=ce.enabled,
                         status=ce.status,
                         mas_config=junc.mas_config,
@@ -782,8 +781,7 @@ class MultiAgenticSystemService:
                         name=ce.name,
                         version=ce.version,
                         ce_type=ce.ce_type,
-                        base_url=ce.base_url,
-                        endpoint=ce.endpoint,
+                        **ce_connection(ce),
                         enabled=ce.enabled,
                         status=ce.status,
                         mas_config=junc.mas_config,
@@ -887,8 +885,7 @@ class MultiAgenticSystemService:
                             name=ce.name,
                             version=ce.version,
                             ce_type=ce.ce_type,
-                            base_url=ce.base_url,
-                            endpoint=ce.endpoint,
+                            **ce_connection(ce),
                             enabled=ce.enabled,
                             status=ce.status,
                             mas_config=junc.mas_config,

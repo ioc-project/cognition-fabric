@@ -27,14 +27,18 @@ class CognitionEngine(Base):
     # CE type: CASA or DETECTIVE
     ce_type = Column(String(20), nullable=False)
 
-    # Connection info
-    base_url = Column(String(512), nullable=False)  # Base URL (e.g., http://casa-ce:8080)
-    endpoint = Column(String(255), nullable=False)  # API endpoint path (e.g., /api/l9/enforcement)
-    health_url = Column(String(512), nullable=False)  # Full URL CFN probes with GET (e.g., http://casa-ce:8080/healthz)
+    # Connection info, one url/endpoint/protocol triple per purpose
+    enforcing_url = Column(String(512), nullable=True)  # gRPC address, e.g. casa-ce:50051
+    enforcing_endpoint = Column(String(255), nullable=True)  # gRPC service name
+    enforcing_protocol = Column(String(10), nullable=True, default="grpc")
+    health_url = Column(String(512), nullable=False)  # URL CFN probes with GET (e.g., http://casa-ce:8080)
+    health_endpoint = Column(String(255), nullable=False)
+    health_protocol = Column(String(10), nullable=False, default="http")
 
     # Webhook configuration for MAS lifecycle notifications
     notification_url = Column(String(512), nullable=True)  # Webhook base URL
     notification_endpoint = Column(String(255), nullable=True)  # Webhook endpoint path
+    notification_protocol = Column(String(10), nullable=True, default="http")
 
     # Lifecycle
     enabled = Column(Boolean, nullable=False, default=True)

@@ -4,6 +4,8 @@
 
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 from datetime import datetime
+
+from server.schemas.cognition_engine import CEConnection
 from typing import Optional, Dict, Any, List
 
 
@@ -161,15 +163,13 @@ class MultiAgenticSystemResponse(BaseModel):
     name: str = Field(..., description="Name of the multi-agentic system")
 
 
-class MasCognitionEngineItem(BaseModel):
+class MasCognitionEngineItem(CEConnection):
     """Schema for a cognition engine associated with a MAS"""
 
     ce_id: str
     name: str
     version: str
     ce_type: str
-    base_url: str
-    endpoint: str
     enabled: bool
     status: str
     mas_config: Optional[dict]
