@@ -24,6 +24,8 @@ import server.database.relational_db.models.agent  # noqa: F401
 import server.database.relational_db.models.cognition_fabric_node  # noqa: F401
 import server.database.relational_db.models.cognition_engine  # noqa: F401
 import server.database.relational_db.models.mas_cognition_engine  # noqa: F401
+import server.database.relational_db.models.mcp_server  # noqa: F401
+import server.database.relational_db.models.mcp_tool  # noqa: F401
 import server.database.relational_db.models.multi_agentic_system  # noqa: F401
 import server.database.relational_db.models.user  # noqa: F401
 import server.database.relational_db.models.workspace  # noqa: F401

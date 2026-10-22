@@ -20,9 +20,13 @@ from server.schemas.multi_agentic_system import (
     AgentIdentity,
     MASQueryByIdentity,
     MasCognitionEngineItem,
+    MCPServerDetail,
+    MCPToolDetail,
 )
 from server.database.relational_db.models.multi_agentic_system import MultiAgenticSystem as MultiAgenticSystemModel
 from server.database.relational_db.models.agent import Agent as AgentModel
+from server.database.relational_db.models.mcp_server import MCPServer as MCPServerModel
+from server.database.relational_db.models.mcp_tool import MCPTool as MCPToolModel
 from server.database.relational_db.db import RelationalDB
 from server.services.workspace import workspace_service
 from server.utils import generate_uuid
@@ -42,15 +46,39 @@ class MultiAgenticSystemService:
         return AgentDetail(
             agent_id=agent_row.agent_id,
             name=agent_row.name,
+            description=agent_row.description,
             url=agent_row.url,
             identity=identity,
             config=agent_row.config,
+        )
+
+    def _mcp_server_row_to_schema(
+        self, server_row: MCPServerModel, tools: list[MCPToolModel]
+    ) -> MCPServerDetail:
+        tool_details = [
+            MCPToolDetail(
+                id=tool.id,
+                name=tool.name,
+                description=tool.description,
+                parameters=tool.parameters,
+            )
+            for tool in tools
+        ]
+
+        return MCPServerDetail(
+            id=server_row.id,
+            name=server_row.name,
+            transport=server_row.transport,
+            description=server_row.description,
+            tools=tool_details if tool_details else None,
+            config=server_row.config,
         )
 
     def _enrich_mas(
         self,
         mas: MultiAgenticSystemModel,
         agents: list,
+        mcp_servers: list = None,
         ce_associations: list = None,
     ) -> MultiAgenticSystemSchema:
         enriched_agents = [self._agent_row_to_schema(a) for a in agents] if agents is not None else None
@@ -61,6 +89,7 @@ class MultiAgenticSystemService:
             name=mas.name,
             description=mas.description,
             agents=enriched_agents,
+            mcp_servers=mcp_servers,
             config=mas.config,
             cognition_engines=ce_associations or [],
             created_at=mas.created_at,
@@ -112,6 +141,7 @@ class MultiAgenticSystemService:
                 mas_id=mas_id,
                 agent_id=agent_cfg.agent_id,
                 name=agent_cfg.name,
+                description=agent_cfg.description,
                 url=agent_cfg.url,
                 identity_type=identity_type,
                 identity_identifiers=identity_identifiers,
@@ -168,6 +198,7 @@ class MultiAgenticSystemService:
             if agent_cfg.agent_id in existing_map:
                 row = existing_map[agent_cfg.agent_id]
                 row.name = agent_cfg.name
+                row.description = agent_cfg.description
                 row.url = agent_cfg.url
                 row.identity_type = identity_type
                 row.identity_identifiers = identity_identifiers
@@ -178,6 +209,7 @@ class MultiAgenticSystemService:
                     mas_id=mas_id,
                     agent_id=agent_cfg.agent_id,
                     name=agent_cfg.name,
+                    description=agent_cfg.description,
                     url=agent_cfg.url,
                     identity_type=identity_type,
                     identity_identifiers=identity_identifiers,
@@ -189,6 +221,175 @@ class MultiAgenticSystemService:
         for agent_id, row in existing_map.items():
             if agent_id not in incoming_ids:
                 session.delete(row)
+
+    def _validate_mcp_server_names(self, mcp_servers_data) -> None:
+        """Validate no duplicate server names in the request."""
+        if not mcp_servers_data:
+            return
+
+        seen_names = set()
+        for server_cfg in mcp_servers_data:
+            if server_cfg.name:
+                if server_cfg.name in seen_names:
+                    raise HTTPException(
+                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                        detail=f"Duplicate MCP server name in request: '{server_cfg.name}'",
+                    )
+                seen_names.add(server_cfg.name)
+
+                # Validate tool names within each server
+                if server_cfg.tools:
+                    seen_tool_names = set()
+                    for tool_cfg in server_cfg.tools:
+                        if tool_cfg.name:
+                            if tool_cfg.name in seen_tool_names:
+                                raise HTTPException(
+                                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                                    detail=f"Duplicate tool name '{tool_cfg.name}' in MCP server '{server_cfg.name}'",
+                                )
+                            seen_tool_names.add(tool_cfg.name)
+
+    def _save_mcp_servers(self, session, mas_id: str, mcp_servers_data) -> list:
+        """Create MCP server and tool rows. Returns the created MCPServerModel instances."""
+        if not mcp_servers_data:
+            return []
+
+        self._validate_mcp_server_names(mcp_servers_data)
+
+        server_rows = []
+        for server_cfg in mcp_servers_data:
+            server_id = generate_uuid()
+            server_row = MCPServerModel(
+                id=server_id,
+                mas_id=mas_id,
+                name=server_cfg.name,
+                transport=server_cfg.transport,
+                description=server_cfg.description,
+                config=server_cfg.config,
+            )
+            session.add(server_row)
+            server_rows.append(server_row)
+
+            # Create tool rows for this server
+            if server_cfg.tools:
+                for tool_cfg in server_cfg.tools:
+                    tool_row = MCPToolModel(
+                        id=generate_uuid(),
+                        mcp_server_id=server_id,
+                        name=tool_cfg.name,
+                        description=tool_cfg.description,
+                        parameters=tool_cfg.parameters,
+                    )
+                    session.add(tool_row)
+
+        return server_rows
+
+    def _sync_mcp_servers(self, session, mas_id: str, incoming_servers) -> None:
+        """Diff-based MCP server sync: insert new, update existing, delete removed. Preserves server IDs and config."""
+        now = datetime.now(timezone.utc)
+
+        self._validate_mcp_server_names(incoming_servers)
+
+        existing_rows = session.query(MCPServerModel).filter(MCPServerModel.mas_id == mas_id).all()
+        existing_map = {row.name: row for row in existing_rows}
+
+        incoming_names = set()
+        for server_cfg in incoming_servers:
+            incoming_names.add(server_cfg.name)
+
+            if server_cfg.name in existing_map:
+                # Update existing server
+                row = existing_map[server_cfg.name]
+                row.transport = server_cfg.transport
+                row.description = server_cfg.description
+                # Preserve config if incoming is None
+                if server_cfg.config is not None:
+                    row.config = server_cfg.config
+                row.updated_at = now
+
+                # Sync tools for this server
+                self._sync_mcp_tools(session, row.id, server_cfg.tools or [])
+            else:
+                # Create new server
+                server_id = generate_uuid()
+                server_row = MCPServerModel(
+                    id=server_id,
+                    mas_id=mas_id,
+                    name=server_cfg.name,
+                    transport=server_cfg.transport,
+                    description=server_cfg.description,
+                    config=server_cfg.config,
+                )
+                session.add(server_row)
+
+                # Create tools for new server
+                if server_cfg.tools:
+                    for tool_cfg in server_cfg.tools:
+                        tool_row = MCPToolModel(
+                            id=generate_uuid(),
+                            mcp_server_id=server_id,
+                            name=tool_cfg.name,
+                            description=tool_cfg.description,
+                            parameters=tool_cfg.parameters,
+                        )
+                        session.add(tool_row)
+
+        # Delete servers not in incoming list (cascade deletes tools)
+        for name, row in existing_map.items():
+            if name not in incoming_names:
+                session.delete(row)
+
+    def _sync_mcp_tools(self, session, server_id: str, incoming_tools) -> None:
+        """Diff-based MCP tool sync within a server: insert new, update existing, delete removed."""
+        now = datetime.now(timezone.utc)
+
+        existing_tools = session.query(MCPToolModel).filter(MCPToolModel.mcp_server_id == server_id).all()
+        existing_map = {tool.name: tool for tool in existing_tools}
+
+        incoming_names = set()
+        for tool_cfg in incoming_tools:
+            incoming_names.add(tool_cfg.name)
+
+            if tool_cfg.name in existing_map:
+                # Update existing tool
+                tool = existing_map[tool_cfg.name]
+                tool.description = tool_cfg.description
+                tool.parameters = tool_cfg.parameters
+                tool.updated_at = now
+            else:
+                # Create new tool
+                tool_row = MCPToolModel(
+                    id=generate_uuid(),
+                    mcp_server_id=server_id,
+                    name=tool_cfg.name,
+                    description=tool_cfg.description,
+                    parameters=tool_cfg.parameters,
+                )
+                session.add(tool_row)
+
+        # Delete tools not in incoming list
+        for name, tool in existing_map.items():
+            if name not in incoming_names:
+                session.delete(tool)
+
+    def _fetch_mcp_servers_for_mas(self, session, mas_id: str) -> list[MCPServerDetail]:
+        """Fetch MCP servers and their tools for a MAS."""
+        servers = session.query(MCPServerModel).filter(MCPServerModel.mas_id == mas_id).all()
+        if not servers:
+            return []
+
+        server_ids = [s.id for s in servers]
+        tools = session.query(MCPToolModel).filter(MCPToolModel.mcp_server_id.in_(server_ids)).all()
+
+        # Group tools by server
+        tools_by_server = {}
+        for tool in tools:
+            tools_by_server.setdefault(tool.mcp_server_id, []).append(tool)
+
+        return [
+            self._mcp_server_row_to_schema(server, tools_by_server.get(server.id, []))
+            for server in servers
+        ]
 
     def create(
         self, workspace_id: str, mas_data: MultiAgenticSystemRequest, user_id: str = "system"
@@ -232,6 +433,7 @@ class MultiAgenticSystemService:
                 session.flush()
 
                 self._save_agents(session, new_mas.id, mas_data.agents)
+                self._save_mcp_servers(session, new_mas.id, mas_data.mcp_servers)
 
                 session.commit()
                 session.refresh(new_mas)
@@ -355,8 +557,33 @@ class MultiAgenticSystemService:
                             )
                         )
 
+                # Batch fetch all MCP servers and tools for these MAS
+                mcp_servers_by_mas = {}
+                if mas_ids:
+                    all_servers = session.query(MCPServerModel).filter(MCPServerModel.mas_id.in_(mas_ids)).all()
+                    server_ids = [s.id for s in all_servers]
+                    all_tools = []
+                    if server_ids:
+                        all_tools = session.query(MCPToolModel).filter(MCPToolModel.mcp_server_id.in_(server_ids)).all()
+
+                    # Group tools by server
+                    tools_by_server = {}
+                    for tool in all_tools:
+                        tools_by_server.setdefault(tool.mcp_server_id, []).append(tool)
+
+                    # Group servers by MAS and convert to schema
+                    for server in all_servers:
+                        server_detail = self._mcp_server_row_to_schema(server, tools_by_server.get(server.id, []))
+                        mcp_servers_by_mas.setdefault(server.mas_id, []).append(server_detail)
+
                 system_responses = [
-                    self._enrich_mas(mas, agents_by_mas.get(mas.id, []), ce_by_mas.get(mas.id, [])) for mas in systems
+                    self._enrich_mas(
+                        mas,
+                        agents_by_mas.get(mas.id, []),
+                        mcp_servers_by_mas.get(mas.id, []),
+                        ce_by_mas.get(mas.id, []),
+                    )
+                    for mas in systems
                 ]
 
                 return MultiAgenticSystems(systems=system_responses)
@@ -421,7 +648,9 @@ class MultiAgenticSystemService:
                     for junc, ce in ce_rows
                 ]
 
-                return self._enrich_mas(mas, agents, ce_associations)
+                mcp_servers = self._fetch_mcp_servers_for_mas(session, mas_id)
+
+                return self._enrich_mas(mas, agents, mcp_servers, ce_associations)
 
             finally:
                 session.close()
@@ -483,6 +712,9 @@ class MultiAgenticSystemService:
                 if mas_data.agents is not None:
                     self._sync_agents(session, mas_id, mas_data.agents)
                     mas.agents = None
+
+                if mas_data.mcp_servers is not None:
+                    self._sync_mcp_servers(session, mas_id, mas_data.mcp_servers)
 
                 if mas_data.config is not None:
                     mas.config = mas_data.config
@@ -557,7 +789,9 @@ class MultiAgenticSystemService:
                     for junc, ce in ce_rows
                 ]
 
-                return self._enrich_mas(mas, agents, ce_associations)
+                mcp_servers = self._fetch_mcp_servers_for_mas(session, mas_id)
+
+                return self._enrich_mas(mas, agents, mcp_servers, ce_associations)
 
             except IntegrityError as e:
                 session.rollback()
@@ -658,8 +892,30 @@ class MultiAgenticSystemService:
                         )
                     )
 
+                # Batch fetch all MCP servers and tools for these MAS
+                mcp_servers_by_mas = {}
+                all_servers = session.query(MCPServerModel).filter(MCPServerModel.mas_id.in_(mas_ids)).all()
+                server_ids = [s.id for s in all_servers]
+                all_tools = []
+                if server_ids:
+                    all_tools = session.query(MCPToolModel).filter(MCPToolModel.mcp_server_id.in_(server_ids)).all()
+
+                tools_by_server = {}
+                for tool in all_tools:
+                    tools_by_server.setdefault(tool.mcp_server_id, []).append(tool)
+
+                for server in all_servers:
+                    server_detail = self._mcp_server_row_to_schema(server, tools_by_server.get(server.id, []))
+                    mcp_servers_by_mas.setdefault(server.mas_id, []).append(server_detail)
+
                 system_responses = [
-                    self._enrich_mas(mas, agents_by_mas.get(mas.id, []), ce_by_mas.get(mas.id, [])) for mas in systems
+                    self._enrich_mas(
+                        mas,
+                        agents_by_mas.get(mas.id, []),
+                        mcp_servers_by_mas.get(mas.id, []),
+                        ce_by_mas.get(mas.id, []),
+                    )
+                    for mas in systems
                 ]
 
                 return MultiAgenticSystems(systems=system_responses)
