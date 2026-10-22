@@ -247,9 +247,6 @@ export default function CognitiveAgentDetailsPage() {
                     <InfoRow label="Version" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
                       <span className="text-sm text-foreground font-mono">{ce?.version || '-'}</span>
                     </InfoRow>
-                    <InfoRow label="Type" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
-                      <span className="text-sm text-foreground font-mono">{ce?.ce_type || '-'}</span>
-                    </InfoRow>
                     <InfoRow label="CFN" className={isEditMode ? 'opacity-50 transition-opacity' : 'transition-opacity'}>
                       <span className="text-sm text-foreground">{cfn?.name || '-'}</span>
                     </InfoRow>

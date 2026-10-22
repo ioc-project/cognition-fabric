@@ -59,7 +59,6 @@ export function CognitiveAgentTableList({
       headers={[
         sortable('name', 'Name'),
         sortable('version', 'Version'),
-        sortable('ce_type', 'Type'),
         sortable('status', 'Status'),
         {content: 'Enabled'},
         sortable('created_at', 'Created'),
@@ -74,9 +73,6 @@ export function CognitiveAgentTableList({
         },
         {
           content: <span className="text-sm text-foreground font-mono">{r.version}</span>
-        },
-        {
-          content: <span className="font-medium font-mono">{r.ce_type}</span>
         },
         {
           content: <Badge variant={r.status === 'online' ? 'success' : 'inactive'}>{r.status === 'online' ? 'Online' : 'Offline'}</Badge>
