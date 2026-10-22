@@ -2,9 +2,11 @@
 
 This is a CF-owned copy of the NOA sample application from
 [`cisco-eti/oxp-sample-apps`](https://github.com/cisco-eti/oxp-sample-apps/tree/ecfa422a38227bfc0011fb5bf8b796792e481e31/noa-trip-planner).
-It includes the application, fictional travel data, and dependency lockfile
-from that revision. The local CF workflow runs this copy; it does not require
-an `oxp-sample-apps` checkout.
+The application and fictional travel data were copied from that revision.
+Its Observe SDK dependency is now 1.0.58, following the upstream A2A sample
+at [`7f76b55`](https://github.com/cisco-eti/oxp-sample-apps/commit/7f76b5525c1520e79b4f3dbff718e3f84db48141).
+The local CF workflow runs this copy; it does not require an `oxp-sample-apps`
+checkout.
 
 The local variant supports `NOA_ENFORCEMENT_MODE=direct` (default) and `proxy`.
 Direct mode adds a synchronous CFN `GetDisposition` call before
