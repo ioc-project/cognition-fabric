@@ -13,6 +13,7 @@ import type {AgentDetail} from '@/api/endpoints/mas';
 interface Agent {
   agent_id?: string;
   name?: string;
+  description?: string;
   url?: string;
   identity_type?: string;
   identity_identifiers?: string | Record<string, string>;
@@ -45,6 +46,7 @@ export function AgentsList({
     ? masAgentsData.map((agent) => ({
         agent_id: agent.agent_id,
         name: agent.name || '',
+        description: agent.description || '',
         url: agent.url || '',
         identity_type: agent.identity?.type || '',
         identity_identifiers: agent.identity?.identifiers || {}
@@ -101,6 +103,7 @@ export function AgentsList({
                 index={index}
                 agentId={agent.agent_id}
                 agentName={agent.name}
+                agentDescription={agent.description}
                 agentIdValue={agent.agent_id}
                 agentUrl={agent.url}
                 identityType={agent.identity_type}

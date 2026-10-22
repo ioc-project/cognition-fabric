@@ -25,13 +25,14 @@ import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {toast} from 'sonner';
-import {Bot, BrainCircuit, Unlink, Plus, Settings2, MoreHorizontal} from 'lucide-react';
+import {Bot, BrainCircuit, Unlink, Plus, Settings2, MoreHorizontal, Server} from 'lucide-react';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
 import {useCognitionEngines} from '@/hooks/useCognitionEngines';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {MASAuditLog} from './mas-audit-log';
 import {MASAssociateCEModal} from './mas-associate-ce-modal';
 import {AgentsList} from './agents-list';
+import {MCPServersList} from './mcp-servers-list';
 import {UpdateMASFormSchema, type FormValues} from './mas-form-schema';
 import {dtSectionHeader, dtPanelHeader} from '@/lib/detail-typography';
 import {DetailTabs} from '@/components/ui/detail-tabs';
@@ -57,13 +58,14 @@ export default function MASDetailsPage() {
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'agents' | 'cognition-engines'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'agents' | 'mcp-servers' | 'cognition-engines'>('overview');
 
   const [associateModalOpen, setAssociateModalOpen] = useState(false);
   const [selectedCEIds, setSelectedCEIds] = useState<string[]>([]);
   const [isAssociating, setIsAssociating] = useState(false);
   const [disassociatingId, setDisassociatingId] = useState<string | null>(null);
   const [agentExpandedState, setAgentExpandedState] = useState<Record<string, boolean>>({});
+  const [mcpServerExpandedState, setMcpServerExpandedState] = useState<Record<string, boolean>>({});
   const [editConfigCE, setEditConfigCE] = useState<{ce_id: string; name: string; mas_config: Record<string, unknown> | null} | null>(null);
   const [editConfigValue, setEditConfigValue] = useState('');
   const [isSavingConfig, setIsSavingConfig] = useState(false);
@@ -86,10 +88,11 @@ export default function MASDetailsPage() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(UpdateMASFormSchema),
-    defaultValues: {name: '', description: '', agents: [], config: ''}
+    defaultValues: {name: '', description: '', agents: [], mcp_servers: [], config: ''}
   });
 
   const {fields: agentFields, append: appendAgent, remove: removeAgent} = useFieldArray({control: form.control, name: 'agents'});
+  const {fields: mcpServerFields, append: appendMcpServer, remove: removeMcpServer} = useFieldArray({control: form.control, name: 'mcp_servers'});
 
   const buildFormValues = (m: MultiAgenticSystem | undefined): FormValues => {
     const cleanConfig = typeof m?.config === 'object' && m.config !== null ? {...m.config} : {};
@@ -99,9 +102,20 @@ export default function MASDetailsPage() {
       agents: (m?.agents || []).map((agent) => ({
         agent_id: agent.agent_id,
         name: agent.name || '',
+        description: agent.description || '',
         url: agent.url || '',
         identity_type: agent.identity?.type || '',
         identity_identifiers: agent.identity?.identifiers ? JSON.stringify(agent.identity.identifiers, null, 2) : ''
+      })),
+      mcp_servers: (m?.mcp_servers || []).map((server) => ({
+        name: server.name || '',
+        description: server.description || '',
+        transport: server.transport || '',
+        tools: (server.tools || []).map((tool) => ({
+          name: tool.name || '',
+          description: tool.description || '',
+          parameters: tool.parameters ? JSON.stringify(tool.parameters, null, 2) : ''
+        }))
       })),
       config: Object.keys(cleanConfig).length > 0 ? JSON.stringify(cleanConfig, null, 2) : ''
     };
@@ -160,6 +174,7 @@ export default function MASDetailsPage() {
         .map((agent) => ({
           ...(agent.agent_id && {agent_id: agent.agent_id}),
           name: agent.name!.trim(),
+          ...(agent.description?.trim() && {description: agent.description.trim()}),
           ...(agent.url?.trim() && {url: agent.url.trim()}),
           ...(agent.identity_type?.trim() && {
             identity: {
@@ -169,11 +184,27 @@ export default function MASDetailsPage() {
           })
         }));
 
+      const mcpServersPayload = (values.mcp_servers || [])
+        .filter((server) => server.name?.trim())
+        .map((server) => ({
+          name: server.name!.trim(),
+          ...(server.description?.trim() && {description: server.description.trim()}),
+          ...(server.transport?.trim() && {transport: server.transport.trim()}),
+          tools: (server.tools || [])
+            .filter((tool) => tool.name?.trim())
+            .map((tool) => ({
+              name: tool.name!.trim(),
+              ...(tool.description?.trim() && {description: tool.description.trim()}),
+              ...(tool.parameters?.trim() && {parameters: JSON.parse(tool.parameters)})
+            }))
+        }));
+
       const configPayload = parseJsonField(values.config) || {};
       const payload: MultiAgenticSystemUpdate = {
         name: values.name,
         description: values.description,
         agents: agentsPayload,
+        mcp_servers: mcpServersPayload,
         ...(Object.keys(configPayload).length > 0 && {config: configPayload})
       };
 
@@ -277,6 +308,7 @@ export default function MASDetailsPage() {
             tabs={[
               {id: 'overview', label: 'Overview'},
               {id: 'agents', label: 'Agents', count: agentFields.length || undefined},
+              {id: 'mcp-servers', label: 'MCP Servers', count: mcpServerFields.length || undefined},
               {id: 'cognition-engines', label: 'Cognition Engines', count: ces.length || undefined}
             ]}
           />
@@ -410,7 +442,7 @@ export default function MASDetailsPage() {
                         variant="sidebar"
                         size="sm"
                         className="gap-2"
-                        onClick={() => appendAgent({agent_id: '', name: '', url: '', identity_type: '', identity_identifiers: ''})}
+                        onClick={() => appendAgent({agent_id: '', name: '', description: '', url: '', identity_type: '', identity_identifiers: ''})}
                       >
                         <Plus className="w-4 h-4" />
                         Add Agent
@@ -431,6 +463,7 @@ export default function MASDetailsPage() {
                               appendAgent({
                                 agent_id: '',
                                 name: '',
+                                description: '',
                                 url: '',
                                 identity_type: '',
                                 identity_identifiers: ''
@@ -439,6 +472,47 @@ export default function MASDetailsPage() {
                       }
                       onRemoveAgent={isEditMode ? removeAgent : undefined}
                       masAgentsData={!isEditMode && mas?.agents ? mas.agents : undefined}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'mcp-servers' && (
+                <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                  <div className={dtPanelHeader}>
+                    <div className="flex items-center gap-0.5">
+                      <Server size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                      <span className={dtSectionHeader}>MCP Servers</span>
+                      {mcpServerFields.length > 0 && (
+                        <Badge variant="accent" className="rounded px-1.5">
+                          {mcpServerFields.length}
+                        </Badge>
+                      )}
+                    </div>
+                    {isEditMode && (
+                      <Button
+                        type="button"
+                        variant="sidebar"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => appendMcpServer({name: '', description: '', transport: '', tools: []})}
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add MCP Server
+                      </Button>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <MCPServersList
+                      servers={mcpServerFields}
+                      control={form.control}
+                      watch={form.watch}
+                      isEditMode={isEditMode}
+                      serverExpandedState={mcpServerExpandedState}
+                      onToggleExpand={(id) => setMcpServerExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
+                      onAddServer={isEditMode ? () => appendMcpServer({name: '', description: '', transport: '', tools: []}) : undefined}
+                      onRemoveServer={isEditMode ? removeMcpServer : undefined}
+                      masServersData={!isEditMode && mas?.mcp_servers ? mas.mcp_servers : undefined}
                     />
                   </div>
                 </div>

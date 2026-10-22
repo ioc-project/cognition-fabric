@@ -746,6 +746,11 @@ export interface components {
              */
             name?: string | null;
             /**
+             * Description
+             * @description Agent description (used for governance integrity checks)
+             */
+            description?: string | null;
+            /**
              * Url
              * @description Agent endpoint URL
              */
@@ -775,6 +780,11 @@ export interface components {
              * @description Human-readable agent name
              */
             name?: string | null;
+            /**
+             * Description
+             * @description Agent description (used for governance integrity checks)
+             */
+            description?: string | null;
             /**
              * Url
              * @description Agent endpoint URL
@@ -1617,6 +1627,128 @@ export interface components {
             } | null;
         };
         /**
+         * MCPServerConfig
+         * @description Schema for MCP server configuration (input)
+         */
+        MCPServerConfig: {
+            /**
+             * Name
+             * @description MCP server name
+             */
+            name: string;
+            /**
+             * Transport
+             * @description Transport type (e.g. 'stdio', 'sse')
+             */
+            transport?: string | null;
+            /**
+             * Description
+             * @description MCP server description
+             */
+            description?: string | null;
+            /**
+             * Tools
+             * @description List of tools provided by this MCP server
+             */
+            tools?: components["schemas"]["MCPToolConfig"][] | null;
+            /**
+             * Config
+             * @description MCP server-specific configuration
+             */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * MCPServerDetail
+         * @description Schema for MCP server details (output)
+         */
+        MCPServerDetail: {
+            /**
+             * Id
+             * @description Unique identifier for the MCP server
+             */
+            id: string;
+            /**
+             * Name
+             * @description MCP server name
+             */
+            name: string;
+            /**
+             * Transport
+             * @description Transport type (e.g. 'stdio', 'sse')
+             */
+            transport?: string | null;
+            /**
+             * Description
+             * @description MCP server description
+             */
+            description?: string | null;
+            /**
+             * Tools
+             * @description List of tools provided by this MCP server
+             */
+            tools?: components["schemas"]["MCPToolDetail"][] | null;
+            /**
+             * Config
+             * @description MCP server-specific configuration
+             */
+            config?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * MCPToolConfig
+         * @description Schema for MCP tool configuration (input)
+         */
+        MCPToolConfig: {
+            /**
+             * Name
+             * @description Tool name
+             */
+            name: string;
+            /**
+             * Description
+             * @description Tool description (used for governance integrity checks)
+             */
+            description?: string | null;
+            /**
+             * Parameters
+             * @description JSON Schema for tool parameters
+             */
+            parameters?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * MCPToolDetail
+         * @description Schema for MCP tool details (output)
+         */
+        MCPToolDetail: {
+            /**
+             * Id
+             * @description Unique identifier for the tool
+             */
+            id: string;
+            /**
+             * Name
+             * @description Tool name
+             */
+            name: string;
+            /**
+             * Description
+             * @description Tool description (used for governance integrity checks)
+             */
+            description?: string | null;
+            /**
+             * Parameters
+             * @description JSON Schema for tool parameters
+             */
+            parameters?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
          * MasCognitionEngineAssociateRequest
          * @description Schema for adding a Cognition Engine to a MAS
          */
@@ -1728,6 +1860,11 @@ export interface components {
              * @description List of agents in the system
              */
             agents?: components["schemas"]["AgentDetail"][] | null;
+            /**
+             * Mcp Servers
+             * @description List of MCP servers in the system
+             */
+            mcp_servers?: components["schemas"]["MCPServerDetail"][] | null;
             /** Config */
             config?: {
                 [key: string]: unknown;
@@ -1766,6 +1903,11 @@ export interface components {
              * @description List of agents in the system with their configurations
              */
             agents?: components["schemas"]["AgentConfig"][] | null;
+            /**
+             * Mcp Servers
+             * @description List of MCP servers in the system with their tool definitions
+             */
+            mcp_servers?: components["schemas"]["MCPServerConfig"][] | null;
             /**
              * Config
              * @description Configuration object
@@ -1819,6 +1961,11 @@ export interface components {
              * @description Updated list of agents in the system
              */
             agents?: components["schemas"]["AgentConfig"][] | null;
+            /**
+             * Mcp Servers
+             * @description Updated list of MCP servers in the system
+             */
+            mcp_servers?: components["schemas"]["MCPServerConfig"][] | null;
             /**
              * Config
              * @description Updated configuration object

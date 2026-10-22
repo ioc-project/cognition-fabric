@@ -17,6 +17,7 @@ interface AgentCardProps {
   index: number;
   agentId: string;
   agentName?: string;
+  agentDescription?: string;
   agentIdValue?: string;
   agentUrl?: string;
   identityType?: string;
@@ -32,6 +33,7 @@ export function AgentCard({
   index,
   agentId: _agentId,
   agentName,
+  agentDescription,
   agentIdValue,
   agentUrl,
   identityType,
@@ -85,7 +87,13 @@ export function AgentCard({
           {isEditMode ? (
             <EditModeFields index={index} control={control} />
           ) : (
-            <ViewModeFields agentName={agentName} agentUrl={agentUrl} identityType={identityType} identityIdentifiers={identityIdentifiers} />
+            <ViewModeFields
+              agentName={agentName}
+              agentDescription={agentDescription}
+              agentUrl={agentUrl}
+              identityType={identityType}
+              identityIdentifiers={identityIdentifiers}
+            />
           )}
         </div>
       )}
@@ -104,6 +112,24 @@ function EditModeFields({index, control}: {index: number; control: Control<any>}
             <FormLabel>Name</FormLabel>
             <FormControl>
               <Input placeholder="e.g. Retrieval Agent" {...field} />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={control}
+        name={`agents.${index}.description`}
+        render={({field}) => (
+          <FormItem>
+            <FormLabel>Description</FormLabel>
+            <FormControl>
+              <Textarea
+                placeholder="e.g. An agent that retrieves relevant documents from the knowledge base"
+                className="min-h-[60px] resize-y"
+                {...field}
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -171,11 +197,13 @@ function EditModeFields({index, control}: {index: number; control: Control<any>}
 
 function ViewModeFields({
   agentName,
+  agentDescription,
   agentUrl,
   identityType,
   identityIdentifiers
 }: {
   agentName?: string;
+  agentDescription?: string;
   agentUrl?: string;
   identityType?: string;
   identityIdentifiers?: Record<string, string>;
@@ -189,6 +217,11 @@ function ViewModeFields({
       <div className={rowClass}>
         <span className={labelClass}>Name</span>
         <span className={valueClass}>{agentName || '-'}</span>
+      </div>
+
+      <div className={rowClass}>
+        <span className={labelClass}>Description</span>
+        <span className={valueClass}>{agentDescription || '-'}</span>
       </div>
 
       <div className={rowClass}>

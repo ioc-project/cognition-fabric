@@ -24,11 +24,13 @@ import {useMAS} from '@/hooks/useMAS';
 import {useCognitionEngines} from '@/hooks/useCognitionEngines';
 import {MultiSelect} from '@/components/ui/multi-select';
 import {AgentsList} from './agents-list';
+import {MCPServersList} from './mcp-servers-list';
 import {CollapsibleJsonField} from './collapsible-json-field';
 import {FormSectionHeader} from '@/components/ui/form-section-header';
 
 const AgentFormSchema = z.object({
   name: z.string().optional(),
+  description: z.string().optional(),
   url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
   identity_type: z.string().optional(),
   identity_identifiers: z
@@ -50,12 +52,42 @@ const AgentFormSchema = z.object({
     )
 });
 
+const MCPToolFormSchema = z.object({
+  name: z.string().min(1, 'Tool name is required'),
+  description: z.string().optional(),
+  parameters: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (!val || val.trim() === '') {
+          return true;
+        }
+        try {
+          JSON.parse(val);
+          return true;
+        } catch {
+          return false;
+        }
+      },
+      {message: 'Must be valid JSON'}
+    )
+});
+
+const MCPServerFormSchema = z.object({
+  name: z.string().min(1, 'Server name is required'),
+  description: z.string().optional(),
+  transport: z.string().optional(),
+  tools: z.array(MCPToolFormSchema).optional().default([])
+});
+
 const formSchema = z
   .object({
     name: z.string().min(1, 'Multi-Agentic System name is required').min(3, 'Name must be at least 3 characters'),
     description: z.string().optional(),
     cognition_engine_ids: z.array(z.string()).optional().default([]),
     agents: z.array(AgentFormSchema).optional().default([]),
+    mcp_servers: z.array(MCPServerFormSchema).optional().default([]),
     config: z
       .string()
       .optional()
@@ -104,6 +136,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [masConfigExpanded, setMasConfigExpanded] = useState(true);
   const [agentExpandedState, setAgentExpandedState] = useState<Record<string, boolean>>({});
+  const [mcpServerExpandedState, setMcpServerExpandedState] = useState<Record<string, boolean>>({});
   const {addMAS} = useMAS(workspaceId);
   const {cognitionEngines = []} = useCognitionEngines();
 
@@ -114,6 +147,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
       description: '',
       cognition_engine_ids: [],
       agents: [],
+      mcp_servers: [],
       config: ''
     }
   });
@@ -125,6 +159,15 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
   } = useFieldArray({
     control: form.control,
     name: 'agents'
+  });
+
+  const {
+    fields: mcpServerFields,
+    append: appendMcpServer,
+    remove: removeMcpServer
+  } = useFieldArray({
+    control: form.control,
+    name: 'mcp_servers'
   });
 
   const handleSubmit = async (values: FormValues) => {
@@ -143,6 +186,7 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
         .filter((agent) => agent.name?.trim())
         .map((agent) => ({
           name: agent.name!.trim(),
+          ...(agent.description?.trim() && {description: agent.description.trim()}),
           ...(agent.url?.trim() && {url: agent.url.trim()}),
           ...(agent.identity_type?.trim() && {
             identity: {
@@ -152,11 +196,27 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
           })
         }));
 
+      const mcpServersPayload = (values.mcp_servers || [])
+        .filter((server) => server.name?.trim())
+        .map((server) => ({
+          name: server.name!.trim(),
+          ...(server.description?.trim() && {description: server.description.trim()}),
+          ...(server.transport?.trim() && {transport: server.transport.trim()}),
+          tools: (server.tools || [])
+            .filter((tool) => tool.name?.trim())
+            .map((tool) => ({
+              name: tool.name!.trim(),
+              ...(tool.description?.trim() && {description: tool.description.trim()}),
+              ...(tool.parameters?.trim() && {parameters: JSON.parse(tool.parameters)})
+            }))
+        }));
+
       const response = await addMAS({
         name: values.name,
         description: values.description,
         ...(values.cognition_engine_ids && values.cognition_engine_ids.length > 0 && {cognition_engine_ids: values.cognition_engine_ids}),
         ...(agentsPayload.length > 0 && {agents: agentsPayload}),
+        ...(mcpServersPayload.length > 0 && {mcp_servers: mcpServersPayload}),
         ...(values.config && {config: parseJsonField(values.config)})
       });
 
@@ -280,8 +340,26 @@ export function CreateMASForm({workspaceId, onCancel}: CreateMASFormProps) {
                     isEditMode={true}
                     agentExpandedState={agentExpandedState}
                     onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
-                    onAddAgent={() => appendAgent({name: '', url: '', identity_type: '', identity_identifiers: ''})}
+                    onAddAgent={() => appendAgent({name: '', description: '', url: '', identity_type: '', identity_identifiers: ''})}
                     onRemoveAgent={removeAgent}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="w-full">
+              <CardContent className="pt-8 px-8 pb-1">
+                <div className="flex flex-col gap-4 mb-6">
+                  <FormSectionHeader title="MCP Servers" description="Add MCP servers and their tools for this multi-agentic system" />
+                  <MCPServersList
+                    servers={mcpServerFields}
+                    control={form.control}
+                    watch={form.watch}
+                    isEditMode={true}
+                    serverExpandedState={mcpServerExpandedState}
+                    onToggleExpand={(id) => setMcpServerExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
+                    onAddServer={() => appendMcpServer({name: '', description: '', transport: '', tools: []})}
+                    onRemoveServer={removeMcpServer}
                   />
                 </div>
               </CardContent>
