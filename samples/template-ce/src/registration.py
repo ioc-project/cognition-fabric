@@ -45,9 +45,10 @@ class CERegistrationRequest:
     name: str  # CE name (e.g., "demo-ce")
     version: str  # CE version (e.g., "1.0.0")
     ce_type: str  # "CASA" or "DETECTIVE"
-    base_url: str  # gRPC address (e.g., "demo-ce:50051")
-    endpoint: str  # gRPC service name (e.g., "ioc.ce.v1.CognitionEngine")
-    health_url: str  # CFN probes this with an HTTP GET (e.g., "http://demo-ce:8080/healthz")
+    enforcing_url: str  # gRPC address (e.g., "demo-ce:50051")
+    enforcing_endpoint: str  # gRPC service name (e.g., "ioc.ce.v1.CognitionEngine")
+    health_url: str  # HTTP base URL CFN probes (e.g., "http://demo-ce:8080")
+    health_endpoint: str = HEALTH_PATH  # HTTP path appended to health_url (e.g., "/healthz")
     notification_url: Optional[str] = None  # HTTP base URL for notifications (e.g., "http://demo-ce:8080")
     notification_endpoint: Optional[str] = None  # HTTP path for notifications (e.g., "/notification")
 
@@ -60,8 +61,8 @@ class CERegistrationResponse:
     name: str
     version: str
     ce_type: str
-    base_url: str
-    endpoint: str
+    enforcing_url: str
+    enforcing_endpoint: str
     enabled: bool
     status: str
     created: bool
@@ -112,7 +113,7 @@ class CELifecycleClient:
 
         If CE with same (name, version) already exists:
         - Gets 409 with existing_ce_id
-        - Calls PATCH to update base_url/endpoint/health_url (address may have changed
+        - Calls PATCH to update enforcing_url/enforcing_endpoint/health_url (address may have changed
           after restart, e.g., new IP, different port, different hostname)
         - Returns the updated CE record
 
@@ -126,9 +127,10 @@ class CELifecycleClient:
             "name": request.name,
             "version": request.version,
             "ce_type": request.ce_type,
-            "base_url": request.base_url,
-            "endpoint": request.endpoint,
+            "enforcing_url": request.enforcing_url,
+            "enforcing_endpoint": request.enforcing_endpoint,
             "health_url": request.health_url,
+            "health_endpoint": request.health_endpoint,
         }
 
         # Add notification fields if provided
@@ -160,7 +162,7 @@ class CELifecycleClient:
 
             elif response.status_code == 409:
                 # CE with same (name, version) already exists - this happens on CE restart/reconnect.
-                # We PATCH to update base_url/endpoint/health_url because the CE's address may have changed:
+                # We PATCH to update enforcing_url/enforcing_endpoint/health_url because the CE's address may have changed:
                 # - Container got a new IP after restart
                 # - Running on a different port
                 # - Different hostname in a new deployment
@@ -197,9 +199,10 @@ class CELifecycleClient:
         """Update an existing CE via PATCH after 409 conflict."""
         endpoint = f"{self.cfn_base_url}/api/cognition-engine/{ce_id}"
         payload = {
-            "base_url": request.base_url,
-            "endpoint": request.endpoint,
+            "enforcing_url": request.enforcing_url,
+            "enforcing_endpoint": request.enforcing_endpoint,
             "health_url": request.health_url,
+            "health_endpoint": request.health_endpoint,
         }
 
         try:
@@ -218,8 +221,8 @@ class CELifecycleClient:
                     name=data["name"],
                     version=data["version"],
                     ce_type=data["ce_type"],
-                    base_url=data["base_url"],
-                    endpoint=data["endpoint"],
+                    enforcing_url=data["enforcing_url"],
+                    enforcing_endpoint=data["enforcing_endpoint"],
                     enabled=data["enabled"],
                     status=data["status"],
                     created=False,
@@ -243,8 +246,8 @@ class CELifecycleClient:
             name=data["name"],
             version=data["version"],
             ce_type=data["ce_type"],
-            base_url=data["base_url"],
-            endpoint=data["endpoint"],
+            enforcing_url=data["enforcing_url"],
+            enforcing_endpoint=data["enforcing_endpoint"],
             enabled=data["enabled"],
             status=data["status"],
             created=created,
@@ -296,17 +299,17 @@ async def register_demo_ce() -> None:
         )
         return
 
-    # base_url format for registration (CFN expects URL with scheme)
+    # enforcing_url format for registration (CFN expects URL with scheme)
     # For gRPC services, we use the host:port that CFN will dial
-    base_url = f"{ce_host}:{grpc_port}"
-    health_url = f"http://{ce_host}:{health_port}{HEALTH_PATH}"
+    enforcing_url = f"{ce_host}:{grpc_port}"
+    health_url = f"http://{ce_host}:{health_port}"
 
     # Notification URL for MAS lifecycle events (HTTP endpoint)
     notification_url = f"http://{ce_host}:{http_port}" if enable_notifications else None
     notification_endpoint = "/notification" if enable_notifications else None
 
     logger.info(
-        f"Starting Demo CE registration with cfn_url={cfn_url}, base_url={base_url}, "
+        f"Starting Demo CE registration with cfn_url={cfn_url}, enforcing_url={enforcing_url}, "
         f"health_url={health_url}, notifications={'enabled' if enable_notifications else 'disabled'}"
     )
 
@@ -322,8 +325,8 @@ async def register_demo_ce() -> None:
         name=CE_NAME,
         version=CE_VERSION,
         ce_type=CE_TYPE,
-        base_url=base_url,
-        endpoint=CE_ENDPOINT,
+        enforcing_url=enforcing_url,
+        enforcing_endpoint=CE_ENDPOINT,
         health_url=health_url,
         notification_url=notification_url,
         notification_endpoint=notification_endpoint,

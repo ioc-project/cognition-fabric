@@ -23,12 +23,12 @@ func TestRegistrationSendsHealthURL(t *testing.T) {
 		w.Write([]byte(`{"ce_id":"ce-1"}`))
 	}))
 	defer api.Close()
-	l := Lifecycle{Base: api.URL, Address: "poc-ce:18001", HealthURL: "http://poc-ce:18000/healthz", Name: "poc-ce", Client: api.Client()}
+	l := Lifecycle{Base: api.URL, Address: "poc-ce:18001", HealthURL: "http://poc-ce:18000", Name: "poc-ce", Client: api.Client()}
 	id, err := l.Register(context.Background())
 	if err != nil || id != "ce-1" {
 		t.Fatalf("register %s %v", id, err)
 	}
-	if posted["health_url"] != "http://poc-ce:18000/healthz" || posted["base_url"] != "poc-ce:18001" {
+	if posted["health_endpoint"] != "/healthz" || posted["health_url"] != "http://poc-ce:18000" || posted["enforcing_url"] != "poc-ce:18001" {
 		t.Fatalf("registration body %v", posted)
 	}
 }
@@ -49,22 +49,22 @@ func TestRegistrationConflictUpdatesEndpointAndHealthURL(t *testing.T) {
 		}
 	}))
 	defer api.Close()
-	l := Lifecycle{Base: api.URL, Address: "poc-ce:18001", HealthURL: "http://poc-ce:18000/healthz", Name: "poc-ce", Client: api.Client()}
+	l := Lifecycle{Base: api.URL, Address: "poc-ce:18001", HealthURL: "http://poc-ce:18000", Name: "poc-ce", Client: api.Client()}
 	id, err := l.Register(context.Background())
 	if err != nil || id != "ce-1" {
 		t.Fatalf("register %s %v", id, err)
 	}
-	if patched["base_url"] != "poc-ce:18001" || patched["health_url"] != "http://poc-ce:18000/healthz" {
+	if patched["enforcing_url"] != "poc-ce:18001" || patched["health_url"] != "http://poc-ce:18000" {
 		t.Fatalf("patch body %v", patched)
 	}
 }
 
 func TestHealthURL(t *testing.T) {
 	for _, c := range []struct{ grpc, listen, want string }{
-		{"policy-ce:18001", ":18000", "http://policy-ce:18000/healthz"},
-		{"policy-ce:18001", "0.0.0.0:9000", "http://policy-ce:9000/healthz"},
-		{"10.0.0.5:18001", ":18000", "http://10.0.0.5:18000/healthz"},
-		{"[::1]:18001", ":18000", "http://[::1]:18000/healthz"},
+		{"policy-ce:18001", ":18000", "http://policy-ce:18000"},
+		{"policy-ce:18001", "0.0.0.0:9000", "http://policy-ce:9000"},
+		{"10.0.0.5:18001", ":18000", "http://10.0.0.5:18000"},
+		{"[::1]:18001", ":18000", "http://[::1]:18000"},
 	} {
 		got, err := HealthURL(c.grpc, c.listen)
 		if err != nil || got != c.want {
@@ -100,7 +100,7 @@ func TestRunRegistersOnceAndThenSendsNothing(t *testing.T) {
 		}
 	}))
 	defer api.Close()
-	l := Lifecycle{Base: api.URL, Address: "poc-ce:18001", HealthURL: "http://poc-ce:18000/healthz", Name: "poc-ce", Client: api.Client()}
+	l := Lifecycle{Base: api.URL, Address: "poc-ce:18001", HealthURL: "http://poc-ce:18000", Name: "poc-ce", Client: api.Client()}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	var ready atomic.Bool
@@ -142,7 +142,7 @@ func TestRunWaitsForCFNBeforeRegistering(t *testing.T) {
 		}
 	}))
 	defer api.Close()
-	l := Lifecycle{Base: api.URL, Address: "poc-ce:18001", HealthURL: "http://poc-ce:18000/healthz", Name: "poc-ce", Client: api.Client()}
+	l := Lifecycle{Base: api.URL, Address: "poc-ce:18001", HealthURL: "http://poc-ce:18000", Name: "poc-ce", Client: api.Client()}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	var ready atomic.Bool
