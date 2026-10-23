@@ -77,12 +77,9 @@ export function MASAssociateCEModal({
                   >
                     {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                   </div>
-                  <div className="flex flex-col">
-                    <div className="flex items-baseline gap-1.5">
-                      <span className="text-sm font-medium font-mono">{ce.name}</span>
-                      <span className="text-xs text-muted-foreground font-mono">v{ce.version}</span>
-                    </div>
-                    <span className="text-xs text-muted-foreground font-mono">{ce.ce_type}</span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-sm font-medium font-mono">{ce.name}</span>
+                    <span className="text-xs text-muted-foreground font-mono">v{ce.version}</span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

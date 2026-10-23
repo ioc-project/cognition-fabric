@@ -547,7 +547,6 @@ export default function MASDetailsPage() {
                         <TableRow>
                           <TableHead>Name</TableHead>
                           <TableHead>Version</TableHead>
-                          <TableHead>Type</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Enabled</TableHead>
                           <TableHead />
@@ -558,7 +557,6 @@ export default function MASDetailsPage() {
                           <TableRow key={ce.ce_id} className="group">
                             <TableCell className="font-medium align-top py-3 font-mono">{ce.name}</TableCell>
                             <TableCell className="align-top py-3 font-mono">{ce.version}</TableCell>
-                            <TableCell className="font-medium align-top py-3 font-mono">{ce.ce_type}</TableCell>
                             <TableCell>
                               <Badge variant={ce.status === 'online' ? 'success' : 'inactive'}>{ce.status === 'online' ? 'Online' : 'Offline'}</Badge>
                             </TableCell>
