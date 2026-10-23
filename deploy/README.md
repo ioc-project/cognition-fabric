@@ -9,7 +9,9 @@ Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
    cp .env.example .env
    ```
 
-2. Start the stack:
+2. Edit `demo-ce/config/config.json` with your MAS id and agent identities (see [Demo CE](#demo-ce)).
+
+3. Start the stack:
    ```bash
    docker compose up -d
    docker compose --profile full-mas up -d   # adds the NOA sample app
@@ -21,7 +23,6 @@ settings and waits until every service is running, healthy or finished:
 make doctor                  # check Docker, .env and the rendered config
 make up                      # boot the whole stack
 make up profile=full-mas     # also boot the NOA sample app
-make up ce=policy-ce         # run the policy CE instead of the demo CE (edit policy-ce/policy.json first)
 make status                  # list containers
 make logs service=oxp-api    # follow one service (omit service= for all)
 make pull                    # pull the configured images
@@ -37,7 +38,7 @@ stack and its default network keep the same names from any checkout.
 See [`scripts/run-stack.sh`](scripts/run-stack.sh).
 
 All images are pulled from GHCR; nothing is built locally. The sample app is
-the only profiled service; everything else starts either way.
+the only profiled service; the Go Demo CE starts by default.
 
 Every image is composed as `${REGISTRY}/<image>:${TAG}`, so registry and tag
 can be overridden in `.env` without editing the compose file:
@@ -60,28 +61,41 @@ can be overridden in `.env` without editing the compose file:
 The one image whose source lives in this repo is the database. See
 [`docker-db/`](docker-db/) for the Dockerfile and how to publish a new tag.
 
-### Policy CE (optional)
+### Demo CE
 
-`ioc-scale-cf-policy-ce` is the [policy-ce](https://github.com/cisco-eti/ioc-scale-cf-demo-ce/tree/main/policy-ce)
-Cognition Engine: it registers with CFN and decides from a policy file, with
-identity rules and content rules per MAS. The stack runs one CE at a time, the
-demo CE by default; `make up ce=policy-ce` runs the policy CE instead. Both
-register with CFN, so `up` refuses while the other one is present: run
-`make down` before switching. A plain `docker compose up` still starts the demo
-CE; the policy CE needs `--profile policy-ce` there (and leave `ioc-scale-cf-demo-ce` out).
+`ioc-scale-cf-demo-ce` is the Go [Demo CE](https://github.com/cisco-eti/ioc-scale-cf-demo-ce/tree/main/demo-ce).
+It registers with CFN and evaluates identity and content rules per MAS from a
+JSON config file. It is the default CE for both `make up` and `docker compose up`.
 
-The policy file is [`policy-ce/policy.json`](policy-ce/policy.json), a generic
-starter mounted read-only into the container. Before use, replace
-`replace-with-your-mas-id` with the id of your MAS and the example agent and
-tool identities (`my-agent`, `my-tool`, `my-llm`) with the ones your MAS
-submits; a MAS that is not listed in the file is denied. To use a file of your
-own, set `POLICY_CE_CONFIG_FILE` in `.env`. The file format is described in the
-policy-ce README. `up` stops early if the file is missing.
+The CE waits for CFN to become healthy, then registers with `enforcing_url`
+and `enforcing_endpoint` for gRPC, plus `health_url` and `health_endpoint`
+(`/healthz`) for HTTP health probes. An existing registration is updated by
+PATCH after a conflict. The CE sends no heartbeats after registration; CFN
+probes its health endpoint. `/readyz` returns 200 after registration succeeds.
 
-Other settings: `CF_POLICY_CE_TAG` (image tag), `POLICY_CE_NAME` (name in CFN)
-and `POLICY_CE_EVIDENCE` (`topology`, the default, or `events`). Content rules
-with `llm_input`, `mcp_tool_input` or `a2a_message_input` evidence need the
-application to publish its events to `http://ioc-scale-cf-policy-ce:18000/events`.
+When upgrading, run `make pull` before `make up` so CFN, management and Demo CE
+use current images with compatible registration fields.
+
+The config file is [`demo-ce/config/config.json`](demo-ce/config/config.json), a generic
+starter mounted read-only at `/etc/demo-ce/config.json` through `CE_CONFIG_FILE`.
+Before use, replace `replace-with-your-mas-id` with the id of your MAS and the
+example identities (`my-agent`, `my-tool`, `my-llm`) with those your MAS submits.
+A MAS that is not listed in the file is denied. To use your own file, set
+`DEMO_CE_CONFIG_FILE` in `.env`; relative paths resolve from this repository.
+`make up` checks that the file exists before starting services.
+
+Other settings: `CF_DEMO_CE_TAG` (image tag), `DEMO_CE_NAME` (name in CFN),
+`DEMO_CE_LOG_FORMAT` (`console` or `json`), `LOG_LEVEL`, and `NO_COLOR`.
+`CE_CONTEXT_WAIT`, `CE_CONTEXT_ATTEMPTS`, and `CE_CONTEXT_RETRY_WAIT` control
+context retries. Evidence is selected per content rule in the JSON file.
+The CE uses `http://oxp-api:8000` for runtime context and Cognition Store access.
+Pre-call events can also be published to `http://ioc-scale-cf-demo-ce:18000/events`
+from the Compose network (or `http://localhost:18000/events` from the host).
+See the [Demo CE configuration reference](https://github.com/cisco-eti/ioc-scale-cf-demo-ce/blob/main/docs/content/demo-ce/configuration.md)
+for the file format.
+
+If upgrading from an older deployment, run `make down` with that checkout
+before updating, to remove the old CE containers.
 
 ### Enforcement (optional)
 
@@ -99,8 +113,7 @@ for each is in [`enforcement/README.md`](enforcement/README.md).
 | `ioc-scale-cf-mgmt-svc` | 9000 | Management backend API |
 | `ioc-scale-cf-mgmt-plane-ui` | 9001 | Management plane UI (Next.js) |
 | `ioc-scale-cfn-svc` | 9002 (HTTP), 9003 (gRPC) | Cognition Fabric Node |
-| `ioc-scale-cf-demo-ce` | 50051 (gRPC), 8080 (HTTP health) | Demo Cognition Engine |
-| `ioc-scale-cf-policy-ce` | 18001 (gRPC), 18000 (HTTP), loopback only | Policy-driven Cognition Engine, only with `ce=policy-ce` (it replaces the demo CE). See [Policy CE](#policy-ce-optional) |
+| `ioc-scale-cf-demo-ce` | 18001 (gRPC), 18000 (HTTP), loopback only | Go Demo CE with JSON configuration; default. See [Demo CE](#demo-ce) |
 | `ioc-scale-enforcement-proxy-mediation` | 9006 (gRPC), 9005 (HTTP) | Enforcement proxy mediation core. Audit destination is CFN; no internal database configured. Bound to 127.0.0.1 |
 
 ### OXP infrastructure
@@ -156,7 +169,7 @@ RabbitMQ, entering at `norm` and fanning out from there.
 | `noa-trip-planner` | 8125 | Multi-agent trip planner that emits OTLP spans into the collector |
 
 Nothing in the stack produces traces on its own, so without this there is
-nothing for the workers to process. It is the only profiled service, started
+nothing for the workers to process. It is started
 with `--profile full-mas`, which keeps the rest of the stack usable without a
 gateway key. Port 8125 rather than 8000, which belongs to
 `ioc-scale-cf-cognition-engine`.
