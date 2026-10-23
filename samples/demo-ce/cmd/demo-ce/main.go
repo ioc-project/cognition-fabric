@@ -1,11 +1,11 @@
-// policy-ce is a policy-driven Cognition Engine: it loads identity and content rules per MAS from a JSON
+// demo-ce is a demonstration Cognition Engine: it loads identity and content rules per MAS from a JSON
 // file and answers CFN's ioc.ce.v1.CognitionEngine calls from them. See the README.
 package main
 
 import (
 	"context"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"os"
@@ -15,11 +15,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/cfn"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/oxp"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/cfn"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/logging"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/oxp"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -33,20 +34,25 @@ func env(key, fallback string) string {
 }
 
 func run() error {
-	f, err := os.Open(env("CE_POLICY_FILE", "/etc/policy-ce/policy.json"))
+	logger, err := logging.New(os.Stderr, env("LOG_FORMAT", "console"), env("LOG_LEVEL", "info"), os.Getenv("NO_COLOR") != "")
 	if err != nil {
 		return err
 	}
-	set, err := policy.DecodeSet(f)
+	slog.SetDefault(logger)
+	f, err := os.Open(env("CE_CONFIG_FILE", "/etc/demo-ce/config.json"))
+	if err != nil {
+		return err
+	}
+	set, err := config.DecodeSet(f)
 	f.Close()
 	if err != nil {
 		return err
 	}
 	ceType, ceVersion := env("CE_TYPE", "CASA"), env("CE_VERSION", "reference-v1")
-	// With a single policy the MAS comes from CE_MAS_FILE, which a bootstrap may write after this CE
+	// With a single config the MAS comes from CE_MAS_FILE, which a bootstrap may write after this CE
 	// registers, so it cannot be required at startup; Evaluate reports Unavailable until it exists.
 	masID := func() (string, error) {
-		raw, err := os.ReadFile(env("CE_MAS_FILE", "/var/lib/policy-ce/mas-id"))
+		raw, err := os.ReadFile(env("CE_MAS_FILE", "/var/lib/demo-ce/mas-id"))
 		return strings.TrimSpace(string(raw)), err
 	}
 	// OXP supplies causal span history and the Cognition Store. Without it the CE
@@ -85,7 +91,7 @@ func run() error {
 	})
 	httpListen := env("HTTP_LISTEN_ADDRESS", ":18000")
 	// CFN probes this URL to check the CE is alive. It defaults to the advertised gRPC host and the HTTP port.
-	advertisedGRPC := env("ADVERTISED_GRPC_ADDRESS", "policy-ce:18001")
+	advertisedGRPC := env("ADVERTISED_GRPC_ADDRESS", "demo-ce:18001")
 	healthURL := os.Getenv("ADVERTISED_HEALTH_URL")
 	if healthURL == "" {
 		if healthURL, err = cfn.HealthURL(advertisedGRPC, httpListen); err != nil {
@@ -106,11 +112,11 @@ func run() error {
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		l := cfn.Lifecycle{Base: strings.TrimRight(env("CFN_URL", "http://ioc-scale-cfn-svc:9002"), "/"), Address: advertisedGRPC, HealthURL: healthURL, Name: env("CE_NAME", "policy-ce"), Version: ceVersion, Type: ceType, Client: client}
+		l := cfn.Lifecycle{Base: strings.TrimRight(env("CFN_URL", "http://ioc-scale-cfn-svc:9002"), "/"), Address: advertisedGRPC, HealthURL: healthURL, Name: env("CE_NAME", "demo-ce"), Version: ceVersion, Type: ceType, Client: client}
 		l.Run(ctx, ready.Store)
 	}()
 	identity, content := set.RuleCounts()
-	log.Printf("policy-ce started: mas_policies=%d identity_rules=%d content_rules=%d context_wait=%gs context_attempts=%d context_retry_wait=%gs", max(len(set.ByMAS), 1), identity, content, contextCfg.wait.Seconds(), contextCfg.attempts, contextCfg.retryWait.Seconds())
+	slog.Info("Demo CE started", "event", "startup", "stage", "CE", "mas_configs", max(len(set.ByMAS), 1), "identity_rules", identity, "content_rules", content, "oxp_enabled", oxpURL != "", "cognition_store_enabled", store != nil, "context_wait", contextCfg.wait, "context_attempts", contextCfg.attempts, "context_retry_wait", contextCfg.retryWait)
 	select {
 	case <-ctx.Done():
 	case err = <-failures:
@@ -134,6 +140,7 @@ func run() error {
 
 func main() {
 	if err := run(); err != nil {
-		log.Fatal(err)
+		slog.Error("Demo CE stopped", "error", err)
+		os.Exit(1)
 	}
 }

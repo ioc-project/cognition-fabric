@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 )
 
@@ -16,8 +16,8 @@ func llmRealtimeEngine(t *testing.T, f http.Handler, in *inbox.Inbox) *Router {
 	t.Helper()
 	srv := httptest.NewServer(f)
 	t.Cleanup(srv.Close)
-	p := llmPolicy()
-	return New(policy.Set{Single: &p}, Options{MasID: func() (string, error) { return "mas", nil }, OXPURL: srv.URL, Inbox: in, Wait: time.Second, Attempts: 3, RetryWait: 20 * time.Millisecond})
+	p := llmConfig()
+	return New(config.Set{Single: &p}, Options{MasID: func() (string, error) { return "mas", nil }, OXPURL: srv.URL, Inbox: in, Wait: time.Second, Attempts: 3, RetryWait: 20 * time.Millisecond})
 }
 
 // llmStarted is an llm.started event as OXP returns it: the GenAI messages of the prompt in data.input.
@@ -97,7 +97,7 @@ func TestRealtimeA2AMessageSentCarriesTheContent(t *testing.T) {
 	for text, want := range map[string]cev1.Decision{"find morning trains": cev1.Decision_DECISION_ALLOW, "my card is secret-value": cev1.Decision_DECISION_DENY} {
 		f := &fakeRealtime{}
 		f.add(messageSent("msg1", "a2a", "aaaaaaaaaaaaaaaa", a2aInput("m-1", text)))
-		out, err := realtimeEngine(t, policy.EvidenceA2AMessageInput, f, nil).Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.event_id": "msg1", "ioc.observe.message_id": "m-1"}))
+		out, err := realtimeEngine(t, config.EvidenceA2AMessageInput, f, nil).Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.event_id": "msg1", "ioc.observe.message_id": "m-1"}))
 		if err != nil || out.Outcome != want || !hasCheck(out, "OXP_REALTIME_EVENT") {
 			t.Fatalf("%q: %+v %v", text, out, err)
 		}
@@ -110,7 +110,7 @@ func TestRealtimeA2AMessageSentCarriesTheContent(t *testing.T) {
 func TestRealtimeA2AMessageSentOfAnotherMessageIsAGap(t *testing.T) {
 	f := &fakeRealtime{}
 	f.add(messageSent("msg1", "a2a", "aaaaaaaaaaaaaaaa", a2aInput("m-other", "find morning trains")))
-	out, err := realtimeEngine(t, policy.EvidenceA2AMessageInput, f, nil).Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.event_id": "msg1", "ioc.observe.message_id": "m-1"}))
+	out, err := realtimeEngine(t, config.EvidenceA2AMessageInput, f, nil).Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.event_id": "msg1", "ioc.observe.message_id": "m-1"}))
 	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP {
 		t.Fatalf("%+v %v", out, err)
 	}
@@ -120,7 +120,7 @@ func TestRealtimeMCPMessageSentJudgesTheArguments(t *testing.T) {
 	for query, want := range map[string]cev1.Decision{"ordinary trip": cev1.Decision_DECISION_ALLOW, "secret-value": cev1.Decision_DECISION_DENY} {
 		f := &fakeRealtime{}
 		f.add(messageSent("msg1", "mcp", "aaaaaaaaaaaaaaaa", map[string]any{"name": "lookup", "arguments": map[string]any{"query": query}}))
-		out, err := realtimeEngine(t, policy.EvidenceMCPToolInput, f, nil).Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.event_id": "msg1"}))
+		out, err := realtimeEngine(t, config.EvidenceMCPToolInput, f, nil).Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.event_id": "msg1"}))
 		if err != nil || out.Outcome != want || !hasCheck(out, "OXP_REALTIME_EVENT") {
 			t.Fatalf("%q: %+v %v", query, out, err)
 		}
@@ -134,7 +134,7 @@ func TestRealtimeMessageSentWithoutContentFallsBackToItsToolStartedChild(t *test
 			f := &fakeRealtime{}
 			f.add(messageSent("msg1", "a2a", "aaaaaaaaaaaaaaaa", input))
 			f.add(realtimeEvent("pre1", "msg1", trace, span, "secret-value"))
-			out, err := realtimeEngine(t, policy.EvidenceA2AMessageInput, f, nil).Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.event_id": "msg1"}))
+			out, err := realtimeEngine(t, config.EvidenceA2AMessageInput, f, nil).Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.event_id": "msg1"}))
 			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.DenialReason != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT || f.spanGets.Load() == 0 {
 				t.Fatalf("%+v %v", out, err)
 			}
@@ -151,7 +151,7 @@ func TestRealtimeCarrierEventOfTheWrongKindOrTraceIsAGap(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			f := &fakeRealtime{events: []map[string]any{event}}
-			out, err := realtimeEngine(t, policy.EvidenceA2AMessageInput, f, nil).Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.event_id": "msg1"}))
+			out, err := realtimeEngine(t, config.EvidenceA2AMessageInput, f, nil).Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.event_id": "msg1"}))
 			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP {
 				t.Fatalf("%+v %v", out, err)
 			}

@@ -1,5 +1,5 @@
 // Package evidence is what a content rule is judged against. A Judge reads one kind of evidence (the
-// "evidence" of a rule in the policy file) and decides whether the request passes the rules that use it.
+// "evidence" of a rule in the config file) and decides whether the request passes the rules that use it.
 // The kinds use the correlation resolver, with llm, mcp and a2a parsers for events the
 // application publishes before the call.
 package evidence
@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 )
 
@@ -22,12 +22,12 @@ type Judge interface {
 
 // Rule is a content rule with its pattern compiled.
 type Rule struct {
-	policy.ContentRule
+	config.ContentRule
 	Re *regexp.Regexp
 }
 
-// Compile compiles the patterns of rules; the policy decoder has already validated them.
-func Compile(rules []policy.ContentRule) []Rule {
+// Compile compiles the patterns of rules; the config decoder has already validated them.
+func Compile(rules []config.ContentRule) []Rule {
 	out := make([]Rule, 0, len(rules))
 	for _, r := range rules {
 		out = append(out, Rule{r, regexp.MustCompile(r.Pattern)})
@@ -42,17 +42,17 @@ type Text struct {
 }
 
 // RoleToolInput labels the arguments of an MCP tool call or the text of an A2A message (the roles a rule
-// can name for model requests are in package policy).
+// can name for model requests are in package config).
 const RoleToolInput = "tool_input"
 
 // Judges reports whether the rule looks at texts of this role.
 func (r Rule) Judges(role string) bool {
-	if k := r.EvidenceKind(); k == policy.EvidenceMCPToolInput || k == policy.EvidenceA2AMessageInput {
+	if k := r.EvidenceKind(); k == config.EvidenceMCPToolInput || k == config.EvidenceA2AMessageInput {
 		return role == RoleToolInput
 	}
 	roles := r.Roles
 	if len(roles) == 0 {
-		roles = policy.DefaultRoles
+		roles = config.DefaultRoles
 	}
 	for _, candidate := range roles {
 		if candidate == role {

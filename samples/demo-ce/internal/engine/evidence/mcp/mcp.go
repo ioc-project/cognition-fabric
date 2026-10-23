@@ -13,10 +13,10 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence/events"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence/events"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 )
 
@@ -27,7 +27,7 @@ type Judge struct{ events *events.Judge }
 
 // New returns the judge of mcp_tool_input evidence.
 func New(in *inbox.Inbox, wait time.Duration) *Judge {
-	return &Judge{&events.Judge{Inbox: in, Wait: wait, Kind: policy.EvidenceMCPToolInput, Extract: func(_ *cev1.EvaluateRequest, raw json.RawMessage) (string, []evidence.Text, bool) {
+	return &Judge{&events.Judge{Inbox: in, Wait: wait, Kind: config.EvidenceMCPToolInput, Extract: func(_ *cev1.EvaluateRequest, raw json.RawMessage) (string, []evidence.Text, bool) {
 		return events.ToolTexts(raw)
 	}}}
 }

@@ -8,13 +8,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/httpjson"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/httpjson"
 )
 
 // Lifecycle registers this CE with CFN. CFN is reached over REST. HealthURL is the base URL CFN probes with a GET on /healthz
@@ -117,24 +117,24 @@ func (l *Lifecycle) Run(ctx context.Context, setReady func(bool)) {
 	for {
 		if !l.Healthy(ctx) {
 			if !waiting && ctx.Err() == nil {
-				log.Printf("waiting for CFN at %s before registering", l.Base)
+				slog.WarnContext(ctx, "Waiting for CFN before registering", "event", "cfn.waiting", "stage", "CFN")
 			}
 			waiting = true
 		} else {
 			if waiting {
-				log.Printf("CFN reachable again")
+				slog.InfoContext(ctx, "CFN reachable again", "event", "cfn.reachable", "stage", "CFN")
 				waiting = false
 			}
 			id, err := l.Register(ctx)
 			if err == nil {
-				log.Printf("registered with CFN as %s, CFN probes %s", id, l.HealthURL)
+				slog.InfoContext(ctx, "Demo CE registered; CFN will probe its health endpoint", "event", "cfn.registered", "stage", "CFN", "ce_id", id, "ce_name", l.Name)
 				setReady(true)
 				<-ctx.Done()
 				setReady(false)
 				return
 			}
 			if ctx.Err() == nil {
-				log.Printf("CE registration unavailable: %v", err)
+				slog.WarnContext(ctx, "CE registration unavailable; retrying", "event", "cfn.registration_failed", "stage", "CFN")
 			}
 		}
 		select {

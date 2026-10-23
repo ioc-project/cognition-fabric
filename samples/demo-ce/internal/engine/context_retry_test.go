@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 )
 
@@ -22,9 +22,9 @@ func retryEngine(t *testing.T, options Options, handler http.HandlerFunc) *Route
 	t.Cleanup(server.Close)
 	options.OXPURL = server.URL
 	options.MasID = func() (string, error) { return "mas", nil }
-	return New(policy.Set{Single: &policy.Policy{
-		Rules:        []policy.Rule{{ID: "ALLOW_ROUTE", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}},
-		ContentRules: []policy.ContentRule{{ID: "NO_SECRET", Reason: "no secrets", Pattern: "secret-value", Evidence: policy.EvidenceToolInput, Destinations: []string{"target"}}},
+	return New(config.Set{Single: &config.Config{
+		Rules:        []config.Rule{{ID: "ALLOW_ROUTE", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}},
+		ContentRules: []config.ContentRule{{ID: "NO_SECRET", Reason: "no secrets", Pattern: "secret-value", Evidence: config.EvidenceToolInput, Destinations: []string{"target"}}},
 	}}, options)
 }
 

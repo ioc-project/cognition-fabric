@@ -1,4 +1,4 @@
-package policy
+package config
 
 import (
 	"os"
@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func TestExamplePolicyIsMultiMAS(t *testing.T) {
-	f, err := os.Open("../../config/policy.json")
+func TestExampleConfigIsMultiMAS(t *testing.T) {
+	f, err := os.Open("../../config/config.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -18,14 +18,14 @@ func TestExamplePolicyIsMultiMAS(t *testing.T) {
 	}
 }
 
-func TestSinglePolicyKeepsTheLegacyShape(t *testing.T) {
+func TestSingleConfigKeepsTheLegacyShape(t *testing.T) {
 	set, err := DecodeSet(strings.NewReader(`{"rules":[{"id":"A","effect":"ALLOW","reason":"r","sources":["s"]}]}`))
 	if err != nil || set.Single == nil || len(set.ByMAS) != 0 {
 		t.Fatalf("set=%+v err=%v", set, err)
 	}
 }
 
-func TestPolicySetRejectsInvalidFiles(t *testing.T) {
+func TestConfigSetRejectsInvalidFiles(t *testing.T) {
 	rule := `"rules":[{"id":"A","effect":"ALLOW","reason":"r","sources":["s"]}]`
 	for name, body := range map[string]string{
 		"missing mas_id":  `{"mas":[{` + rule + `}]}`,

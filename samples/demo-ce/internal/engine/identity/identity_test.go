@@ -2,7 +2,7 @@ package identity
 
 import (
 	"context"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	"net"
 	"strings"
 	"testing"
@@ -23,9 +23,9 @@ func request() *cev1.EvaluateRequest {
 }
 
 // An always-ALLOW implementation or ignored MAS scope must fail this test.
-func TestEvaluateReferencePolicy(t *testing.T) {
-	p := policy.Policy{Rules: []policy.Rule{{ID: "DELEGATION", Effect: "ALLOW", Reason: "Approved delegation", Sources: []string{"moderator"}, Destinations: []string{"schedule"}}, {ID: "QUARANTINE", Effect: "DENY", Reason: "Agent suspended", Destinations: []string{"concierge"}}}}
-	s := Engine{Policy: p, MasID: func() (string, error) { return "mas", nil }}
+func TestEvaluateReferenceConfig(t *testing.T) {
+	p := config.Config{Rules: []config.Rule{{ID: "DELEGATION", Effect: "ALLOW", Reason: "Approved delegation", Sources: []string{"moderator"}, Destinations: []string{"schedule"}}, {ID: "QUARANTINE", Effect: "DENY", Reason: "Agent suspended", Destinations: []string{"concierge"}}}}
+	s := Engine{Config: p, MasID: func() (string, error) { return "mas", nil }}
 	for _, tc := range []struct {
 		dest, mas string
 		outcome   cev1.Decision
@@ -53,7 +53,7 @@ func TestEvaluateReferencePolicy(t *testing.T) {
 }
 
 func TestOfficialRPCDenyPrecedence(t *testing.T) {
-	s := &Engine{Policy: policy.Policy{Rules: []policy.Rule{{ID: "OK", Effect: "ALLOW", Reason: "approved", Sources: []string{"moderator"}}, {ID: "SUSPENDED", Effect: "DENY", Reason: "Temporarily suspended agent", Destinations: []string{"schedule"}}}}, MasID: func() (string, error) { return "mas", nil }}
+	s := &Engine{Config: config.Config{Rules: []config.Rule{{ID: "OK", Effect: "ALLOW", Reason: "approved", Sources: []string{"moderator"}}, {ID: "SUSPENDED", Effect: "DENY", Reason: "Temporarily suspended agent", Destinations: []string{"schedule"}}}}, MasID: func() (string, error) { return "mas", nil }}
 	listener := bufconn.Listen(1024 * 1024)
 	g := grpc.NewServer()
 	cev1.RegisterCognitionEngineServer(g, s)
@@ -77,11 +77,11 @@ func TestOfficialRPCDenyPrecedence(t *testing.T) {
 }
 
 func TestContentRulesDoNotChangeReferenceDecision(t *testing.T) {
-	p, err := policy.Decode(strings.NewReader(`{"rules":[{"id":"APPROVED","effect":"ALLOW","reason":"approved route","sources":["moderator"],"destinations":["schedule"]}],"content_rules":[{"id":"SENSITIVE","reason":"No secret export","pattern":"password","destinations":["schedule"]}]}`))
+	p, err := config.Decode(strings.NewReader(`{"rules":[{"id":"APPROVED","effect":"ALLOW","reason":"approved route","sources":["moderator"],"destinations":["schedule"]}],"content_rules":[{"id":"SENSITIVE","reason":"No secret export","pattern":"password","destinations":["schedule"]}]}`))
 	if err != nil {
 		t.Fatal(err)
 	}
-	s := Engine{Policy: p, MasID: func() (string, error) { return "mas", nil }}
+	s := Engine{Config: p, MasID: func() (string, error) { return "mas", nil }}
 	got, err := s.Evaluate(context.Background(), request())
 	if err != nil || got.Outcome != cev1.Decision_DECISION_ALLOW || got.ChecksRun[0].CheckId != "APPROVED" {
 		t.Fatalf("content rule changed the identity decision: %+v %v", got, err)

@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/ids"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/ids"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/logging"
 )
 
 // ErrEventPending means OXP does not (yet) expose the event: it may still be on its way through ingestion.
@@ -88,12 +90,24 @@ func (c *Client) get(ctx context.Context, path string, q url.Values) ([]byte, er
 
 // Event reads GET /api/v1/realtime/events/{id}. ErrEventPending is a 404; any other error is a failure of
 // the endpoint, not an answer about the event.
-func (c *Client) Event(ctx context.Context, id string) (RealtimeEvent, error) {
+func (c *Client) Event(ctx context.Context, id string) (event RealtimeEvent, err error) {
+	started := time.Now()
+	logger := logging.FromContext(ctx).With("method", "GET", "endpoint", "/api/v1/realtime/events/{event_id}", "event_id", id)
+	logger.InfoContext(ctx, "Fetching pre-call event from OXP realtime", "event", "oxp.realtime.start", "stage", "OXP", "lookup", "event")
+	defer func() {
+		state := "available"
+		if errors.Is(err, ErrEventPending) {
+			state = "pending"
+		} else if err != nil {
+			state = "unavailable"
+		}
+		logger.InfoContext(ctx, "OXP realtime lookup finished; evidence still requires correlation validation", "event", "oxp.realtime.complete", "stage", "OXP", "state", state, "elapsed_ms", time.Since(started).Milliseconds())
+	}()
 	raw, err := c.get(ctx, "/api/v1/realtime/events/"+url.PathEscape(id), nil)
 	if err != nil {
 		return RealtimeEvent{}, err
 	}
-	event, err := decodeRealtime(raw)
+	event, err = decodeRealtime(raw)
 	if err != nil {
 		return RealtimeEvent{}, err
 	}
@@ -105,7 +119,19 @@ func (c *Client) Event(ctx context.Context, id string) (RealtimeEvent, error) {
 
 // SpanEvents reads the events of one span of the given types (GET /api/v1/realtime/spans/{span}/events).
 // A truncated listing cannot prove that an event is absent, so it is reported as invalid.
-func (c *Client) SpanEvents(ctx context.Context, spanID string, eventTypes string) ([]RealtimeEvent, error) {
+func (c *Client) SpanEvents(ctx context.Context, spanID string, eventTypes string) (events []RealtimeEvent, err error) {
+	started := time.Now()
+	logger := logging.FromContext(ctx).With("method", "GET", "endpoint", "/api/v1/realtime/spans/{span_id}/events", "event_types", eventTypes)
+	logger.InfoContext(ctx, "Fetching pre-call span events from OXP realtime", "event", "oxp.realtime.start", "stage", "OXP", "lookup", "span_events")
+	defer func() {
+		state := "available"
+		if errors.Is(err, ErrEventPending) {
+			state = "pending"
+		} else if err != nil {
+			state = "unavailable"
+		}
+		logger.InfoContext(ctx, "OXP realtime lookup finished; evidence still requires correlation validation", "event", "oxp.realtime.complete", "stage", "OXP", "state", state, "elapsed_ms", time.Since(started).Milliseconds())
+	}()
 	if !ids.Valid(spanID, 16) {
 		return nil, fmt.Errorf("%w: valid span required", ErrInvalidContext)
 	}

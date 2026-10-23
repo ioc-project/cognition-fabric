@@ -4,7 +4,7 @@ package inbox
 import (
 	"crypto/sha256"
 	"encoding/json"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/ids"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/ids"
 	"io"
 	"net/http"
 	"sync"

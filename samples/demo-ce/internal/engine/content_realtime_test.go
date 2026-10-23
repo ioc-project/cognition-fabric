@@ -12,8 +12,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 )
 
@@ -78,9 +78,9 @@ func realtimeEngine(t *testing.T, kind string, f http.Handler, in *inbox.Inbox) 
 	t.Helper()
 	srv := httptest.NewServer(f)
 	t.Cleanup(srv.Close)
-	return New(policy.Set{Single: &policy.Policy{
-		Rules:        []policy.Rule{{ID: "ALLOW_ROUTE", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}},
-		ContentRules: []policy.ContentRule{{ID: "NO_SECRET", Reason: "no secrets", Pattern: "secret-value", Evidence: kind, Destinations: []string{"target"}}},
+	return New(config.Set{Single: &config.Config{
+		Rules:        []config.Rule{{ID: "ALLOW_ROUTE", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}},
+		ContentRules: []config.ContentRule{{ID: "NO_SECRET", Reason: "no secrets", Pattern: "secret-value", Evidence: kind, Destinations: []string{"target"}}},
 	}}, Options{MasID: func() (string, error) { return "mas", nil }, OXPURL: srv.URL, Inbox: in, Wait: time.Second, Attempts: 5, RetryWait: 20 * time.Millisecond})
 }
 
@@ -112,7 +112,7 @@ func TestRealtimeParentFallbackSeparatesParallelRequestsOfOneSpan(t *testing.T) 
 		}
 		f.add(realtimeEvent(fmt.Sprintf("pre%d", n), fmt.Sprintf("msg%d", n), trace, span, query))
 	}
-	engine := realtimeEngine(t, policy.EvidenceToolInput, f, nil)
+	engine := realtimeEngine(t, config.EvidenceToolInput, f, nil)
 	var wg sync.WaitGroup
 	for parent, decision := range want {
 		wg.Go(func() {
@@ -133,7 +133,7 @@ func TestRealtimeWaitsForTheEventToBeIngested(t *testing.T) {
 				time.Sleep(80 * time.Millisecond)
 				f.add(realtimeEvent("pre1", "msg1", trace, span, "secret-value"))
 			}()
-			out, err := realtimeEngine(t, policy.EvidenceToolInput, f, nil).Evaluate(context.Background(), realtimeRequest(extra))
+			out, err := realtimeEngine(t, config.EvidenceToolInput, f, nil).Evaluate(context.Background(), realtimeRequest(extra))
 			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.DenialReason != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT {
 				t.Fatalf("%+v %v", out, err)
 			}
@@ -153,9 +153,9 @@ func TestRealtimePendingNeverFallsBackToTheSpanInput(t *testing.T) {
 		f.ServeHTTP(w, r)
 	}))
 	defer srv.Close()
-	engine := New(policy.Set{Single: &policy.Policy{
-		Rules:        []policy.Rule{{ID: "ALLOW_ROUTE", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}},
-		ContentRules: []policy.ContentRule{{ID: "NO_SECRET", Reason: "no secrets", Pattern: "secret-value", Evidence: policy.EvidenceToolInput, Destinations: []string{"target"}}},
+	engine := New(config.Set{Single: &config.Config{
+		Rules:        []config.Rule{{ID: "ALLOW_ROUTE", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}},
+		ContentRules: []config.ContentRule{{ID: "NO_SECRET", Reason: "no secrets", Pattern: "secret-value", Evidence: config.EvidenceToolInput, Destinations: []string{"target"}}},
 	}}, Options{MasID: func() (string, error) { return "mas", nil }, OXPURL: srv.URL, Wait: 300 * time.Millisecond, Attempts: 3, RetryWait: 20 * time.Millisecond})
 	out, err := engine.Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.event_id": "msg1"}))
 	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
@@ -173,7 +173,7 @@ func TestRealtimeFailureKeepsTheInboxBehavior(t *testing.T) {
 		r := spanRequest(refs["span_id"].(string))
 		r.TraceId = refs["trace_id"].(string)
 		r.Extra = map[string]string{"ioc.observe.session_id": event["session"].(map[string]any)["id"].(string), "ioc.observe.event_id": "msg1"}
-		out, err := realtimeEngine(t, policy.EvidenceA2AMessageInput, f, in).Evaluate(context.Background(), r)
+		out, err := realtimeEngine(t, config.EvidenceA2AMessageInput, f, in).Evaluate(context.Background(), r)
 		if err != nil || out.Outcome != cev1.Decision_DECISION_ALLOW || hasCheck(out, "OXP_REALTIME_EVENT") || out.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
 			t.Fatalf("status %d: %+v %v", status, out, err)
 		}
@@ -189,7 +189,7 @@ func TestRealtimeContradictoryReferencesAreAGap(t *testing.T) {
 	} {
 		t.Run(name, func(t *testing.T) {
 			f := &fakeRealtime{events: tc.events}
-			out, err := realtimeEngine(t, policy.EvidenceToolInput, f, nil).Evaluate(context.Background(), realtimeRequest(tc.extra))
+			out, err := realtimeEngine(t, config.EvidenceToolInput, f, nil).Evaluate(context.Background(), realtimeRequest(tc.extra))
 			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP {
 				t.Fatalf("%+v %v", out, err)
 			}
@@ -202,7 +202,7 @@ func TestRealtimePrecallEventIDInTheExtraIsIgnored(t *testing.T) {
 	f := &fakeRealtime{}
 	f.add(realtimeEvent("pre1", "other-msg", trace, span, "ordinary trip"))
 	f.add(realtimeEvent("pre2", "msg1", trace, span, "secret-value"))
-	out, err := realtimeEngine(t, policy.EvidenceToolInput, f, nil).Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.precall_event_id": "pre1", "ioc.observe.event_id": "msg1"}))
+	out, err := realtimeEngine(t, config.EvidenceToolInput, f, nil).Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.precall_event_id": "pre1", "ioc.observe.event_id": "msg1"}))
 	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY {
 		t.Fatalf("%+v %v", out, err)
 	}

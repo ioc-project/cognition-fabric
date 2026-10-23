@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 	"sort"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence/events"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/oxp"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence/events"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/logging"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/oxp"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 )
 
@@ -37,7 +37,7 @@ func (j *Judge) hasRealtimeRef(r *cev1.EvaluateRequest) bool {
 	if j.Client == nil {
 		return false
 	}
-	return j.Kind == policy.EvidenceLLMInput || r.Extra[ExtraEventID] != ""
+	return j.Kind == config.EvidenceLLMInput || r.Extra[ExtraEventID] != ""
 }
 
 // realtime resolves the pre-call content through the OXP realtime endpoints: the carrier's message.sent event
@@ -48,15 +48,15 @@ func (j *Judge) realtime(ctx context.Context, r *cev1.EvaluateRequest) (*current
 	if !j.hasRealtimeRef(r) {
 		return nil, realtimeNone, nil
 	}
-	if j.Kind == policy.EvidenceLLMInput {
+	if j.Kind == config.EvidenceLLMInput {
 		return j.realtimeModel(ctx, r)
 	}
 	parent := r.Extra[ExtraEventID]
-	if j.Kind != policy.EvidenceToolInput {
+	if j.Kind != config.EvidenceToolInput {
 		// The carrier's event is the message.sent. From Observe SDK 1.0.57 it holds the content itself.
 		sent, err := j.Client.Event(ctx, parent)
 		if err != nil {
-			return j.realtimeFailure(r, "event", err)
+			return j.realtimeFailure(ctx, r, "event", err)
 		}
 		current, err := j.messageSentCandidate(r, sent)
 		if err != nil {
@@ -70,7 +70,7 @@ func (j *Judge) realtime(ctx context.Context, r *cev1.EvaluateRequest) (*current
 	}
 	list, err := j.Client.SpanEvents(ctx, r.SpanId, "tool.started")
 	if err != nil {
-		return j.realtimeFailure(r, "span_events", err)
+		return j.realtimeFailure(ctx, r, "span_events", err)
 	}
 	var selected *currentEvent
 	for _, event := range list {
@@ -93,7 +93,7 @@ func (j *Judge) realtime(ctx context.Context, r *cev1.EvaluateRequest) (*current
 	return selected, realtimeFound, nil
 }
 
-func (j *Judge) realtimeFailure(r *cev1.EvaluateRequest, what string, err error) (*currentEvent, realtimeState, error) {
+func (j *Judge) realtimeFailure(ctx context.Context, r *cev1.EvaluateRequest, what string, err error) (*currentEvent, realtimeState, error) {
 	switch {
 	case errors.Is(err, oxp.ErrEventPending):
 		return nil, realtimePending, nil
@@ -101,7 +101,7 @@ func (j *Judge) realtimeFailure(r *cev1.EvaluateRequest, what string, err error)
 		return nil, realtimeNone, err
 	}
 	// The endpoint is unavailable: keep the behavior without it.
-	log.Printf("flow component=policy-ce event=oxp_realtime trace_id=%s span_id=%s lookup=%s available=false err=%q", r.TraceId, r.SpanId, what, err)
+	logging.FromContext(ctx).WarnContext(ctx, "OXP realtime unavailable; trying inbox and session/span fallback", "event", "oxp.realtime.fallback", "stage", "OXP", "lookup", what)
 	return nil, realtimeNone, nil
 }
 
@@ -116,7 +116,7 @@ func (j *Judge) realtimeCandidate(r *cev1.EvaluateRequest, event oxp.RealtimeEve
 	if !ok {
 		return nil, errors.New("pre-call event has no tool input")
 	}
-	if want := r.Extra["ioc.observe.message_id"]; j.Kind == policy.EvidenceA2AMessageInput && want != "" && callID != "" && want != callID {
+	if want := r.Extra["ioc.observe.message_id"]; j.Kind == config.EvidenceA2AMessageInput && want != "" && callID != "" && want != callID {
 		return nil, errors.New("pre-call event belongs to a different message")
 	}
 	sortTexts(texts)
@@ -136,7 +136,7 @@ func (j *Judge) realtimeModel(ctx context.Context, r *cev1.EvaluateRequest) (*cu
 		// A model request is never required to be in realtime: any failure of the endpoint, including a
 		// malformed answer, leaves the inbox and the span fallback in charge.
 		if !errors.Is(err, oxp.ErrEventPending) {
-			log.Printf("flow component=policy-ce event=oxp_realtime trace_id=%s span_id=%s lookup=llm_span_events available=false err=%q", r.TraceId, r.SpanId, err)
+			logging.FromContext(ctx).WarnContext(ctx, "OXP realtime unavailable; trying inbox and session/span fallback", "event", "oxp.realtime.fallback", "stage", "OXP", "lookup", "llm_span_events")
 		}
 		return nil, realtimeNone, nil
 	}
@@ -174,7 +174,7 @@ func (j *Judge) realtimeModel(ctx context.Context, r *cev1.EvaluateRequest) (*cu
 // arguments of an MCP tools/call. It returns nil, nil when the event has no usable content (older SDKs).
 func (j *Judge) messageSentCandidate(r *cev1.EvaluateRequest, event oxp.RealtimeEvent) (*currentEvent, error) {
 	want := "a2a.message.sent"
-	if j.Kind == policy.EvidenceMCPToolInput {
+	if j.Kind == config.EvidenceMCPToolInput {
 		want = "mcp.message.sent"
 	}
 	if event.Type != want {
@@ -199,7 +199,7 @@ func (j *Judge) messageSentCandidate(r *cev1.EvaluateRequest, event oxp.Realtime
 	collect := func(value any) {
 		events.CollectStrings(value, func(text string) { texts = append(texts, evidence.Text{Role: evidence.RoleToolInput, Text: text}) })
 	}
-	if j.Kind == policy.EvidenceMCPToolInput {
+	if j.Kind == config.EvidenceMCPToolInput {
 		arguments, present := input["arguments"]
 		if _, isObject := arguments.(map[string]any); !present || !isObject {
 			return nil, nil

@@ -61,8 +61,8 @@ func TestRegistrationConflictUpdatesEndpointAndHealthURL(t *testing.T) {
 
 func TestHealthURL(t *testing.T) {
 	for _, c := range []struct{ grpc, listen, want string }{
-		{"policy-ce:18001", ":18000", "http://policy-ce:18000"},
-		{"policy-ce:18001", "0.0.0.0:9000", "http://policy-ce:9000"},
+		{"demo-ce:18001", ":18000", "http://demo-ce:18000"},
+		{"demo-ce:18001", "0.0.0.0:9000", "http://demo-ce:9000"},
 		{"10.0.0.5:18001", ":18000", "http://10.0.0.5:18000"},
 		{"[::1]:18001", ":18000", "http://[::1]:18000"},
 	} {
@@ -72,10 +72,10 @@ func TestHealthURL(t *testing.T) {
 		}
 	}
 	for _, c := range []struct{ grpc, listen string }{
-		{"policy-ce", ":18000"},
+		{"demo-ce", ":18000"},
 		{":18001", ":18000"},
-		{"policy-ce:18001", "18000"},
-		{"policy-ce:18001", ""},
+		{"demo-ce:18001", "18000"},
+		{"demo-ce:18001", ""},
 	} {
 		if got, err := HealthURL(c.grpc, c.listen); err == nil {
 			t.Errorf("HealthURL(%q, %q) = %q, want an error", c.grpc, c.listen, got)

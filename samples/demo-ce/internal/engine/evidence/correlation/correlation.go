@@ -10,11 +10,12 @@ import (
 	"sort"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence/events"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/oxp"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence/events"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/logging"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/oxp"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 )
 
@@ -39,7 +40,7 @@ type currentEvent struct {
 var errPreCallAvailable = errors.New("pre-call evidence arrived during OXP lookup")
 
 func (j *Judge) Evaluate(ctx context.Context, r *cev1.EvaluateRequest, out *cev1.EvaluateResponse, rules []evidence.Rule, _ time.Time) *cev1.EvaluateResponse {
-	if j.Kind == policy.EvidenceMCPToolInput && r.ActionClass != cev1.ActionClass_ACTION_CLASS_MCP_TOOL_CALL && r.Extra["ioc.item.kind"] != "tool_call" {
+	if j.Kind == config.EvidenceMCPToolInput && r.ActionClass != cev1.ActionClass_ACTION_CLASS_MCP_TOOL_CALL && r.Extra["ioc.item.kind"] != "tool_call" {
 		return out
 	}
 	session := r.SessionId
@@ -97,7 +98,7 @@ func (j *Judge) Evaluate(ctx context.Context, r *cev1.EvaluateRequest, out *cev1
 			if session != "" && session != event.session {
 				return evidence.MissingContext(out, cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP, "pre-call event belongs to a different session")
 			}
-			requireDefinitions := j.Kind == policy.EvidenceLLMInput && needsDefinitions(rules) && !event.definitionsKnown
+			requireDefinitions := j.Kind == config.EvidenceLLMInput && needsDefinitions(rules) && !event.definitionsKnown
 			history, herr := lookup(event.session, !requireDefinitions, false)
 			if errors.Is(herr, oxp.ErrInvalidContext) {
 				return evidence.MissingContext(out, cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP, herr.Error())
@@ -127,8 +128,13 @@ func (j *Judge) Evaluate(ctx context.Context, r *cev1.EvaluateRequest, out *cev1
 				if event.realtime {
 					realtimeCheck(out, event.via)
 				}
+				source := "inbox"
+				if event.realtime {
+					source = "oxp_realtime"
+				}
+				logging.FromContext(ctx).InfoContext(ctx, "Pre-call input selected after correlation validation", "event", "evidence.selected", "stage", "EVIDENCE", "source", source, "evidence", j.Kind, "trace_identity_confirmed", true, "oxp_history_available", history != nil, "required_tool_definitions_from_oxp", requireDefinitions)
 				j.recordContext(out, history, true)
-				return j.decide(out, rules, texts, reason)
+				return j.decide(ctx, out, rules, texts, reason)
 			}
 		} else if !present && j.Client != nil && session != "" && rtState != realtimePending {
 			// A pending realtime event is awaited rather than replaced by the span's own input.
@@ -143,10 +149,11 @@ func (j *Judge) Evaluate(ctx context.Context, r *cev1.EvaluateRequest, out *cev1
 			}
 			if history != nil && waitCtx.Err() == nil {
 				if texts, ok := inputTexts(history.Current, j.Kind); ok {
-					if j.Kind != policy.EvidenceLLMInput || !needsDefinitions(rules) || hasDefinitions(history.Current) {
+					if j.Kind != config.EvidenceLLMInput || !needsDefinitions(rules) || hasDefinitions(history.Current) {
 						out.ContextSufficiency = cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC
+						logging.FromContext(ctx).InfoContext(ctx, "Using OXP session/span input as fallback; trace identity is unconfirmed", "event", "evidence.selected", "stage", "EVIDENCE", "source", "oxp_span_fallback", "evidence", j.Kind, "trace_identity_confirmed", false)
 						j.recordContext(out, history, false)
-						return j.decide(out, rules, texts, "input of the selected OXP session/span; trace identity unconfirmed")
+						return j.decide(ctx, out, rules, texts, "input of the selected OXP session/span; trace identity unconfirmed")
 					}
 				}
 			}
@@ -154,6 +161,7 @@ func (j *Judge) Evaluate(ctx context.Context, r *cev1.EvaluateRequest, out *cev1
 		if attempt >= attempts {
 			return evidence.MissingContext(out, cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE, fmt.Sprintf("required input/context was not visible after %d attempts", attempts))
 		}
+		logging.FromContext(ctx).InfoContext(ctx, "Required input/context is not ready; retrying within decision budget", "event", "context.retry", "stage", "OXP", "attempt", attempt, "max_attempts", attempts, "retry_wait", retryWait)
 		if err := j.waitForRetry(waitCtx, r, retryWait, snapshot); err != nil {
 			return evidence.MissingContext(out, cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE, "required input/context was not visible before the decision deadline")
 		}
@@ -238,11 +246,11 @@ func (j *Judge) recordContext(out *cev1.EvaluateResponse, history *oxp.ActivityC
 	out.ChecksRun = append(out.ChecksRun, &cev1.CheckResult{CheckId: "OXP_CAUSAL_CONTEXT", Passed: true, Reason: fmt.Sprintf("%d parent/link ancestors; %s", len(history.Ancestors), binding)})
 }
 
-func (j *Judge) decide(out *cev1.EvaluateResponse, rules []evidence.Rule, texts []evidence.Text, reason string) *cev1.EvaluateResponse {
+func (j *Judge) decide(ctx context.Context, out *cev1.EvaluateResponse, rules []evidence.Rule, texts []evidence.Text, reason string) *cev1.EvaluateResponse {
 	hit := ""
 	for _, text := range texts {
 		for _, rule := range rules {
-			if (j.Kind == policy.EvidenceToolInput || rule.Judges(text.Role)) && rule.Re.MatchString(text.Text) {
+			if (j.Kind == config.EvidenceToolInput || rule.Judges(text.Role)) && rule.Re.MatchString(text.Text) {
 				hit = rule.ID
 				break
 			}
@@ -251,7 +259,7 @@ func (j *Judge) decide(out *cev1.EvaluateResponse, rules []evidence.Rule, texts 
 			break
 		}
 	}
-	check := &cev1.CheckResult{CheckId: "DEMO_CONTENT_POLICY", Passed: hit == "", Reason: reason}
+	check := &cev1.CheckResult{CheckId: "DEMO_CONTENT_CONFIG", Passed: hit == "", Reason: reason}
 	if hit != "" {
 		out.Outcome = cev1.Decision_DECISION_DENY
 		out.DenialReason = cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT
@@ -259,6 +267,7 @@ func (j *Judge) decide(out *cev1.EvaluateResponse, rules []evidence.Rule, texts 
 		check.Reason = out.Reason
 	}
 	out.ChecksRun = append(out.ChecksRun, check)
+	logging.FromContext(ctx).InfoContext(ctx, "Content checks evaluated against selected input", "event", "content.complete", "stage", "CONTENT", "outcome", logging.Outcome(out), "matched_rule", hit, "rule_count", len(rules), "evidence", j.Kind)
 	return out
 }
 
@@ -283,7 +292,7 @@ func (j *Judge) current(r *cev1.EvaluateRequest) (*currentEvent, bool, error) {
 			continue
 		}
 		expected := "tool.started"
-		if j.Kind == policy.EvidenceLLMInput {
+		if j.Kind == config.EvidenceLLMInput {
 			expected = "llm.started"
 		}
 		if envelope.Type != expected {
@@ -293,12 +302,12 @@ func (j *Judge) current(r *cev1.EvaluateRequest) (*currentEvent, bool, error) {
 		var texts []evidence.Text
 		var ok bool
 		definitionsKnown := false
-		if j.Kind == policy.EvidenceLLMInput {
+		if j.Kind == config.EvidenceLLMInput {
 			texts, definitionsKnown, ok = modelInput(envelope.Data.Input)
 		} else {
 			var callID string
 			_, callID, texts, ok = events.ToolEvent(raw)
-			if want := r.Extra["ioc.observe.message_id"]; j.Kind == policy.EvidenceA2AMessageInput && want != "" && callID != "" && want != callID {
+			if want := r.Extra["ioc.observe.message_id"]; j.Kind == config.EvidenceA2AMessageInput && want != "" && callID != "" && want != callID {
 				continue
 			}
 		}
@@ -328,7 +337,7 @@ func (j *Judge) current(r *cev1.EvaluateRequest) (*currentEvent, bool, error) {
 func needsDefinitions(rules []evidence.Rule) bool {
 	for _, r := range rules {
 		for _, role := range r.Roles {
-			if role == policy.RoleToolDefinition {
+			if role == config.RoleToolDefinition {
 				return true
 			}
 		}

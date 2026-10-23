@@ -2,7 +2,7 @@
 
 Template Cognition Engine implementing the `ioc.ce.v1.CognitionEngine` gRPC contract.
 The implementation, Dockerfile and tests are retained for CE teams. The repository's Compose deployment
-runs `policy-ce`; use the local instructions below to run this template.
+runs `demo-ce`; use the local instructions below to run this template.
 
 ## Overview
 
@@ -15,8 +15,8 @@ Template CE provides authorization decisions (ALLOW / DENY / MODIFY) for in-scop
 
 ```bash
 cd template-ce
-uv sync
-uv run python -m src
+uv sync --extra test
+HEALTH_PORT=8081 uv run python -m src
 ```
 
 Server runs on `localhost:50051` (gRPC)
@@ -62,26 +62,20 @@ Returns CE metadata.
 |----------|-------------|---------|
 | `CE_NAME` | CE name for registration | `template-ce` |
 | `CE_VERSION` | CE version for registration | `1.0.0` |
-| `CE_TYPE` | CE type (CASA or DETECTIVE) | `CASA` |
 | `GRPC_PORT` | gRPC server port | `50051` |
 | `CFN_URL` | CFN service URL for registration | (disabled) |
 | `COGNITION_ENGINE_HOST` | Advertised host for this CE | `localhost` |
 | `HEALTH_PORT` | HTTP port serving `GET /healthz` (CFN probes it). An invalid value fails startup | `8080` |
 | `COGNITION_STORE_URL` | Cognition Store API URL | (disabled) |
 
-### Running Multiple Instances (Upgrade Demo)
+### Listener ports
 
-To demonstrate CE registration and version upgrades:
+Use `HEALTH_PORT=8081` for local development. The notification server binds port `8080`,
+which also happens to be the default health port. Separate them to start successfully.
+The notification listener is currently fixed at `8080`; changing `HTTP_PORT` affects the
+advertised registration URL, not the listener. Concurrent instances need separate network namespaces.
 
-```bash
-# Start v1.0.0
-CE_NAME=template-ce CE_VERSION=1.0.0 uv run python -m src
-
-# In another terminal, start v1.1.0 (same name, new version)
-CE_NAME=template-ce CE_VERSION=1.1.0 GRPC_PORT=50052 HEALTH_PORT=8081 uv run python -m src
-```
-
-Each instance needs its own `GRPC_PORT` and `HEALTH_PORT`. The second instance will get a 409 Conflict (CE already exists), extract the `existing_ce_id`, and update via PATCH.
+See the [documentation site source](../docs/README.md) for setup and extension guidance.
 
 ## Architecture
 

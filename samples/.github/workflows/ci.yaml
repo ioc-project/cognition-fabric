@@ -1,4 +1,4 @@
-name: Policy CE CI workflow
+name: Demo CE CI workflow
 
 on:
   push:
@@ -16,14 +16,14 @@ permissions:
   packages: write # needed to push docker image to gar or ecr
 
 jobs:
-  ################################## policy-ce (Go) ##############################
+  ################################## demo-ce (Go) ##############################
   ###############################################################################
-  # policy-ce depends on the private module github.com/cisco-eti/ioc-scale-cfn-svc. As in the enforcement proxy
+  # demo-ce depends on the private module github.com/cisco-eti/ioc-scale-cfn-svc. As in the enforcement proxy
   # CI, a short-lived GitHub App token scoped to that repository is issued through Vault (./.github/actions/cfn-token,
   # which needs the vars KEEPER_URL, VAULT_NAMESPACE, VAULT_SECRET_PATH and the secrets VAULT_APPROLE_ROLE_ID
   # and VAULT_APPROLE_SECRET_ID).
-  policy-ce-unit-tests:
-    name: policy-ce Unit Tests
+  demo-ce-unit-tests:
+    name: demo-ce Unit Tests
     runs-on:
       group: ${{ vars.DEFAULT_ARC_RUNNERS }}
     env:
@@ -38,8 +38,8 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version-file: policy-ce/go.mod
-          cache-dependency-path: policy-ce/go.sum
+          go-version-file: demo-ce/go.mod
+          cache-dependency-path: demo-ce/go.sum
 
       - name: Generate CFN module token
         id: cfn-token
@@ -59,7 +59,7 @@ jobs:
 
       - name: Run Unit Tests
         run: |
-          cd policy-ce
+          cd demo-ce
           go vet ./...
           go test ./...
 
@@ -67,10 +67,10 @@ jobs:
         if: always()
         run: rm -f "$GIT_CONFIG_GLOBAL"
 
-  # Policy CE images are published from main; PRs and manual runs validate the build.
-  policy-ce-docker-build-push:
-    name: policy-ce Build & Push Docker Image
-    needs: [ policy-ce-unit-tests ]
+  # Demo CE images are published from main; PRs and manual runs validate the build.
+  demo-ce-docker-build-push:
+    name: demo-ce Build & Push Docker Image
+    needs: [ demo-ce-unit-tests ]
     runs-on:
       group: ${{ vars.DEFAULT_ARC_RUNNERS }}
 
@@ -109,33 +109,33 @@ jobs:
         if: github.event_name != 'push' || github.ref != 'refs/heads/main'
         uses: docker/build-push-action@v6
         with:
-          context: policy-ce
-          file: policy-ce/Dockerfile
+          context: demo-ce
+          file: demo-ce/Dockerfile
           push: false
           platforms: linux/amd64
           secrets: |
             github_token=${{ steps.cfn-token.outputs.token }}
           tags: |
-            ghcr.io/${{ github.repository }}/policy-ce:${{ steps.meta.outputs.build_date }}-${{ steps.meta.outputs.short_sha }}
-          cache-from: type=gha,scope=policy-ce
-          cache-to: type=gha,mode=max,scope=policy-ce
+            ghcr.io/${{ github.repository }}/demo-ce:${{ steps.meta.outputs.build_date }}-${{ steps.meta.outputs.short_sha }}
+          cache-from: type=gha,scope=demo-ce
+          cache-to: type=gha,mode=max,scope=demo-ce
           provenance: false
 
       - name: Build and push Docker image (main)
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v6
         with:
-          context: policy-ce
-          file: policy-ce/Dockerfile
+          context: demo-ce
+          file: demo-ce/Dockerfile
           push: true
           platforms: linux/amd64,linux/arm64
           secrets: |
             github_token=${{ steps.cfn-token.outputs.token }}
           tags: |
-            ghcr.io/${{ github.repository }}/policy-ce:latest
-            ghcr.io/${{ github.repository }}/policy-ce:${{ steps.meta.outputs.build_date }}-${{ steps.meta.outputs.short_sha }}
-          cache-from: type=gha,scope=policy-ce
-          cache-to: type=gha,mode=max,scope=policy-ce
+            ghcr.io/${{ github.repository }}/demo-ce:latest
+            ghcr.io/${{ github.repository }}/demo-ce:${{ steps.meta.outputs.build_date }}-${{ steps.meta.outputs.short_sha }}
+          cache-from: type=gha,scope=demo-ce
+          cache-to: type=gha,mode=max,scope=demo-ce
           provenance: false
 
   ################################## Send Status for PR Checks ###########################
@@ -144,7 +144,7 @@ jobs:
   reusable-workflow-ci-status:
     name: Reusable Workflow CI Status
     # This should be an array of ALL active jobs that are used/run
-    needs: [ policy-ce-unit-tests, policy-ce-docker-build-push ]
+    needs: [ demo-ce-unit-tests, demo-ce-docker-build-push ]
     if: always()
     runs-on:
       group: ${{ vars.DEFAULT_ARC_RUNNERS }}

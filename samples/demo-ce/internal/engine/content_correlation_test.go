@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 )
 
@@ -25,9 +25,9 @@ func spanEngine(t *testing.T, kind string, wait time.Duration, handler http.Hand
 	t.Helper()
 	srv := httptest.NewServer(handler)
 	t.Cleanup(srv.Close)
-	return New(policy.Set{Single: &policy.Policy{
-		Rules:        []policy.Rule{{ID: "ALLOW_ROUTE", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}},
-		ContentRules: []policy.ContentRule{{ID: "NO_SECRET", Reason: "no secrets", Pattern: "secret-value", Evidence: kind, Destinations: []string{"target"}}},
+	return New(config.Set{Single: &config.Config{
+		Rules:        []config.Rule{{ID: "ALLOW_ROUTE", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}},
+		ContentRules: []config.ContentRule{{ID: "NO_SECRET", Reason: "no secrets", Pattern: "secret-value", Evidence: kind, Destinations: []string{"target"}}},
 	}}, Options{MasID: func() (string, error) { return "mas", nil }, OXPURL: srv.URL, Wait: wait})
 }
 
@@ -49,9 +49,9 @@ func TestUnifiedContextUsesNativePreCallInputAndOXPHistory(t *testing.T) {
 		}})
 	}))
 	defer srv.Close()
-	p := policy.Policy{Rules: []policy.Rule{{ID: "A", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}},
-		ContentRules: []policy.ContentRule{{ID: "C", Reason: "no impossible text", Pattern: "impossible-marker", Evidence: policy.EvidenceA2AMessageInput, Destinations: []string{"target"}}}}
-	engine := New(policy.Set{Single: &p}, Options{MasID: func() (string, error) { return "mas", nil }, OXPURL: srv.URL, Inbox: in, Wait: time.Second})
+	p := config.Config{Rules: []config.Rule{{ID: "A", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}},
+		ContentRules: []config.ContentRule{{ID: "C", Reason: "no impossible text", Pattern: "impossible-marker", Evidence: config.EvidenceA2AMessageInput, Destinations: []string{"target"}}}}
+	engine := New(config.Set{Single: &p}, Options{MasID: func() (string, error) { return "mas", nil }, OXPURL: srv.URL, Inbox: in, Wait: time.Second})
 	r := spanRequest(activity)
 	r.TraceId = refs["trace_id"].(string)
 	r.Extra = nil // native LLM/A2A events can supply the session even when metadata does not.
@@ -78,12 +78,12 @@ func TestOXPFallbackJudgesActualInputShapes(t *testing.T) {
 		name, kind, spanType string
 		attrs                map[string]string
 	}{
-		{"decorated tool", policy.EvidenceToolInput, "tool", map[string]string{"ioa_observe.entity.input": `{"args":[],"kwargs":{"query":"secret-value"}}`}},
-		{"A2A tool wrapper", policy.EvidenceA2AMessageInput, "tool", map[string]string{"ioa_observe.entity.input": `{"args":[],"kwargs":{"task":"secret-value"}}`}},
-		{"MCP raw request", policy.EvidenceMCPToolInput, "mcp", map[string]string{"ioa_observe.entity.input": `{"method":"tools/call","params":{"name":"lookup","arguments":{"query":"secret-value"}},"id":"1"}`}},
-		{"MCP request attributes", policy.EvidenceMCPToolInput, "mcp", map[string]string{"mcp.method.name": "tools/call", "mcp.request.argument": `{"name":"lookup","arguments":{"query":"secret-value"}}`}},
-		{"MCP serialized root and params", policy.EvidenceMCPToolInput, "mcp", map[string]string{"ioa_observe.entity.input": `{"root":"{\"method\":\"tools/call\",\"params\":\"{\\\"name\\\":\\\"lookup\\\",\\\"arguments\\\":{\\\"query\\\":\\\"secret-value\\\"}}\"}"}`}},
-		{"model input", policy.EvidenceLLMInput, "llm", map[string]string{"gen_ai.input.messages": `[{"role":"user","parts":[{"type":"text","content":"secret-value"}]}]`}},
+		{"decorated tool", config.EvidenceToolInput, "tool", map[string]string{"ioa_observe.entity.input": `{"args":[],"kwargs":{"query":"secret-value"}}`}},
+		{"A2A tool wrapper", config.EvidenceA2AMessageInput, "tool", map[string]string{"ioa_observe.entity.input": `{"args":[],"kwargs":{"task":"secret-value"}}`}},
+		{"MCP raw request", config.EvidenceMCPToolInput, "mcp", map[string]string{"ioa_observe.entity.input": `{"method":"tools/call","params":{"name":"lookup","arguments":{"query":"secret-value"}},"id":"1"}`}},
+		{"MCP request attributes", config.EvidenceMCPToolInput, "mcp", map[string]string{"mcp.method.name": "tools/call", "mcp.request.argument": `{"name":"lookup","arguments":{"query":"secret-value"}}`}},
+		{"MCP serialized root and params", config.EvidenceMCPToolInput, "mcp", map[string]string{"ioa_observe.entity.input": `{"root":"{\"method\":\"tools/call\",\"params\":\"{\\\"name\\\":\\\"lookup\\\",\\\"arguments\\\":{\\\"query\\\":\\\"secret-value\\\"}}\"}"}`}},
+		{"model input", config.EvidenceLLMInput, "llm", map[string]string{"gen_ai.input.messages": `[{"role":"user","parts":[{"type":"text","content":"secret-value"}]}]`}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			engine := spanEngine(t, tc.kind, time.Second, func(w http.ResponseWriter, r *http.Request) {
@@ -98,7 +98,7 @@ func TestOXPFallbackJudgesActualInputShapes(t *testing.T) {
 }
 
 func TestOXPFallbackSeparatesParallelCallsToTheSameTool(t *testing.T) {
-	engine := spanEngine(t, policy.EvidenceToolInput, time.Second, func(w http.ResponseWriter, r *http.Request) {
+	engine := spanEngine(t, config.EvidenceToolInput, time.Second, func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{"spans": []any{
 			evidenceSpan("1111111111111111", "", "tool", map[string]string{"ioa_observe.entity.input": `{"kwargs":{"query":"ordinary trip"}}`}),
 			evidenceSpan("2222222222222222", "", "tool", map[string]string{"ioa_observe.entity.input": `{"kwargs":{"query":"secret-value"}}`}),
@@ -117,7 +117,7 @@ func TestOXPFallbackSeparatesParallelCallsToTheSameTool(t *testing.T) {
 }
 
 func TestOXPFallbackDoesNotJudgeASiblingsOrAncestorsContent(t *testing.T) {
-	engine := spanEngine(t, policy.EvidenceToolInput, time.Second, func(w http.ResponseWriter, r *http.Request) {
+	engine := spanEngine(t, config.EvidenceToolInput, time.Second, func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{"spans": []any{
 			evidenceSpan("1111111111111111", "", "llm", map[string]string{"gen_ai.input.messages": `[{"role":"user","parts":[{"type":"text","content":"secret-value"}]}]`}),
 			evidenceSpan(span, "1111111111111111", "tool", map[string]string{"ioa_observe.entity.input": `{"kwargs":{"query":"ordinary trip"}}`}),
@@ -139,7 +139,7 @@ func TestOXPFallbackDoesNotJudgeASiblingsOrAncestorsContent(t *testing.T) {
 
 func TestOXPFallbackWaitsForActivityAndItsCausalContext(t *testing.T) {
 	var calls atomic.Int32
-	engine := spanEngine(t, policy.EvidenceToolInput, time.Second, func(w http.ResponseWriter, r *http.Request) {
+	engine := spanEngine(t, config.EvidenceToolInput, time.Second, func(w http.ResponseWriter, r *http.Request) {
 		rows := []any{evidenceSpan(span, "1111111111111111", "tool", map[string]string{"ioa_observe.entity.input": `{"kwargs":{"query":"secret-value"}}`})}
 		if calls.Add(1) > 1 {
 			rows = append(rows, evidenceSpan("1111111111111111", "", "agent", nil))
@@ -153,7 +153,7 @@ func TestOXPFallbackWaitsForActivityAndItsCausalContext(t *testing.T) {
 }
 
 func TestOXPFallbackMissingEvidenceFailsWithinCallerDeadline(t *testing.T) {
-	engine := spanEngine(t, policy.EvidenceToolInput, time.Second, func(w http.ResponseWriter, r *http.Request) {
+	engine := spanEngine(t, config.EvidenceToolInput, time.Second, func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{"spans": []any{}})
 	})
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Millisecond)
@@ -169,7 +169,7 @@ func TestOXPFallbackMissingEvidenceFailsWithinCallerDeadline(t *testing.T) {
 }
 
 func TestOXPFallbackNeverGuessesInputFromAnotherSpan(t *testing.T) {
-	engine := spanEngine(t, policy.EvidenceA2AMessageInput, 40*time.Millisecond, func(w http.ResponseWriter, r *http.Request) {
+	engine := spanEngine(t, config.EvidenceA2AMessageInput, 40*time.Millisecond, func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{"spans": []any{
 			evidenceSpan(span, "1111111111111111", "send_message", nil),
 			evidenceSpan("1111111111111111", "", "tool", map[string]string{"ioa_observe.entity.input": `{"kwargs":{"task":"ordinary trip"}}`}),

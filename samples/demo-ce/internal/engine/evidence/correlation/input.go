@@ -2,10 +2,10 @@ package correlation
 
 import (
 	"encoding/json"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence/events"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/oxp"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence/events"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/oxp"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 )
 
 // attribute decodes both string-valued OTel attributes and structured JSON values.
@@ -38,7 +38,7 @@ func unpack(value any) any {
 }
 
 func inputTexts(s oxp.Span, kind string) ([]evidence.Text, bool) {
-	if kind == policy.EvidenceLLMInput {
+	if kind == config.EvidenceLLMInput {
 		input, ok := attribute(s, "gen_ai.input.messages")
 		if !ok {
 			return nil, false
@@ -50,7 +50,7 @@ func inputTexts(s oxp.Span, kind string) ([]evidence.Text, bool) {
 		return texts, valid
 	}
 	input, ok := attribute(s, "ioa_observe.entity.input")
-	if kind == policy.EvidenceMCPToolInput {
+	if kind == config.EvidenceMCPToolInput {
 		method, _ := attribute(s, "mcp.method.name")
 		if method == "tools/call" {
 			input, ok = attribute(s, "mcp.request.argument")

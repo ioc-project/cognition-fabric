@@ -134,3 +134,8 @@ dmypy.json
 .runme.branch
 
 .idea/
+
+# Documentation site
+docs/node_modules/
+docs/.docusaurus/
+docs/build/

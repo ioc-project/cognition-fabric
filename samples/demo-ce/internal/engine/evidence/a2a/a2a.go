@@ -12,16 +12,16 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence/events"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence/events"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 )
 
 // New returns the judge of a2a_message_input evidence.
 func New(in *inbox.Inbox, wait time.Duration) *events.Judge {
-	return &events.Judge{Inbox: in, Wait: wait, Kind: policy.EvidenceA2AMessageInput, Extract: func(r *cev1.EvaluateRequest, raw json.RawMessage) (string, []evidence.Text, bool) {
+	return &events.Judge{Inbox: in, Wait: wait, Kind: config.EvidenceA2AMessageInput, Extract: func(r *cev1.EvaluateRequest, raw json.RawMessage) (string, []evidence.Text, bool) {
 		want := r.Extra["ioc.observe.message_id"]
 		session, callID, texts, ok := events.ToolEvent(raw)
 		if !ok || (want != "" && callID != "" && callID != want) {
