@@ -1,1 +1,1 @@
-"""Tests for Demo CE enforcement API."""
+"""Tests for Template CE enforcement API."""

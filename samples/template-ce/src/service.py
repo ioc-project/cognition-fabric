@@ -1,4 +1,4 @@
-"""gRPC service for Demo CE Cognition Engine.
+"""gRPC service for Template CE Cognition Engine.
 
 Implements the ioc.ce.v1.CognitionEngine service.
 """
@@ -143,14 +143,14 @@ def serve(port: int = DEFAULT_PORT, max_workers: int = 10):
 
     server.add_insecure_port(f"[::]:{port}")
     server.start()
-    logger.info(f"Demo CE gRPC server started on port {port}")
+    logger.info(f"Template CE gRPC server started on port {port}")
     return server
 
 
 async def serve_async(port: int = DEFAULT_PORT):
     """Start health endpoint, gRPC server, notification server, and register with CFN."""
     from health import get_health_port, start_health_server
-    from registration import register_demo_ce, shutdown_lifecycle_client
+    from registration import register_template_ce, shutdown_lifecycle_client
     from notification_server import start_notification_server, shutdown_notification_server
 
     # The health endpoint must be up before registration so the first CFN probe succeeds. An invalid
@@ -167,12 +167,12 @@ async def serve_async(port: int = DEFAULT_PORT):
         notification_runner = await start_notification_server()
 
         # Register with CFN
-        await register_demo_ce()
+        await register_template_ce()
 
         while True:
             await asyncio.sleep(3600)
     except (KeyboardInterrupt, asyncio.CancelledError):
-        logger.info("Shutting down Demo CE...")
+        logger.info("Shutting down Template CE...")
     finally:
         health_server.close()
         await shutdown_lifecycle_client()
@@ -181,4 +181,4 @@ async def serve_async(port: int = DEFAULT_PORT):
             await shutdown_notification_server(notification_runner)
         if server is not None:
             server.stop(grace=5)
-        logger.info("Demo CE stopped")
+        logger.info("Template CE stopped")

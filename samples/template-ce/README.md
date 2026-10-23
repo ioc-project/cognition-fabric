@@ -1,4 +1,4 @@
-# Demo CE
+# Template CE
 
 Template Cognition Engine implementing the `ioc.ce.v1.CognitionEngine` gRPC contract.
 The implementation, Dockerfile and tests are retained for CE teams. The repository's Compose deployment
@@ -6,7 +6,7 @@ runs `policy-ce`; use the local instructions below to run this template.
 
 ## Overview
 
-Demo CE provides authorization decisions (ALLOW / DENY / MODIFY) for in-scope MAS actions. It integrates with:
+Template CE provides authorization decisions (ALLOW / DENY / MODIFY) for in-scope MAS actions. It integrates with:
 
 - **CFN** - Receives `Evaluate` requests via gRPC
 - **Cognition Store (OXP)** - Reads prior findings, stores current finding
@@ -14,7 +14,7 @@ Demo CE provides authorization decisions (ALLOW / DENY / MODIFY) for in-scope MA
 ## Run Locally (without Docker)
 
 ```bash
-cd demo-ce
+cd template-ce
 uv sync
 uv run python -m src
 ```
@@ -32,7 +32,7 @@ uv run python -m src
 ## Test
 
 ```bash
-cd demo-ce
+cd template-ce
 uv run pytest -v
 ```
 
@@ -60,7 +60,7 @@ Returns CE metadata.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `CE_NAME` | CE name for registration | `demo-ce` |
+| `CE_NAME` | CE name for registration | `template-ce` |
 | `CE_VERSION` | CE version for registration | `1.0.0` |
 | `CE_TYPE` | CE type (CASA or DETECTIVE) | `CASA` |
 | `GRPC_PORT` | gRPC server port | `50051` |
@@ -75,10 +75,10 @@ To demonstrate CE registration and version upgrades:
 
 ```bash
 # Start v1.0.0
-CE_NAME=demo-ce CE_VERSION=1.0.0 uv run python -m src
+CE_NAME=template-ce CE_VERSION=1.0.0 uv run python -m src
 
 # In another terminal, start v1.1.0 (same name, new version)
-CE_NAME=demo-ce CE_VERSION=1.1.0 GRPC_PORT=50052 HEALTH_PORT=8081 uv run python -m src
+CE_NAME=template-ce CE_VERSION=1.1.0 GRPC_PORT=50052 HEALTH_PORT=8081 uv run python -m src
 ```
 
 Each instance needs its own `GRPC_PORT` and `HEALTH_PORT`. The second instance will get a 409 Conflict (CE already exists), extract the `existing_ce_id`, and update via PATCH.
@@ -86,16 +86,16 @@ Each instance needs its own `GRPC_PORT` and `HEALTH_PORT`. The second instance w
 ## Architecture
 
 ```
-┌───────────────┐   Evaluate    ┌─────────┐    read/write     ┌─────────────────┐
-│      CFN      │──────────────▶│ Demo CE │◀────────────────▶│  Cognition      │
-│               │◀──────────────│  gRPC   │                   │  Store (OXP)    │
-└───────────────┘   decision    └─────────┘                   └─────────────────┘
+┌───────────────┐   Evaluate    ┌─────────────┐   read/write    ┌─────────────────┐
+│      CFN      │─────────────▶│ Template CE │◀───────────────▶│  Cognition      │
+│               │◀────────────│    gRPC     │                 │  Store (OXP)    │
+└───────────────┘   decision   └─────────────┘                 └─────────────────┘
 ```
 
 ## Files
 
 ```
-demo-ce/
+template-ce/
 ├── proto/ce.proto           # ioc.ce.v1 Protocol Buffer definition
 ├── src/
 │   ├── generated/           # Generated gRPC stubs

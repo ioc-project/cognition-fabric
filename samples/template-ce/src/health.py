@@ -1,4 +1,4 @@
-"""Minimal HTTP health endpoint for Demo CE.
+"""Minimal HTTP health endpoint for Template CE.
 
 CFN probes `GET /healthz` on the `health_url` the CE declares at registration.
 A 200 means the CE is up. No auth and no body are required.
@@ -77,5 +77,5 @@ class HealthServer:
 def start_health_server(port: int = DEFAULT_HEALTH_PORT) -> HealthServer:
     """Start serving /healthz in a background thread. Raises OSError if the port cannot be bound."""
     server = HealthServer(port)
-    logger.info(f"Demo CE health endpoint started on port {server.port} ({HEALTH_PATH})")
+    logger.info(f"Template CE health endpoint started on port {server.port} ({HEALTH_PATH})")
     return server
