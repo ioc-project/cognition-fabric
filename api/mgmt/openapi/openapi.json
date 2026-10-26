@@ -1640,7 +1640,7 @@
           "audit-events"
         ],
         "summary": "List CFN Audit Events",
-        "description": "Retrieve a paginated list of audit events from ioc-cfn-svc. Supports optional filtering by `resource_type` and `audit_type`.",
+        "description": "Retrieve a paginated list of audit events from ioc-cfn-svc. Supports optional filtering by `resource_type`, `audit_type`, `decision` and `success`, before pagination. CFN dispositions use CE_INVOKED for Evaluate attempts or CE_NOT_INVOKED for earlier failures. source identifies the producer; success describes the whole operation, independently of a policy ALLOW/DENY. Filters require support in the upstream CFN version.",
         "operationId": "list_audit_events_api_audit_events__get",
         "parameters": [
           {
@@ -1699,10 +1699,51 @@
                   "type": "null"
                 }
               ],
-              "description": "Filter by audit type (e.g. CE_INVOKED)",
+              "description": "Filter by audit type (CE_INVOKED or CE_NOT_INVOKED; requires upgraded CFN)",
               "title": "Audit Type"
             },
-            "description": "Filter by audit type (e.g. CE_INVOKED)"
+            "description": "Filter by audit type (CE_INVOKED or CE_NOT_INVOKED; requires upgraded CFN)"
+          },
+          {
+            "name": "decision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "allow",
+                    "block",
+                    "modify"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "CFN policy decision: block matches the CE DENY outcome. Requires upgraded CFN.",
+              "title": "Decision"
+            },
+            "description": "CFN policy decision: block matches the CE DENY outcome. Requires upgraded CFN."
+          },
+          {
+            "name": "success",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Whole-flow status: true for success, false for failure. A completed policy block is successful.",
+              "title": "Success"
+            },
+            "description": "Whole-flow status: true for success, false for failure. A completed policy block is successful."
           }
         ],
         "responses": {
@@ -1715,6 +1756,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "Invalid pagination or an unsupported upstream resource/event type"
           },
           "500": {
             "description": "Internal server error while querying ioc-cfn-svc"
@@ -1996,6 +2040,30 @@
             "title": "Id",
             "description": "Unique audit event ID (UUID)"
           },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source",
+            "description": "Original audit producer, e.g. CFN; absent from older CFN versions"
+          },
+          "success": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success",
+            "description": "Whether the entire audited operation completed without an operational error; a completed policy DENY/BLOCK is successful"
+          },
           "operation_id": {
             "anyOf": [
               {
@@ -2016,17 +2084,17 @@
           "resource_identifier": {
             "type": "string",
             "title": "Resource Identifier",
-            "description": "Identifier of the resource"
+            "description": "Selected CE ID for CFN dispositions; empty if no CE was selected"
           },
           "audit_type": {
             "type": "string",
             "title": "Audit Type",
-            "description": "Type of audit event (e.g. CE_INVOKED)"
+            "description": "CFN dispositions use CE_INVOKED when Evaluate was attempted, CE_NOT_INVOKED for an earlier failure"
           },
           "audit_resource_identifier": {
             "type": "string",
             "title": "Audit Resource Identifier",
-            "description": "Identifier of the audited resource"
+            "description": "MAS association for CFN dispositions; empty if missing or too long for the association column"
           },
           "audit_information": {
             "anyOf": [
