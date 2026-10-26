@@ -153,6 +153,17 @@ Start them in order, waiting for each service to become ready:
 3. `task run:cf-ui` — management UI on 9001.
 4. `task run:demo-ce` — demo CE gRPC on 50051, health on 8082, notifications on 8080.
 
+The open audit panel refreshes automatically every 30 seconds while the browser
+tab is visible and online. Configure `CFN_UI_AUDIT_REFRESH_INTERVAL_SECONDS` in
+the CFN `.env`; `0` disables auto-refresh. Restart `task run:cf-ui` and reload the
+browser page after changing this setting.
+
+`CFN_UI_AUDIT_FLASH_DURATION_SECONDS=60` controls how long a trace header pulses
+after auto-refresh finds a new audit item (`0` disables flashing). Set it in the
+same CFN `.env`, restart `task run:cf-ui` and reload the browser. Each trace has its
+own duration, restarted by another incoming item; multiple headers can flash
+together, including collapsed groups. Initial loads and Load more stay quiet.
+
 The demo CE runs separate health and notification HTTP servers. The local task
 sets `HEALTH_PORT=8082` and `HTTP_PORT=8080` to keep their listeners and advertised
 registration addresses aligned; both servers otherwise default to port 8080.

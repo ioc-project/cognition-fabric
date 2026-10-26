@@ -14,6 +14,8 @@ or observed code, surface the conflict instead of silently following the note.
 
 ## Active guidance
 
+- [CFN disposition audit semantics](disposition-audit.md) — producer identity,
+  resource associations, event types and processing success for issue #34.
 - [Local NOA enforcement modes](local-noa-enforcement.md) — source/proxy setup,
   configuration ownership, and the boundary between routing and content evidence.
 

@@ -32,6 +32,7 @@ func TestGetAuditEventHandler(t *testing.T) {
 	a := newTestApp()
 
 	event := &audit.Audit{
+		Source:                  audit.SourceCFN,
 		ResourceType:            audit.ResourceTypeCognitionEngine,
 		ResourceIdentifier:      "ce-1",
 		AuditType:               audit.AuditTypeCEInvoked,
@@ -90,6 +91,7 @@ func TestGetAuditEventHandler_NotFound(t *testing.T) {
 func createTestEvent(t *testing.T, a *App, resourceType, auditType string) {
 	t.Helper()
 	e := &audit.Audit{
+		Source:                  audit.SourceCFN,
 		ResourceType:            resourceType,
 		ResourceIdentifier:      "res-1",
 		AuditType:               auditType,

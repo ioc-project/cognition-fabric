@@ -17,7 +17,7 @@ import (
 type Store interface {
 	CreateAuditEvent(ctx context.Context, a *audit.Audit) error
 	GetAuditEventByID(ctx context.Context, id uuid.UUID) (*audit.Audit, error)
-	ListAuditEvents(ctx context.Context, resourceType, auditType string, page, pageSize int) (*audit.AuditListResponse, error)
+	ListAuditEvents(ctx context.Context, resourceType, auditType string, page, pageSize int, filters ...audit.ListFilters) (*audit.AuditListResponse, error)
 	Close() error
 }
 

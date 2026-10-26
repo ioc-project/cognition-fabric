@@ -30,6 +30,8 @@ type MASResponse struct {
 // MASCognitionEngine represents a CE associated with a MAS.
 type MASCognitionEngine struct {
 	CEID              string `json:"ce_id"`
+	Name              string `json:"name"`
+	Version           string `json:"version"`
 	CEType            string `json:"ce_type"`
 	EnforcingURL      string `json:"enforcing_url"`
 	EnforcingEndpoint string `json:"enforcing_endpoint"`

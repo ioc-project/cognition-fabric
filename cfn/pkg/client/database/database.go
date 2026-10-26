@@ -71,7 +71,7 @@ func (db *Database) GetAuditEventByID(ctx context.Context, id uuid.UUID) (*audit
 	return audit.GetAuditEventByID(ctx, db.DB, id)
 }
 
-// ListAuditEvents returns audit events with optional resource_type and audit_type filters.
-func (db *Database) ListAuditEvents(ctx context.Context, resourceType, auditType string, page, pageSize int) (*audit.AuditListResponse, error) {
-	return audit.ListAuditEvents(ctx, db.DB, resourceType, auditType, page, pageSize)
+// ListAuditEvents returns audit events with optional filters applied before pagination.
+func (db *Database) ListAuditEvents(ctx context.Context, resourceType, auditType string, page, pageSize int, filters ...audit.ListFilters) (*audit.AuditListResponse, error) {
+	return audit.ListAuditEvents(ctx, db.DB, resourceType, auditType, page, pageSize, filters...)
 }

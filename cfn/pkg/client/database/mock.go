@@ -31,6 +31,9 @@ func (m *MockDatabase) CreateAuditEvent(ctx context.Context, a *audit.Audit) err
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+	if err := audit.ValidateSource(a.Source); err != nil {
+		return err
+	}
 	if err := audit.ValidateResourceType(a.ResourceType); err != nil {
 		return err
 	}
@@ -61,8 +64,15 @@ func (m *MockDatabase) GetAuditEventByID(ctx context.Context, id uuid.UUID) (*au
 	return a, nil
 }
 
-func (m *MockDatabase) ListAuditEvents(ctx context.Context, resourceType, auditType string, page, pageSize int) (*audit.AuditListResponse, error) {
+func (m *MockDatabase) ListAuditEvents(ctx context.Context, resourceType, auditType string, page, pageSize int, filters ...audit.ListFilters) (*audit.AuditListResponse, error) {
 	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	var extra audit.ListFilters
+	if len(filters) > 0 {
+		extra = filters[0]
+	}
+	if err := extra.Validate(); err != nil {
 		return nil, err
 	}
 	if resourceType != "" {
@@ -94,6 +104,9 @@ func (m *MockDatabase) ListAuditEvents(ctx context.Context, resourceType, auditT
 			continue
 		}
 		if auditType != "" && a.AuditType != auditType {
+			continue
+		}
+		if !extra.Matches(a) {
 			continue
 		}
 		filtered = append(filtered, *a)
