@@ -8,16 +8,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/httpjson"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/httpjson"
 )
 
-// Lifecycle registers this CE with CFN. CFN is reached over REST. HealthURL is the URL CFN probes with a GET
+// Lifecycle registers this CE with CFN. CFN is reached over REST. HealthURL is the base URL CFN probes with a GET on /healthz
 // to check the CE is alive.
 type Lifecycle struct {
 	Base, Address, HealthURL, Name, Version, Type string
@@ -35,7 +35,7 @@ func HealthURL(advertisedGRPCAddress, httpListenAddress string) (string, error) 
 	if err != nil || port == "" {
 		return "", fmt.Errorf("HTTP listen address %q must be host:port or :port", httpListenAddress)
 	}
-	return "http://" + net.JoinHostPort(host, port) + "/healthz", nil
+	return "http://" + net.JoinHostPort(host, port), nil
 }
 
 // Healthy reports whether CFN answers its own health endpoint. The lifecycle loop holds registration
@@ -58,13 +58,13 @@ func (l *Lifecycle) Healthy(ctx context.Context) bool {
 func (l *Lifecycle) Register(ctx context.Context) (string, error) {
 	version := l.Version
 	if version == "" {
-		version = "reference-v1"
+		version = "1.0.0"
 	}
 	ceType := l.Type
 	if ceType == "" {
 		ceType = "CASA"
 	}
-	body := map[string]any{"name": l.Name, "version": version, "ce_type": ceType, "base_url": l.Address, "endpoint": "ioc.ce.v1.CognitionEngine", "health_url": l.HealthURL, "mas_auto_associate": true}
+	body := map[string]any{"name": l.Name, "version": version, "ce_type": ceType, "enforcing_url": l.Address, "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "health_url": l.HealthURL, "health_endpoint": "/healthz", "mas_auto_associate": true}
 	raw, _ := json.Marshal(body)
 	r, err := http.NewRequestWithContext(ctx, "POST", l.Base+"/api/cognition-engine", bytes.NewReader(raw))
 	if err != nil {
@@ -97,7 +97,7 @@ func (l *Lifecycle) Register(ctx context.Context) (string, error) {
 		if id == "" {
 			return "", fmt.Errorf("conflict without CE id")
 		}
-		err := httpjson.Exchange(ctx, l.Client, "PATCH", l.Base+"/api/cognition-engine/"+url.PathEscape(id), map[string]string{"base_url": l.Address, "endpoint": "ioc.ce.v1.CognitionEngine", "health_url": l.HealthURL}, nil)
+		err := httpjson.Exchange(ctx, l.Client, "PATCH", l.Base+"/api/cognition-engine/"+url.PathEscape(id), map[string]string{"enforcing_url": l.Address, "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "health_url": l.HealthURL, "health_endpoint": "/healthz"}, nil)
 		return id, err
 	}
 	if result.ID == "" {
@@ -117,24 +117,24 @@ func (l *Lifecycle) Run(ctx context.Context, setReady func(bool)) {
 	for {
 		if !l.Healthy(ctx) {
 			if !waiting && ctx.Err() == nil {
-				log.Printf("waiting for CFN at %s before registering", l.Base)
+				slog.WarnContext(ctx, "Waiting for CFN before registering", "event", "cfn.waiting", "stage", "CFN")
 			}
 			waiting = true
 		} else {
 			if waiting {
-				log.Printf("CFN reachable again")
+				slog.InfoContext(ctx, "CFN reachable again", "event", "cfn.reachable", "stage", "CFN")
 				waiting = false
 			}
 			id, err := l.Register(ctx)
 			if err == nil {
-				log.Printf("registered with CFN as %s, CFN probes %s", id, l.HealthURL)
+				slog.InfoContext(ctx, "Demo CE registered; CFN will probe its health endpoint", "event", "cfn.registered", "stage", "CFN", "ce_id", id, "ce_name", l.Name)
 				setReady(true)
 				<-ctx.Done()
 				setReady(false)
 				return
 			}
 			if ctx.Err() == nil {
-				log.Printf("CE registration unavailable: %v", err)
+				slog.WarnContext(ctx, "CE registration unavailable; retrying", "event", "cfn.registration_failed", "stage", "CFN")
 			}
 		}
 		select {

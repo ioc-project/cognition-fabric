@@ -1,0 +1,23 @@
+{
+  "name": "cognition-engine-docs",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "start": "docusaurus start --no-open",
+    "build": "docusaurus build",
+    "serve": "docusaurus serve --no-open"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "@docusaurus/core": "3.10.2",
+    "@docusaurus/preset-classic": "3.10.2",
+    "@docusaurus/theme-mermaid": "3.10.2",
+    "@easyops-cn/docusaurus-search-local": "0.55.3",
+    "@mermaid-js/layout-elk": "0.1.9",
+    "mermaid": "11.17.2",
+    "react": "19.2.0",
+    "react-dom": "19.2.0"
+  }
+}

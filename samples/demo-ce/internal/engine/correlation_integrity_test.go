@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 )
 
@@ -21,9 +21,9 @@ func joinedEventEngine(t *testing.T, kind string, roles []string, handler http.H
 	server := httptest.NewServer(handler)
 	t.Cleanup(server.Close)
 	in := inbox.New("noa-trip-planner-mas", 16)
-	p := policy.Policy{Rules: []policy.Rule{{ID: "A", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}},
-		ContentRules: []policy.ContentRule{{ID: "NO_SECRET", Reason: "no secrets", Pattern: "secret-value", Evidence: kind, Roles: roles, Destinations: []string{"target"}}}}
-	return New(policy.Set{Single: &p}, Options{MasID: func() (string, error) { return "mas", nil }, OXPURL: server.URL, Inbox: in, Wait: time.Second}), in
+	p := config.Config{Rules: []config.Rule{{ID: "A", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}},
+		ContentRules: []config.ContentRule{{ID: "NO_SECRET", Reason: "no secrets", Pattern: "secret-value", Evidence: kind, Roles: roles, Destinations: []string{"target"}}}}
+	return New(config.Set{Single: &p}, Options{MasID: func() (string, error) { return "mas", nil }, OXPURL: server.URL, Inbox: in, Wait: time.Second}), in
 }
 
 func eventRequest(event map[string]any) *cev1.EvaluateRequest {
@@ -35,7 +35,7 @@ func eventRequest(event map[string]any) *cev1.EvaluateRequest {
 }
 
 func TestPreCallInputCanBeJudgedWhileTheActiveSpanIsPending(t *testing.T) {
-	engine, in := joinedEventEngine(t, policy.EvidenceA2AMessageInput, nil, func(w http.ResponseWriter, r *http.Request) {
+	engine, in := joinedEventEngine(t, config.EvidenceA2AMessageInput, nil, func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]any{"spans": []any{}}) // active spans are not queryable yet
 	})
 	event := llmFixture(t, "a2a_tool_started.json")
@@ -73,8 +73,8 @@ func TestPreCallJoinsHistoryWithinItsEnrichmentBudget(t *testing.T) {
 	defer server.Close()
 	in := inbox.New("noa-trip-planner-mas", 16)
 	pushEvent(t, in, event)
-	p := policy.Policy{Rules: []policy.Rule{{ID: "A", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}}, ContentRules: []policy.ContentRule{{ID: "C", Reason: "no secrets", Pattern: "secret-value", Evidence: policy.EvidenceA2AMessageInput, Destinations: []string{"target"}}}}
-	engine := New(policy.Set{Single: &p}, Options{MasID: func() (string, error) { return "mas", nil }, OXPURL: server.URL, Inbox: in, Wait: time.Second})
+	p := config.Config{Rules: []config.Rule{{ID: "A", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}}, ContentRules: []config.ContentRule{{ID: "C", Reason: "no secrets", Pattern: "secret-value", Evidence: config.EvidenceA2AMessageInput, Destinations: []string{"target"}}}}
+	engine := New(config.Set{Single: &p}, Options{MasID: func() (string, error) { return "mas", nil }, OXPURL: server.URL, Inbox: in, Wait: time.Second})
 	out, err := engine.Evaluate(context.Background(), r)
 	if err != nil || out.Outcome != cev1.Decision_DECISION_ALLOW {
 		t.Fatalf("pre-call input failed: %+v %v", out, err)
@@ -89,7 +89,7 @@ func TestPreCallJoinsHistoryWithinItsEnrichmentBudget(t *testing.T) {
 }
 
 func TestPreCallInputSurvivesOptionalHistoryTimeout(t *testing.T) {
-	engine, in := joinedEventEngine(t, policy.EvidenceA2AMessageInput, nil, func(w http.ResponseWriter, r *http.Request) { <-r.Context().Done() })
+	engine, in := joinedEventEngine(t, config.EvidenceA2AMessageInput, nil, func(w http.ResponseWriter, r *http.Request) { <-r.Context().Done() })
 	event := llmFixture(t, "a2a_tool_started.json")
 	pushEvent(t, in, event)
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -102,7 +102,7 @@ func TestPreCallInputSurvivesOptionalHistoryTimeout(t *testing.T) {
 
 func TestNewPreCallEventIsObservedWhileOXPLags(t *testing.T) {
 	entered := make(chan struct{}, 1)
-	engine, in := joinedEventEngine(t, policy.EvidenceA2AMessageInput, nil, func(w http.ResponseWriter, r *http.Request) {
+	engine, in := joinedEventEngine(t, config.EvidenceA2AMessageInput, nil, func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case entered <- struct{}{}:
 		default:
@@ -133,7 +133,7 @@ func TestNewPreCallEventIsObservedWhileOXPLags(t *testing.T) {
 
 func TestConflictingPreCallInputsAreMissingContext(t *testing.T) {
 	var reads atomic.Int32
-	engine, in := joinedEventEngine(t, policy.EvidenceA2AMessageInput, nil, func(w http.ResponseWriter, r *http.Request) {
+	engine, in := joinedEventEngine(t, config.EvidenceA2AMessageInput, nil, func(w http.ResponseWriter, r *http.Request) {
 		reads.Add(1)
 		_ = json.NewEncoder(w).Encode(map[string]any{"spans": []any{}})
 	})
@@ -155,7 +155,7 @@ func TestPreCallEventArrivingDuringSuccessfulFallbackTakesPriority(t *testing.T)
 	r.Extra["ioc.observe.session_id"] = session
 	var in *inbox.Inbox
 	var published atomic.Bool
-	engine, eventInbox := joinedEventEngine(t, policy.EvidenceA2AMessageInput, nil, func(w http.ResponseWriter, _ *http.Request) {
+	engine, eventInbox := joinedEventEngine(t, config.EvidenceA2AMessageInput, nil, func(w http.ResponseWriter, _ *http.Request) {
 		if published.CompareAndSwap(false, true) {
 			pushEvent(t, in, event)
 		}
@@ -174,7 +174,7 @@ func TestPreCallEventArrivingDuringSuccessfulFallbackTakesPriority(t *testing.T)
 func TestMalformedModelMessagesNeverBecomeAnEmptyAllow(t *testing.T) {
 	for _, raw := range []string{`[{}]`, `[{"role":"user","content":"secret-value"}]`, `[{"role":"user","parts":[{"type":"unknown","content":"secret-value"}]}]`, `[{"role":"user","parts":[{"type":"text","content":"ordinary"},{"type":"text"}]}]`} {
 		t.Run(raw, func(t *testing.T) {
-			engine := spanEngine(t, policy.EvidenceLLMInput, 35*time.Millisecond, func(w http.ResponseWriter, r *http.Request) {
+			engine := spanEngine(t, config.EvidenceLLMInput, 35*time.Millisecond, func(w http.ResponseWriter, r *http.Request) {
 				_ = json.NewEncoder(w).Encode(map[string]any{"spans": []any{evidenceSpan(span, "", "llm", map[string]string{"gen_ai.input.messages": raw})}})
 			})
 			out, err := engine.Evaluate(context.Background(), spanRequest(span))
@@ -191,7 +191,7 @@ func TestModelToolDefinitionsAreJoinedFromTheSelectedSpan(t *testing.T) {
 			event := llmFixture(t, "llm_started_genai.json")
 			r := eventRequest(event)
 			session := event["session"].(map[string]any)["id"].(string)
-			engine, in := joinedEventEngine(t, policy.EvidenceLLMInput, []string{policy.RoleToolDefinition}, func(w http.ResponseWriter, _ *http.Request) {
+			engine, in := joinedEventEngine(t, config.EvidenceLLMInput, []string{config.RoleToolDefinition}, func(w http.ResponseWriter, _ *http.Request) {
 				attrs := map[string]string{"gen_ai.input.messages": `[{"role":"user","parts":[{"type":"text","content":"ordinary trip"}]}]`}
 				if withDefinitions {
 					attrs["gen_ai.tool.definitions"] = `[{"name":"lookup","description":"secret-value"}]`
@@ -230,8 +230,8 @@ func TestMalformedNativeDefinitionsAreMissingContext(t *testing.T) {
 			event["data"].(map[string]any)["input"] = input
 			in := inbox.New("noa-trip-planner-mas", 16)
 			pushEvent(t, in, event)
-			p := policy.Policy{Rules: []policy.Rule{{ID: "A", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}}, ContentRules: []policy.ContentRule{{ID: "C", Reason: "no secrets", Pattern: "secret-value", Evidence: policy.EvidenceLLMInput, Roles: []string{policy.RoleToolDefinition}, Destinations: []string{"target"}}}}
-			engine := New(policy.Set{Single: &p}, Options{MasID: func() (string, error) { return "mas", nil }, Inbox: in, Wait: 35 * time.Millisecond})
+			p := config.Config{Rules: []config.Rule{{ID: "A", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}}, ContentRules: []config.ContentRule{{ID: "C", Reason: "no secrets", Pattern: "secret-value", Evidence: config.EvidenceLLMInput, Roles: []string{config.RoleToolDefinition}, Destinations: []string{"target"}}}}
+			engine := New(config.Set{Single: &p}, Options{MasID: func() (string, error) { return "mas", nil }, Inbox: in, Wait: 35 * time.Millisecond})
 			out, err := engine.Evaluate(context.Background(), eventRequest(event))
 			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.DenialReason != cev1.DenialReason_DENIAL_REASON_MISSING_CONTEXT {
 				t.Fatalf("malformed definitions passed: %+v %v", out, err)
@@ -241,7 +241,7 @@ func TestMalformedNativeDefinitionsAreMissingContext(t *testing.T) {
 }
 
 func TestRequiredOXPContextCanFinishPaginationWithinTheHoldBudget(t *testing.T) {
-	engine := spanEngine(t, policy.EvidenceToolInput, time.Second, func(w http.ResponseWriter, r *http.Request) {
+	engine := spanEngine(t, config.EvidenceToolInput, time.Second, func(w http.ResponseWriter, r *http.Request) {
 		select {
 		case <-r.Context().Done():
 			return

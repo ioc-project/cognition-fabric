@@ -4,10 +4,10 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence/events"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/oxp"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence/events"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/oxp"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 )
 
 // Reject unknown/partial message shapes instead of turning missing content into
@@ -54,7 +54,7 @@ func modelInputValue(value any) ([]evidence.Text, bool, bool) {
 			for _, item := range calls {
 				args := item.(map[string]any)["function"].(map[string]any)["arguments"].(string)
 				if args != "" {
-					texts = append(texts, evidence.Text{Role: policy.RoleToolCall, Text: args})
+					texts = append(texts, evidence.Text{Role: config.RoleToolCall, Text: args})
 				}
 			}
 		} else {
@@ -63,9 +63,9 @@ func modelInputValue(value any) ([]evidence.Text, bool, bool) {
 				partRole, content := role, part["content"]
 				switch part["type"] {
 				case "tool_call":
-					partRole, content = policy.RoleToolCall, part["arguments"]
+					partRole, content = config.RoleToolCall, part["arguments"]
 				case "tool_call_response":
-					partRole, content = policy.RoleTool, part["response"]
+					partRole, content = config.RoleTool, part["response"]
 				}
 				events.CollectStrings(content, func(text string) { texts = append(texts, evidence.Text{Role: partRole, Text: text}) })
 			}
@@ -209,7 +209,7 @@ func toolDefinitionTexts(value any) ([]evidence.Text, bool) {
 				return nil, false
 			}
 		}
-		texts = append(texts, evidence.Text{Role: policy.RoleToolDefinition, Text: name + " " + description})
+		texts = append(texts, evidence.Text{Role: config.RoleToolDefinition, Text: name + " " + description})
 	}
 	return texts, true
 }

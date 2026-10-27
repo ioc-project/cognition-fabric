@@ -2,10 +2,10 @@ package llm
 
 import (
 	"encoding/json"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence/events"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence/events"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	"time"
 
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
@@ -73,13 +73,13 @@ func Texts(raw json.RawMessage) (session string, texts []evidence.Text, ok bool)
 		}
 		for _, call := range m.ToolCalls {
 			if call.Function.Arguments != "" {
-				texts = append(texts, evidence.Text{Role: policy.RoleToolCall, Text: call.Function.Arguments})
+				texts = append(texts, evidence.Text{Role: config.RoleToolCall, Text: call.Function.Arguments})
 			}
 		}
 	}
 	for _, tool := range request.Tools {
 		if text := (tool.Function.Name + " " + tool.Function.Description); len(text) > 1 {
-			texts = append(texts, evidence.Text{Role: policy.RoleToolDefinition, Text: text})
+			texts = append(texts, evidence.Text{Role: config.RoleToolDefinition, Text: text})
 		}
 	}
 	return event.Session.ID, texts, true
@@ -102,9 +102,9 @@ func genAIMessageTexts(raw json.RawMessage) ([]evidence.Text, bool) {
 			role, value := m.Role, part["content"]
 			switch part["type"] {
 			case "tool_call":
-				role, value = policy.RoleToolCall, part["arguments"]
+				role, value = config.RoleToolCall, part["arguments"]
 			case "tool_call_response":
-				role, value = policy.RoleTool, part["response"]
+				role, value = config.RoleTool, part["response"]
 			}
 			events.CollectStrings(value, func(text string) { texts = append(texts, evidence.Text{Role: role, Text: text}) })
 		}
@@ -138,5 +138,5 @@ func messageText(content json.RawMessage) string {
 
 // New is the judge of llm_input evidence: the model request published as an llm.started event.
 func New(in *inbox.Inbox, wait time.Duration) *events.Judge {
-	return &events.Judge{Inbox: in, Wait: wait, Kind: policy.EvidenceLLMInput, Extract: func(_ *cev1.EvaluateRequest, raw json.RawMessage) (string, []evidence.Text, bool) { return Texts(raw) }}
+	return &events.Judge{Inbox: in, Wait: wait, Kind: config.EvidenceLLMInput, Extract: func(_ *cev1.EvaluateRequest, raw json.RawMessage) (string, []evidence.Text, bool) { return Texts(raw) }}
 }

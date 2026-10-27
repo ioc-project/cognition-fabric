@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/oxp"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/oxp"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 )
 
@@ -53,8 +53,8 @@ func TestStorePersistsOnlyTheFinalContentDecision(t *testing.T) {
 			if !tc.missing {
 				pushEvent(t, in, event)
 			}
-			p := policy.Policy{Rules: []policy.Rule{{ID: "APPROVED", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}}, ContentRules: []policy.ContentRule{{ID: "NO_SECRET", Reason: "no secrets", Pattern: "secret-value", Evidence: policy.EvidenceA2AMessageInput, Destinations: []string{"target"}}}}
-			engine := New(policy.Set{Single: &p}, Options{MasID: func() (string, error) { return "mas", nil }, Inbox: in, Wait: time.Second, Store: &oxp.Store{Base: api.URL, Client: api.Client()}})
+			p := config.Config{Rules: []config.Rule{{ID: "APPROVED", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}}, ContentRules: []config.ContentRule{{ID: "NO_SECRET", Reason: "no secrets", Pattern: "secret-value", Evidence: config.EvidenceA2AMessageInput, Destinations: []string{"target"}}}}
+			engine := New(config.Set{Single: &p}, Options{MasID: func() (string, error) { return "mas", nil }, Inbox: in, Wait: time.Second, Store: &oxp.Store{Base: api.URL, Client: api.Client()}})
 			out, err := engine.Evaluate(context.Background(), eventRequest(event))
 			if err != nil || out.Outcome != tc.decision {
 				t.Fatalf("final response: %+v %v", out, err)

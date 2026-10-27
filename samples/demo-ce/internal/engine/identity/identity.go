@@ -3,13 +3,12 @@
 package identity
 
 import (
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/ids"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
-
 	"context"
-	"log"
 	"time"
 
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/ids"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/logging"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -18,10 +17,10 @@ import (
 // Engine is the identity layer of one MAS.
 type Engine struct {
 	cev1.UnimplementedCognitionEngineServer
-	Policy policy.Policy
+	Config config.Config
 	// MasID is the MAS this engine serves; it may fail until the MAS is known.
 	MasID func() (string, error)
-	// CEType and CEVersion are what GetInfo reports; empty means CASA and reference-v1.
+	// CEType and CEVersion are what GetInfo reports; empty means CASA and 1.0.0.
 	CEType, CEVersion string
 }
 
@@ -40,9 +39,9 @@ func (s *Engine) Decide(ctx context.Context, r *cev1.EvaluateRequest) (*cev1.Eva
 	if err != nil || mas == "" {
 		return nil, false, status.Error(codes.Unavailable, "configured MAS identity unavailable")
 	}
-	selected := s.Policy.Decide(r.SourceAgentId, r.DestinationAgentId)
+	selected := s.Config.Decide(r.SourceAgentId, r.DestinationAgentId)
 	if r.MasId != mas {
-		selected = policy.Rule{ID: "MAS_SCOPE", Effect: "DENY", Reason: "MAS is outside this CE's configured scope"}
+		selected = config.Rule{ID: "MAS_SCOPE", Effect: "DENY", Reason: "MAS is outside this CE's configured scope"}
 	}
 	out := &cev1.EvaluateResponse{TraceId: r.TraceId, Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Outcome: cev1.Decision_DECISION_ALLOW, Reason: selected.Reason, ContextSufficiency: cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC, ChecksRun: []*cev1.CheckResult{{CheckId: selected.ID, Passed: selected.Effect == "ALLOW", Reason: selected.Reason}}}
 	if selected.Effect == "DENY" {
@@ -52,15 +51,15 @@ func (s *Engine) Decide(ctx context.Context, r *cev1.EvaluateRequest) (*cev1.Eva
 	if err := ctx.Err(); err != nil {
 		return nil, false, status.FromContextError(err).Err()
 	}
-	log.Printf("decision trace=%s span=%s source=%s destination=%s outcome=%s rule=%s layer=identity", r.TraceId, r.SpanId, r.SourceAgentId, r.DestinationAgentId, out.Outcome, selected.ID)
+	logging.FromContext(ctx).InfoContext(ctx, "Identity route evaluated", "event", "identity.complete", "stage", "IDENTITY", "outcome", logging.Outcome(out), "check_id", selected.ID, "in_scope", r.MasId == mas)
 	return out, r.MasId == mas, nil
 }
 func (s *Engine) GetInfo(context.Context, *cev1.GetInfoRequest) (*cev1.GetInfoResponse, error) {
 	ids := []string{"MAS_SCOPE", "DEFAULT_DENY"}
-	for _, r := range s.Policy.Rules {
+	for _, r := range s.Config.Rules {
 		ids = append(ids, r.ID)
 	}
-	return &cev1.GetInfoResponse{CeType: orDefault(s.CEType, "CASA"), Version: orDefault(s.CEVersion, "reference-v1"), EnabledChecks: ids, MatcherStrategy: "exact-identity-policy; content-not-evaluated"}, nil
+	return &cev1.GetInfoResponse{CeType: orDefault(s.CEType, "CASA"), Version: orDefault(s.CEVersion, "1.0.0"), EnabledChecks: ids, MatcherStrategy: "exact-identity-config; content-not-evaluated"}, nil
 }
 
 func orDefault(v, fallback string) string {

@@ -2,19 +2,19 @@ package engine
 
 import (
 	"context"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/identity"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/identity"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func TestRouterUsesThePolicyOfTheRequestsMAS(t *testing.T) {
-	set, err := policy.DecodeSet(strings.NewReader(`{"mas":[
+func TestRouterUsesTheConfigOfTheRequestsMAS(t *testing.T) {
+	set, err := config.DecodeSet(strings.NewReader(`{"mas":[
 	 {"mas_id":"mas-a","rules":[{"id":"A_OK","effect":"ALLOW","reason":"a","sources":["x"],"destinations":["y"]}]},
 	 {"mas_id":"mas-b","rules":[{"id":"B_OK","effect":"ALLOW","reason":"b","sources":["x"],"destinations":["z"]}]}]}`))
 	if err != nil {
@@ -23,7 +23,7 @@ func TestRouterUsesThePolicyOfTheRequestsMAS(t *testing.T) {
 	rt := &Router{byMAS: map[string]*contentEngine{}, order: set.Order}
 	for _, id := range set.Order {
 		id := id
-		rt.byMAS[id] = newContentEngine(&identity.Engine{Policy: set.ByMAS[id], MasID: func() (string, error) { return id, nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: time.Second})
+		rt.byMAS[id] = newContentEngine(&identity.Engine{Config: set.ByMAS[id], MasID: func() (string, error) { return id, nil }}, contentOptions{OXPURL: "http://127.0.0.1:1", Wait: time.Second})
 	}
 	req := func(mas, dst string) *cev1.EvaluateRequest {
 		return &cev1.EvaluateRequest{MasId: mas, SourceAgentId: "x", DestinationAgentId: dst, TraceId: trace, SpanId: "1111111111111111"}

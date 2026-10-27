@@ -1,5 +1,5 @@
 """
-Cognition Store client for Demo CE.
+Cognition Store client for Template CE.
 
 Handles communication with the Cognition Store APIs (OXP backend) for:
 - Reading prior CE findings (MAS-level context)

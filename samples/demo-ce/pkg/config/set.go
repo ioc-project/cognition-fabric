@@ -1,4 +1,4 @@
-package policy
+package config
 
 import (
 	"bytes"
@@ -7,19 +7,19 @@ import (
 	"io"
 )
 
-// A policy file is either one policy (rules/content_rules at the top level, bound to the MAS in CE_MAS_FILE)
-// or a list of per-MAS policies:
+// A config file is either one config (rules/content_rules at the top level, bound to the MAS in CE_MAS_FILE)
+// or a list of per-MAS configs:
 //
 //	{"mas": [{"mas_id": "mas-a", "rules": [...], "content_rules": [...]}, {"mas_id": "mas-b", ...}]}
-type MasPolicy struct {
+type MasConfig struct {
 	MasID string `json:"mas_id"`
-	Policy
+	Config
 }
 
-// Set is the decoded policy file. Exactly one of Single and ByMAS is set.
+// Set is the decoded config file. Exactly one of Single and ByMAS is set.
 type Set struct {
-	Single *Policy
-	ByMAS  map[string]Policy
+	Single *Config
+	ByMAS  map[string]Config
 	Order  []string
 }
 
@@ -29,7 +29,7 @@ func DecodeSet(r io.Reader) (Set, error) {
 		return Set{}, err
 	}
 	if len(raw) > 1<<20 {
-		return Set{}, fmt.Errorf("policy file exceeds 1 MiB")
+		return Set{}, fmt.Errorf("config file exceeds 1 MiB")
 	}
 	var top map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &top); err != nil {
@@ -41,15 +41,15 @@ func DecodeSet(r io.Reader) (Set, error) {
 		return Set{Single: &p}, err
 	}
 	if len(top) != 1 {
-		return Set{}, fmt.Errorf(`a policy file with "mas" must hold nothing else at the top level`)
+		return Set{}, fmt.Errorf(`a config file with "mas" must hold nothing else at the top level`)
 	}
 	var entries []json.RawMessage
 	if err := json.Unmarshal(list, &entries); err != nil || len(entries) == 0 {
 		return Set{}, fmt.Errorf(`"mas" must be a non-empty list`)
 	}
-	set := Set{ByMAS: map[string]Policy{}}
+	set := Set{ByMAS: map[string]Config{}}
 	for n, e := range entries {
-		var m MasPolicy
+		var m MasConfig
 		d := json.NewDecoder(bytes.NewReader(e))
 		d.DisallowUnknownFields()
 		if err := d.Decode(&m); err != nil {
@@ -61,7 +61,7 @@ func DecodeSet(r io.Reader) (Set, error) {
 		if _, dup := set.ByMAS[m.MasID]; dup {
 			return Set{}, fmt.Errorf("mas[%d]: duplicate mas_id %q", n, m.MasID)
 		}
-		p, err := finishPolicy(m.Policy)
+		p, err := finishConfig(m.Config)
 		if err != nil {
 			return Set{}, fmt.Errorf("mas %q: %w", m.MasID, err)
 		}
@@ -72,7 +72,7 @@ func DecodeSet(r io.Reader) (Set, error) {
 }
 
 func (s Set) RuleCounts() (identity, content int) {
-	count := func(p Policy) { identity += len(p.Rules); content += len(p.ContentRules) }
+	count := func(p Config) { identity += len(p.Rules); content += len(p.ContentRules) }
 	if s.Single != nil {
 		count(*s.Single)
 	}

@@ -1,34 +1,42 @@
 # IOC Scale CF - Demo CE
 
-Cognition Engines (CEs) for the IOC platform: a Python implementation template and the policy-driven Go CE.
+Cognition Engines (CEs) for the IOC platform: a Python implementation template and the Go Demo CE.
+
+## Documentation
+
+The [documentation](https://refactored-carnival-2m9k3yw.pages.github.io/) covers Demo CE and Template CE,
+including setup, evaluation flow, configuration and the recording walkthrough.
+See [docs/README.md](docs/README.md) to preview or build the Docusaurus site locally.
 
 ## Structure
 
 ```
 ioc-scale-cf-demo-ce/
-├── demo-ce/              # CE implementation template, not deployed by Compose
+├── template-ce/          # CE implementation template, not deployed by Compose
 │   ├── src/              # Python source code
 │   ├── proto/            # Protocol Buffer definitions
 │   ├── tests/            # Unit tests
 │   ├── Dockerfile        # Container build
 │   └── README.md         # Engine-specific docs
-├── policy-ce/            # Policy-driven CE (Go), see policy-ce/README.md
-└── docker-compose.yml    # Run policy-ce locally
+├── demo-ce/              # Demo CE (Go), see demo-ce/README.md
+└── docker-compose.yml    # Run demo-ce locally
 ```
 
 ## Quick Start
 
-### Run Policy CE
+### Run Demo CE
 
 Export `GITHUB_TOKEN` with read access to the private `cisco-eti/ioc-scale-cfn-svc` module, and configure
-`policy-ce/config/policy.json` with your MAS and agent identities. From the repository root:
+`demo-ce/config/config.json` with your MAS and agent identities. From the repository root:
 
 ```bash
 docker compose up --build
 ```
 
-Compose runs only `policy-ce`. The Python `demo-ce/` implementation remains available as a template
-for CE teams; see its [local development instructions](demo-ce/README.md#run-locally-without-docker).
+For the recording, follow the [colored demo logs](demo-ce/README.md#demo-logs), including the complete CFN request and OXP/Store flow.
+
+Compose runs only `demo-ce`. The Python `template-ce/` implementation remains available as a template
+for CE teams; see its [local development instructions](template-ce/README.md#run-locally-without-docker).
 
 ### Stop Services
 
@@ -38,13 +46,13 @@ docker compose down
 
 ## Available Engines
 
-### Demo CE Cognition Engine
+### Template CE Cognition Engine
 
-**Location:** `demo-ce/`  
+**Location:** `template-ce/`\
 **Port:** 50051 (gRPC), 8080 (HTTP health)  
 **Protocol:** gRPC (`ioc.ce.v1.CognitionEngine`)
 
-Demo CE Cognition Engine Service implementing the `ioc.ce.v1.CognitionEngine` gRPC contract.
+Template CE Cognition Engine Service implementing the `ioc.ce.v1.CognitionEngine` gRPC contract.
 It is maintained as an implementation template and is not included in the Compose deployment.
 
 **Features:**
@@ -55,30 +63,31 @@ It is maintained as an implementation template and is not included in the Compos
 - `GET /healthz` endpoint that CFN probes to track "online" status
 - Cognition Store integration for MAS-level context
 
-See [demo-ce/README.md](demo-ce/README.md) for details.
+See [template-ce/README.md](template-ce/README.md) for details.
 
-### Policy CE
+### Demo CE
 
-**Location:** `policy-ce/`  
+**Location:** `demo-ce/`\
 **Port:** 18001 (gRPC, `ioc.ce.v1.CognitionEngine`)
 
-Application-agnostic CE that loads identity and content rules for one or several MAS from a `policy.json`.
-Go service derived from the NOA demo's Fake CE. See [policy-ce/README.md](policy-ce/README.md).
+Demonstration CE that loads identity and content rules for one or several MAS from `config.json`.
+Go service derived from the NOA demo's Fake CE. See [demo-ce/README.md](demo-ce/README.md).
 
 ## Development
 
 ### Run Locally (without Docker)
 
 ```bash
-cd demo-ce
-uv sync
-uv run python -m src.service
+cd template-ce
+uv sync --extra test
+HEALTH_PORT=8081 uv run python -m src
 ```
 
 ### Run Tests
 
 ```bash
-cd demo-ce
+cd template-ce
+uv sync --extra test
 uv run pytest -v
 ```
 
@@ -86,13 +95,13 @@ uv run pytest -v
 
 ### Continuous Integration
 
-`.github/workflows/ci.yaml` tests and builds `policy-ce`. The Python `demo-ce/` template is tested locally
+`.github/workflows/ci.yaml` tests and builds `demo-ce`. The Python `template-ce/` template is tested locally
 and is not built or published by CI. When you add a deployed CE, add its unit-test and Docker build jobs
 and list them in `needs` of `reusable-workflow-ci-status`, the required status job.
 
 | CE | Jobs | Notes |
 |---|---|---|
-| `policy-ce` (Go) | `policy-ce-unit-tests`, `policy-ce-docker-build-push` | Needs a short-lived token for the private `cisco-eti/ioc-scale-cfn-svc` module, issued through Vault by `.github/actions/cfn-token` (vars `KEEPER_URL`, `VAULT_NAMESPACE`, `VAULT_SECRET_PATH`; secrets `VAULT_APPROLE_ROLE_ID`, `VAULT_APPROLE_SECRET_ID`); images are published from `main` only |
+| `demo-ce` (Go) | `demo-ce-unit-tests`, `demo-ce-docker-build-push` | Needs a short-lived token for the private `cisco-eti/ioc-scale-cfn-svc` module, issued through Vault by `.github/actions/cfn-token` (vars `KEEPER_URL`, `VAULT_NAMESPACE`, `VAULT_SECRET_PATH`; secrets `VAULT_APPROLE_ROLE_ID`, `VAULT_APPROLE_SECRET_ID`); images are published from `main` only |
 
 CI automatically runs on:
 - **Pull Requests** - Unit tests + Docker build validation (no push)
@@ -106,16 +115,16 @@ Tag pushes do not trigger this workflow.
 Images are published to GitHub Container Registry:
 
 ```
-ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/policy-ce:latest
-ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/policy-ce:YYYY-MM-DD-<sha>
+ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:latest
+ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:YYYY-MM-DD-<sha>
 ```
 
 ## Contributing
 
 1. Create your engine in `<name>/`
 2. Implement the `ioc.ce.v1.CognitionEngine` contract:
-   - Python (see `demo-ce/`): proto definitions in `<name>/proto/`, service in `<name>/src/`, tests in `<name>/tests/`
-   - Go (see `policy-ce/`): the contract comes from the `ioc-scale-cfn-svc` Go module; `cmd/`, `internal/` and `pkg/`, with the tests next to the code
+   - Python (see `template-ce/`): proto definitions in `<name>/proto/`, service in `<name>/src/`, tests in `<name>/tests/`
+   - Go (see `demo-ce/`): the contract comes from the `ioc-scale-cfn-svc` Go module; `cmd/`, `internal/` and `pkg/`, with the tests next to the code
 3. Add it to `docker-compose.yml`
 4. Add its jobs to `.github/workflows/ci.yaml` and to `needs` of `reusable-workflow-ci-status`
 5. Document it in your engine's `README.md`

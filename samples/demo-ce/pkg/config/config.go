@@ -1,6 +1,6 @@
-// Package policy is the schema of a policy-ce policy file and its decoder: identity rules, content rules
+// Package config is the schema of a demo-ce config file and its decoder: identity rules, content rules
 // for one MAS or for several.
-package policy
+package config
 
 import (
 	"encoding/json"
@@ -17,7 +17,7 @@ type Rule struct {
 	Sources      []string `json:"sources,omitempty"`
 	Destinations []string `json:"destinations,omitempty"`
 }
-type Policy struct {
+type Config struct {
 	Rules        []Rule        `json:"rules"`
 	ContentRules []ContentRule `json:"content_rules,omitempty"`
 }
@@ -55,22 +55,22 @@ func (r ContentRule) EvidenceKind() string {
 	return r.Evidence
 }
 
-// Decode reads and validates one policy.
-func Decode(r io.Reader) (Policy, error) {
-	var p Policy
+// Decode reads and validates one config.
+func Decode(r io.Reader) (Config, error) {
+	var p Config
 	d := json.NewDecoder(io.LimitReader(r, 65537))
 	d.DisallowUnknownFields()
 	if err := d.Decode(&p); err != nil {
 		return p, err
 	}
 	if err := d.Decode(new(any)); err != io.EOF {
-		return p, fmt.Errorf("policy must contain one JSON object")
+		return p, fmt.Errorf("config must contain one JSON object")
 	}
-	return finishPolicy(p)
+	return finishConfig(p)
 }
 
-// finishPolicy validates all rules without selecting a runtime mode.
-func finishPolicy(p Policy) (Policy, error) {
+// finishConfig validates all rules without selecting a runtime mode.
+func finishConfig(p Config) (Config, error) {
 	if len(p.Rules) == 0 {
 		return p, fmt.Errorf("at least one scoped rule required")
 	}
@@ -135,7 +135,7 @@ func Matches(values []string, value string) bool {
 }
 
 // Decide is the identity decision for a route: DENY overrides ALLOW and an unmatched route is denied.
-func (p Policy) Decide(source, destination string) Rule {
+func (p Config) Decide(source, destination string) Rule {
 	var allow *Rule
 	for _, v := range p.Rules {
 		if Matches(v.Sources, source) && Matches(v.Destinations, destination) {

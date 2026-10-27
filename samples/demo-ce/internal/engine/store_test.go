@@ -3,8 +3,8 @@ package engine
 import (
 	"context"
 	"encoding/json"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/oxp"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/pkg/policy"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/oxp"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -17,8 +17,8 @@ import (
 func storeTestRequest() *cev1.EvaluateRequest {
 	return &cev1.EvaluateRequest{MasId: "mas", SourceAgentId: "moderator", DestinationAgentId: "schedule", TraceId: trace, SpanId: span}
 }
-func storeTestEngine(p policy.Policy, store *oxp.Store) *Router {
-	return New(policy.Set{Single: &p}, Options{MasID: func() (string, error) { return "mas", nil }, Store: store})
+func storeTestEngine(p config.Config, store *oxp.Store) *Router {
+	return New(config.Set{Single: &p}, Options{MasID: func() (string, error) { return "mas", nil }, Store: store})
 }
 
 // Store failures must not become successful authorization; scope must reach OXP unchanged.
@@ -48,7 +48,7 @@ func TestEvaluateCognitionStore(t *testing.T) {
 			}
 			w.Write([]byte(`{"success":true}`))
 		}))
-		s := storeTestEngine(policy.Policy{Rules: []policy.Rule{{ID: "OK", Effect: "ALLOW", Reason: "approved", Sources: []string{"moderator"}}}}, &oxp.Store{Base: api.URL, Client: api.Client()})
+		s := storeTestEngine(config.Config{Rules: []config.Rule{{ID: "OK", Effect: "ALLOW", Reason: "approved", Sources: []string{"moderator"}}}}, &oxp.Store{Base: api.URL, Client: api.Client()})
 		got, err := s.Evaluate(context.Background(), storeTestRequest())
 		if fail && status.Code(err) != codes.Unavailable {
 			t.Fatalf("store failure: %v", err)
@@ -71,7 +71,7 @@ func TestStoreReadFailureAndCancellation(t *testing.T) {
 			}
 			w.Write([]byte(body))
 		}))
-		s := storeTestEngine(policy.Policy{Rules: []policy.Rule{{ID: "OK", Effect: "ALLOW", Sources: []string{"moderator"}}}}, &oxp.Store{Base: api.URL, Client: api.Client()})
+		s := storeTestEngine(config.Config{Rules: []config.Rule{{ID: "OK", Effect: "ALLOW", Sources: []string{"moderator"}}}}, &oxp.Store{Base: api.URL, Client: api.Client()})
 		if _, err := s.Evaluate(context.Background(), storeTestRequest()); status.Code(err) != codes.Unavailable {
 			t.Fatalf("read failure: %v", err)
 		}
@@ -79,7 +79,7 @@ func TestStoreReadFailureAndCancellation(t *testing.T) {
 	}
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { <-r.Context().Done() }))
 	defer api.Close()
-	s := storeTestEngine(policy.Policy{}, &oxp.Store{Base: api.URL, Client: api.Client()})
+	s := storeTestEngine(config.Config{}, &oxp.Store{Base: api.URL, Client: api.Client()})
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
 	defer cancel()
 	started := time.Now()
@@ -95,7 +95,7 @@ func TestForeignMASDoesNotAccessStore(t *testing.T) {
 		w.WriteHeader(403)
 	}))
 	defer api.Close()
-	s := storeTestEngine(policy.Policy{}, &oxp.Store{Base: api.URL, Client: api.Client()})
+	s := storeTestEngine(config.Config{}, &oxp.Store{Base: api.URL, Client: api.Client()})
 	r := storeTestRequest()
 	r.MasId = "foreign"
 	got, err := s.Evaluate(context.Background(), r)

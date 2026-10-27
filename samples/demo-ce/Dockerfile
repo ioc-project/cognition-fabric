@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # Build context: this directory. Needs a GitHub token for the private ioc-scale-cfn-svc module:
-#   docker build --secret id=github_token,env=GITHUB_TOKEN -t policy-ce:dev .
+#   docker build --secret id=github_token,env=GITHUB_TOKEN -t demo-ce:dev .
 FROM golang:1.25-alpine AS build
 RUN apk add --no-cache git
 ENV GOPRIVATE=github.com/cisco-eti/* GONOSUMDB=github.com/cisco-eti/*
@@ -14,11 +14,11 @@ RUN --mount=type=secret,id=github_token,required=true \
 COPY cmd ./cmd
 COPY internal ./internal
 COPY pkg ./pkg
-RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/policy-ce ./cmd/policy-ce
+RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/demo-ce ./cmd/demo-ce
 
 FROM alpine:3.21
-RUN apk add --no-cache ca-certificates && adduser -D -H -u 65532 policy
-COPY --from=build /out/policy-ce /usr/local/bin/policy-ce
-USER policy
+RUN apk add --no-cache ca-certificates && adduser -D -H -u 65532 demo
+COPY --from=build /out/demo-ce /usr/local/bin/demo-ce
+USER demo
 EXPOSE 18000 18001
-ENTRYPOINT ["/usr/local/bin/policy-ce"]
+ENTRYPOINT ["/usr/local/bin/demo-ce"]

@@ -225,7 +225,7 @@ wheels = [
 ]
 
 [[package]]
-name = "demo-ce"
+name = "template-ce"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

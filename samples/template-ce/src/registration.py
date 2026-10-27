@@ -1,5 +1,5 @@
 """
-CE registration logic for Demo CE Cognition Engine.
+CE registration logic for Template CE Cognition Engine.
 
 This module handles registration with the Cognition Fabric (CFN) on startup.
 Registration is idempotent - safe to run multiple times.
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 # Constants (can be overridden via environment variables)
-CE_NAME = os.getenv("CE_NAME", "demo-ce")  # CE name for registration
+CE_NAME = os.getenv("CE_NAME", "template-ce")  # CE name for registration
 CE_VERSION = os.getenv("CE_VERSION", "1.0.0")  # CE version for registration
 CE_TYPE = os.getenv("CE_TYPE", "CASA")  # CEType: CASA or DETECTIVE
 CE_ENDPOINT = "ioc.ce.v1.CognitionEngine"  # gRPC service name
@@ -42,13 +42,14 @@ class CERegistrationRequest:
     to the management plane. mas_auto_associate is also not included -
     CFN defaults it to true.
     """
-    name: str  # CE name (e.g., "demo-ce")
+    name: str  # CE name (e.g., "template-ce")
     version: str  # CE version (e.g., "1.0.0")
     ce_type: str  # "CASA" or "DETECTIVE"
-    base_url: str  # gRPC address (e.g., "demo-ce:50051")
-    endpoint: str  # gRPC service name (e.g., "ioc.ce.v1.CognitionEngine")
-    health_url: str  # CFN probes this with an HTTP GET (e.g., "http://demo-ce:8080/healthz")
-    notification_url: Optional[str] = None  # HTTP base URL for notifications (e.g., "http://demo-ce:8080")
+    enforcing_url: str  # gRPC address (e.g., "template-ce:50051")
+    enforcing_endpoint: str  # gRPC service name (e.g., "ioc.ce.v1.CognitionEngine")
+    health_url: str  # HTTP base URL CFN probes (e.g., "http://template-ce:8080")
+    health_endpoint: str = HEALTH_PATH  # HTTP path appended to health_url (e.g., "/healthz")
+    notification_url: Optional[str] = None  # HTTP base URL for notifications (e.g., "http://template-ce:8080")
     notification_endpoint: Optional[str] = None  # HTTP path for notifications (e.g., "/notification")
 
 
@@ -60,8 +61,8 @@ class CERegistrationResponse:
     name: str
     version: str
     ce_type: str
-    base_url: str
-    endpoint: str
+    enforcing_url: str
+    enforcing_endpoint: str
     enabled: bool
     status: str
     created: bool
@@ -112,7 +113,7 @@ class CELifecycleClient:
 
         If CE with same (name, version) already exists:
         - Gets 409 with existing_ce_id
-        - Calls PATCH to update base_url/endpoint/health_url (address may have changed
+        - Calls PATCH to update enforcing_url/enforcing_endpoint/health_url (address may have changed
           after restart, e.g., new IP, different port, different hostname)
         - Returns the updated CE record
 
@@ -126,9 +127,10 @@ class CELifecycleClient:
             "name": request.name,
             "version": request.version,
             "ce_type": request.ce_type,
-            "base_url": request.base_url,
-            "endpoint": request.endpoint,
+            "enforcing_url": request.enforcing_url,
+            "enforcing_endpoint": request.enforcing_endpoint,
             "health_url": request.health_url,
+            "health_endpoint": request.health_endpoint,
         }
 
         # Add notification fields if provided
@@ -160,7 +162,7 @@ class CELifecycleClient:
 
             elif response.status_code == 409:
                 # CE with same (name, version) already exists - this happens on CE restart/reconnect.
-                # We PATCH to update base_url/endpoint/health_url because the CE's address may have changed:
+                # We PATCH to update enforcing_url/enforcing_endpoint/health_url because the CE's address may have changed:
                 # - Container got a new IP after restart
                 # - Running on a different port
                 # - Different hostname in a new deployment
@@ -197,9 +199,10 @@ class CELifecycleClient:
         """Update an existing CE via PATCH after 409 conflict."""
         endpoint = f"{self.cfn_base_url}/api/cognition-engine/{ce_id}"
         payload = {
-            "base_url": request.base_url,
-            "endpoint": request.endpoint,
+            "enforcing_url": request.enforcing_url,
+            "enforcing_endpoint": request.enforcing_endpoint,
             "health_url": request.health_url,
+            "health_endpoint": request.health_endpoint,
         }
 
         try:
@@ -218,8 +221,8 @@ class CELifecycleClient:
                     name=data["name"],
                     version=data["version"],
                     ce_type=data["ce_type"],
-                    base_url=data["base_url"],
-                    endpoint=data["endpoint"],
+                    enforcing_url=data["enforcing_url"],
+                    enforcing_endpoint=data["enforcing_endpoint"],
                     enabled=data["enabled"],
                     status=data["status"],
                     created=False,
@@ -243,8 +246,8 @@ class CELifecycleClient:
             name=data["name"],
             version=data["version"],
             ce_type=data["ce_type"],
-            base_url=data["base_url"],
-            endpoint=data["endpoint"],
+            enforcing_url=data["enforcing_url"],
+            enforcing_endpoint=data["enforcing_endpoint"],
             enabled=data["enabled"],
             status=data["status"],
             created=created,
@@ -261,9 +264,9 @@ class CELifecycleClient:
 _lifecycle_client: Optional[CELifecycleClient] = None
 
 
-async def register_demo_ce() -> None:
+async def register_template_ce() -> None:
     """
-    Register Demo CE Cognition Engine with CFN on startup.
+    Register Template CE Cognition Engine with CFN on startup.
 
     This function:
     1. Checks CFN_URL environment variable
@@ -290,23 +293,23 @@ async def register_demo_ce() -> None:
 
     if not cfn_url:
         logger.warning(
-            "CFN_URL not set - Demo CE will run without CFN registration. "
+            "CFN_URL not set - Template CE will run without CFN registration. "
             "This CE will not appear in Management Plane. "
             "Set CFN_URL environment variable for production deployments."
         )
         return
 
-    # base_url format for registration (CFN expects URL with scheme)
+    # enforcing_url format for registration (CFN expects URL with scheme)
     # For gRPC services, we use the host:port that CFN will dial
-    base_url = f"{ce_host}:{grpc_port}"
-    health_url = f"http://{ce_host}:{health_port}{HEALTH_PATH}"
+    enforcing_url = f"{ce_host}:{grpc_port}"
+    health_url = f"http://{ce_host}:{health_port}"
 
     # Notification URL for MAS lifecycle events (HTTP endpoint)
     notification_url = f"http://{ce_host}:{http_port}" if enable_notifications else None
     notification_endpoint = "/notification" if enable_notifications else None
 
     logger.info(
-        f"Starting Demo CE registration with cfn_url={cfn_url}, base_url={base_url}, "
+        f"Starting Template CE registration with cfn_url={cfn_url}, enforcing_url={enforcing_url}, "
         f"health_url={health_url}, notifications={'enabled' if enable_notifications else 'disabled'}"
     )
 
@@ -316,14 +319,14 @@ async def register_demo_ce() -> None:
         timeout=10.0,
     )
 
-    # Define Demo CE configuration
+    # Define Template CE configuration
     # Note: cfn_id and mas_auto_associate are added by CFN before forwarding to management plane
     ce_config = CERegistrationRequest(
         name=CE_NAME,
         version=CE_VERSION,
         ce_type=CE_TYPE,
-        base_url=base_url,
-        endpoint=CE_ENDPOINT,
+        enforcing_url=enforcing_url,
+        enforcing_endpoint=CE_ENDPOINT,
         health_url=health_url,
         notification_url=notification_url,
         notification_endpoint=notification_endpoint,
@@ -333,10 +336,10 @@ async def register_demo_ce() -> None:
     response = await _lifecycle_client.register(ce_config)
 
     if response:
-        logger.info(f"Demo CE registration complete: ce_id={response.ce_id}")
+        logger.info(f"Template CE registration complete: ce_id={response.ce_id}")
     else:
         logger.warning(
-            "Demo CE registration failed - CE will operate without CFN visibility"
+            "Template CE registration failed - CE will operate without CFN visibility"
         )
 
 
@@ -353,10 +356,10 @@ async def shutdown_lifecycle_client() -> None:
     global _lifecycle_client
 
     if _lifecycle_client:
-        logger.info("Shutting down Demo CE lifecycle client...")
+        logger.info("Shutting down Template CE lifecycle client...")
         await _lifecycle_client.close()
         _lifecycle_client = None
-        logger.info("Demo CE lifecycle client shutdown complete")
+        logger.info("Template CE lifecycle client shutdown complete")
 
 
 def get_ce_id() -> Optional[str]:

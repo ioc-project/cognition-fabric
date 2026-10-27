@@ -1,4 +1,4 @@
-package policy
+package config
 
 import (
 	"os"
@@ -7,8 +7,8 @@ import (
 	"testing"
 )
 
-func TestNOAPolicyKeepsEveryContentRuleWithoutProfiles(t *testing.T) {
-	f, err := os.Open("testdata/noa-policy.json")
+func TestNOAConfigKeepsEveryContentRuleWithoutProfiles(t *testing.T) {
+	f, err := os.Open("testdata/noa-config.json")
 	if err != nil {
 		t.Fatal(err)
 	}

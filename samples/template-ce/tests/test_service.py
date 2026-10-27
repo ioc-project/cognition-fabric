@@ -1,4 +1,4 @@
-"""Tests for Demo CE gRPC service."""
+"""Tests for Template CE gRPC service."""
 import pytest
 from uuid import uuid4
 from pathlib import Path

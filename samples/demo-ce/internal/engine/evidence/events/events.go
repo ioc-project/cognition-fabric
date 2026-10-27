@@ -5,8 +5,8 @@ package events
 import (
 	"context"
 	"encoding/json"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/engine/evidence"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/inbox"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
 	"log"
 	"time"
 
@@ -31,7 +31,7 @@ type Judge struct {
 // session than the submitted one is GAP, and both deny.
 func (j *Judge) Evaluate(ctx context.Context, r *cev1.EvaluateRequest, out *cev1.EvaluateResponse, rules []evidence.Rule, started time.Time) *cev1.EvaluateResponse {
 	logOutcome := func(format string, args ...any) {
-		log.Printf("flow component=policy-ce event=oxp_event trace_id=%s span_id=%s evidence=%s "+format+" elapsed_ms=%d",
+		log.Printf("flow component=demo-ce event=oxp_event trace_id=%s span_id=%s evidence=%s "+format+" elapsed_ms=%d",
 			append(append([]any{r.TraceId, r.SpanId, j.Kind}, args...), time.Since(started).Milliseconds())...)
 	}
 	if j.Inbox == nil {
@@ -63,7 +63,7 @@ func (j *Judge) Evaluate(ctx context.Context, r *cev1.EvaluateRequest, out *cev1
 				}
 			}
 			out.ContextSufficiency = cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE
-			check := &cev1.CheckResult{CheckId: "DEMO_CONTENT_POLICY", Passed: hit == "", Reason: "request published before the call, bound by exact trace and span"}
+			check := &cev1.CheckResult{CheckId: "DEMO_CONTENT_CONFIG", Passed: hit == "", Reason: "request published before the call, bound by exact trace and span"}
 			if hit != "" {
 				out.Outcome = cev1.Decision_DECISION_DENY
 				out.DenialReason = cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT

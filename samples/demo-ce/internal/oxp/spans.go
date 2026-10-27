@@ -10,8 +10,10 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/policy-ce/internal/ids"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/ids"
+	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/logging"
 )
 
 var (
@@ -48,7 +50,23 @@ type ActivityContext struct {
 
 // SessionContext reads the complete bounded session snapshot and follows explicit
 // parent/link references. The caller owns readiness retries and the total deadline.
-func (c *Client) SessionContext(ctx context.Context, sessionID, spanID string) (*ActivityContext, error) {
+func (c *Client) SessionContext(ctx context.Context, sessionID, spanID string) (history *ActivityContext, err error) {
+	started := time.Now()
+	logger := logging.FromContext(ctx)
+	logger.InfoContext(ctx, "Reading OXP session spans and following parent/link ancestors", "event", "oxp.context.start", "stage", "OXP", "session_id", sessionID, "method", "GET", "endpoint", "/api/v1/sessions/{session_id}/spans")
+	defer func() {
+		state := "available"
+		ancestors := 0
+		if history != nil {
+			ancestors = len(history.Ancestors)
+		}
+		if errors.Is(err, ErrContextPending) {
+			state = "pending"
+		} else if err != nil {
+			state = "unavailable"
+		}
+		logger.InfoContext(ctx, "OXP causal context lookup finished", "event", "oxp.context.complete", "stage", "OXP", "state", state, "ancestor_count", ancestors, "trace_identity_confirmed", false, "elapsed_ms", time.Since(started).Milliseconds())
+	}()
 	if sessionID == "" || !ids.Valid(spanID, 16) {
 		return nil, fmt.Errorf("%w: session and valid span required", ErrInvalidContext)
 	}

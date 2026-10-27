@@ -1,4 +1,4 @@
-package policy
+package config
 
 import (
 	"os"
@@ -6,10 +6,10 @@ import (
 	"testing"
 )
 
-// The NOA demo policy is shared by both adapters, so every route either adapter governs must
+// The NOA demo config is shared by both adapters, so every route either adapter governs must
 // be explicitly allowed and nothing else may be.
-func TestNOAPolicyCoversBothAdaptersAndOnlyTheirRoutes(t *testing.T) {
-	file, err := os.Open("testdata/noa-policy.json")
+func TestNOAConfigCoversBothAdaptersAndOnlyTheirRoutes(t *testing.T) {
+	file, err := os.Open("testdata/noa-config.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +39,7 @@ func TestNOAPolicyCoversBothAdaptersAndOnlyTheirRoutes(t *testing.T) {
 // The sensitive-export rule must catch the request however a user phrases it, not only a text that
 // starts with the verb, and leave ordinary travel questions alone.
 func TestNOASensitiveExportRuleMatchesNaturalRequests(t *testing.T) {
-	file, err := os.Open("testdata/noa-policy.json")
+	file, err := os.Open("testdata/noa-config.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +87,7 @@ func TestNOASensitiveExportRuleMatchesNaturalRequests(t *testing.T) {
 // trip notes has it forwarded by the moderator to a specialist ("Traveler passport: X4417329, card: ..."),
 // and the CE denies that delegation. Ordinary lookups, times and train numbers must pass.
 func TestNOASensitiveDataExposureRuleMatchesPersonalDataOnly(t *testing.T) {
-	file, err := os.Open("testdata/noa-policy.json")
+	file, err := os.Open("testdata/noa-config.json")
 	if err != nil {
 		t.Fatal(err)
 	}

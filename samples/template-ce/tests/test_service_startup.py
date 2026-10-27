@@ -54,7 +54,7 @@ class _Recorder:
         if not real_health:
             monkeypatch.setattr(health, "start_health_server", fake_start_health)
         monkeypatch.setattr(service, "serve", fake_serve)
-        monkeypatch.setattr(registration, "register_demo_ce", fake_register)
+        monkeypatch.setattr(registration, "register_template_ce", fake_register)
         monkeypatch.setattr(registration, "shutdown_lifecycle_client", fake_shutdown_lifecycle)
         monkeypatch.setattr(service, "shutdown_cognition_store_client", fake_shutdown_store)
 

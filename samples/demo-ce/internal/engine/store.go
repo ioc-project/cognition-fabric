@@ -2,7 +2,6 @@ package engine
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"google.golang.org/grpc/codes"
@@ -18,7 +17,6 @@ func storeCall(ctx context.Context, operation string, call func(context.Context)
 		return status.FromContextError(ctx.Err()).Err()
 	}
 	if err != nil {
-		log.Printf("Cognition Store %s failed: %v", operation, err)
 		return status.Errorf(codes.Unavailable, "Cognition Store %s failed", operation)
 	}
 	return nil
