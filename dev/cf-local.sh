@@ -11,7 +11,6 @@ cf_services=(
   ioc-scale-cf-mgmt-plane-ui
   ioc-scale-cfn-svc
   ioc-scale-cf-demo-ce
-  ioc-scale-cf-policy-ce
 )
 infra_services=(
   ioc-scale-db ioc-scale-db-init
@@ -101,7 +100,8 @@ require_cf_checkouts() {
   require_checkout "$deployment_dir/../ioc-scale-cf-mgmt-svc" pyproject.toml https://github.com/cisco-eti/ioc-scale-cf-mgmt-svc
   require_checkout "$cfn_dir" go.mod https://github.com/cisco-eti/ioc-scale-cfn-svc
   require_checkout "$deployment_dir/../ioc-scale-cf-ui" package.json https://github.com/cisco-eti/ioc-scale-cf-ui
-  require_checkout "$deployment_dir/../ioc-scale-cf-demo-ce" demo-ce/pyproject.toml https://github.com/cisco-eti/ioc-scale-cf-demo-ce
+  require_checkout "$deployment_dir/../ioc-scale-cf-demo-ce" template-ce/pyproject.toml https://github.com/cisco-eti/ioc-scale-cf-demo-ce
+  require_checkout "$deployment_dir/../ioc-scale-cf-demo-ce" demo-ce/go.mod https://github.com/cisco-eti/ioc-scale-cf-demo-ce
 }
 
 prepare_management_test_db() {
@@ -145,8 +145,8 @@ run_cf_tests() {
   (cd "$deployment_dir/../ioc-scale-cf-mgmt-svc" && poetry run pytest tests/)
   printf 'CF tests: CFN service\n'
   (cd "$cfn_dir" && make test)
-  printf 'CF tests: demo CE\n'
-  (cd "$deployment_dir/../ioc-scale-cf-demo-ce/demo-ce" && uv run --frozen --extra test pytest)
+  printf 'CF tests: template CE\n'
+  (cd "$deployment_dir/../ioc-scale-cf-demo-ce/template-ce" && uv run --frozen --extra test pytest)
   printf 'CF tests: UI and deployment have no unit-test suite.\n'
 }
 
@@ -387,10 +387,10 @@ case "${1:-}" in
       exec uv run --no-sync main
     fi
     ;;
-  run-demo-ce)
+  run-template-ce)
     require_local_env
-    repo="$deployment_dir/../ioc-scale-cf-demo-ce/demo-ce"
-    require_checkout "$deployment_dir/../ioc-scale-cf-demo-ce" demo-ce/pyproject.toml https://github.com/cisco-eti/ioc-scale-cf-demo-ce
+    repo="$deployment_dir/../ioc-scale-cf-demo-ce/template-ce"
+    require_checkout "$deployment_dir/../ioc-scale-cf-demo-ce" template-ce/pyproject.toml https://github.com/cisco-eti/ioc-scale-cf-demo-ce
     require_docker_compose
     require_cf_containers_stopped
     require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
@@ -399,25 +399,25 @@ case "${1:-}" in
     export CFN_URL=http://localhost:9002
     export COGNITION_ENGINE_HOST=localhost
     export GRPC_PORT=50051
-    # The demo CE starts separate health and notification servers; both default to 8080.
+    # The template CE starts separate health and notification servers; both default to 8080.
     export HEALTH_PORT=8082 HTTP_PORT=8080
-    export CE_NAME=demo-ce CE_VERSION=1.0.0 CE_TYPE=CASA
+    # Registration defaults belong to the CE; forward only an explicit name override.
+    [[ -z "${TEMPLATE_CE_NAME:-}" ]] || export CE_NAME="$TEMPLATE_CE_NAME"
     export COGNITION_STORE_URL=http://localhost:8081
-    export DEMO_CE_DECISION="${DEMO_CE_DECISION:-allow}"
     cd "$repo"
     require_cf_containers_stopped
     # Sync locked runtime dependencies after sibling updates, preserving installed extras.
     exec uv run --frozen python -m src
     ;;
-  run-policy-ce)
+  run-demo-ce)
     require_local_env
-    repo="$deployment_dir/../ioc-scale-cf-demo-ce/policy-ce"
-    require_checkout "$deployment_dir/../ioc-scale-cf-demo-ce" policy-ce/go.mod https://github.com/cisco-eti/ioc-scale-cf-demo-ce
-    require_env CE_POLICY_FILE
-    # Task is invoked from CFN; resolve relative policy paths before changing directory.
-    [[ "$CE_POLICY_FILE" = /* ]] || CE_POLICY_FILE="$cfn_dir/$CE_POLICY_FILE"
-    [[ -f "$CE_POLICY_FILE" ]] || fail "Policy file not found at $CE_POLICY_FILE. See deploy/README.md for policy CE setup."
-    export CE_POLICY_FILE
+    repo="$deployment_dir/../ioc-scale-cf-demo-ce/demo-ce"
+    require_checkout "$deployment_dir/../ioc-scale-cf-demo-ce" demo-ce/go.mod https://github.com/cisco-eti/ioc-scale-cf-demo-ce
+    require_env CE_CONFIG_FILE
+    # Task is invoked from CFN; resolve relative config paths before changing directory.
+    [[ "$CE_CONFIG_FILE" = /* ]] || CE_CONFIG_FILE="$cfn_dir/$CE_CONFIG_FILE"
+    [[ -f "$CE_CONFIG_FILE" ]] || fail "Config file not found at $CE_CONFIG_FILE. See deploy/README.md for demo CE setup."
+    export CE_CONFIG_FILE
     if [[ -n "${CE_MAS_FILE:-}" ]]; then
       [[ "$CE_MAS_FILE" = /* ]] || CE_MAS_FILE="$cfn_dir/$CE_MAS_FILE"
       export CE_MAS_FILE
@@ -432,22 +432,24 @@ case "${1:-}" in
     export GRPC_LISTEN_ADDRESS=127.0.0.1:18001
     export HTTP_LISTEN_ADDRESS=127.0.0.1:18000
     export ADVERTISED_GRPC_ADDRESS=127.0.0.1:18001
-    export ADVERTISED_HEALTH_URL=http://127.0.0.1:18000/healthz
-    export CE_NAME="${POLICY_CE_NAME:-policy-ce}" CE_VERSION=reference-v1 CE_TYPE=CASA
+    # The CE registers the base URL and a separate /healthz endpoint.
+    export ADVERTISED_HEALTH_URL=http://127.0.0.1:18000
+    # Registration defaults belong to the CE; forward only an explicit name override.
+    [[ -z "${DEMO_CE_NAME:-}" ]] || export CE_NAME="$DEMO_CE_NAME"
     export CGO_ENABLED=0 GOWORK=off
     # Use sibling CFN contracts without changing either checkout's module files.
-    build_dir="$(mktemp -d "${TMPDIR:-/tmp}/cf-policy-ce.XXXXXX")"
+    build_dir="$(mktemp -d "${TMPDIR:-/tmp}/cf-demo-ce.XXXXXX")"
     trap 'rm -rf "$build_dir"' EXIT
-    cp "$repo/go.mod" "$build_dir/policy-ce.mod"
-    cp "$repo/go.sum" "$build_dir/policy-ce.sum"
+    cp "$repo/go.mod" "$build_dir/demo-ce.mod"
+    cp "$repo/go.sum" "$build_dir/demo-ce.sum"
     cd "$repo"
-    go mod edit -modfile="$build_dir/policy-ce.mod" "-replace=github.com/cisco-eti/ioc-scale-cfn-svc=$cfn_dir"
-    printf 'Building policy CE from %s (policy: %s)\n' "$repo" "$CE_POLICY_FILE"
-    go build -mod=mod -modfile="$build_dir/policy-ce.mod" -o "$build_dir/policy-ce" ./cmd/policy-ce
+    go mod edit -modfile="$build_dir/demo-ce.mod" "-replace=github.com/cisco-eti/ioc-scale-cfn-svc=$cfn_dir"
+    printf 'Building demo CE from %s (config: %s)\n' "$repo" "$CE_CONFIG_FILE"
+    go build -mod=mod -modfile="$build_dir/demo-ce.mod" -o "$build_dir/demo-ce" ./cmd/demo-ce
     require_cf_containers_stopped
-    "$build_dir/policy-ce"
+    "$build_dir/demo-ce"
     ;;
   *)
-    fail "Unknown action '${1:-}'. Use task test, check, infra:up, infra:down, run:cfn-mgmt, run:cfn, run:cf-ui, run:demo-ce, run:policy-ce, run:full-mas, or proxy:logs."
+    fail "Unknown action '${1:-}'. Use task test, check, infra:up, infra:down, run:cfn-mgmt, run:cfn, run:cf-ui, run:template-ce, run:demo-ce, run:full-mas, or proxy:logs."
     ;;
 esac

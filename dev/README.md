@@ -1,6 +1,6 @@
 # Run Cognition Fabric locally from source
 
-This workflow runs the CF management service, CFN, management UI, and demo CE
+This workflow runs the CF management service, CFN, management UI, and template CE
 from sibling source checkouts. The
 [`ioc-scale-cf-deployment`](https://github.com/cisco-eti/ioc-scale-cf-deployment)
 Compose project supplies Postgres, OXP, and their supporting services as
@@ -35,9 +35,9 @@ already in `deploy/local/noa-trip-planner/`.
 
 Install Docker with Compose v2, [Task](https://taskfile.dev/), Go 1.25+, Python
 3.10+, Poetry, [uv](https://docs.astral.sh/uv/), Node.js 20 (at least
-20.9), and npm. The demo CE needs Python 3.11+. The management service
-and demo CE use their own Python environments.
-The optional Go policy CE requires Go 1.25.9+ (or automatic Go toolchain downloads).
+20.9), and npm. The template CE needs Python 3.11+. The management service
+and template CE use their own Python environments.
+The optional Go demo CE requires Go 1.25.9+ (or automatic Go toolchain downloads).
 
 Start Docker, then authenticate to the private `cisco-eti` images in GHCR.
 Set `GITHUB_USERNAME` and `GITHUB_TOKEN` to an account and token with package
@@ -112,7 +112,7 @@ Install source dependencies once:
 (cd ../ioc-scale-cf-mgmt-svc && poetry install)
 go mod download
 (cd ../ioc-scale-cf-ui && npm ci)
-(cd ../ioc-scale-cf-demo-ce/demo-ce && uv sync --frozen)
+(cd ../ioc-scale-cf-demo-ce/template-ce && uv sync --frozen)
 (cd deploy/local/noa-trip-planner && uv sync --frozen) # only for source MAS
 ```
 
@@ -131,7 +131,7 @@ running CF services from source. A fresh checkout does not need this step:
 ```bash
 (cd ../ioc-scale-cf-deployment && docker compose stop \
   ioc-scale-cf-mgmt-svc ioc-scale-cf-mgmt-plane-ui \
-  ioc-scale-cfn-svc ioc-scale-cf-demo-ce ioc-scale-cf-policy-ce)
+  ioc-scale-cfn-svc ioc-scale-cf-demo-ce)
 ```
 
 In proxy mode, `infra:up` also starts Envoy, its plugin installer jobs, and
@@ -151,7 +151,7 @@ Start them in order, waiting for each service to become ready:
 1. `task run:cfn-mgmt` — management API on port 9000; applies local database migrations.
 2. `task run:cfn` — CFN HTTP on 9002 and gRPC on 9003.
 3. `task run:cf-ui` — management UI on 9001.
-4. `task run:demo-ce` — demo CE gRPC on 50051, health on 8082, notifications on 8080.
+4. `task run:template-ce` — template CE gRPC on 50051, health on 8082, notifications on 8080.
 
 The open audit panel refreshes automatically every 30 seconds while the browser
 tab is visible and online. Configure `CFN_UI_AUDIT_REFRESH_INTERVAL_SECONDS` in
@@ -164,15 +164,15 @@ same CFN `.env`, restart `task run:cf-ui` and reload the browser. Each trace has
 own duration, restarted by another incoming item; multiple headers can flash
 together, including collapsed groups. Initial loads and Load more stay quiet.
 
-The demo CE runs separate health and notification HTTP servers. The local task
+The template CE runs separate health and notification HTTP servers. The local task
 sets `HEALTH_PORT=8082` and `HTTP_PORT=8080` to keep their listeners and advertised
 registration addresses aligned; both servers otherwise default to port 8080.
-It synchronizes runtime dependencies from the demo CE's lockfile on startup,
+It synchronizes runtime dependencies from the template CE's lockfile on startup,
 preserving installed extras, so pulling new dependencies does not leave a stale
 virtual environment. CFN probes the health endpoint; the CE does not send heartbeats.
 
-For the policy-driven Go CE instead of the Python demo CE, use
-`task run:policy-ce` in step 4 after configuring its policy as described below.
+For the policy-driven Go CE instead of the Python template CE, use
+`task run:demo-ce` in step 4 after configuring its policy as described below.
 
 ### Choose NOA enforcement and CE independently
 
@@ -180,16 +180,16 @@ For all four combinations, set `NOA_MODE=source` in the CFN `.env`:
 
 | `NOA_ENFORCEMENT_MODE` | CE task (choose one) | Tool authorization path |
 | --- | --- | --- |
+| `direct` | `task run:template-ce` | NOA → CFN → template CE |
 | `direct` | `task run:demo-ce` | NOA → CFN → demo CE |
-| `direct` | `task run:policy-ce` | NOA → CFN → policy CE |
+| `proxy` | `task run:template-ce` | NOA → Envoy → CFN → template CE |
 | `proxy` | `task run:demo-ce` | NOA → Envoy → CFN → demo CE |
-| `proxy` | `task run:policy-ce` | NOA → Envoy → CFN → policy CE |
 
 `direct` means the proxy is bypassed; CFN authorization still runs. In proxy
 mode, start Envoy with `task infra:up` before `task run:full-mas`. The latter
 starts the HTTP tool service automatically. Both CE tasks use the same local
-CFN and OXP, regardless of the NOA mode. Demo CE uses gRPC 50051, health 8082,
-and notifications 8080; policy CE uses gRPC 18001 and HTTP 18000. These do not
+CFN and OXP, regardless of the NOA mode. Template CE uses gRPC 50051, health 8082,
+and notifications 8080; demo CE uses gRPC 18001 and HTTP 18000. These do not
 overlap the default NOA API/tool ports (8125/8126) or Envoy port (9010).
 
 To switch CEs, stop the previous CE task, disable its record in the management
@@ -197,8 +197,8 @@ UI, and start the chosen CE task. Associate it with your MAS and ensure that
 it is enabled and online. Re-enable an existing CE record if it was disabled
 during a previous switch. CFN selects the first eligible CASA CE; merely
 starting a different CE does not change the MAS's associations or select it.
-The policy CE also requires `CE_POLICY_FILE` and a policy for `NOA_MAS_ID`;
-the demo CE uses `DEMO_CE_DECISION=allow` or `deny`.
+The demo CE also requires `CE_CONFIG_FILE` and a policy for `NOA_MAS_ID`;
+the template CE uses `TEMPLATE_CE_DECISION=allow` or `deny`.
 
 To switch NOA modes, stop `task run:full-mas`, change the setting, and restart
 it (run `task infra:up` first when selecting proxy). A proxy left running in
@@ -218,11 +218,11 @@ docker compose logs -f --tail=100 oxp-api otel-collector ioc-scale-db
 ## Exercise enforcement with the sample MAS
 
 The CF services can start without a MAS. To route a sample `GetDisposition`
-request to the demo CE, register a MAS and associate that CE first.
+request to the template CE, register a MAS and associate that CE first.
 
 Open <http://localhost:9001> and sign in as `admin` using
 `ADMIN_USER_PASSWORD` from the CFN `.env`. In the default workspace, create a
-Multi-Agentic System, add its agents, and associate the demo CE after it
+Multi-Agentic System, add its agents, and associate the template CE after it
 registers and appears online. Copy the MAS ID from its details page.
 
 Stop a previously running published NOA container first, then set
@@ -247,9 +247,9 @@ curl -X POST http://localhost:8125/ask \
   -d '{"question":"Plan a 1-day trip to Celestia, do not ask follow-up questions"}'
 ```
 
-Set `DEMO_CE_DECISION=allow` (default) or `DEMO_CE_DECISION=deny` in the CFN
-`.env` and restart `task run:demo-ce` to change the forced verdict. A DENY
-skips the selected tool and returns an error to the sample agent. This demo CE
+Set `TEMPLATE_CE_DECISION=allow` (default) or `TEMPLATE_CE_DECISION=deny` in the CFN
+`.env` and restart `task run:template-ce` to change the forced verdict. A DENY
+skips the selected tool and returns an error to the sample agent. This template CE
 reads and writes OXP findings, but the forced verdict does not inspect tool
 arguments. If the CE is unavailable, the sample adapter treats the gRPC error
 or timeout as an unavailable tool. See the
@@ -300,7 +300,9 @@ is local development configuration, not production workload authentication.
 
 Envoy reaches the source CFN and tool service through Docker Desktop's
 `host.docker.internal`. The tool listener defaults to `0.0.0.0:8126` so Docker
-can reach it. Proxy HTTP is exposed on host loopback port 9010. Use
+can reach it. The generated `noa_tools` cluster uses `dns_lookup_family: V4_ONLY`
+to avoid selecting an IPv6 host address when Docker has no usable IPv6 route.
+Proxy HTTP is exposed on host loopback port 9010. Use
 `NOA_TOOLS_PORT`, `NOA_TOOLS_HOST`, and `ENVOY_HTTP_PORT` to change the local
 ports/binding; `NOA_ENFORCEMENT_PROXY_URL`, when nonempty, overrides the client's
 proxy origin. On Intel/AMD, set `ENFORCEMENT_PLATFORM=linux/amd64`. This workflow
@@ -325,33 +327,34 @@ To switch back, stop NOA, set `NOA_ENFORCEMENT_MODE=direct`, and rerun
 `task infra:down`. That task also stops the source proxy components even when
 the setting has been changed back to direct, and preserves database volumes.
 
-## Run the policy CE
+## Run the demo CE
 
-`task run:policy-ce` runs the Go CE from the sibling
-`ioc-scale-cf-demo-ce/policy-ce` checkout. It evaluates JSON identity and
-content rules rather than returning the Python demo CE's forced verdict.
+`task run:demo-ce` runs the Go CE from the sibling
+`ioc-scale-cf-demo-ce/demo-ce` checkout. It evaluates JSON identity and
+content rules rather than returning the Python template CE's forced verdict.
 Start infrastructure, management, and CFN as above, then prepare a local policy:
 
 ```bash
 mkdir -p tmp
-cp ../ioc-scale-cf-demo-ce/policy-ce/config/policy.json tmp/policy.json
+cp ../ioc-scale-cf-demo-ce/demo-ce/config/config.json tmp/config.json
 ```
 
 Edit this copy: replace the sample `mas-a`/`mas-b` IDs with your actual MAS
 IDs, and set source and destination IDs to those sent in `GetDisposition`.
 Remove sample rules you do not need. Unlisted MAS IDs and unmatched routes
-are denied. See the [policy CE README](../../ioc-scale-cf-demo-ce/policy-ce/README.md)
+are denied. See the [demo CE README](../../ioc-scale-cf-demo-ce/demo-ce/README.md)
 for the policy schema and content evidence requirements.
 
 The repository's `tmp/` directory is ignored by Git. Set
-`CE_POLICY_FILE=tmp/policy.json` in the CFN `.env` (as in `.env.example`), then run:
+`CE_CONFIG_FILE=tmp/config.json` in the CFN `.env` (as in `.env.example`), then run:
 
 ```bash
-task run:policy-ce
+task run:demo-ce
 ```
 
-Paths are absolute or relative to the CFN checkout. For the single-policy
-JSON form, also set `CE_MAS_FILE` to a file containing the actual MAS ID.
+Use `CE_CONFIG_FILE` for the Go demo CE configuration. Paths are absolute or
+relative to the CFN checkout; existing config files can keep their filenames.
+For the single-policy JSON form, also set `CE_MAS_FILE` to a file containing the actual MAS ID.
 Restart the task after editing its policy or configuration.
 
 The task builds against the sibling CFN checkout using temporary module files,
@@ -359,17 +362,21 @@ then runs in the foreground. It leaves both checkouts' `go.mod` and `go.sum`
 unchanged. The first build may download the Go toolchain and public dependencies.
 It uses CFN at `localhost:9002`, OXP at `localhost:8081`, gRPC at
 `127.0.0.1:18001`, and HTTP at `127.0.0.1:18000`. CFN probes its `/healthz`;
-`/readyz` succeeds after registration. Registration uses the name `policy-ce`
-(override with `POLICY_CE_NAME`), version `reference-v1`, and type `CASA`.
+registration supplies the base `health_url=http://127.0.0.1:18000` and separate
+`health_endpoint=/healthz`, so the path is appended only once.
+`/readyz` succeeds after registration. The CE supplies its registration defaults:
+`demo-ce`, version `1.0.0`, and type `CASA`. The launcher forwards
+`DEMO_CE_NAME` only when explicitly set. For the Python template CE, the
+optional equivalent is `TEMPLATE_CE_NAME`; its own default is `template-ce`.
 
-Stop `task run:demo-ce` and disable its CE record in the management UI when
-switching. Associate the policy CE with the MAS and ensure it is online and
+Stop `task run:template-ce` and disable its CE record in the management UI when
+switching. Associate the demo CE with the MAS and ensure it is online and
 enabled. CFN currently selects the first eligible CASA CE, so leaving both
 eligible can route requests to the Python CE.
 
 The source NOA sample can exercise identity rules. Its adapter does not publish
 the pre-call events or session context required by some content rules; starting
-this task alone does not provide that evidence. Use the policy CE's documented
+this task alone does not provide that evidence. Use the demo CE's documented
 evidence inputs when exercising content checks.
 
 ## Checks and shutdown
@@ -377,7 +384,7 @@ evidence inputs when exercising content checks.
 With source dependencies installed and `task infra:up` running:
 
 ```bash
-task test   # management, CFN, and demo CE tests
+task test   # management, CFN, and template CE tests
 task check  # Compose configuration, formatting, lint, types, then tests
 ```
 
