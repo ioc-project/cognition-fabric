@@ -19,7 +19,7 @@ sequenceDiagram
     CFN-->>CE: Return ce_id
 
     Note over CE,Mgmt: Probe Loop (every 2s)
-    loop Every 2 seconds, for each enabled CE
+    loop Every 2 seconds, for each enabled endpoint owner
         Mgmt->>CFN: POST /api/internal/mgmt/cognition-engine/probe<br/>(ce_id)
         CFN->>CFN: Look up health_url for ce_id
         CFN->>CE: GET health_url
@@ -69,8 +69,8 @@ sequenceDiagram
 stateDiagram-v2
     [*] --> online: Registration
     online --> online: Probe succeeds
-    online --> offline: No successful probe for threshold seconds
-    offline --> online: Probe succeeds
+    online --> offline: No successful probe for threshold seconds, or endpoint ownership transferred
+    offline --> online: Current owner's probe succeeds
 ```
 
 ## Components
@@ -93,8 +93,46 @@ The CFN acts as a proxy:
 
 The Management Plane is the source of truth for CE status:
 - Stores CE records in the database
-- Runs a background monitor that asks CFN to probe every enabled CE and sets `status` from the result
+- Runs a background monitor that asks CFN to probe every enabled CE that currently owns its endpoints and sets `status` from the result
 - Keeps `last_seen` as the time of the last successful probe
+
+### Endpoint ownership
+
+A successful registration claims the CE's health and enforcing service endpoints within its CFN.
+If another registration owns either endpoint, the Management Plane marks that previous registration
+offline and stops probing it. Its record, MAS associations, and administrator-controlled `enabled`
+setting are preserved. Different service paths or gRPC service names at the same listener are distinct
+endpoints; notification addresses do not establish ownership. Address matching normalizes hostname
+case and default HTTP ports, but does not resolve DNS aliases.
+
+Restart recovery (`409` followed by a successful `PATCH` supplying health or enforcing fields) also
+claims ownership, even when those values have not changed. This lets an older name or version reclaim
+an endpoint when it actually restarts. CFN forwards that CE PATCH to Management's existing
+`PATCH /api/cognition-engines/{ce_id}?reconnect=true` route, explicitly identifying a reconnect with
+the optional query parameter. The CE-facing PATCH URL and payload are unchanged. A failed
+registration or PATCH does not transfer ownership.
+
+The UI uses Management's ordinary `PATCH /api/cognition-engines/{ce_id}` route. Saving unchanged
+endpoints on this route does not claim ownership, even when the form sends all endpoint fields.
+An actual change to the normalized health or enforcing service endpoints establishes a new claim;
+cosmetic URL changes and edits limited to enable/disable, MAS configuration, or notifications do not.
+
+The query parameter defaults to false and is omitted from the public OpenAPI schema. Older Management
+versions ignore the unknown query parameter, so new CFN versions can still PATCH the existing route.
+Older CFN versions omit it and receive ordinary edit behavior from new Management versions. Full
+unchanged-address reclaim, including A-to-B-to-A restarts, requires both components to be updated.
+
+Management stores an internal registration token on each owning CE record and snapshots it before
+probing. Ownership transfer clears the previous owner's token; reconnecting renews the claimant's
+token. A result from an older token is ignored, including a delayed successful probe or an
+old-to-new-to-old ownership change. Concurrent claims are serialized within the CFN. Consequently,
+an HTTP 200 can update only the current registration, and the CE health response body remains ignored.
+
+Migration `0007` preserves registrations with unique endpoints and a sole enabled candidate sharing
+endpoints with disabled records. Disabled competitors lose ownership. If multiple enabled candidates
+share an endpoint, they are marked offline until the running CE registers/reconnects again: historical
+records cannot establish which process currently owns that address. Restart the intended CE after
+upgrading in that ambiguous case. No CE request or response DTO changes are required.
 
 ## Endpoint fields
 

@@ -647,6 +647,12 @@ func TestPatchCognitionEngineHandler(t *testing.T) {
 				if r.Method != http.MethodPatch {
 					t.Errorf("expected PATCH method, got %s", r.Method)
 				}
+				if want := "/api/cognition-engines/" + tt.ceID; r.URL.Path != want {
+					t.Errorf("expected existing PATCH route %s, got %s", want, r.URL.Path)
+				}
+				if got := r.URL.Query().Get("reconnect"); got != "true" {
+					t.Errorf("expected reconnect=true query parameter, got %q", got)
+				}
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(tt.mgmtPlaneStatus)
 				w.Write([]byte(tt.mgmtPlaneResponse))

@@ -397,9 +397,9 @@ func (a *App) patchCognitionEngineHandler(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	// Build the patch URL for management plane
+	// CE reconnects must be distinguishable from an administrator saving unchanged endpoint fields.
 	mgmtURL := getEnvOrDefault("MGMT_URL", "http://localhost:9000")
-	patchURL := fmt.Sprintf("%s/api/cognition-engines/%s", mgmtURL, ceID)
+	patchURL := fmt.Sprintf("%s/api/cognition-engines/%s?reconnect=true", mgmtURL, ceID)
 
 	requestBody, err := json.Marshal(reqBody)
 	if err != nil {
