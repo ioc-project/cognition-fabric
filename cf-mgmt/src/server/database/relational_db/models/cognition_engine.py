@@ -48,6 +48,10 @@ class CognitionEngine(Base):
     status = Column(String(20), nullable=False, default="offline")
     last_seen = Column(TIMESTAMP(timezone=True), nullable=True)  # Last successful health probe
 
+    # Internal ownership generation. NULL means this record has no current endpoint ownership.
+    # Renewed on registration/reconnect so a probe started before a takeover cannot revive it.
+    registration_token = Column(String(36), nullable=True)
+
     # Configuration
     mas_config = Column(JSONB, nullable=True, default=dict)
 
