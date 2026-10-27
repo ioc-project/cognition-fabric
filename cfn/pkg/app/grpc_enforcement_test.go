@@ -76,8 +76,6 @@ func startMockCASACE(t *testing.T, response *cev1.EvaluateResponse, err error) (
 }
 
 func restoreRoutingGlobals() func() {
-	oldParsed := currentConfig()
-
 	oldMgmt := MgmtURL
 	oldCfnID := CfnID
 
@@ -87,7 +85,7 @@ func restoreRoutingGlobals() func() {
 
 	CfnID = ""
 	MgmtURL = ""
-	applyParsedConfig(nil)
+	oldParsed := applyParsedConfig(nil)
 	setLastRefreshOK(false)
 
 	return func() {

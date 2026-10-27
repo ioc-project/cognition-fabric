@@ -899,8 +899,7 @@ const probeTestCEID = "550e8400-e29b-41d4-a716-446655440000"
 
 func setProbeTestConfig(t *testing.T, healthURL string) {
 	t.Helper()
-	prev := currentConfig()
-	applyParsedConfig(&CfnConfigPayload{CognitionEngines: []EngineCfg{{ID: probeTestCEID, HealthURL: healthURL}}})
+	prev := applyParsedConfig(&CfnConfigPayload{CognitionEngines: []EngineCfg{{ID: probeTestCEID, HealthURL: healthURL}}})
 	t.Cleanup(func() {
 		applyParsedConfig(prev)
 	})
@@ -982,8 +981,7 @@ func TestProbeCognitionEngineHandler_OversizedBody(t *testing.T) {
 }
 
 func TestProbeCognitionEngineHandler_NoConfig(t *testing.T) {
-	prev := currentConfig()
-	applyParsedConfig(nil)
+	prev := applyParsedConfig(nil)
 	defer applyParsedConfig(prev)
 
 	w := postProbe(t, `{"ce_id": "`+probeTestCEID+`"}`)
