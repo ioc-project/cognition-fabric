@@ -52,17 +52,17 @@ tasks:
     cmds:
       - bash deploy/local/cf-local.sh run-cf-ui
 
+  run:template-ce:
+    desc: Run the Python template CE from source against local CFN and shared OXP
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh run-template-ce
+
   run:demo-ce:
-    desc: Run the demo CE from source against local CFN and shared OXP
+    desc: Run the Go demo CE from source using CE_CONFIG_FILE against local CFN and OXP
     silent: true
     cmds:
       - bash deploy/local/cf-local.sh run-demo-ce
-
-  run:policy-ce:
-    desc: Run the policy CE from source using CE_POLICY_FILE against local CFN and OXP
-    silent: true
-    cmds:
-      - bash deploy/local/cf-local.sh run-policy-ce
 
   run:full-mas:
     desc: Run NOA using NOA_MODE and NOA_ENFORCEMENT_MODE from .env
