@@ -57,7 +57,8 @@ sequenceDiagram
     participant Mgmt as Mgmt Plane
     participant CE as CASA CE
 
-    EP->>CFN: GetDisposition (gRPC)
+    EP->>CFN: GetDisposition (gRPC, mas_id only)
+    CFN->>CFN: Resolve mas_id to assigned workspace from config snapshot
     CFN->>Mgmt: GET /api/workspaces/{ws}/multi-agentic-systems/{mas}
     Mgmt-->>CFN: MAS config (CE status=offline)
     CFN-->>EP: Unavailable: "all CASA CEs are offline"
@@ -87,7 +88,7 @@ The CE is responsible for:
 The CFN acts as a proxy:
 - Receives CE registration requests, adds `cfn_id`, forwards to Management Plane
 - Validates `health_url` (absolute http or https URL with a hostname, no credentials, no fragment, no link-local address such as the cloud metadata address 169.254.169.254) and exposes an internal probe endpoint (`POST /api/internal/mgmt/cognition-engine/probe`, body `{"ce_id": ...}`). CFN looks up the CE's registered `health_url` in its config snapshot and performs the HTTP GET against it, so callers cannot make CFN probe arbitrary URLs. A `200` within the timeout (default 1s, max 10s, `CE_PROBE_TIMEOUT_SECONDS`, read at startup) is healthy, anything else is unhealthy. Redirects are not followed and `HTTP_PROXY` and `HTTPS_PROXY` are ignored. A `ce_id` that is not in the snapshot returns `404` (`CE not yet in CFN config`), which mgmt counts as unhealthy. CFN refreshes its snapshot shortly after any CE registration, patch or delete that goes through it, and on its own heartbeat to the management plane when the config version changed. A `health_url` changed directly on the management plane therefore reaches CFN with its next config pull (`HEARTBEAT_INTERVAL_SECONDS`, 10 seconds by default), and until then CFN probes the old URL.
-- When routing enforcement requests, selects the first healthy (online + enabled) CASA CE
+- When routing enforcement requests, resolves `mas_id` to its assigned workspace from the config snapshot (not a process-global default workspace), fetches live MAS/CE status from Management for that workspace, and selects the first healthy (online + enabled) CASA CE. CASA `Evaluate` is called with that resolved `workspace_id`.
 
 ### 3. Management Plane
 
@@ -177,12 +178,15 @@ This handles CE restarts where the address may have changed (new IP, different p
 
 ### CFN CE Selection
 
-When CFN receives an enforcement request:
+When CFN receives an enforcement request (`GetDisposition`, `mas_id` only):
 
-1. Fetch MAS configuration from Management Plane (includes associated CEs)
-2. Find all CASA CEs for this MAS
-3. Select first CE that is both `enabled=true` AND `status=online`
-4. If no healthy CE found, return appropriate error:
+1. Resolve `mas_id` to the assigned `workspace_id` from the config snapshot. An empty snapshot (none loaded, or no assigned workspaces) is not ready: CFN waits up to 2 seconds for a config pull, then returns `Unavailable` (`config snapshot unavailable`) if it is still empty.
+2. If the snapshot is loaded and `mas_id` is not in it, return `NotFound` (MAS not assigned to this CFN). No Management GetMAS call.
+3. Fetch live MAS configuration from Management: `GET /api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}` (includes associated CEs and their `enabled`/`status`).
+4. If that GetMAS returns 404, pull config again (same 2s wait), re-resolve the workspace, and retry once. A pull that is still in flight or that fails returns `Unavailable` so the next request can retry. A completed pull that still 404s returns `NotFound`.
+5. Find all CASA CEs for this MAS. Call CASA `Evaluate` with the resolved snapshot `workspace_id`.
+6. Select first CE that is both `enabled=true` AND `status=online`
+7. If no healthy CE found, return appropriate error:
    - `NotFound`: No CASA CE associated with MAS
    - `Unavailable`: CASA CEs exist but all are disabled
    - `Unavailable`: CASA CEs exist but all are offline
