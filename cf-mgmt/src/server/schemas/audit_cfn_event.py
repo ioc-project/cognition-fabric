@@ -31,7 +31,9 @@ class AuditCfnEventResponse(BaseModel):
     )
     audit_type: str = Field(
         ...,
-        description="CFN dispositions use CE_INVOKED when Evaluate was attempted, CE_NOT_INVOKED for an earlier failure",
+        description=(
+            "CFN dispositions use CE_INVOKED when Evaluate was attempted, CE_NOT_INVOKED for an earlier failure"
+        ),
     )
     audit_resource_identifier: str = Field(
         ..., description="MAS association for CFN dispositions; empty if missing or too long for the association column"
