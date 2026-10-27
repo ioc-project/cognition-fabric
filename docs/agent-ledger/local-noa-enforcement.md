@@ -14,6 +14,16 @@ The deployment checkout supplies reusable images and overlays and is not
 modified by these tasks. MAS-specific routes are generated when NOA starts;
 infrastructure can start before a MAS exists.
 
+The local application is based on upstream `noa-trip-planner/`; the separate
+`noa-trip-planner-a2a/` has different transports and dependencies. Compare upstream
+changes by application, retain the CFN/proxy integration, and update the local
+lockfile when adopting a shared Observe SDK update.
+
+Use `dns_lookup_family: V4_ONLY` for the generated `noa_tools` Envoy cluster.
+Docker Desktop can resolve `host.docker.internal` to an IPv6 address without
+a usable IPv6 route; Envoy's default DNS policy prefers that address. This can
+produce HTTP 503 after a successful CFN ALLOW, before the tool service is reached.
+
 CE choice is independent of the source NOA enforcement mode: both template and
 demo CEs answer CFN's `Evaluate` calls in direct and proxy modes. The local
 template task assigns health port 8082 separately from its fixed notification port

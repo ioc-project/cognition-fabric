@@ -105,6 +105,8 @@ def render(directory: Path, mas_id: str, tools_port: int) -> None:
                 }],
                 "clusters": [{
                     "name": "noa_tools", "connect_timeout": "2s", "type": "LOGICAL_DNS", "lb_policy": "ROUND_ROBIN",
+                    # Docker Desktop can return an IPv6 host address without a usable IPv6 route.
+                    "dns_lookup_family": "V4_ONLY",
                     "load_assignment": {"cluster_name": "noa_tools", "endpoints": [{"lb_endpoints": [{"endpoint": {
                         "address": {"socket_address": {"address": "host.docker.internal", "port_value": tools_port}},
                     }}]}]},

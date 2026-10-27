@@ -289,7 +289,9 @@ is local development configuration, not production workload authentication.
 
 Envoy reaches the source CFN and tool service through Docker Desktop's
 `host.docker.internal`. The tool listener defaults to `0.0.0.0:8126` so Docker
-can reach it. Proxy HTTP is exposed on host loopback port 9010. Use
+can reach it. The generated `noa_tools` cluster uses `dns_lookup_family: V4_ONLY`
+to avoid selecting an IPv6 host address when Docker has no usable IPv6 route.
+Proxy HTTP is exposed on host loopback port 9010. Use
 `NOA_TOOLS_PORT`, `NOA_TOOLS_HOST`, and `ENVOY_HTTP_PORT` to change the local
 ports/binding; `NOA_ENFORCEMENT_PROXY_URL`, when nonempty, overrides the client's
 proxy origin. On Intel/AMD, set `ENFORCEMENT_PLATFORM=linux/amd64`. This workflow

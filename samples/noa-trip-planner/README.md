@@ -3,8 +3,15 @@
 This is a CF-owned copy of the NOA sample application from
 [`cisco-eti/oxp-sample-apps`](https://github.com/cisco-eti/oxp-sample-apps/tree/ecfa422a38227bfc0011fb5bf8b796792e481e31/noa-trip-planner).
 The application and fictional travel data were copied from that revision.
-Its Observe SDK dependency is now 1.0.58, following the upstream A2A sample
-at [`7f76b55`](https://github.com/cisco-eti/oxp-sample-apps/commit/7f76b5525c1520e79b4f3dbff718e3f84db48141).
+Upstream was checked through
+[`a1edc89`](https://github.com/cisco-eti/oxp-sample-apps/commit/a1edc891e83abd864ab174407249bb702c5d90aa);
+the original `noa-trip-planner` application and data have not changed since the copy.
+Its Observe SDK dependency is now 1.1.0, following the upstream A2A sample at
+that revision. The A2A and SLIM dependency updates apply to the separate
+`noa-trip-planner-a2a` application.
+Observe SDK 1.1.0 requires protobuf 7.36.2 or newer. The local protobuf constraint
+allows version 7; the existing generated CFN bindings use the supported
+[older Python gencode with a newer runtime](https://protobuf.dev/support/cross-version-runtime-guarantee/#python-specific-guarantees).
 The local CF workflow runs this copy; it does not require an `oxp-sample-apps`
 checkout.
 
@@ -28,6 +35,9 @@ Run it from the CFN service repository after starting the local CF services:
 (cd deploy/local/noa-trip-planner && uv sync --frozen)
 task run:full-mas
 ```
+
+After dependency or lockfile changes, stop NOA and repeat `uv sync --frozen`;
+`task run:full-mas` uses the existing environment without synchronizing it.
 
 Set `NOA_MODE=source`, `NOA_ENFORCEMENT_MODE=direct`, and `NOA_MAS_ID` in
 the CFN repository `.env`. Use the MAS ID created in the local
