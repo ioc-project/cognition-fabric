@@ -44,3 +44,4 @@ cfn
 
 # Local scratch files and runtime configuration
 /tmp/
+/.agents
