@@ -247,6 +247,14 @@ curl -X POST http://localhost:8125/ask \
   -d '{"question":"Plan a 1-day trip to Celestia, do not ask follow-up questions"}'
 ```
 
+For a more complex prompt that can involve the schedule, itinerary, and fare specialists:
+
+```bash
+curl -X POST http://localhost:8125/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"Plan a one-day trip to Celestia using the available data. Include train schedules and attractions, a feasible route with travel times, and train fares. Don’t ask follow-up questions; make reasonable assumptions and flag missing information."}'
+```
+
 Set `TEMPLATE_CE_DECISION=allow` (default) or `TEMPLATE_CE_DECISION=deny` in the CFN
 `.env` and restart `task run:template-ce` to change the forced verdict. A DENY
 skips the selected tool and returns an error to the sample agent. This template CE
