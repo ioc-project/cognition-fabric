@@ -26,9 +26,11 @@ router = APIRouter()
     summary="List CFN Audit Events",
     description=(
         "Retrieve a paginated list of audit events from ioc-cfn-svc. "
-        "Supports optional filtering by `resource_type`, `audit_type`, `decision` and `success`, before pagination. "
+        "Supports optional filtering by `resource_type`, `audit_type`, `outcome`, "
+        "`decision` and `success`, before pagination. "
         "CFN dispositions use CE_INVOKED for Evaluate attempts or CE_NOT_INVOKED "
-        "for earlier failures. source identifies the producer; success describes "
+        "for earlier failures; Proxy records use PROXY_MEDIATED. "
+        "Canonical outcome filters all producers. source identifies the producer; success describes "
         "the whole operation, independently of a policy ALLOW/DENY. "
         "Filters require support in the upstream CFN version."
     ),
@@ -51,33 +53,44 @@ def list_audit_events(
     ),
     resource_type: Optional[str] = Query(
         None,
-        description="Filter by resource type (e.g. COGNITION_ENGINE)",
+        description="Filter by resource type (COGNITION_ENGINE or ENFORCEMENT_PROXY)",
     ),
     audit_type: Optional[str] = Query(
         None,
-        description="Filter by audit type (CE_INVOKED or CE_NOT_INVOKED; requires upgraded CFN)",
+        description="Filter by audit type (CE_INVOKED, CE_NOT_INVOKED or PROXY_MEDIATED; requires upgraded CFN)",
     ),
     decision: Optional[Literal["allow", "block", "modify"]] = Query(
         None,
-        description="CFN policy decision: block matches the CE DENY outcome. Requires upgraded CFN.",
+        description=(
+            "Legacy alias for canonical ALLOW, BLOCK or MODIFY_REQUESTED across producers. Requires upgraded CFN."
+        ),
     ),
     success: Optional[bool] = Query(
         None,
         description="Whole-flow status: true for success, false for failure. A completed policy block is successful.",
     ),
+    outcome: Optional[
+        Literal["ALLOW", "BLOCK", "MODIFY_REQUESTED", "ERROR", "DEGRADED", "UNSUPPORTED", "UNKNOWN"]
+    ] = Query(None, description="Canonical outcome across all producers; requires upgraded CFN."),
 ):
     """
     List all CFN audit events with optional filtering and pagination.
 
     - **page**: 0-based page number (default 0)
     - **pageSize**: Number of records per page (default 20, max 100)
-    - **resource_type**: Optional filter — e.g. `COGNITION_ENGINE`
-    - **audit_type**: Optional filter — `CE_INVOKED` or `CE_NOT_INVOKED`
-    - **decision**: Optional CFN policy decision — `allow`, `block` (DENY), or `modify`
+    - **resource_type**: Optional filter — `COGNITION_ENGINE` or `ENFORCEMENT_PROXY`
+    - **audit_type**: Optional filter — `CE_INVOKED`, `CE_NOT_INVOKED` or `PROXY_MEDIATED`
+    - **decision**: Legacy alias — `allow`, `block`, or `modify`
+    - **outcome**: Optional canonical outcome across producers
     - **success**: Optional whole-flow status; omission includes unavailable historical values
     """
     try:
+        aliases = {"allow": "ALLOW", "block": "BLOCK", "modify": "MODIFY_REQUESTED"}
+        if decision is not None and outcome is not None and aliases[decision] != outcome:
+            return JSONResponse(status_code=400, content={"error": "decision and outcome filters must agree"})
         extra_filters = {}
+        if outcome is not None:
+            extra_filters["outcome"] = outcome
         if decision is not None:
             extra_filters["decision"] = decision
         if success is not None:

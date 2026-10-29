@@ -9,6 +9,7 @@ All outbound HTTP calls are mocked via unittest.mock.patch.
 """
 
 import uuid
+import pytest
 from unittest.mock import patch, MagicMock
 
 from fastapi.testclient import TestClient
@@ -59,6 +60,43 @@ def _mock_response(status_code: int = 200, json_data=None):
     resp.text = "" if json_data is None else str(json_data)
     resp.raise_for_status.side_effect = None
     return resp
+
+
+class TestSharedAuditOutcomes:
+    @pytest.mark.parametrize(
+        "outcome", ["ALLOW", "BLOCK", "MODIFY_REQUESTED", "ERROR", "DEGRADED", "UNSUPPORTED", "UNKNOWN"]
+    )
+    @patch("server.services.audit_cfn_event.requests.get")
+    def test_forwards_common_outcome_and_proxy_type(self, mock_get, client, outcome):
+        event = _make_audit_event(
+            source="PROXY",
+            resource_type="ENFORCEMENT_PROXY",
+            resource_identifier="",
+            audit_type="PROXY_MEDIATED",
+            outcome=outcome,
+            audit_information={"mas_id": "mas-1", "trace_id": "trace-1", "applied_outcome": "APPLIED_OUTCOME_BLOCKED"},
+        )
+        mock_get.return_value = _mock_response(200, _make_list_response([event]))
+        response = client.get(f"/api/audit-events/?outcome={outcome}&audit_type=PROXY_MEDIATED&success=false")
+        assert response.status_code == 200
+        assert response.json()["data"][0] == event
+        params = mock_get.call_args.kwargs["params"]
+        assert params["outcome"] == outcome
+        assert params["audit_type"] == "PROXY_MEDIATED"
+        assert params["success"] == "false"
+
+    @patch("server.services.audit_cfn_event.requests.get")
+    def test_conflicting_alias_rejected_before_upstream(self, mock_get, client):
+        response = client.get("/api/audit-events/?decision=block&outcome=ALLOW")
+        assert response.status_code == 400
+        mock_get.assert_not_called()
+
+    @patch("server.services.audit_cfn_event.requests.get")
+    def test_consistent_alias_and_outcome(self, mock_get, client):
+        mock_get.return_value = _mock_response(200, _make_list_response([]))
+        assert client.get("/api/audit-events/?decision=block&outcome=BLOCK").status_code == 200
+        params = mock_get.call_args.kwargs["params"]
+        assert params["decision"] == "block" and params["outcome"] == "BLOCK"
 
 
 # ---------------------------------------------------------------------------
@@ -170,7 +208,12 @@ class TestListAuditEvents:
 
     @patch("server.services.audit_cfn_event.requests.get")
     def test_list_invalid_resource_type_returns_400(self, mock_get, client: TestClient):
-        error_body = {"error": "invalid resource_type: BOGUS. Valid values: COGNITION_ENGINE, POLICY_ENFORCER, MEMORY_PROVIDER, MAS, MAS-AGENT, WORKFLOW, TASK"}
+        error_body = {
+            "error": (
+                "invalid resource_type: BOGUS. Valid values: "
+                "COGNITION_ENGINE, POLICY_ENFORCER, MEMORY_PROVIDER, MAS, MAS-AGENT, WORKFLOW, TASK"
+            )
+        }
         mock_get.return_value = _mock_response(400, error_body)
 
         response = client.get("/api/audit-events/?resource_type=BOGUS")
@@ -180,7 +223,9 @@ class TestListAuditEvents:
 
     @patch("server.services.audit_cfn_event.requests.get")
     def test_list_invalid_audit_type_returns_400(self, mock_get, client: TestClient):
-        error_body = {"error": "invalid audit_type: BOGUS. Valid values: RESOURCE_CREATED, RESOURCE_UPDATED, RESOURCE_DELETED"}
+        error_body = {
+            "error": "invalid audit_type: BOGUS. Valid values: RESOURCE_CREATED, RESOURCE_UPDATED, RESOURCE_DELETED"
+        }
         mock_get.return_value = _mock_response(400, error_body)
 
         response = client.get("/api/audit-events/?audit_type=BOGUS")

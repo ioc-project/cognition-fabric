@@ -15,7 +15,7 @@ class AuditCfnEventResponse(BaseModel):
 
     id: UUID = Field(..., description="Unique audit event ID (UUID)")
     source: Optional[str] = Field(
-        default=None, description="Original audit producer, e.g. CFN; absent from older CFN versions"
+        default=None, description="Original audit producer, e.g. CFN or PROXY; absent from older CFN versions"
     )
     success: Optional[bool] = Field(
         default=None,
@@ -25,18 +25,30 @@ class AuditCfnEventResponse(BaseModel):
         ),
     )
     operation_id: Optional[str] = Field(default=None, description="Operation identifier")
-    resource_type: str = Field(..., description="Type of the resource (e.g. COGNITION_ENGINE)")
+    outcome: Optional[str] = Field(
+        default=None,
+        description=(
+            "Canonical result across producers: ALLOW, BLOCK, MODIFY_REQUESTED, ERROR, DEGRADED, "
+            "UNSUPPORTED or UNKNOWN; absent from older records/CFN"
+        ),
+    )
+    resource_type: str = Field(..., description="Type of the resource (e.g. COGNITION_ENGINE or ENFORCEMENT_PROXY)")
     resource_identifier: str = Field(
-        ..., description="Selected CE ID for CFN dispositions; empty if no CE was selected"
+        ..., description="Selected CE ID for CFN dispositions; empty if no CE was selected or for Proxy records"
     )
     audit_type: str = Field(
         ...,
         description=(
-            "CFN dispositions use CE_INVOKED when Evaluate was attempted, CE_NOT_INVOKED for an earlier failure"
+            "CFN dispositions use CE_INVOKED when Evaluate was attempted, "
+            "CE_NOT_INVOKED for an earlier failure; Proxy records use PROXY_MEDIATED"
         ),
     )
     audit_resource_identifier: str = Field(
-        ..., description="MAS association for CFN dispositions; empty if missing or too long for the association column"
+        ...,
+        description=(
+            "MAS association for CFN and Proxy records; empty if missing or too long; "
+            "full Proxy MAS ID remains in audit_information"
+        ),
     )
     audit_information: Optional[Dict[str, Any]] = Field(default=None, description="JSONB audit event details")
     audit_extra_information: Optional[str] = Field(default=None, description="Additional information as text")

@@ -117,7 +117,13 @@ poetry run python -m server.main
 **CFN Audit Events** (from `cfn_cp` database):
 - List all events: `GET /api/audit-events`
 - Filter events: `GET /api/audit-events?resource_type=COGNITION_ENGINE&audit_type=CE_INVOKED`
-- Filter policy decisions and whole-flow status: `GET /api/audit-events?decision=block&success=true` (a completed DENY/BLOCK is successful)
+- Filter shared outcomes and operational status: `GET /api/audit-events?outcome=BLOCK&success=true`
+- Filter Proxy records: `GET /api/audit-events?audit_type=PROXY_MEDIATED`
+- Legacy `decision=allow|block|modify` aliases also filter canonical outcomes across producers.
+
+The optional top-level `outcome` supplements the preserved source details in
+`audit_information`. See the [CF-owned audit contract](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/docs/specs/proxy-audit-ingestion.md)
+for outcome mappings, delivery requirements and rollout.
 - Get event by ID: `GET /api/audit-events/{id}`
 
 ```bash
