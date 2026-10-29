@@ -248,13 +248,6 @@ func (a *App) registerOnStartup() {
 func (a *App) RefreshConfig(mgmtURL string) error {
 	log := getLogger()
 
-	if mgmtURL == "" {
-		return fmt.Errorf("management plane URL not configured")
-	}
-	if CfnID == "" {
-		return fmt.Errorf("cfn_id not set")
-	}
-
 	cfnURL := mgmtURL + "/api/cognition-fabric-nodes/" + CfnID
 
 	client := httpclient.New(30 * time.Second)
