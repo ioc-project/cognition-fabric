@@ -1,0 +1,22 @@
+{
+  "mas_id": "fa7c634b-38a1-4ad0-aeb6-ffda79c7b6cb",
+  "trace_id": "579d6c3efa084969378c34a67b060a26",
+  "span_id": "1234567890abcdef",
+  "source_agent_id": "planner",
+  "destination_agent_id": "schedule_agent",
+  "protocol": "http",
+  "route": "/ask",
+  "submitted_form": {
+    "content_type": "application/json"
+  },
+  "audit_record_id": "4e7c6a14-7254-4d07-b10f-6c3b9205c59f",
+  "recorded_at": "2026-10-29T08:00:00Z",
+  "returned_disposition": "DISPOSITION_ACTION_ALLOW",
+  "authorization": {
+    "evaluation_id": "evaluation-1",
+    "message_id": "message-1",
+    "send_trace_id": "579d6c3efa084969378c34a67b060a26",
+    "send_span_id": "1234567890abcdef",
+    "latency_ms": 12
+  }
+}

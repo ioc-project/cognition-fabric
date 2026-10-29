@@ -279,6 +279,7 @@ func (s *enforcementServer) auditDisposition(ceID string, info audit.Disposition
 		CreatedBy:               systemActorID,
 		LastModifiedBy:          systemActorID,
 	}
+	audit.PopulateCFNOutcome(event)
 	s.auditWG.Add(1)
 	go func() {
 		defer s.auditWG.Done()

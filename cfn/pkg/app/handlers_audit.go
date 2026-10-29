@@ -46,7 +46,7 @@ func (a *App) getAuditEventHandler(w http.ResponseWriter, r *http.Request) (int,
 func (a *App) listAuditEventsHandler(w http.ResponseWriter, r *http.Request) (int, error) {
 	resourceType := r.URL.Query().Get("resource_type")
 	auditType := r.URL.Query().Get("audit_type")
-	filters := audit.ListFilters{Decision: r.URL.Query().Get("decision")}
+	filters := audit.ListFilters{Decision: r.URL.Query().Get("decision"), Outcome: r.URL.Query().Get("outcome")}
 	if r.URL.Query().Has("success") {
 		success, err := strconv.ParseBool(r.URL.Query().Get("success"))
 		if err != nil {
