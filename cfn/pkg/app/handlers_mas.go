@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/mgmt"
 	eh "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/tools/easyhttp"
 )
 
@@ -37,33 +38,38 @@ func (a *App) getMASHandler(w http.ResponseWriter, r *http.Request) (int, error)
 		})
 	}
 
+	workspaceID, err := resolveMASWorkspace(masID)
+	if err != nil {
+		log.Errorf("workspace_id not set")
+		return eh.RespondWithJSON(w, http.StatusServiceUnavailable, map[string]string{
+			"error": "workspace not configured",
+		})
+	}
+
+	// Check management plane URL is available
+	if MgmtURL == "" {
+		log.Errorf("management plane URL not set")
+		return eh.RespondWithJSON(w, http.StatusServiceUnavailable, map[string]string{
+			"error": "management plane not configured",
+		})
+	}
+
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 
-	mas, workspaceID, err := fetchMASForRequest(ctx, masID)
+	mgmtClient := mgmt.New(MgmtURL, 30*time.Second)
+	mas, err := mgmtClient.GetMAS(ctx, workspaceID, masID)
 	if err != nil {
-		switch {
-		case errors.Is(err, errMgmtURLNotConfigured):
-			log.Errorf("management plane URL not set")
-			return eh.RespondWithJSON(w, http.StatusServiceUnavailable, map[string]string{
-				"error": "management plane not configured",
-			})
-		case errors.Is(err, errSnapshotUnavailable):
-			log.Errorf("config snapshot unavailable: mas_id=%s", masID)
-			return eh.RespondWithJSON(w, http.StatusServiceUnavailable, map[string]string{
-				"error": "config snapshot unavailable",
-			})
-		case errors.Is(err, errMASNotAssigned), errors.Is(err, errMASNotFound):
+		if errors.Is(err, mgmt.ErrNotFound) {
 			log.Warnf("MAS not found: mas_id=%s", masID)
 			return eh.RespondWithJSON(w, http.StatusNotFound, map[string]string{
 				"error": fmt.Sprintf("MAS not found: %s", masID),
 			})
-		default:
-			log.Errorf("failed to fetch MAS from management plane: mas_id=%s workspace_id=%s error=%v", masID, workspaceID, err)
-			return eh.RespondWithJSON(w, http.StatusBadGateway, map[string]string{
-				"error": "failed to fetch MAS from management plane",
-			})
 		}
+		log.Errorf("failed to fetch MAS from management plane: %v", err)
+		return eh.RespondWithJSON(w, http.StatusBadGateway, map[string]string{
+			"error": "failed to fetch MAS from management plane",
+		})
 	}
 
 	return eh.RespondWithJSON(w, http.StatusOK, mas)

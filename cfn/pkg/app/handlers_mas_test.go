@@ -17,6 +17,8 @@ func TestGetMASHandler_MissingMASID(t *testing.T) {
 	restore := restoreRoutingGlobals()
 	defer restore()
 
+	MgmtURL = "http://localhost:9000"
+
 	a := &App{}
 	handler := easyhttp.WrapHandler(a.getMASHandler)
 
@@ -39,13 +41,12 @@ func TestGetMASHandler_MissingMASID(t *testing.T) {
 	}
 }
 
-func TestGetMASHandler_SnapshotUnavailable(t *testing.T) {
+func TestGetMASHandler_WorkspaceNotConfigured(t *testing.T) {
 	restore := restoreRoutingGlobals()
 	defer restore()
 
 	applyParsedConfig(nil)
-	CfnID = ""
-	MgmtURL = "http://127.0.0.1:1"
+	MgmtURL = "http://localhost:9000"
 
 	a := &App{}
 	rtr := easyhttp.NewRouter()
@@ -65,8 +66,8 @@ func TestGetMASHandler_SnapshotUnavailable(t *testing.T) {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	if resp["error"] != "config snapshot unavailable" {
-		t.Errorf("expected error 'config snapshot unavailable', got '%s'", resp["error"])
+	if resp["error"] != "workspace not configured" {
+		t.Errorf("expected error 'workspace not configured', got '%s'", resp["error"])
 	}
 }
 
@@ -74,10 +75,9 @@ func TestGetMASHandler_MgmtURLNotConfigured(t *testing.T) {
 	restore := restoreRoutingGlobals()
 	defer restore()
 
-	seedParsedConfigFromMAS(map[string]any{
-		"id":           "test-mas-id",
-		"workspace_id": "test-workspace",
-		"name":         "Test MAS",
+	applyParsedConfig(&CfnConfigPayload{
+		ConfigVersion: 1,
+		Workspaces:    []WorkspaceCfg{{WorkspaceID: "test-workspace", MASList: []MASCfg{{ID: "test-mas-id"}}}},
 	})
 	MgmtURL = ""
 
@@ -104,23 +104,34 @@ func TestGetMASHandler_MgmtURLNotConfigured(t *testing.T) {
 	}
 }
 
-func TestGetMASHandler_ResolvesAssignedWorkspace(t *testing.T) {
-	masResp := map[string]any{
-		"id":           "mas-abc",
-		"workspace_id": "ws-other",
-		"name":         "Other MAS",
-		"cognition_engines": []map[string]any{
-			{
-				"ce_id":   "ce-1",
-				"ce_type": "CASA",
-				"enabled": true,
-				"status":  "online",
-			},
-		},
-	}
+func TestGetMASHandler_UsesSnapshotWorkspace(t *testing.T) {
+	restore := restoreRoutingGlobals()
+	defer restore()
 
-	cleanup, _ := setupTestEnv(t, masResp)
-	defer cleanup()
+	var paths []string
+	mock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		if r.URL.Path == "/api/workspaces/ws-other/multi-agentic-systems/mas-abc" {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":           "mas-abc",
+				"workspace_id": "ws-other",
+				"name":         "Other MAS",
+			})
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer mock.Close()
+
+	MgmtURL = mock.URL
+	applyParsedConfig(&CfnConfigPayload{
+		ConfigVersion: 1,
+		Workspaces: []WorkspaceCfg{
+			{WorkspaceID: "ws-default", WorkspaceName: "Default Workspace", MASList: []MASCfg{{ID: "mas-default"}}},
+			{WorkspaceID: "ws-other", WorkspaceName: "Other", MASList: []MASCfg{{ID: "mas-abc"}}},
+		},
+	})
 
 	a := &App{}
 	rtr := easyhttp.NewRouter()
@@ -128,7 +139,6 @@ func TestGetMASHandler_ResolvesAssignedWorkspace(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodGet, "/api/multi-agentic-systems/mas-abc", nil)
 	w := httptest.NewRecorder()
-
 	rtr.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
@@ -142,22 +152,8 @@ func TestGetMASHandler_ResolvesAssignedWorkspace(t *testing.T) {
 	if resp["workspace_id"] != "ws-other" {
 		t.Errorf("workspace_id = %v, want ws-other", resp["workspace_id"])
 	}
-}
 
-func TestGetMASHandler_MASNotAssigned(t *testing.T) {
-	cleanup, _ := setupTestEnv(t, nil)
-	defer cleanup()
-
-	a := &App{}
-	rtr := easyhttp.NewRouter()
-	rtr.Get("/api/multi-agentic-systems/{masId}", a.getMASHandler)
-
-	req := httptest.NewRequest(http.MethodGet, "/api/multi-agentic-systems/unknown-mas", nil)
-	w := httptest.NewRecorder()
-
-	rtr.ServeHTTP(w, req)
-
-	if w.Code != http.StatusNotFound {
-		t.Fatalf("expected status %d, got %d body=%s", http.StatusNotFound, w.Code, w.Body.String())
+	if len(paths) != 1 || paths[0] != "/api/workspaces/ws-other/multi-agentic-systems/mas-abc" {
+		t.Fatalf("GetMAS paths = %v, want snapshot workspace ws-other", paths)
 	}
 }
