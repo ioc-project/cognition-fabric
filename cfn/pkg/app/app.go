@@ -245,17 +245,17 @@ func (a *App) registerOnStartup() {
 }
 
 // RefreshConfig fetches the latest CFN configuration from the management plane.
-func (a *App) RefreshConfig() error {
+func (a *App) RefreshConfig(mgmtURL string) error {
 	log := getLogger()
 
-	if MgmtURL == "" {
+	if mgmtURL == "" {
 		return fmt.Errorf("management plane URL not configured")
 	}
 	if CfnID == "" {
 		return fmt.Errorf("cfn_id not set")
 	}
 
-	cfnURL := MgmtURL + "/api/cognition-fabric-nodes/" + CfnID
+	cfnURL := mgmtURL + "/api/cognition-fabric-nodes/" + CfnID
 
 	client := httpclient.New(30 * time.Second)
 	ctx := context.Background()
@@ -360,7 +360,7 @@ func (a *App) startHeartbeat(mgmtURL string) {
 
 					if remoteVersion > current {
 						log.Infof("config update detected: remote_version=%d local_version=%d - refreshing", remoteVersion, current)
-						if err := a.RefreshConfig(); err != nil {
+						if err := a.RefreshConfig(mgmtURL); err != nil {
 							log.Errorf("failed to refresh config: %v", err)
 						}
 					}
