@@ -296,7 +296,7 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 	// Trigger immediate config refresh to include the newly registered CE
 	go func() {
 		time.Sleep(500 * time.Millisecond) // Brief delay for mgmt plane to propagate
-		if err := a.RefreshConfig(context.Background()); err != nil {
+		if err := a.RefreshConfig(); err != nil {
 			log.Errorf("failed to refresh config after CE registration: %v", err)
 		} else {
 			log.Infof("config refreshed after CE registration: ce_id=%s", mgmtResp.CEID)
@@ -446,7 +446,7 @@ func (a *App) patchCognitionEngineHandler(w http.ResponseWriter, r *http.Request
 		// Trigger config refresh after update
 		go func() {
 			time.Sleep(500 * time.Millisecond)
-			if err := a.RefreshConfig(context.Background()); err != nil {
+			if err := a.RefreshConfig(); err != nil {
 				log.Errorf("failed to refresh config after CE patch: %v", err)
 			} else {
 				log.Infof("config refreshed after CE patch: ce_id=%s", ceID)
@@ -524,7 +524,7 @@ func (a *App) deleteCognitionEngineHandler(w http.ResponseWriter, r *http.Reques
 		// Trigger config refresh after deletion
 		go func() {
 			time.Sleep(500 * time.Millisecond)
-			if err := a.RefreshConfig(context.Background()); err != nil {
+			if err := a.RefreshConfig(); err != nil {
 				log.Errorf("failed to refresh config after CE deletion: %v", err)
 			} else {
 				log.Infof("config refreshed after CE deletion: ce_id=%s", ceID)

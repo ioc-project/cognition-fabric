@@ -159,7 +159,6 @@ func New(port, grpcPort int) (*App, error) {
 	// Initialize gRPC server
 	a.grpcServer = grpc.NewServer()
 	a.enforcementSrv = newEnforcementServer(db)
-	a.enforcementSrv.refresh = a.RefreshConfig
 	enforcementv1.RegisterEnforcementServer(a.grpcServer, a.enforcementSrv)
 	reflection.Register(a.grpcServer)
 
@@ -228,7 +227,6 @@ func (a *App) registerOnStartup() {
 			log.Errorf("failed to parse config into typed struct: %v", err)
 		} else {
 			applyParsedConfig(&parsed)
-			setLastRefreshOK(true)
 			applied = &parsed
 		}
 	}
@@ -247,13 +245,7 @@ func (a *App) registerOnStartup() {
 }
 
 // RefreshConfig fetches the latest CFN configuration from the management plane.
-// Concurrent callers share a single in-flight pull. waitCtx bounds how long the
-// caller waits; it does not cancel the HTTP request.
-func (a *App) RefreshConfig(waitCtx context.Context) error {
-	return waitCoalescedRefresh(waitCtx, a.doRefresh)
-}
-
-func (a *App) doRefresh() error {
+func (a *App) RefreshConfig() error {
 	log := getLogger()
 
 	if MgmtURL == "" {
@@ -368,7 +360,7 @@ func (a *App) startHeartbeat(mgmtURL string) {
 
 					if remoteVersion > current {
 						log.Infof("config update detected: remote_version=%d local_version=%d - refreshing", remoteVersion, current)
-						if err := a.RefreshConfig(context.Background()); err != nil {
+						if err := a.RefreshConfig(); err != nil {
 							log.Errorf("failed to refresh config: %v", err)
 						}
 					}

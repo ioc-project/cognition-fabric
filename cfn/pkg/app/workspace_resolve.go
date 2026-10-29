@@ -7,13 +7,10 @@ package app
 import (
 	"context"
 	"errors"
-	"sync"
 	"time"
 
 	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/mgmt"
 )
-
-var requestPathRefreshWait = 2 * time.Second
 
 var (
 	errSnapshotUnavailable  = errors.New("config snapshot unavailable")
@@ -21,29 +18,6 @@ var (
 	errMASNotFound          = errors.New("MAS not found")
 	errMgmtURLNotConfigured = errors.New("management plane URL not configured")
 )
-
-var (
-	refreshMu       sync.Mutex
-	refreshInFlight bool
-	refreshDone     chan struct{}
-	lastRefreshOK   bool
-	lastRefreshErr  error
-)
-
-func setLastRefreshOK(ok bool) {
-	refreshMu.Lock()
-	lastRefreshOK = ok
-	if ok {
-		lastRefreshErr = nil
-	}
-	refreshMu.Unlock()
-}
-
-func snapshotRefreshSucceeded() bool {
-	refreshMu.Lock()
-	defer refreshMu.Unlock()
-	return lastRefreshOK
-}
 
 func configVersion(cfg *CfnConfigPayload) int64 {
 	if cfg == nil {
@@ -122,72 +96,8 @@ func lookupMASWorkspace(masID string) (workspaceID string, found bool, snapshotL
 	return first, true, true
 }
 
-func waitCoalescedRefresh(waitCtx context.Context, pull func() error) error {
-	if waitCtx == nil {
-		waitCtx = context.Background()
-	}
-
-	refreshMu.Lock()
-	if refreshInFlight {
-		done := refreshDone
-		refreshMu.Unlock()
-		return waitForRefresh(waitCtx, done)
-	}
-	refreshInFlight = true
-	done := make(chan struct{})
-	refreshDone = done
-	refreshMu.Unlock()
-
-	go func() {
-		err := pull()
-		refreshMu.Lock()
-		lastRefreshErr = err
-		lastRefreshOK = err == nil
-		refreshInFlight = false
-		close(done)
-		refreshMu.Unlock()
-	}()
-
-	return waitForRefresh(waitCtx, done)
-}
-
-func waitForRefresh(waitCtx context.Context, done <-chan struct{}) error {
-	select {
-	case <-done:
-		refreshMu.Lock()
-		err := lastRefreshErr
-		refreshMu.Unlock()
-		return err
-	case <-waitCtx.Done():
-		return waitCtx.Err()
-	}
-}
-
-func refreshOnRequestPath(ctx context.Context, refresh func(context.Context) error) error {
-	if refresh == nil {
-		return nil
-	}
-	waitCtx, cancel := context.WithTimeout(ctx, requestPathRefreshWait)
-	defer cancel()
-	err := refresh(waitCtx)
-	if err != nil {
-		getLogger().Warnf("request-path config refresh failed: %v", err)
-	}
-	return err
-}
-
-func resolveMASWorkspace(ctx context.Context, masID string, refresh func(context.Context) error) (string, error) {
+func resolveMASWorkspace(masID string) (string, error) {
 	ws, found, loaded := lookupMASWorkspace(masID)
-	if found {
-		return ws, nil
-	}
-	if loaded && snapshotRefreshSucceeded() {
-		return "", errMASNotAssigned
-	}
-
-	_ = refreshOnRequestPath(ctx, refresh)
-
-	ws, found, loaded = lookupMASWorkspace(masID)
 	if found {
 		return ws, nil
 	}
@@ -197,48 +107,23 @@ func resolveMASWorkspace(ctx context.Context, masID string, refresh func(context
 	return "", errMASNotAssigned
 }
 
-func fetchMASForRequest(ctx context.Context, masID string, refresh func(context.Context) error) (*mgmt.MASResponse, string, error) {
+func fetchMASForRequest(ctx context.Context, masID string) (*mgmt.MASResponse, string, error) {
 	if MgmtURL == "" {
 		return nil, "", errMgmtURLNotConfigured
 	}
 
-	ws, err := resolveMASWorkspace(ctx, masID, refresh)
+	ws, err := resolveMASWorkspace(masID)
 	if err != nil {
 		return nil, "", err
 	}
 
 	client := mgmt.New(MgmtURL, 30*time.Second)
 	mas, err := client.GetMAS(ctx, ws, masID)
-	if err == nil {
-		return mas, ws, nil
-	}
-	if !errors.Is(err, mgmt.ErrNotFound) {
-		return nil, "", err
-	}
-
-	refreshErr := refreshOnRequestPath(ctx, refresh)
-
-	ws, err = resolveMASWorkspace(ctx, masID, nil)
-	if err != nil {
-		if errors.Is(err, errMASNotAssigned) {
-			return nil, "", notFoundAfterRefresh(refreshErr)
-		}
-		return nil, "", err
-	}
-
-	mas, err = client.GetMAS(ctx, ws, masID)
 	if err != nil {
 		if errors.Is(err, mgmt.ErrNotFound) {
-			return nil, "", notFoundAfterRefresh(refreshErr)
+			return nil, "", errMASNotFound
 		}
 		return nil, "", err
 	}
 	return mas, ws, nil
-}
-
-func notFoundAfterRefresh(refreshErr error) error {
-	if refreshErr != nil {
-		return errSnapshotUnavailable
-	}
-	return errMASNotFound
 }

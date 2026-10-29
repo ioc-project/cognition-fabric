@@ -180,13 +180,12 @@ This handles CE restarts where the address may have changed (new IP, different p
 
 When CFN receives an enforcement request (`GetDisposition`, `mas_id` only):
 
-1. Resolve `mas_id` to the assigned `workspace_id` from the config snapshot. An empty snapshot (none loaded, or no assigned workspaces) is not ready: CFN waits up to 2 seconds for a config pull, then returns `Unavailable` (`config snapshot unavailable`) if it is still empty.
+1. Resolve `mas_id` to the assigned `workspace_id` from the config snapshot. An empty snapshot (none loaded, or no assigned workspaces) returns `Unavailable` (`config snapshot unavailable`) until heartbeat refreshes config.
 2. If the snapshot is loaded and `mas_id` is not in it, return `NotFound` (MAS not assigned to this CFN). No Management GetMAS call.
-3. Fetch live MAS configuration from Management: `GET /api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}` (includes associated CEs and their `enabled`/`status`).
-4. If that GetMAS returns 404, pull config again (same 2s wait), re-resolve the workspace, and retry once. A pull that is still in flight or that fails returns `Unavailable` so the next request can retry. A completed pull that still 404s returns `NotFound`.
-5. Find all CASA CEs for this MAS. Call CASA `Evaluate` with the resolved snapshot `workspace_id`.
-6. Select first CE that is both `enabled=true` AND `status=online`
-7. If no healthy CE found, return appropriate error:
+3. Fetch live MAS configuration from Management: `GET /api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}` (includes associated CEs and their `enabled`/`status`). A GetMAS 404 returns `NotFound`.
+4. Find all CASA CEs for this MAS. Call CASA `Evaluate` with the resolved snapshot `workspace_id`.
+5. Select first CE that is both `enabled=true` AND `status=online`
+6. If no healthy CE found, return appropriate error:
    - `NotFound`: No CASA CE associated with MAS
    - `Unavailable`: CASA CEs exist but all are disabled
    - `Unavailable`: CASA CEs exist but all are offline

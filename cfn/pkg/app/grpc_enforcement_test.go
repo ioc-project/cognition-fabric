@@ -79,20 +79,14 @@ func restoreRoutingGlobals() func() {
 	oldMgmt := MgmtURL
 	oldCfnID := CfnID
 
-	refreshMu.Lock()
-	oldOK := lastRefreshOK
-	refreshMu.Unlock()
-
 	CfnID = ""
 	MgmtURL = ""
 	oldParsed := applyParsedConfig(nil)
-	setLastRefreshOK(false)
 
 	return func() {
 		applyParsedConfig(oldParsed)
 		MgmtURL = oldMgmt
 		CfnID = oldCfnID
-		setLastRefreshOK(oldOK)
 	}
 }
 
@@ -119,7 +113,6 @@ func seedParsedConfigFromMAS(masResponse map[string]any) {
 		}}
 	}
 	applyParsedConfig(cfg)
-	setLastRefreshOK(true)
 }
 
 // setupTestEnv sets up the test environment with mock management plane.
@@ -140,13 +133,6 @@ func setupTestEnvRecording(t *testing.T, masResponse map[string]any, paths *[]st
 			pathsMu.Lock()
 			*paths = append(*paths, r.URL.Path)
 			pathsMu.Unlock()
-		}
-
-		if strings.Contains(r.URL.Path, "/api/cognition-fabric-nodes/") && !strings.Contains(r.URL.Path, "/heartbeat") {
-			cfg := currentConfig()
-			w.Header().Set("Content-Type", "application/json")
-			_ = json.NewEncoder(w).Encode(map[string]any{"config": cfg})
-			return
 		}
 
 		if masResponse == nil {
@@ -393,7 +379,6 @@ func TestGetDisposition_SnapshotUnavailable(t *testing.T) {
 	defer restore()
 
 	applyParsedConfig(nil)
-	setLastRefreshOK(false)
 	CfnID = ""
 	MgmtURL = "http://127.0.0.1:1"
 
@@ -1101,7 +1086,6 @@ func TestGetDisposition_DoesNotFallbackToDefaultCASA(t *testing.T) {
 			},
 		},
 	})
-	setLastRefreshOK(true)
 
 	server := newEnforcementServer(nil)
 	req := &enforcementv1.GetDispositionRequest{

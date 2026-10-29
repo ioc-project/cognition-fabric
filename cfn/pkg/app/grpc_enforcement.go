@@ -32,8 +32,6 @@ var systemActorID = uuid.MustParse("00000000-0000-0000-0000-000000000000")
 type enforcementServer struct {
 	enforcementv1.UnimplementedEnforcementServer
 	db database.Store
-	// refresh coalesces a config pull. Nil in unit tests that seed ParsedConfig.
-	refresh func(context.Context) error
 	// auditWG tracks in-flight fire-and-forget audit writes so Stop() can wait
 	// for them before closing the database connection out from under them.
 	auditWG sync.WaitGroup
@@ -90,7 +88,7 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 	log.Infof("enforcement request: mas_id=%s source=%s dest=%s trace_id=%s span_id=%s",
 		req.Payload.MasId, req.Payload.SourceAgentId, req.Payload.DestinationAgentId, req.Payload.TraceId, req.Payload.SpanId)
 
-	mas, workspaceID, err := fetchMASForRequest(ctx, req.Payload.MasId, s.refresh)
+	mas, workspaceID, err := fetchMASForRequest(ctx, req.Payload.MasId)
 	if err != nil {
 		return nil, mapFetchMASError(err, req.Payload.MasId)
 	}

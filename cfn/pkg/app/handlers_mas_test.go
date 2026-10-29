@@ -44,7 +44,6 @@ func TestGetMASHandler_SnapshotUnavailable(t *testing.T) {
 	defer restore()
 
 	applyParsedConfig(nil)
-	setLastRefreshOK(false)
 	CfnID = ""
 	MgmtURL = "http://127.0.0.1:1"
 

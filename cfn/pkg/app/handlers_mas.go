@@ -40,7 +40,7 @@ func (a *App) getMASHandler(w http.ResponseWriter, r *http.Request) (int, error)
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
 
-	mas, workspaceID, err := fetchMASForRequest(ctx, masID, a.RefreshConfig)
+	mas, workspaceID, err := fetchMASForRequest(ctx, masID)
 	if err != nil {
 		switch {
 		case errors.Is(err, errMgmtURLNotConfigured):
