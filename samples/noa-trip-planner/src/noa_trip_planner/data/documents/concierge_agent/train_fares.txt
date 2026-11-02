@@ -1,0 +1,76 @@
+INTER-CITY TRAIN FARES
+======================
+Valid for all weeks of the year
+
+All prices are for standard class, one-way tickets.
+
+================================================================================
+ROUTE FARES
+================================================================================
+
+CELESTIA TO VERDANTIA
+Distance: 245 km | Standard Fare: $45
+
+VERDANTIA TO LUMINOS
+Distance: 180 km | Standard Fare: $35
+
+CELESTIA TO LUMINOS (Direct)
+Distance: 425 km | Standard Fare: $75
+
+RETURN ROUTES
+Verdantia to Celestia: $45
+Luminos to Verdantia: $35
+Luminos to Celestia: $75
+
+
+================================================================================
+TICKET TYPES & UPGRADES
+================================================================================
+
+EXPRESS TRAINS:
+- Base fare as listed above
+- Premium seating upgrade: +$15
+- Includes complimentary WiFi and refreshments
+
+STANDARD TRAINS:
+- Base fare as listed above
+- Standard seating included
+- Cafe car available for purchases
+
+NIGHT TRAINS:
+- Base fare as listed above
+- Sleeping compartment upgrade: +$30
+
+
+================================================================================
+DISCOUNTS & PASSES
+================================================================================
+
+MULTI-TRIP DISCOUNTS:
+- Round-trip tickets: 15% discount on total fare
+- Weekly pass: $250 (unlimited travel on all routes)
+- Monthly pass: $850 (unlimited travel on all routes)
+
+AGE-BASED DISCOUNTS:
+- Children under 12: 50% discount on base fare
+- Seniors (65+): 30% discount on base fare
+
+Note: Discounts cannot be combined. Upgrades are charged at full price.
+
+
+================================================================================
+BOOKING & PAYMENT
+================================================================================
+
+BOOKING METHODS:
+- Online: www.intercitytrains.com
+- Phone: 1-800-TRAINS-NOW
+- Station ticket offices
+- Mobile app: InterCity Trains
+
+PAYMENT OPTIONS:
+- Credit/Debit cards
+- Mobile payment
+- Cash (station offices only)
+
+For current promotions and special offers, visit our website.

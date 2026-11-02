@@ -22,4 +22,4 @@ The following are under discussion and will become specs once finalized:
 
 - [Discussions](../discussions.md) — open questions and in-progress API designs
 - [Decisions](../decisions/README.md) — rationale behind architectural choices
-- [Architecture](../architecture.md) — three-tier API surface
+- [Target architecture](../target-architecture.md) — planned three-tier API surface

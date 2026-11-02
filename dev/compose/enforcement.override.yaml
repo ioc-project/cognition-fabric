@@ -1,0 +1,21 @@
+# Added after deployment's base Compose and Envoy overlay. All local files are
+# owned by CFN; volume entries replace the overlay mounts at the same targets.
+services:
+  ioc-scale-enforcement-proxy-envoy:
+    environment:
+      CF_ENFORCEMENT_ADDRESS: host.docker.internal:9003
+      CF_ENFORCEMENT_ALLOW_PLAINTEXT: "true"
+      ENFORCEMENT_FAILURE_POSTURE: fail_closed
+    volumes:
+      - type: bind
+        source: ${CFN_PROXY_CONFIG_DIR:?Run through the CFN local tasks}/envoy.json
+        target: /etc/envoy/envoy.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CFN_PROXY_CONFIG_DIR:?Run through the CFN local tasks}/sidecar-spec.json
+        target: /etc/sidecar/sidecar-spec.yaml
+        read_only: true
+        bind:
+          create_host_path: false

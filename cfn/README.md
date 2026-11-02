@@ -51,7 +51,10 @@ CF provides:
 | [`docs/architecture.md`](docs/architecture.md) | Architecture of record |
 | [`docs/dependencies.md`](docs/dependencies.md) | Project dependencies and relationships |
 | [`docs/glossary.md`](docs/glossary.md) | Term definitions |
-| [`docs/decisions/`](docs/decisions/) | Architecture Decision Records (ADRs) |
+| [`docs/decisions/`](docs/decisions/) | Curated Architecture Decision Records (ADRs) |
+| [`docs/target-architecture.md`](docs/target-architecture.md) | Longer-term target architecture |
+| [`docs/agent-ledger/`](docs/agent-ledger/README.md) | Agent working guidance |
+| [`deploy/README.md`](deploy/README.md) | Local CF source workflow and cross-repository checks |
 | [`docs/specs/`](docs/specs/) | Behavioral specifications |
 
 ## Development
@@ -107,7 +110,7 @@ make run
 
 ### Environment Variables
 
-The service loads environment variables from a `.env` file if present. See [`.env.sample`](.env.sample) for a template.
+The service loads environment variables from a `.env` file if present. See [`.env.sample`](.env.sample) for running CFN alone. For the full local CF stack, follow the [local workflow](deploy/README.md) and create `.env` from this repository's [`.env.example`](.env.example).
 
 | Variable | Description | Default |
 |----------|-------------|---------|

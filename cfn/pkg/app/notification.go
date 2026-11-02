@@ -99,9 +99,7 @@ func (a *App) dispatchNotifications(changes []MASChange) {
 
 	log := getLogger()
 
-	cfnConfigMutex.RLock()
-	config := ParsedConfig
-	cfnConfigMutex.RUnlock()
+	config := currentConfig()
 
 	if config == nil {
 		log.Warnf("cannot dispatch notifications: config not available")

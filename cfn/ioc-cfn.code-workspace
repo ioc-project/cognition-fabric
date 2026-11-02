@@ -1,0 +1,16 @@
+{
+	"folders": [
+		{ "name": "CFN service", "path": "." },
+		{ "name": "CF deployment", "path": "../ioc-scale-cf-deployment" },
+		{ "name": "CF management service", "path": "../ioc-scale-cf-mgmt-svc" },
+		{ "name": "CF UI", "path": "../ioc-scale-cf-ui" },
+		{ "name": "CF demo CE", "path": "../ioc-scale-cf-demo-ce" },
+		{ "name": "Local agent skills", "path": "../.agents" },
+		{ "name": "Reference: OXP library (read only)", "path": "../oxp-lib" },
+		{ "name": "Reference: OXP ontology (read only)", "path": "../oxp-ontology" },
+		{ "name": "Reference: OXP sample apps (read only)", "path": "../oxp-sample-apps" }
+	],
+	"settings": {
+		"scm.alwaysShowRepositories": true
+	}
+}

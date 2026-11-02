@@ -6,18 +6,16 @@
 
 <br />
 
-| Name           | Function    | Assignment | Responsibilities          |
-| -------------- | ----------- | ---------- | ------------------------- |
-| Darren Lau     | Engineering | Lead       | Backend and infra         |
-| Chidumga Izuzu | Engineering | Member     | Full Stack (UI + Backend) |
-| Samuel Yang    | Engineering | Member     | Full Stack (UI + Backend) |
-| Shridhar Shah  | Engineering | Member     | Backend and infra         |
+| Name             | Function    | Assignment | Responsibilities                  |
+| ---------------- | ----------- | ---------- | --------------------------------- |
+| Tamas Oszko      | Engineering | Lead       | Full Stack (UI + Backend + Infra) |
+| Dominik Kolonits | Engineering | Member     | Full Stack (UI + Backend + Infra) |
 
 <!-- Member list, Roles and responsibilities: Confluence team/assignment pages; GitHub (CODEOWNERS, repo collaborators, commit history) for engineering ownership; Webex space membership. Function is one of: Product / Engineering / Ops / Marketing / Biz Dev / Design -- a team may be single-function or cross-functional. Assignment is one of: Lead / Member. If not found, keep the header row and one empty row, and output "TBD -- roster not defined." -->
 
 ## Leadership & Decision Responsibility
 
-**Darren Lau** — T3 Lead — decides on backend architecture, infrastructure, and engineering delivery.
+**Tamas Oszko** — T3 team lead — decides on UI, backend, infrastructure, and engineering delivery.
 
 ## Peer T3s in the Area
 

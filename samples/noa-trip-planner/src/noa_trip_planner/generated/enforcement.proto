@@ -1,0 +1,66 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package ioc.cf.enforcement.v1;
+
+option go_package = "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1;enforcementv1";
+
+// Enforcement provides disposition decisions for L9 interactions.
+// CF owns CE selection, fan-out, ordering, and aggregation — the proxy
+// calls this endpoint and gets back one Disposition.
+service Enforcement {
+  // GetDisposition returns the enforcement disposition for an interaction.
+  // This is a blocking/synchronous call on the live agent conversation path.
+  rpc GetDisposition(GetDispositionRequest) returns (GetDispositionResponse);
+}
+
+// GetDispositionRequest contains identifiers only (reference-only submit).
+// CF resolves actual content from what it has already ingested via the
+// Tracing contract, and attaches trajectory context server-side.
+message GetDispositionRequest {
+  // Extra metadata envelope (TBD)
+  map<string, string> extra = 1;
+
+  // Payload contains the reference identifiers
+  GetDispositionPayload payload = 2;
+}
+
+// GetDispositionPayload contains the reference identifiers for the interaction.
+message GetDispositionPayload {
+  // MAS identifier (UUID format)
+  string mas_id = 1;
+  // Source agent identifier
+  string source_agent_id = 2;
+  // Destination agent identifier
+  string destination_agent_id = 3;
+  // Trace ID for span coordination (UUID or string)
+  string trace_id = 4;
+  // Span ID for identifying the specific operation within the trace
+  string span_id = 5;
+}
+
+// GetDispositionResponse contains the enforcement disposition.
+message GetDispositionResponse {
+  // The enforcement action to take
+  Action action = 1;
+
+  // Whether the content should be modified (used with ACTION_MODIFY)
+  bool modify = 2;
+
+  // Reserved for future: modified content when action is MODIFY
+  // reserved 3;
+
+  // Action represents the enforcement disposition.
+  enum Action {
+    ACTION_UNSPECIFIED = 0;
+    ACTION_ALLOW = 1;
+    ACTION_BLOCK = 2;
+    // ACTION_MODIFY is deferred but reserved for Dec 2026 scope
+    ACTION_MODIFY = 3;
+    // ACTION_INJECT is deferred but reserved for future
+    ACTION_INJECT = 4;
+  }
+}
