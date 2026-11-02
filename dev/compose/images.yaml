@@ -1,0 +1,108 @@
+# CF images in the local source workflow. Infrastructure is started separately
+# through the deployment checkout; these services share its existing network.
+x-local-cf: &local-cf
+  platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+  labels:
+    io.cisco.cf.local: "true"
+  extra_hosts:
+    - host.docker.internal:host-gateway
+  restart: "no"
+
+services:
+  ioc-scale-cf-mgmt-svc:
+    <<: *local-cf
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-mgmt-svc:${CF_MGMT_SVC_TAG:-latest}
+    container_name: ioc-scale-cf-mgmt-svc
+    ports:
+      - "9000:9000"
+    environment:
+      ADMIN_USER_PASSWORD: ${ADMIN_USER_PASSWORD:?Set ADMIN_USER_PASSWORD in the CFN .env}
+      POSTGRES_HOST: ioc-scale-db
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: ${LOCAL_CF_MGMT_DB:-cfn_mgmt_local}
+      POSTGRES_USER: ${IOC_SCALE_DB_USER}
+      POSTGRES_PASSWORD: ${IOC_SCALE_DB_PASSWORD}
+      CFN_DEV_MODE: "False"
+      CFN_SVC_URL: http://host.docker.internal:9002
+      CE_MONITOR_CHECK_INTERVAL_SECONDS: ${CE_MONITOR_CHECK_INTERVAL_SECONDS:-1}
+      CE_PROBE_INTERVAL_SECONDS: ${CE_PROBE_INTERVAL_SECONDS:-2}
+      CE_PROBE_TIMEOUT_SECONDS: ${CE_PROBE_TIMEOUT_SECONDS:-1}
+      CE_OFFLINE_THRESHOLD_SECONDS: ${CE_OFFLINE_THRESHOLD_SECONDS:-3}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+  ioc-scale-cfn-svc:
+    <<: *local-cf
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cfn-svc:${CFN_SVC_TAG:-latest}
+    container_name: ioc-scale-cfn-svc
+    ports:
+      - "9002:9002"
+      - "9003:9003"
+    environment:
+      MGMT_URL: http://host.docker.internal:9000
+      CFN_NAME: ${CFN_NAME:-cfn-local}
+      CFN_IP: "127.0.0.1"
+      APP_PORT: "9002"
+      GRPC_PORT: "9003"
+      POSTGRES_HOST: ioc-scale-db
+      POSTGRES_PORT: "5432"
+      POSTGRES_AUDIT_DB: cfn_audit_local
+      POSTGRES_USER: ${IOC_SCALE_DB_USER}
+      POSTGRES_PASSWORD: ${IOC_SCALE_DB_PASSWORD}
+      HEARTBEAT_INTERVAL_SECONDS: ${HEARTBEAT_INTERVAL_SECONDS:-10}
+      CE_PROBE_TIMEOUT_SECONDS: ${CE_PROBE_TIMEOUT_SECONDS:-1}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+  ioc-scale-cf-mgmt-plane-ui:
+    <<: *local-cf
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-ui:${CF_UI_TAG:-latest}
+    container_name: ioc-scale-cf-mgmt-plane-ui
+    ports:
+      - "9001:9001"
+    environment:
+      NODE_ENV: production
+      PORT: "9001"
+      CFN_UI_API_BASE_URL: http://host.docker.internal:9000
+      NEXT_PUBLIC_CFN_UI_API_BASE_URL: http://localhost:9000
+      NEXTAUTH_URL: http://localhost:9001
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+
+  ioc-scale-cf-demo-ce:
+    <<: *local-cf
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-demo-ce/demo-ce:${CF_DEMO_CE_TAG:-latest}
+    container_name: ioc-scale-cf-demo-ce
+    ports:
+      - "127.0.0.1:18000:18000"
+      - "127.0.0.1:18001:18001"
+    environment:
+      CFN_URL: http://host.docker.internal:9002
+      OXP_API_URL: http://oxp-api:8000
+      ADVERTISED_GRPC_ADDRESS: ${CF_LOCAL_CE_HOST:-127.0.0.1}:18001
+      ADVERTISED_HEALTH_URL: http://${CF_LOCAL_CE_HOST:-127.0.0.1}:18000
+      CE_CONFIG_FILE: /etc/demo-ce/config.json
+      CE_MAS_FILE: /etc/demo-ce/mas-id
+      CE_NAME: ${DEMO_CE_NAME:-demo-ce}
+      LOG_FORMAT: ${DEMO_CE_LOG_FORMAT:-console}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      NO_COLOR: ${NO_COLOR:-}
+      CE_EVENT_SERVICE: ${CE_EVENT_SERVICE:-}
+      CE_CONTEXT_WAIT: ${CE_CONTEXT_WAIT:-1s}
+      CE_CONTEXT_ATTEMPTS: ${CE_CONTEXT_ATTEMPTS:-5}
+      CE_CONTEXT_RETRY_WAIT: ${CE_CONTEXT_RETRY_WAIT:-0.2s}
+    volumes:
+      - type: bind
+        source: ${CF_LOCAL_CE_CONFIG_FILE}
+        target: /etc/demo-ce/config.json
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CF_LOCAL_CE_MAS_FILE}
+        target: /etc/demo-ce/mas-id
+        read_only: true
+        bind:
+          create_host_path: false
+
+networks:
+  default:
+    external: true
+    name: ${COMPOSE_PROJECT_NAME:-ioc-scale-cf-deployment}_default
