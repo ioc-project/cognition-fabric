@@ -67,7 +67,7 @@ All have defaults suited to the local stack; set them in `.env` to change them.
 | `AUDIT_CAPTURE_MAX_BYTES` | `65536` | Largest body captured for audit |
 | `AUDIT_REDACT_PATTERNS` | token patterns | JSON array of regexes redacted from captured bodies |
 | `ENFORCEMENT_PLATFORM` | `linux/arm64` | Architecture of every enforcement container. The Envoy plugin and Envoy must match, so this ignores `DOCKER_DEFAULT_PLATFORM`. Use `linux/amd64` on an Intel host |
-| `ENFORCEMENT_SIDECAR_TAG`, `ENFORCEMENT_WASM_TAG`, `ENFORCEMENT_SHADI_TAG` | `latest` | Image tags (registry is `CF_REGISTRY`) |
+| `ENFORCEMENT_SIDECAR_TAG`, `ENFORCEMENT_WASM_TAG`, `ENFORCEMENT_SHADI_TAG` | `0.0.1-alpha` | Image tags (registry is `CF_REGISTRY`) |
 
 The two plaintext flags are a local-development exception to mTLS. Do not use
 them anywhere else.
