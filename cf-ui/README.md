@@ -15,8 +15,8 @@ Cognition Fabric Node Management UI Service.
 
 ### Prerequisites
 
-- Node.js >= 13.8.0
-- npm >= 6.14.4
+- Node.js >= 20.9.0 (Node 20 is the repository default in `.nvmrc`)
+- npm compatible with your Node.js version
 
 ## Development
 
@@ -32,10 +32,17 @@ Optionally, generate your own `NEXTAUTH_SECRET`:
 openssl rand -base64 32
 ```
 
-Install dependencies:
+If you use nvm, select the repository's Node version:
 
 ```bash
-npm install
+nvm install
+nvm use
+```
+
+Install the locked dependencies:
+
+```bash
+npm ci
 ```
 
 Run dev server:
