@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x08\x63\x65.proto\x12\tioc.ce.v1\"\xca\x01\n\x0fToolCallDetails\x12\x11\n\ttool_name\x18\x01 \x01(\t\x12O\n\x13\x61rgs_classification\x18\x02 \x03(\x0b\x32\x32.ioc.ce.v1.ToolCallDetails.ArgsClassificationEntry\x12\x18\n\x10tool_description\x18\x03 \x01(\t\x1a\x39\n\x17\x41rgsClassificationEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"b\n\x14\x41\x32\x41\x44\x65legationDetails\x12\x17\n\x0ftarget_agent_id\x18\x01 \x01(\t\x12\x16\n\x0e\x64\x65legated_task\x18\x02 \x01(\t\x12\x19\n\x11\x64\x65legation_reason\x18\x03 \x01(\t\"@\n\x14\x41gentResponseDetails\x12\x18\n\x10response_content\x18\x01 \x01(\t\x12\x0e\n\x06\x63laims\x18\x02 \x03(\t\"?\n\x0b\x43heckResult\x12\x10\n\x08\x63heck_id\x18\x01 \x01(\t\x12\x0e\n\x06passed\x18\x02 \x01(\x08\x12\x0e\n\x06reason\x18\x03 \x01(\t\"\xea\x04\n\x0f\x45valuateRequest\x12\x0e\n\x06mas_id\x18\x01 \x01(\t\x12\x17\n\x0fsource_agent_id\x18\x02 \x01(\t\x12\x1c\n\x14\x64\x65stination_agent_id\x18\x03 \x01(\t\x12\x10\n\x08trace_id\x18\x04 \x01(\t\x12,\n\x0c\x61\x63tion_class\x18\x05 \x01(\x0e\x32\x16.ioc.ce.v1.ActionClass\x12\'\n\tdirection\x18\x06 \x01(\x0e\x32\x14.ioc.ce.v1.Direction\x12\x17\n\x0foriginal_intent\x18\x07 \x01(\t\x12\x13\n\x0btask_intent\x18\x08 \x01(\t\x12\x17\n\x0f\x64\x65legation_path\x18\t \x03(\t\x12-\n\ttool_call\x18\n \x01(\x0b\x32\x1a.ioc.ce.v1.ToolCallDetails\x12\x37\n\x0e\x61\x32\x61_delegation\x18\x0b \x01(\x0b\x32\x1f.ioc.ce.v1.A2ADelegationDetails\x12\x37\n\x0e\x61gent_response\x18\x0c \x01(\x0b\x32\x1f.ioc.ce.v1.AgentResponseDetails\x12\x12\n\nsession_id\x18\r \x01(\t\x12\x14\n\x0cworkspace_id\x18\x0e \x01(\t\x12\x15\n\rallowed_tools\x18\x0f \x03(\t\x12\x1a\n\x12llm_selected_tools\x18\x10 \x03(\t\x12\x34\n\x05\x65xtra\x18\x11 \x03(\x0b\x32%.ioc.ce.v1.EvaluateRequest.ExtraEntry\x1a,\n\nExtraEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\xc5\x03\n\x10\x45valuateResponse\x12$\n\x07outcome\x18\x01 \x01(\x0e\x32\x13.ioc.ce.v1.Decision\x12.\n\rdenial_reason\x18\x02 \x01(\x0e\x32\x17.ioc.ce.v1.DenialReason\x12=\n\x15missing_context_cause\x18\x03 \x01(\x0e\x32\x1e.ioc.ce.v1.MissingContextCause\x12\x0e\n\x06reason\x18\x04 \x01(\t\x12*\n\nchecks_run\x18\x05 \x03(\x0b\x32\x16.ioc.ce.v1.CheckResult\x12:\n\x13\x63ontext_sufficiency\x18\x06 \x01(\x0e\x32\x1d.ioc.ce.v1.ContextSufficiency\x12H\n\x0fmodified_action\x18\x07 \x03(\x0b\x32/.ioc.ce.v1.EvaluateResponse.ModifiedActionEntry\x12\x11\n\ttimestamp\x18\x08 \x01(\t\x12\x10\n\x08trace_id\x18\t \x01(\t\x1a\x35\n\x13ModifiedActionEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x10\n\x0eGetInfoRequest\"e\n\x0fGetInfoResponse\x12\x0f\n\x07\x63\x65_type\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x16\n\x0e\x65nabled_checks\x18\x03 \x03(\t\x12\x18\n\x10matcher_strategy\x18\x04 \x01(\t*`\n\x08\x44\x65\x63ision\x12\x18\n\x14\x44\x45\x43ISION_UNSPECIFIED\x10\x00\x12\x12\n\x0e\x44\x45\x43ISION_ALLOW\x10\x01\x12\x11\n\rDECISION_DENY\x10\x02\x12\x13\n\x0f\x44\x45\x43ISION_MODIFY\x10\x03*\x8d\x01\n\x0b\x41\x63tionClass\x12\x1c\n\x18\x41\x43TION_CLASS_UNSPECIFIED\x10\x00\x12\x1e\n\x1a\x41\x43TION_CLASS_MCP_TOOL_CALL\x10\x01\x12\x1f\n\x1b\x41\x43TION_CLASS_A2A_DELEGATION\x10\x02\x12\x1f\n\x1b\x41\x43TION_CLASS_AGENT_RESPONSE\x10\x03*U\n\tDirection\x12\x19\n\x15\x44IRECTION_UNSPECIFIED\x10\x00\x12\x15\n\x11\x44IRECTION_REQUEST\x10\x01\x12\x16\n\x12\x44IRECTION_RESPONSE\x10\x02*x\n\x0c\x44\x65nialReason\x12\x1d\n\x19\x44\x45NIAL_REASON_UNSPECIFIED\x10\x00\x12&\n\"DENIAL_REASON_DEVIATES_FROM_INTENT\x10\x01\x12!\n\x1d\x44\x45NIAL_REASON_MISSING_CONTEXT\x10\x02*{\n\x13MissingContextCause\x12%\n!MISSING_CONTEXT_CAUSE_UNSPECIFIED\x10\x00\x12\x1d\n\x19MISSING_CONTEXT_CAUSE_GAP\x10\x01\x12\x1e\n\x1aMISSING_CONTEXT_CAUSE_RACE\x10\x02*\x84\x01\n\x12\x43ontextSufficiency\x12#\n\x1f\x43ONTEXT_SUFFICIENCY_UNSPECIFIED\x10\x00\x12 \n\x1c\x43ONTEXT_SUFFICIENCY_COMPLETE\x10\x01\x12\'\n#CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC\x10\x02\x32\x98\x01\n\x0f\x43ognitionEngine\x12\x43\n\x08\x45valuate\x12\x1a.ioc.ce.v1.EvaluateRequest\x1a\x1b.ioc.ce.v1.EvaluateResponse\x12@\n\x07GetInfo\x12\x19.ioc.ce.v1.GetInfoRequest\x1a\x1a.ioc.ce.v1.GetInfoResponseB.Z,github.com/cisco-outshift/ioc-ce/api/v1;cev1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x08\x63\x65.proto\x12\tioc.ce.v1\"\xca\x01\n\x0fToolCallDetails\x12\x11\n\ttool_name\x18\x01 \x01(\t\x12O\n\x13\x61rgs_classification\x18\x02 \x03(\x0b\x32\x32.ioc.ce.v1.ToolCallDetails.ArgsClassificationEntry\x12\x18\n\x10tool_description\x18\x03 \x01(\t\x1a\x39\n\x17\x41rgsClassificationEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"b\n\x14\x41\x32\x41\x44\x65legationDetails\x12\x17\n\x0ftarget_agent_id\x18\x01 \x01(\t\x12\x16\n\x0e\x64\x65legated_task\x18\x02 \x01(\t\x12\x19\n\x11\x64\x65legation_reason\x18\x03 \x01(\t\"@\n\x14\x41gentResponseDetails\x12\x18\n\x10response_content\x18\x01 \x01(\t\x12\x0e\n\x06\x63laims\x18\x02 \x03(\t\"?\n\x0b\x43heckResult\x12\x10\n\x08\x63heck_id\x18\x01 \x01(\t\x12\x0e\n\x06passed\x18\x02 \x01(\x08\x12\x0e\n\x06reason\x18\x03 \x01(\t\"\xfb\x04\n\x0f\x45valuateRequest\x12\x0e\n\x06mas_id\x18\x01 \x01(\t\x12\x17\n\x0fsource_agent_id\x18\x02 \x01(\t\x12\x1c\n\x14\x64\x65stination_agent_id\x18\x03 \x01(\t\x12\x10\n\x08trace_id\x18\x04 \x01(\t\x12\x0f\n\x07span_id\x18\x12 \x01(\t\x12,\n\x0c\x61\x63tion_class\x18\x05 \x01(\x0e\x32\x16.ioc.ce.v1.ActionClass\x12\'\n\tdirection\x18\x06 \x01(\x0e\x32\x14.ioc.ce.v1.Direction\x12\x17\n\x0foriginal_intent\x18\x07 \x01(\t\x12\x13\n\x0btask_intent\x18\x08 \x01(\t\x12\x17\n\x0f\x64\x65legation_path\x18\t \x03(\t\x12-\n\ttool_call\x18\n \x01(\x0b\x32\x1a.ioc.ce.v1.ToolCallDetails\x12\x37\n\x0e\x61\x32\x61_delegation\x18\x0b \x01(\x0b\x32\x1f.ioc.ce.v1.A2ADelegationDetails\x12\x37\n\x0e\x61gent_response\x18\x0c \x01(\x0b\x32\x1f.ioc.ce.v1.AgentResponseDetails\x12\x12\n\nsession_id\x18\r \x01(\t\x12\x14\n\x0cworkspace_id\x18\x0e \x01(\t\x12\x15\n\rallowed_tools\x18\x0f \x03(\t\x12\x1a\n\x12llm_selected_tools\x18\x10 \x03(\t\x12\x34\n\x05\x65xtra\x18\x11 \x03(\x0b\x32%.ioc.ce.v1.EvaluateRequest.ExtraEntry\x1a,\n\nExtraEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\xc5\x03\n\x10\x45valuateResponse\x12$\n\x07outcome\x18\x01 \x01(\x0e\x32\x13.ioc.ce.v1.Decision\x12.\n\rdenial_reason\x18\x02 \x01(\x0e\x32\x17.ioc.ce.v1.DenialReason\x12=\n\x15missing_context_cause\x18\x03 \x01(\x0e\x32\x1e.ioc.ce.v1.MissingContextCause\x12\x0e\n\x06reason\x18\x04 \x01(\t\x12*\n\nchecks_run\x18\x05 \x03(\x0b\x32\x16.ioc.ce.v1.CheckResult\x12:\n\x13\x63ontext_sufficiency\x18\x06 \x01(\x0e\x32\x1d.ioc.ce.v1.ContextSufficiency\x12H\n\x0fmodified_action\x18\x07 \x03(\x0b\x32/.ioc.ce.v1.EvaluateResponse.ModifiedActionEntry\x12\x11\n\ttimestamp\x18\x08 \x01(\t\x12\x10\n\x08trace_id\x18\t \x01(\t\x1a\x35\n\x13ModifiedActionEntry\x12\x0b\n\x03key\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\t:\x02\x38\x01\"\x10\n\x0eGetInfoRequest\"e\n\x0fGetInfoResponse\x12\x0f\n\x07\x63\x65_type\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x16\n\x0e\x65nabled_checks\x18\x03 \x03(\t\x12\x18\n\x10matcher_strategy\x18\x04 \x01(\t*`\n\x08\x44\x65\x63ision\x12\x18\n\x14\x44\x45\x43ISION_UNSPECIFIED\x10\x00\x12\x12\n\x0e\x44\x45\x43ISION_ALLOW\x10\x01\x12\x11\n\rDECISION_DENY\x10\x02\x12\x13\n\x0f\x44\x45\x43ISION_MODIFY\x10\x03*\x8d\x01\n\x0b\x41\x63tionClass\x12\x1c\n\x18\x41\x43TION_CLASS_UNSPECIFIED\x10\x00\x12\x1e\n\x1a\x41\x43TION_CLASS_MCP_TOOL_CALL\x10\x01\x12\x1f\n\x1b\x41\x43TION_CLASS_A2A_DELEGATION\x10\x02\x12\x1f\n\x1b\x41\x43TION_CLASS_AGENT_RESPONSE\x10\x03*U\n\tDirection\x12\x19\n\x15\x44IRECTION_UNSPECIFIED\x10\x00\x12\x15\n\x11\x44IRECTION_REQUEST\x10\x01\x12\x16\n\x12\x44IRECTION_RESPONSE\x10\x02*x\n\x0c\x44\x65nialReason\x12\x1d\n\x19\x44\x45NIAL_REASON_UNSPECIFIED\x10\x00\x12&\n\"DENIAL_REASON_DEVIATES_FROM_INTENT\x10\x01\x12!\n\x1d\x44\x45NIAL_REASON_MISSING_CONTEXT\x10\x02*{\n\x13MissingContextCause\x12%\n!MISSING_CONTEXT_CAUSE_UNSPECIFIED\x10\x00\x12\x1d\n\x19MISSING_CONTEXT_CAUSE_GAP\x10\x01\x12\x1e\n\x1aMISSING_CONTEXT_CAUSE_RACE\x10\x02*\x84\x01\n\x12\x43ontextSufficiency\x12#\n\x1f\x43ONTEXT_SUFFICIENCY_UNSPECIFIED\x10\x00\x12 \n\x1c\x43ONTEXT_SUFFICIENCY_COMPLETE\x10\x01\x12\'\n#CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC\x10\x02\x32\x98\x01\n\x0f\x43ognitionEngine\x12\x43\n\x08\x45valuate\x12\x1a.ioc.ce.v1.EvaluateRequest\x1a\x1b.ioc.ce.v1.EvaluateResponse\x12@\n\x07GetInfo\x12\x19.ioc.ce.v1.GetInfoRequest\x1a\x1a.ioc.ce.v1.GetInfoResponseB.Z,github.com/cisco-outshift/ioc-ce/api/v1;cev1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -38,18 +38,18 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_EVALUATEREQUEST_EXTRAENTRY']._serialized_options = b'8\001'
   _globals['_EVALUATERESPONSE_MODIFIEDACTIONENTRY']._loaded_options = None
   _globals['_EVALUATERESPONSE_MODIFIEDACTIONENTRY']._serialized_options = b'8\001'
-  _globals['_DECISION']._serialized_start=1657
-  _globals['_DECISION']._serialized_end=1753
-  _globals['_ACTIONCLASS']._serialized_start=1756
-  _globals['_ACTIONCLASS']._serialized_end=1897
-  _globals['_DIRECTION']._serialized_start=1899
-  _globals['_DIRECTION']._serialized_end=1984
-  _globals['_DENIALREASON']._serialized_start=1986
-  _globals['_DENIALREASON']._serialized_end=2106
-  _globals['_MISSINGCONTEXTCAUSE']._serialized_start=2108
-  _globals['_MISSINGCONTEXTCAUSE']._serialized_end=2231
-  _globals['_CONTEXTSUFFICIENCY']._serialized_start=2234
-  _globals['_CONTEXTSUFFICIENCY']._serialized_end=2366
+  _globals['_DECISION']._serialized_start=1674
+  _globals['_DECISION']._serialized_end=1770
+  _globals['_ACTIONCLASS']._serialized_start=1773
+  _globals['_ACTIONCLASS']._serialized_end=1914
+  _globals['_DIRECTION']._serialized_start=1916
+  _globals['_DIRECTION']._serialized_end=2001
+  _globals['_DENIALREASON']._serialized_start=2003
+  _globals['_DENIALREASON']._serialized_end=2123
+  _globals['_MISSINGCONTEXTCAUSE']._serialized_start=2125
+  _globals['_MISSINGCONTEXTCAUSE']._serialized_end=2248
+  _globals['_CONTEXTSUFFICIENCY']._serialized_start=2251
+  _globals['_CONTEXTSUFFICIENCY']._serialized_end=2383
   _globals['_TOOLCALLDETAILS']._serialized_start=24
   _globals['_TOOLCALLDETAILS']._serialized_end=226
   _globals['_TOOLCALLDETAILS_ARGSCLASSIFICATIONENTRY']._serialized_start=169
@@ -61,17 +61,17 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_CHECKRESULT']._serialized_start=394
   _globals['_CHECKRESULT']._serialized_end=457
   _globals['_EVALUATEREQUEST']._serialized_start=460
-  _globals['_EVALUATEREQUEST']._serialized_end=1078
-  _globals['_EVALUATEREQUEST_EXTRAENTRY']._serialized_start=1034
-  _globals['_EVALUATEREQUEST_EXTRAENTRY']._serialized_end=1078
-  _globals['_EVALUATERESPONSE']._serialized_start=1081
-  _globals['_EVALUATERESPONSE']._serialized_end=1534
-  _globals['_EVALUATERESPONSE_MODIFIEDACTIONENTRY']._serialized_start=1481
-  _globals['_EVALUATERESPONSE_MODIFIEDACTIONENTRY']._serialized_end=1534
-  _globals['_GETINFOREQUEST']._serialized_start=1536
-  _globals['_GETINFOREQUEST']._serialized_end=1552
-  _globals['_GETINFORESPONSE']._serialized_start=1554
-  _globals['_GETINFORESPONSE']._serialized_end=1655
-  _globals['_COGNITIONENGINE']._serialized_start=2369
-  _globals['_COGNITIONENGINE']._serialized_end=2521
+  _globals['_EVALUATEREQUEST']._serialized_end=1095
+  _globals['_EVALUATEREQUEST_EXTRAENTRY']._serialized_start=1051
+  _globals['_EVALUATEREQUEST_EXTRAENTRY']._serialized_end=1095
+  _globals['_EVALUATERESPONSE']._serialized_start=1098
+  _globals['_EVALUATERESPONSE']._serialized_end=1551
+  _globals['_EVALUATERESPONSE_MODIFIEDACTIONENTRY']._serialized_start=1498
+  _globals['_EVALUATERESPONSE_MODIFIEDACTIONENTRY']._serialized_end=1551
+  _globals['_GETINFOREQUEST']._serialized_start=1553
+  _globals['_GETINFOREQUEST']._serialized_end=1569
+  _globals['_GETINFORESPONSE']._serialized_start=1571
+  _globals['_GETINFORESPONSE']._serialized_end=1672
+  _globals['_COGNITIONENGINE']._serialized_start=2386
+  _globals['_COGNITIONENGINE']._serialized_end=2538
 # @@protoc_insertion_point(module_scope)

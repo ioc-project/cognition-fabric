@@ -115,6 +115,7 @@ message EvaluateRequest {
   string source_agent_id = 2;         // Source agent identifier
   string destination_agent_id = 3;    // Destination agent identifier
   string trace_id = 4;                // W3C trace correlation ID
+  string span_id = 18;                // Span ID for the specific operation within the trace
 
   // Action classification
   ActionClass action_class = 5;       // Type of action being evaluated

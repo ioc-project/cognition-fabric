@@ -20,7 +20,7 @@ type Engine struct {
 	Config config.Config
 	// MasID is the MAS this engine serves; it may fail until the MAS is known.
 	MasID func() (string, error)
-	// CEType and CEVersion are what GetInfo reports; empty means CASA and reference-v1.
+	// CEType and CEVersion are what GetInfo reports; empty means CASA and 1.0.0.
 	CEType, CEVersion string
 }
 
@@ -59,7 +59,7 @@ func (s *Engine) GetInfo(context.Context, *cev1.GetInfoRequest) (*cev1.GetInfoRe
 	for _, r := range s.Config.Rules {
 		ids = append(ids, r.ID)
 	}
-	return &cev1.GetInfoResponse{CeType: orDefault(s.CEType, "CASA"), Version: orDefault(s.CEVersion, "reference-v1"), EnabledChecks: ids, MatcherStrategy: "exact-identity-config; content-not-evaluated"}, nil
+	return &cev1.GetInfoResponse{CeType: orDefault(s.CEType, "CASA"), Version: orDefault(s.CEVersion, "1.0.0"), EnabledChecks: ids, MatcherStrategy: "exact-identity-config; content-not-evaluated"}, nil
 }
 
 func orDefault(v, fallback string) string {

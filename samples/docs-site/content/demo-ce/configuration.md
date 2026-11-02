@@ -81,7 +81,7 @@ wait for explicit definitions; an absent list is not the same as a known empty l
 | `CE_CONFIG_FILE` | `/etc/demo-ce/config.json` | Rule file |
 | `CE_MAS_FILE` | `/var/lib/demo-ce/mas-id` | MAS binding for a single config |
 | `CE_NAME` | `demo-ce` | Registration name |
-| `CE_VERSION` | `reference-v1` | Registration version |
+| `CE_VERSION` | `1.0.0` | Registration version |
 | `CFN_URL` | `http://ioc-scale-cfn-svc:9002` | Registration API |
 | `OXP_API_URL` | Empty | OXP context and Cognition Store API |
 | `GRPC_LISTEN_ADDRESS` | `:18001` | gRPC listener |

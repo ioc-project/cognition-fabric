@@ -48,7 +48,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	ceType, ceVersion := env("CE_TYPE", "CASA"), env("CE_VERSION", "reference-v1")
+	ceType, ceVersion := env("CE_TYPE", "CASA"), env("CE_VERSION", "1.0.0")
 	// With a single config the MAS comes from CE_MAS_FILE, which a bootstrap may write after this CE
 	// registers, so it cannot be required at startup; Evaluate reports Unavailable until it exists.
 	masID := func() (string, error) {

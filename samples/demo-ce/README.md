@@ -259,7 +259,7 @@ shows the migrated seven-rule config without changing its rule patterns.
 | `ADVERTISED_GRPC_ADDRESS` | `demo-ce:18001` | address CFN uses to call this CE |
 | `ADVERTISED_HEALTH_URL` | `http://<host of ADVERTISED_GRPC_ADDRESS>:<port of HTTP_LISTEN_ADDRESS>/healthz` | URL CFN probes with a GET to check the CE is alive (`health_url` at registration). Set it when CFN reaches the HTTP port under another host or port |
 | `GRPC_LISTEN_ADDRESS` / `HTTP_LISTEN_ADDRESS` | `:18001` / `:18000` | |
-| `CE_NAME` / `CE_VERSION` | `demo-ce` / `reference-v1` | registration metadata |
+| `CE_NAME` / `CE_VERSION` | `demo-ce` / `1.0.0` | registration metadata |
 | `CE_CONFIG_FILE` / `CE_MAS_FILE` | see above | |
 | `CE_EVENT_SERVICE` | empty (any) | only accept events from this `service_name` |
 | `CE_CONTEXT_WAIT` | `1s` | shared content/context wait budget, at most `25s` |

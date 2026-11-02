@@ -1,4 +1,5 @@
 """Tests for Template CE gRPC service."""
+import logging
 import pytest
 from uuid import uuid4
 from pathlib import Path
@@ -60,6 +61,18 @@ class TestEvaluateRPC:
         """Test Evaluate echoes trace_id."""
         response = stub.Evaluate(make_request(trace_id="test-trace-123"))
         assert response.trace_id == "test-trace-123"
+
+    @pytest.mark.parametrize("span_id", ["160e9f7d67d9173e", ""])
+    def test_logs_span_id(self, stub, caplog, span_id):
+        """Preserve CFN's field 18 over gRPC, including older clients that omit it."""
+        assert ce_pb2.EvaluateRequest.DESCRIPTOR.fields_by_name["span_id"].number == 18
+        request = make_request(span_id=span_id)
+        with caplog.at_level(logging.INFO, logger="service"):
+            response = stub.Evaluate(request, timeout=5)
+
+        assert response.outcome == ce_pb2.DECISION_ALLOW
+        assert response.trace_id == request.trace_id
+        assert f"trace_id={request.trace_id} span_id={span_id} session_id=" in caplog.text
 
     def test_includes_timestamp(self, stub):
         """Test Evaluate includes timestamp."""

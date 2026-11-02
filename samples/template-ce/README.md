@@ -11,6 +11,11 @@ Template CE provides authorization decisions (ALLOW / DENY / MODIFY) for in-scop
 - **CFN** - Receives `Evaluate` requests via gRPC
 - **Cognition Store (OXP)** - Reads prior findings, stores current finding
 
+This branch supports a forced verdict through `TEMPLATE_CE_DECISION=allow`
+(default) or `TEMPLATE_CE_DECISION=deny`. A forced denial carries a simulated
+intent-deviation reason; it does not inspect tool arguments or make a semantic
+policy judgment. Restart the template CE after changing the setting.
+
 ## Run Locally (without Docker)
 
 ```bash
@@ -43,7 +48,7 @@ uv run pytest -v
 Authorization decision for an in-scope MAS action.
 
 **Request:** `EvaluateRequest`
-- `mas_id`, `source_agent_id`, `destination_agent_id`, `trace_id`
+- `mas_id`, `source_agent_id`, `destination_agent_id`, `trace_id`, `span_id`
 - `action_class` - MCP_TOOL_CALL, A2A_DELEGATION, AGENT_RESPONSE
 - `direction` - REQUEST, RESPONSE
 
@@ -62,6 +67,7 @@ Returns CE metadata.
 |----------|-------------|---------|
 | `CE_NAME` | CE name for registration | `template-ce` |
 | `CE_VERSION` | CE version for registration | `1.0.0` |
+| `TEMPLATE_CE_DECISION` | Forced verdict for the local template | `allow` |
 | `GRPC_PORT` | gRPC server port | `50051` |
 | `CFN_URL` | CFN service URL for registration | (disabled) |
 | `COGNITION_ENGINE_HOST` | Advertised host for this CE | `localhost` |

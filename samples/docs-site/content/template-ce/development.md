@@ -27,8 +27,8 @@ title: Extend Template CE
 6. Update `GetInfo` to describe the behavior your implementation actually provides.
 
 The local template proto and the Go service's imported CFN proto are separate sources.
-For example, the Go evaluation path requires a span identifier for correlation. Do not assume a new
-Python implementation has that feature just because both services share the same RPC name.
+Both include `EvaluateRequest.span_id` (field 18), but the template only logs it; the Go engine
+requires it to correlate evidence. Do not assume the template implements that correlation.
 
 ## Cognition Store behavior
 

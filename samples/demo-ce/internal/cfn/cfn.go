@@ -58,7 +58,7 @@ func (l *Lifecycle) Healthy(ctx context.Context) bool {
 func (l *Lifecycle) Register(ctx context.Context) (string, error) {
 	version := l.Version
 	if version == "" {
-		version = "reference-v1"
+		version = "1.0.0"
 	}
 	ceType := l.Type
 	if ceType == "" {
