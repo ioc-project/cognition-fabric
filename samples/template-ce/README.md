@@ -48,7 +48,7 @@ uv run pytest -v
 Authorization decision for an in-scope MAS action.
 
 **Request:** `EvaluateRequest`
-- `mas_id`, `source_agent_id`, `destination_agent_id`, `trace_id`
+- `mas_id`, `source_agent_id`, `destination_agent_id`, `trace_id`, `span_id`
 - `action_class` - MCP_TOOL_CALL, A2A_DELEGATION, AGENT_RESPONSE
 - `direction` - REQUEST, RESPONSE
 

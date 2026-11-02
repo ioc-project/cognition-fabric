@@ -53,7 +53,7 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
                 f"source={request.source_agent_id} -> dest={request.destination_agent_id} "
                 f"action_class={ce_pb2.ActionClass.Name(request.action_class)} "
                 f"direction={ce_pb2.Direction.Name(request.direction)} "
-                f"trace_id={request.trace_id} session_id={request.session_id}"
+                f"trace_id={request.trace_id} span_id={request.span_id} session_id={request.session_id}"
             )
 
             # 1. Read prior findings from Cognition Store
