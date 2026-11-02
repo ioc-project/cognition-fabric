@@ -48,9 +48,9 @@ can be overridden in `.env` without editing the compose file:
   `ioc-scale-enforcement-proxy-mediation`):
   `CF_REGISTRY` plus `IOC_SCALE_DB_TAG`, `CF_MGMT_SVC_TAG`, `CF_UI_TAG`,
   `CFN_SVC_TAG`, `CF_DEMO_CE_TAG`, `ENFORCEMENT_PROXY_MEDIATION_TAG`.
-  Tags default to `latest` (and are set to it in
-  `.env.example`), except the database, which stays pinned (`0.2.0`) because
-  it is built from this repo. Pin a tag in `.env` to reproduce a specific build.
+  Enforcement proxy images default to `0.0.1-alpha`; the database stays pinned
+  to `0.2.0`. Other CF image tags retain `latest`. Existing `.env` tag overrides
+  remain supported.
 - OXP workers: `OXP_REGISTRY` plus `OXP_IMG_TAG`.
 - `oxp-api`: `OXP_REGISTRY` plus `OXP_API_IMG_TAG`. The API is versioned
   separately from the workers. Set `OXP_API_IMAGE` only to override the full
