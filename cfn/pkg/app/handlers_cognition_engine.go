@@ -296,7 +296,6 @@ func (a *App) registerCognitionEngineHandler(w http.ResponseWriter, r *http.Requ
 	// Trigger immediate config refresh to include the newly registered CE
 	go func() {
 		time.Sleep(500 * time.Millisecond) // Brief delay for mgmt plane to propagate
-		mgmtURL := getEnvOrDefault("MGMT_URL", "http://localhost:9000")
 		if err := a.RefreshConfig(mgmtURL); err != nil {
 			log.Errorf("failed to refresh config after CE registration: %v", err)
 		} else {
@@ -447,7 +446,6 @@ func (a *App) patchCognitionEngineHandler(w http.ResponseWriter, r *http.Request
 		// Trigger config refresh after update
 		go func() {
 			time.Sleep(500 * time.Millisecond)
-			mgmtURL := getEnvOrDefault("MGMT_URL", "http://localhost:9000")
 			if err := a.RefreshConfig(mgmtURL); err != nil {
 				log.Errorf("failed to refresh config after CE patch: %v", err)
 			} else {
@@ -526,7 +524,6 @@ func (a *App) deleteCognitionEngineHandler(w http.ResponseWriter, r *http.Reques
 		// Trigger config refresh after deletion
 		go func() {
 			time.Sleep(500 * time.Millisecond)
-			mgmtURL := getEnvOrDefault("MGMT_URL", "http://localhost:9000")
 			if err := a.RefreshConfig(mgmtURL); err != nil {
 				log.Errorf("failed to refresh config after CE deletion: %v", err)
 			} else {
@@ -652,12 +649,11 @@ func newProbeTransport() *http.Transport {
 // findEngineHealthURL returns the registered health URL of a CE (health_url joined with health_endpoint)
 // from the current config snapshot.
 func findEngineHealthURL(ceID string) (string, bool) {
-	cfnConfigMutex.RLock()
-	defer cfnConfigMutex.RUnlock()
-	if ParsedConfig == nil {
+	cfg := currentConfig()
+	if cfg == nil {
 		return "", false
 	}
-	for _, ce := range ParsedConfig.CognitionEngines {
+	for _, ce := range cfg.CognitionEngines {
 		if ce.ID == ceID {
 			return strings.TrimRight(ce.HealthURL, "/") + ce.HealthEndpoint, true
 		}

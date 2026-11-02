@@ -1,7 +1,7 @@
 {
 	"folders": [
-		{ "name": "CF deployment", "path": "../ioc-scale-cf-deployment" },
 		{ "name": "CFN service", "path": "." },
+		{ "name": "CF deployment", "path": "../ioc-scale-cf-deployment" },
 		{ "name": "CF management service", "path": "../ioc-scale-cf-mgmt-svc" },
 		{ "name": "CF UI", "path": "../ioc-scale-cf-ui" },
 		{ "name": "CF demo CE", "path": "../ioc-scale-cf-demo-ce" },
