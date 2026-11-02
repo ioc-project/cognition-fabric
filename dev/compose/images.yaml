@@ -16,7 +16,7 @@ services:
     ports:
       - "9000:9000"
     environment:
-      ADMIN_USER_PASSWORD: ${ADMIN_USER_PASSWORD:?Set ADMIN_USER_PASSWORD in the CFN .env}
+      ADMIN_USER_PASSWORD: ${ADMIN_USER_PASSWORD}
       POSTGRES_HOST: ioc-scale-db
       POSTGRES_PORT: "5432"
       POSTGRES_DB: ${LOCAL_CF_MGMT_DB:-cfn_mgmt_local}
