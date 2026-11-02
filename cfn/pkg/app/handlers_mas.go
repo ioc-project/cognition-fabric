@@ -38,8 +38,8 @@ func (a *App) getMASHandler(w http.ResponseWriter, r *http.Request) (int, error)
 		})
 	}
 
-	// Check workspace ID is available
-	if WorkspaceID == "" {
+	workspaceID, err := resolveMASWorkspace(masID)
+	if err != nil {
 		log.Errorf("workspace_id not set")
 		return eh.RespondWithJSON(w, http.StatusServiceUnavailable, map[string]string{
 			"error": "workspace not configured",
@@ -58,7 +58,7 @@ func (a *App) getMASHandler(w http.ResponseWriter, r *http.Request) (int, error)
 	defer cancel()
 
 	mgmtClient := mgmt.New(MgmtURL, 30*time.Second)
-	mas, err := mgmtClient.GetMAS(ctx, WorkspaceID, masID)
+	mas, err := mgmtClient.GetMAS(ctx, workspaceID, masID)
 	if err != nil {
 		if errors.Is(err, mgmt.ErrNotFound) {
 			log.Warnf("MAS not found: mas_id=%s", masID)

@@ -1,4 +1,4 @@
-# Run Cognition Fabric locally from source
+# Run Cognition Fabric locally from source or published images
 
 This workflow runs the CF management service, CFN, management UI, and template CE
 from sibling source checkouts. The
@@ -6,7 +6,9 @@ from sibling source checkouts. The
 Compose project supplies Postgres, OXP, and their supporting services as
 published containers. You do not need OXP source code. Run the commands below
 from `ioc-scale-cfn-svc` unless a command changes directory explicitly. For an
-all-container deployment, use the deployment repository's README.
+all-container deployment, use the deployment repository's README. To keep this
+workflow's integrated source NOA and Envoy while testing published CF services,
+use the [`:image` tasks](#run-cf-services-from-published-images) below.
 
 ## Clone the workspace
 
@@ -118,20 +120,19 @@ go mod download
 
 ## Start the shared infrastructure and CF services
 
+If the standalone published deployment is running, stop it first. This
+preserves its database volumes and avoids mixing its CF databases and proxy
+configuration with the local workflow. A fresh checkout does not need this step:
+
+```bash
+(cd ../ioc-scale-cf-deployment && make down)
+```
+
 From the CFN checkout, start Postgres and OXP through the deployment Compose
 project:
 
 ```bash
 task infra:up
-```
-
-If you previously started the published CF containers, stop them before
-running CF services from source. A fresh checkout does not need this step:
-
-```bash
-(cd ../ioc-scale-cf-deployment && docker compose stop \
-  ioc-scale-cf-mgmt-svc ioc-scale-cf-mgmt-plane-ui \
-  ioc-scale-cfn-svc ioc-scale-cf-demo-ce)
 ```
 
 In proxy mode, `infra:up` also starts Envoy, its plugin installer jobs, and
@@ -141,9 +142,14 @@ task applies the MAS-specific proxy routes when the MAS ID is available.
 
 `infra:up` creates `cfn_mgmt_local` and `cfn_audit_local` in the shared Postgres
 server. They are separate from the published CF databases. Both modes use the
-same OXP services and data stores. `infra:up` leaves published CF containers
-alone; each `run:*` task refuses to start while one is running. Tasks check
-required sibling checkouts and report their clone URLs if any are missing.
+same OXP services and data stores. The `:image` tasks also use these local CF
+databases, so switching a service between source and image retains local MAS
+records, CE associations, and audits when their migration histories are compatible.
+Local tasks reject running CF containers
+from the standalone deployment, which use different CF databases. Stop that
+stack before switching workflows. Each service task checks its container and
+ports to prevent starting a second instance. Source tasks check required
+sibling checkouts and report their clone URLs if any are missing.
 
 Run each of these **foreground** tasks in a separate CFN checkout terminal.
 Start them in order, waiting for each service to become ready:
@@ -173,6 +179,117 @@ virtual environment. CFN probes the health endpoint; the CE does not send heartb
 
 For the policy-driven Go CE instead of the Python template CE, use
 `task run:demo-ce` in step 4 after configuring its policy as described below.
+
+### Run CF services from published images
+
+Each CF service can run from source or from a published image independently.
+Run `task infra:up` first, then choose one task per row, in the same order as
+the source workflow. Each task runs in its own foreground terminal.
+
+| Service | Source task | Published image task | Tag override |
+| --- | --- | --- | --- |
+| Management | `task run:cfn-mgmt` | `task run:cfn-mgmt:image` | `CF_MGMT_SVC_TAG` |
+| CFN | `task run:cfn` | `task run:cfn:image` | `CFN_SVC_TAG` |
+| UI | `task run:cf-ui` | `task run:cf-ui:image` | `CF_UI_TAG` |
+| Go Demo CE | `task run:demo-ce` | `task run:demo-ce:image` | `CF_DEMO_CE_TAG` |
+
+Tags default to `latest`. Set them in the CFN `.env`, or override one start:
+
+```bash
+CFN_SVC_TAG=2026-11-02-abcdef0 task run:cfn:image
+```
+
+Use an actual tag published by that service's CI. PR validation alone does not
+publish images. `CF_REGISTRY` defaults to `ghcr.io/cisco-eti`. The image tasks
+pull their selected tag every time, recreate only the selected service, stream
+its logs, and stop it on Ctrl+C. They never build from local source or start
+dependencies. Before management starts, a read-only preflight checks the current
+database revision against that version's Alembic graph. Image management is
+checked after pulling, using Python and migrations from the selected image with
+its normal entrypoint bypassed. The subsequent start does not pull again.
+Management's normal image entrypoint then runs its own database migrations.
+CF source dependencies are needed only for the services run from source;
+source NOA still needs its `uv` environment.
+
+Source and image management share a database by default, so switching versions
+requires a compatible migration lineage. An empty database or an ancestor of
+the selected version's single head can be upgraded. A revision unknown to the
+selected version is rejected before migrations run; this can happen in either
+direction when a branch or newer image has added migrations. The check does
+not guarantee application compatibility after a schema upgrade or detect edits
+to migrations that reuse the same revision IDs. Pin a compatible tag or use an
+isolated local management database. The launcher never automatically stamps,
+downgrades, resets, or deletes existing data.
+
+For example, stop NOA, the CE, CFN, and management, then create and select an
+isolated image database while preserving the source database:
+
+```bash
+LOCAL_CF_MGMT_DB=cfn_mgmt_image task infra:up
+LOCAL_CF_MGMT_DB=cfn_mgmt_image task run:cfn-mgmt:image
+```
+
+Use the same override on subsequent starts, or set it in `.env`. Restart CFN
+and the CE against that management service so their workspace and registration
+state is refreshed. The new database has its own users, MAS records and CE
+associations; onboard the MAS/CE again and update `NOA_MAS_ID` before restarting
+NOA. CFN audit storage remains separate in
+`cfn_audit_local`. Returning to the original management database uses
+`LOCAL_CF_MGMT_DB=cfn_mgmt_local`. Migration preflight does not modify either
+database.
+
+The image tasks use the [CFN-owned Compose file](local/images/compose.yaml),
+the CFN `.env`, and the existing deployment project's network. They do not edit
+the deployment checkout. Go Demo CE source and image tasks both use
+`CE_CONFIG_FILE` and optional `CE_MAS_FILE`, resolved relative to CFN. Neither
+uses the standalone deployment's sample policy. Configure the policy with your
+actual MAS ID and NOA identities, then associate the CE in the local UI.
+
+Keep `NOA_MODE=source` and your existing `NOA_ENFORCEMENT_MODE=direct` or `proxy`,
+then start `task run:full-mas`. Proxy mode keeps the generated Envoy routes and
+source tool server:
+
+```text
+Source NOA -> Envoy :9010 -> source/image CFN :9003 -> source/image CE
+```
+
+The published NOA image does not provide this integration. The Python template
+CE remains a source-only alternative, `task run:template-ce`.
+
+Stop a service with Ctrl+C before switching its source/image task. After
+switching CFN between source and image, restart the chosen CE task so it
+registers addresses reachable by the new CFN. Source CEs advertise
+`host.docker.internal` to an image CFN; an image CE advertises its container DNS
+name to an image CFN and host loopback to a source CFN.
+
+Mixed operation requires Docker-to-host connectivity. On Docker Desktop this
+uses `host.docker.internal`; the image file also supplies the `host-gateway`
+mapping for native Linux. Source management and the Go Demo CE bind to
+`127.0.0.1` by default; Docker Desktop can reach these listeners through
+`host.docker.internal`. On native Linux, explicitly set
+`LOCAL_CF_BIND_HOST=0.0.0.0` when mixing
+host services and image clients. Management, UI, and CFN images publish
+the same host ports as the shared deployment. Source processes still call local
+HTTP APIs through `localhost`.
+
+Launcher checks can run without starting services or touching databases:
+
+```bash
+python3 -m unittest discover -s deploy/local/tests -v
+```
+
+These checks use command stubs for lifecycle decisions, real temporary IPv4/IPv6
+listeners for port checks, and `docker compose config` for image configuration.
+Migration tests use real Alembic graphs when Alembic is installed; otherwise
+they are reported as skipped. They can also be run with management's Python:
+
+```bash
+(cd ../ioc-scale-cf-mgmt-svc && poetry run python -m unittest discover \
+  -s ../ioc-scale-cfn-svc/deploy/local/tests -v)
+```
+
+They do not establish live enforcement, image compatibility, or Docker-to-host
+connectivity, and do not start services or migrate real databases.
 
 ### Choose NOA enforcement and CE independently
 
@@ -400,6 +517,8 @@ task check  # Compose configuration, formatting, lint, types, then tests
 does not use the local management or published management database.
 `task check` does not reformat source files.
 
-Stop foreground source services with Ctrl+C. Stop the shared infrastructure
-without deleting its volumes with `task infra:down`. For the all-container
-workflow, follow the deployment repository's README.
+Stop foreground source or image tasks with Ctrl+C. `task infra:down` also stops
+any CF images owned by this local workflow, then the local proxy and shared
+infrastructure, without deleting volumes. It refuses to stop CF containers
+owned by the standalone published deployment. For that all-container workflow,
+follow the deployment repository's README.

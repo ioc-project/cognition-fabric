@@ -14,7 +14,9 @@ import (
 )
 
 func TestGetMASHandler_MissingMASID(t *testing.T) {
-	WorkspaceID = "test-workspace"
+	restore := restoreRoutingGlobals()
+	defer restore()
+
 	MgmtURL = "http://localhost:9000"
 
 	a := &App{}
@@ -40,8 +42,10 @@ func TestGetMASHandler_MissingMASID(t *testing.T) {
 }
 
 func TestGetMASHandler_WorkspaceNotConfigured(t *testing.T) {
-	// Clear workspace ID
-	WorkspaceID = ""
+	restore := restoreRoutingGlobals()
+	defer restore()
+
+	applyParsedConfig(nil)
 	MgmtURL = "http://localhost:9000"
 
 	a := &App{}
@@ -68,7 +72,13 @@ func TestGetMASHandler_WorkspaceNotConfigured(t *testing.T) {
 }
 
 func TestGetMASHandler_MgmtURLNotConfigured(t *testing.T) {
-	WorkspaceID = "test-workspace"
+	restore := restoreRoutingGlobals()
+	defer restore()
+
+	applyParsedConfig(&CfnConfigPayload{
+		ConfigVersion: 1,
+		Workspaces:    []WorkspaceCfg{{WorkspaceID: "test-workspace", MASList: []MASCfg{{ID: "test-mas-id"}}}},
+	})
 	MgmtURL = ""
 
 	a := &App{}
@@ -91,5 +101,59 @@ func TestGetMASHandler_MgmtURLNotConfigured(t *testing.T) {
 
 	if resp["error"] != "management plane not configured" {
 		t.Errorf("expected error 'management plane not configured', got '%s'", resp["error"])
+	}
+}
+
+func TestGetMASHandler_UsesSnapshotWorkspace(t *testing.T) {
+	restore := restoreRoutingGlobals()
+	defer restore()
+
+	var paths []string
+	mock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+		if r.URL.Path == "/api/workspaces/ws-other/multi-agentic-systems/mas-abc" {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":           "mas-abc",
+				"workspace_id": "ws-other",
+				"name":         "Other MAS",
+			})
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer mock.Close()
+
+	MgmtURL = mock.URL
+	applyParsedConfig(&CfnConfigPayload{
+		ConfigVersion: 1,
+		Workspaces: []WorkspaceCfg{
+			{WorkspaceID: "ws-default", WorkspaceName: "Default Workspace", MASList: []MASCfg{{ID: "mas-default"}}},
+			{WorkspaceID: "ws-other", WorkspaceName: "Other", MASList: []MASCfg{{ID: "mas-abc"}}},
+		},
+	})
+
+	a := &App{}
+	rtr := easyhttp.NewRouter()
+	rtr.Get("/api/multi-agentic-systems/{masId}", a.getMASHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/multi-agentic-systems/mas-abc", nil)
+	w := httptest.NewRecorder()
+	rtr.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusOK, w.Code, w.Body.String())
+	}
+
+	var resp map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp["workspace_id"] != "ws-other" {
+		t.Errorf("workspace_id = %v, want ws-other", resp["workspace_id"])
+	}
+
+	if len(paths) != 1 || paths[0] != "/api/workspaces/ws-other/multi-agentic-systems/mas-abc" {
+		t.Fatalf("GetMAS paths = %v, want snapshot workspace ws-other", paths)
 	}
 }

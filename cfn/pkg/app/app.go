@@ -45,8 +45,6 @@ func getLogger() *zap.SugaredLogger {
 var (
 	// CfnID is the CFN identifier returned by the management plane on registration.
 	CfnID string
-	// WorkspaceID is the workspace this CFN is associated with (single workspace assumption).
-	WorkspaceID string
 	// MgmtURL is the management plane base URL.
 	MgmtURL string
 	// ParsedConfig is the typed config from the management plane.
@@ -221,40 +219,26 @@ func (a *App) registerOnStartup() {
 	}
 	CfnID = id
 
-	// Parse config blob into typed struct
+	var applied *CfnConfigPayload
 	if cfgBlob, ok := result["config"].(map[string]any); ok {
 		cfgBytes, _ := json.Marshal(cfgBlob)
 		var parsed CfnConfigPayload
 		if err := json.Unmarshal(cfgBytes, &parsed); err != nil {
 			log.Errorf("failed to parse config into typed struct: %v", err)
 		} else {
-			cfnConfigMutex.Lock()
-			ParsedConfig = &parsed
-			ConfigVersion = parsed.ConfigVersion
-			cfnConfigMutex.Unlock()
+			applyParsedConfig(&parsed)
+			applied = &parsed
 		}
 	}
 
-	// Find and store the Default Workspace ID from config
-	cfnConfigMutex.RLock()
-	if ParsedConfig != nil {
-		for _, ws := range ParsedConfig.Workspaces {
-			if ws.WorkspaceName == "Default Workspace" {
-				WorkspaceID = ws.WorkspaceID
-				log.Infof("default workspace found and stored: workspace_id=%s", WorkspaceID)
-				break
-			}
-		}
-	}
-	cfnConfigMutex.RUnlock()
-
-	if WorkspaceID == "" {
-		log.Warnf("no Default Workspace found in config - enforcement requests will fail until a workspace is associated")
+	wsIDs := assignedWorkspaceIDs(applied)
+	if len(wsIDs) == 0 {
+		log.Warnf("no assigned workspaces in config - enforcement requests will fail until a workspace is associated")
 	}
 
-	cfgJSON, _ := json.Marshal(ParsedConfig)
-	log.Infof("CFN registered successfully: cfn_id=%s cfn_name=%s workspace_id=%s ip_address=%s port=%d config_version=%d payload=%s",
-		CfnID, cfnName, WorkspaceID, appIP, appPort, ConfigVersion, cfgJSON)
+	cfgJSON, _ := json.Marshal(applied)
+	log.Infof("CFN registered successfully: cfn_id=%s cfn_name=%s assigned_workspaces=%d workspace_ids=%v ip_address=%s port=%d config_version=%d payload=%s",
+		CfnID, cfnName, len(wsIDs), wsIDs, appIP, appPort, configVersion(applied), cfgJSON)
 
 	// Start periodic heartbeat
 	go a.startHeartbeat(mgmtURL)
@@ -296,23 +280,14 @@ func (a *App) RefreshConfig(mgmtURL string) error {
 			return fmt.Errorf("failed to parse config: %v", err)
 		}
 
-		// Detect MAS changes before updating config
-		cfnConfigMutex.RLock()
-		oldConfig := ParsedConfig
-		cfnConfigMutex.RUnlock()
-
+		oldConfig := applyParsedConfig(&parsed)
 		log.Debugf("detecting MAS changes (oldConfig nil: %v)", oldConfig == nil)
 		changes := detectMASChanges(oldConfig, &parsed)
 		log.Debugf("detected %d MAS changes", len(changes))
 
-		cfnConfigMutex.Lock()
-		ParsedConfig = &parsed
-		ConfigVersion = parsed.ConfigVersion
-		cfnConfigMutex.Unlock()
+		wsIDs := assignedWorkspaceIDs(&parsed)
+		log.Infof("CFN Config refreshed, config_version=%d assigned_workspaces=%d workspace_ids=%v", parsed.ConfigVersion, len(wsIDs), wsIDs)
 
-		log.Infof("CFN Config refreshed, config_version=%d", parsed.ConfigVersion)
-
-		// Dispatch notifications for any detected changes
 		if len(changes) > 0 {
 			log.Infof("detected %d MAS changes, dispatching notifications", len(changes))
 			a.dispatchNotifications(changes)
@@ -371,9 +346,7 @@ func (a *App) startHeartbeat(mgmtURL string) {
 
 				// Check if config_version has changed
 				if newVersion, ok := result["config_version"].(float64); ok {
-					cfnConfigMutex.RLock()
-					current := ConfigVersion
-					cfnConfigMutex.RUnlock()
+					current := configVersion(currentConfig())
 
 					remoteVersion := int64(newVersion)
 					log.Debugf("heartbeat response: remote_version=%d local_version=%d", remoteVersion, current)
