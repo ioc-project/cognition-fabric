@@ -7,10 +7,12 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -29,9 +31,11 @@ type mockCASACEServer struct {
 	cev1.UnimplementedCognitionEngineServer
 	evaluateResponse *cev1.EvaluateResponse
 	evaluateError    error
+	lastReq          atomic.Pointer[cev1.EvaluateRequest]
 }
 
 func (m *mockCASACEServer) Evaluate(ctx context.Context, req *cev1.EvaluateRequest) (*cev1.EvaluateResponse, error) {
+	m.lastReq.Store(req)
 	if m.evaluateError != nil {
 		return nil, m.evaluateError
 	}
@@ -45,8 +49,8 @@ func (m *mockCASACEServer) GetInfo(ctx context.Context, req *cev1.GetInfoRequest
 	}, nil
 }
 
-// startMockCASACE starts a mock CASA CE gRPC server and returns the address and cleanup function.
-func startMockCASACE(t *testing.T, response *cev1.EvaluateResponse, err error) (addr string, cleanup func()) {
+// startMockCASACE starts a mock CASA CE gRPC server and returns the address, mock, and cleanup function.
+func startMockCASACE(t *testing.T, response *cev1.EvaluateResponse, err error) (addr string, mock *mockCASACEServer, cleanup func()) {
 	t.Helper()
 
 	lis, lisErr := net.Listen("tcp", "localhost:0")
@@ -55,48 +59,99 @@ func startMockCASACE(t *testing.T, response *cev1.EvaluateResponse, err error) (
 	}
 
 	server := grpc.NewServer()
-	mockServer := &mockCASACEServer{
+	mock = &mockCASACEServer{
 		evaluateResponse: response,
 		evaluateError:    err,
 	}
-	cev1.RegisterCognitionEngineServer(server, mockServer)
+	cev1.RegisterCognitionEngineServer(server, mock)
 
 	go func() {
 		_ = server.Serve(lis)
 	}()
 
-	return lis.Addr().String(), func() {
+	return lis.Addr().String(), mock, func() {
 		server.Stop()
 		lis.Close()
 	}
+}
+
+func restoreRoutingGlobals() func() {
+	oldMgmt := MgmtURL
+	MgmtURL = ""
+	oldParsed := applyParsedConfig(nil)
+
+	return func() {
+		applyParsedConfig(oldParsed)
+		MgmtURL = oldMgmt
+	}
+}
+
+func seedParsedConfigFromMAS(masResponse map[string]any) {
+	cfg := &CfnConfigPayload{ConfigVersion: 1}
+	if masResponse != nil {
+		masID, _ := masResponse["id"].(string)
+		wsID, _ := masResponse["workspace_id"].(string)
+		name, _ := masResponse["name"].(string)
+		if masID != "" && wsID != "" {
+			cfg.Workspaces = []WorkspaceCfg{{
+				WorkspaceID:   wsID,
+				WorkspaceName: "Test Workspace",
+				MASList: []MASCfg{{
+					ID:   masID,
+					Name: name,
+				}},
+			}}
+		}
+	} else {
+		cfg.Workspaces = []WorkspaceCfg{{
+			WorkspaceID:   "ws-test-123",
+			WorkspaceName: "Test Workspace",
+		}}
+	}
+	applyParsedConfig(cfg)
 }
 
 // setupTestEnv sets up the test environment with mock management plane.
 // Returns cleanup function and the mock servers.
 func setupTestEnv(t *testing.T, masResponse map[string]any) (cleanup func(), mockMgmt *httptest.Server) {
 	t.Helper()
+	return setupTestEnvRecording(t, masResponse, nil)
+}
 
-	// Save old values
-	oldWorkspaceID := WorkspaceID
-	oldMgmtURL := MgmtURL
+func setupTestEnvRecording(t *testing.T, masResponse map[string]any, paths *[]string) (cleanup func(), mockMgmt *httptest.Server) {
+	t.Helper()
 
-	// Start mock management plane server
+	restore := restoreRoutingGlobals()
+	var pathsMu sync.Mutex
+
 	mockMgmt = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if paths != nil {
+			pathsMu.Lock()
+			*paths = append(*paths, r.URL.Path)
+			pathsMu.Unlock()
+		}
+
 		if masResponse == nil {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(masResponse)
+
+		wsID, _ := masResponse["workspace_id"].(string)
+		masID, _ := masResponse["id"].(string)
+		expected := fmt.Sprintf("/api/workspaces/%s/multi-agentic-systems/%s", wsID, masID)
+		if r.URL.Path == expected {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(masResponse)
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
 	}))
 
-	// Set global vars
-	WorkspaceID = "ws-test-123"
 	MgmtURL = mockMgmt.URL
+	seedParsedConfigFromMAS(masResponse)
 
 	cleanup = func() {
-		WorkspaceID = oldWorkspaceID
-		MgmtURL = oldMgmtURL
+		restore()
 		mockMgmt.Close()
 	}
 
@@ -106,24 +161,27 @@ func setupTestEnv(t *testing.T, masResponse map[string]any) (cleanup func(), moc
 // setupTestEnvWithCASA sets up test environment with both mock mgmt plane and mock CASA CE.
 func setupTestEnvWithCASA(t *testing.T, masResponse map[string]any, casaResponse *cev1.EvaluateResponse, casaErr error) (cleanup func()) {
 	t.Helper()
+	cleanup, _, _ = setupTestEnvWithCASAMock(t, masResponse, casaResponse, casaErr)
+	return cleanup
+}
 
-	// Start mock CASA CE gRPC server
-	casaAddr, casaCleanup := startMockCASACE(t, casaResponse, casaErr)
+func setupTestEnvWithCASAMock(t *testing.T, masResponse map[string]any, casaResponse *cev1.EvaluateResponse, casaErr error) (cleanup func(), mock *mockCASACEServer, mockMgmt *httptest.Server) {
+	t.Helper()
 
-	// Inject CASA address into MAS response
+	casaAddr, mock, casaCleanup := startMockCASACE(t, casaResponse, casaErr)
+
 	if masResponse != nil {
 		if ces, ok := masResponse["cognition_engines"].([]map[string]any); ok && len(ces) > 0 {
 			ces[0]["enforcing_url"] = casaAddr
 		}
 	}
 
-	// Setup management plane mock
-	mgmtCleanup, _ := setupTestEnv(t, masResponse)
+	mgmtCleanup, mockMgmt := setupTestEnv(t, masResponse)
 
 	return func() {
 		mgmtCleanup()
 		casaCleanup()
-	}
+	}, mock, mockMgmt
 }
 
 func TestGetDisposition_MissingPayload(t *testing.T) {
@@ -312,17 +370,13 @@ func TestGetDisposition_MissingSpanID(t *testing.T) {
 	}
 }
 
-func TestGetDisposition_WorkspaceIDNotSet(t *testing.T) {
-	// Save and clear workspace ID
-	oldWorkspaceID := WorkspaceID
-	oldMgmtURL := MgmtURL
-	WorkspaceID = ""
-	MgmtURL = "http://localhost:9000"
+func TestGetDisposition_SnapshotUnavailable(t *testing.T) {
+	restore := restoreRoutingGlobals()
+	defer restore()
 
-	defer func() {
-		WorkspaceID = oldWorkspaceID
-		MgmtURL = oldMgmtURL
-	}()
+	applyParsedConfig(nil)
+	CfnID = ""
+	MgmtURL = "http://127.0.0.1:1"
 
 	server := newEnforcementServer(nil)
 
@@ -348,6 +402,9 @@ func TestGetDisposition_WorkspaceIDNotSet(t *testing.T) {
 
 	if st.Code() != codes.Unavailable {
 		t.Errorf("expected code %v, got %v", codes.Unavailable, st.Code())
+	}
+	if !strings.Contains(st.Message(), "config snapshot unavailable") {
+		t.Errorf("expected snapshot unavailable message, got %q", st.Message())
 	}
 }
 
@@ -916,6 +973,143 @@ func TestEnforcementServer_WaitTimeoutReturnsFalseOnHungWrite(t *testing.T) {
 	}
 	if elapsed > time.Second {
 		t.Errorf("WaitTimeout() took %s to return, want it bounded near the 50ms timeout", elapsed)
+	}
+}
+
+func TestGetDisposition_NonDefaultWorkspace(t *testing.T) {
+	masResp := map[string]any{
+		"id":           "mas-other",
+		"workspace_id": "ws-other-456",
+		"name":         "Other MAS",
+		"cognition_engines": []map[string]any{
+			{
+				"ce_id":    "ce-casa-other",
+				"ce_type":  "CASA",
+				"base_url": "will-be-replaced",
+				"endpoint": "ioc.ce.v1.CognitionEngine",
+				"enabled":  true,
+				"status":   "online",
+			},
+		},
+	}
+
+	cleanup, mock, _ := setupTestEnvWithCASAMock(t, masResp, &cev1.EvaluateResponse{Outcome: cev1.Decision_DECISION_ALLOW}, nil)
+	defer cleanup()
+
+	server := newEnforcementServer(nil)
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-other",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+			SpanId:             "span-456",
+		},
+	}
+
+	resp, err := server.GetDisposition(context.Background(), req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.Action != enforcementv1.GetDispositionResponse_ACTION_ALLOW {
+		t.Errorf("expected ACTION_ALLOW, got %v", resp.Action)
+	}
+
+	got := mock.lastReq.Load()
+	if got == nil {
+		t.Fatal("CASA Evaluate was not called")
+	}
+	if got.WorkspaceId != "ws-other-456" {
+		t.Errorf("Evaluate WorkspaceId = %q, want ws-other-456", got.WorkspaceId)
+	}
+}
+
+func TestGetDisposition_DoesNotFallbackToDefaultCASA(t *testing.T) {
+	otherMAS := map[string]any{
+		"id":                "mas-other",
+		"workspace_id":      "ws-other",
+		"name":              "Other MAS",
+		"cognition_engines": []map[string]any{},
+	}
+
+	var paths []string
+	restore := restoreRoutingGlobals()
+	defer restore()
+
+	mockMgmt := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		paths = append(paths, r.URL.Path)
+
+		switch r.URL.Path {
+		case "/api/workspaces/ws-other/multi-agentic-systems/mas-other":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(otherMAS)
+		case "/api/workspaces/ws-default/multi-agentic-systems/mas-default":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"id":           "mas-default",
+				"workspace_id": "ws-default",
+				"name":         "Default MAS",
+				"cognition_engines": []map[string]any{
+					{
+						"ce_id":    "ce-casa-default",
+						"ce_type":  "CASA",
+						"base_url": "localhost:50051",
+						"endpoint": "ioc.ce.v1.CognitionEngine",
+						"enabled":  true,
+						"status":   "online",
+					},
+				},
+			})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer mockMgmt.Close()
+
+	MgmtURL = mockMgmt.URL
+	applyParsedConfig(&CfnConfigPayload{
+		ConfigVersion: 1,
+		Workspaces: []WorkspaceCfg{
+			{
+				WorkspaceID:   "ws-default",
+				WorkspaceName: "Default Workspace",
+				MASList:       []MASCfg{{ID: "mas-default", Name: "Default MAS"}},
+			},
+			{
+				WorkspaceID:   "ws-other",
+				WorkspaceName: "Other Workspace",
+				MASList:       []MASCfg{{ID: "mas-other", Name: "Other MAS"}},
+			},
+		},
+	})
+
+	server := newEnforcementServer(nil)
+	req := &enforcementv1.GetDispositionRequest{
+		Payload: &enforcementv1.GetDispositionPayload{
+			MasId:              "mas-other",
+			SourceAgentId:      "agent-1",
+			DestinationAgentId: "agent-2",
+			TraceId:            "trace-123",
+			SpanId:             "span-456",
+		},
+	}
+
+	_, err := server.GetDisposition(context.Background(), req)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	st, ok := status.FromError(err)
+	if !ok {
+		t.Fatalf("expected gRPC status error, got %v", err)
+	}
+	if st.Code() != codes.NotFound {
+		t.Errorf("expected code %v, got %v", codes.NotFound, st.Code())
+	}
+
+	for _, p := range paths {
+		if strings.Contains(p, "ws-default") {
+			t.Errorf("queried default workspace path %s; routing must stay on the assigned workspace", p)
+		}
 	}
 }
 
