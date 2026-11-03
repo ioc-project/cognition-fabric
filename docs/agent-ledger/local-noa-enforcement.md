@@ -71,9 +71,9 @@ source-workflow container guard.
 The Go CE registers a base `health_url` plus a separate `health_endpoint=/healthz`.
 Set `ADVERTISED_HEALTH_URL=http://<reachable-host>:18000` in the local runner, without the
 path: CFN appends the endpoint, so including it twice makes a running CE look
-offline. Old registered CEs sharing the same valid health URL can appear online
-when any process answers that address; a successful probe does not establish the
-CE's registered identity or version. Restarting services preserves these records.
+offline. [CE endpoint ownership](ce-endpoint-ownership.md) is established by
+registration and reconnect PATCH, so an obsolete registration at a reused address
+does not become online merely because the replacement answers health probes.
 
 **Why:** An HTTP proxy cannot intercept Python function calls. Proxy mode must
 send actual tool traffic through Envoy, preserve the proposed call's trace
