@@ -120,7 +120,8 @@ poetry run python -m server.main
 
 **CFN Audit Events** (from `cfn_cp` database):
 - List all events: `GET /api/audit-events`
-- Filter events: `GET /api/audit-events?resource_type=MAS&audit_type=RESOURCE_CREATED`
+- Filter events: `GET /api/audit-events?resource_type=COGNITION_ENGINE&audit_type=CE_INVOKED`
+- Filter policy decisions and whole-flow status: `GET /api/audit-events?decision=block&success=true` (a completed DENY/BLOCK is successful)
 - Get event by ID: `GET /api/audit-events/{id}`
 
 ```bash
@@ -128,7 +129,10 @@ poetry run python -m server.main
 curl http://localhost:9000/api/audit-events/
 
 # Filter by resource_type and audit_type
-curl "http://localhost:9000/api/audit-events/?resource_type=MAS&audit_type=RESOURCE_CREATED"
+curl "http://localhost:9000/api/audit-events/?resource_type=COGNITION_ENGINE&audit_type=CE_INVOKED"
+
+# Successful policy blocks; optional filters run in CFN before pagination
+curl "http://localhost:9000/api/audit-events/?decision=block&success=true"
 
 # Get a specific audit event by UUID
 curl http://localhost:9000/api/audit-events/5bda66e6-1608-4f83-b7e4-aadbddce312c

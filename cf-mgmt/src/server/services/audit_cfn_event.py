@@ -102,6 +102,8 @@ class AuditCfnEventService:
         page_size: int = None,
         resource_type: Optional[str] = None,
         audit_type: Optional[str] = None,
+        decision: Optional[str] = None,
+        success: Optional[bool] = None,
     ) -> dict:
         """List audit events via cfn-svc HTTP API with optional filtering and pagination.
 
@@ -110,6 +112,8 @@ class AuditCfnEventService:
             page_size: Number of records per page (default from DEFAULT_PAGE_SIZE env, clamped to MAX_PAGE_SIZE)
             resource_type: Optional filter by resource_type (e.g. COGNITION_ENGINE)
             audit_type: Optional filter by audit_type (e.g. CE_INVOKED)
+            decision: Optional CFN policy decision (allow, block, modify)
+            success: Optional whole-flow success flag; False must be forwarded
 
         Returns:
             dict: Response containing 'data' (list of audit events) and 'pageInfo'
@@ -126,6 +130,10 @@ class AuditCfnEventService:
             params["resource_type"] = resource_type
         if audit_type:
             params["audit_type"] = audit_type
+        if decision is not None:
+            params["decision"] = decision
+        if success is not None:
+            params["success"] = "true" if success else "false"
 
         self.logger.debug(f"Listing audit events from cfn-svc: {url} with params={params}")
         try:
