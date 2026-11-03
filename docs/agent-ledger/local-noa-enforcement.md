@@ -1,6 +1,6 @@
 # Local NOA enforcement modes
 
-**Scope:** CFN's local source workflow and its bundled NOA application.
+**Scope:** CFN's local source/image workflow and its bundled NOA application.
 
 **Guidance:** `NOA_MODE` selects source (the default) versus published NOA;
 `NOA_ENFORCEMENT_MODE` selects direct versus proxy enforcement for source NOA.
@@ -13,6 +13,31 @@ CFN owns the source-specific Compose override and generated configuration.
 The deployment checkout supplies reusable images and overlays and is not
 modified by these tasks. MAS-specific routes are generated when NOA starts;
 infrastructure can start before a MAS exists.
+
+CF source tasks have `:image` counterparts for management, CFN, UI, and Go Demo
+CE. These images share the source workflow's `cfn_mgmt_local` / `cfn_audit_local`
+databases, carry the `io.cisco.cf.local=true` ownership label, and run on the
+existing infrastructure network. NOA/proxy tasks accept these owned images but
+reject unrelated running CF containers from the standalone deployment. The
+published upstream NOA still lacks the source NOA enforcement adapter; selecting
+CF images must not implicitly switch NOA to its published image.
+
+CE advertised addresses depend on whether CFN runs on the host or in a
+container. Restart CEs after changing CFN's implementation so they re-register
+the appropriate addresses. The local image Compose file uses host-facing CF
+ports for management/UI/CFN links, allowing each service to switch independently.
+
+Sharing management state requires a compatible Alembic lineage. Source and
+image tasks run the read-only preflight before their migration entrypoints;
+the image task pulls before the check and starts without a second pull. Use
+`LOCAL_CF_MGMT_DB` with the same override on `infra:up` and management starts
+to isolate incompatible histories. Do not automatically stamp/downgrade/reset.
+
+Source management and Go Demo CE keep loopback binds by default. Docker Desktop
+can reach these through `host.docker.internal`; native Linux mixed mode may
+require an explicit `LOCAL_CF_BIND_HOST` IPv4 override. Port checks must cover
+IPv4 and IPv6 listeners: a reusable IPv4 wildcard bind can miss macOS loopback
+listeners, and removing reuse alone still misses IPv6-only sockets.
 
 The local application is based on upstream `noa-trip-planner/`; the separate
 `noa-trip-planner-a2a/` has different transports and dependencies. Compare upstream
@@ -44,7 +69,7 @@ only `ioc-scale-cf-demo-ce`; do not query the removed policy CE service in the
 source-workflow container guard.
 
 The Go CE registers a base `health_url` plus a separate `health_endpoint=/healthz`.
-Set `ADVERTISED_HEALTH_URL=http://127.0.0.1:18000` in the local runner, without the
+Set `ADVERTISED_HEALTH_URL=http://<reachable-host>:18000` in the local runner, without the
 path: CFN appends the endpoint, so including it twice makes a running CE look
 offline. Old registered CEs sharing the same valid health URL can appear online
 when any process answers that address; a successful probe does not establish the

@@ -46,6 +46,15 @@ compose() {
     --env-file "$cfn_dir/.env" -f "$deployment_dir/docker-compose.yml" "$@"
 }
 
+image_compose() {
+  # Set paths even for non-CE commands: Compose interpolates every service.
+  export CF_LOCAL_CE_CONFIG_FILE="${CF_LOCAL_CE_CONFIG_FILE:-$cfn_dir/tmp/config.json}"
+  export CF_LOCAL_CE_MAS_FILE="${CF_LOCAL_CE_MAS_FILE:-$cfn_dir/tmp/images/mas-id}"
+  COMPOSE_IGNORE_ORPHANS=true docker compose --project-directory "$cfn_dir" \
+    -p "${COMPOSE_PROJECT_NAME:-ioc-scale-cf-deployment}" \
+    --env-file "$cfn_dir/.env" -f "$cfn_dir/deploy/local/images/compose.yaml" "$@"
+}
+
 require_checkout() {
   local path="$1" marker="$2" url="$3"
   [[ -d "$path" && -f "$path/$marker" ]] || fail "Missing sibling checkout at $path (expected $marker). Clone $url beside ioc-scale-cfn-svc."
@@ -56,14 +65,110 @@ require_docker_compose() {
   docker compose version >/dev/null 2>&1 || fail "Docker Compose is unavailable. Start Docker Desktop and install Compose v2."
 }
 
-require_cf_containers_stopped() {
-  local running
-  if ! running="$(cd "$deployment_dir" && compose ps --status running --services "${cf_services[@]}")"; then
+running_cf_services() {
+  compose ps --status running --services "${cf_services[@]}"
+}
+
+require_local_cf_containers() {
+  local running service owner
+  if ! running="$(running_cf_services)"; then
     fail "Could not inspect published CF containers. Check Docker Compose."
   fi
-  if [[ -n "$running" ]]; then
-    fail "Published CF containers are running: ${running//$'\n'/, }. Stop them first with: docker compose stop ${cf_services[*]}"
+  while IFS= read -r service; do
+    [[ -n "$service" ]] || continue
+    owner="$(docker inspect --format '{{index .Config.Labels "io.cisco.cf.local"}}' "$service")" || fail "Could not inspect $service."
+    [[ "$owner" = true ]] || fail "$service belongs to the published deployment, not the local databases. Stop that stack before using local tasks."
+  done <<< "$running"
+}
+
+require_service_container_stopped() {
+  local service="$1" running
+  require_local_cf_containers
+  running="$(compose ps --status running --services "$service")" || fail "Could not inspect $service."
+  [[ -z "$running" ]] || fail "$service is already running. Stop its image task with Ctrl+C before starting another instance."
+}
+
+require_ports_free() {
+  require_tool python3
+  python3 "$cfn_dir/deploy/local/check_ports.py" "$@"
+}
+
+require_local_postgres() {
+  local running
+  running="$(compose ps --status running --services ioc-scale-db)" || fail "Could not inspect local Postgres."
+  [[ "$running" = ioc-scale-db ]] || fail "Local Postgres is not running. Run 'task infra:up' first."
+}
+
+cfn_runs_in_container() {
+  local running
+  running="$(compose ps --status running --services ioc-scale-cfn-svc)" || fail "Could not inspect CFN."
+  [[ "$running" = ioc-scale-cfn-svc ]]
+}
+
+source_ce_host() {
+  if cfn_runs_in_container; then
+    printf 'host.docker.internal'
+  else
+    printf '127.0.0.1'
   fi
+}
+
+prepare_demo_config() {
+  require_env CE_CONFIG_FILE
+  [[ "$CE_CONFIG_FILE" = /* ]] || CE_CONFIG_FILE="$cfn_dir/$CE_CONFIG_FILE"
+  [[ -f "$CE_CONFIG_FILE" ]] || fail "Config file not found at $CE_CONFIG_FILE. See deploy/README.md for demo CE setup."
+  export CE_CONFIG_FILE
+  if [[ -n "${CE_MAS_FILE:-}" ]]; then
+    [[ "$CE_MAS_FILE" = /* ]] || CE_MAS_FILE="$cfn_dir/$CE_MAS_FILE"
+    export CE_MAS_FILE
+  fi
+}
+
+run_cf_image() {
+  local service="$1"
+  shift
+  require_local_env
+  require_docker_compose
+  require_service_container_stopped "$service"
+  require_ports_free "$@"
+  require_env IOC_SCALE_DB_USER IOC_SCALE_DB_PASSWORD ADMIN_USER_PASSWORD
+  require_local_postgres
+  case "$service" in
+    ioc-scale-cfn-svc|ioc-scale-cf-mgmt-plane-ui)
+      require_service http://localhost:9000/health 'Local CF management'
+      ;;
+    ioc-scale-cf-demo-ce)
+      require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
+      require_service http://localhost:8081/healthz 'OXP API'
+      prepare_demo_config
+      export CF_LOCAL_CE_CONFIG_FILE="$CE_CONFIG_FILE"
+      if [[ -n "${CE_MAS_FILE:-}" ]]; then
+        [[ -f "$CE_MAS_FILE" ]] || fail "MAS file not found at $CE_MAS_FILE."
+        export CF_LOCAL_CE_MAS_FILE="$CE_MAS_FILE"
+      else
+        mkdir -p "$cfn_dir/tmp/images"
+        touch "$cfn_dir/tmp/images/mas-id"
+      fi
+      if cfn_runs_in_container; then
+        export CF_LOCAL_CE_HOST=ioc-scale-cf-demo-ce
+      else
+        export CF_LOCAL_CE_HOST=127.0.0.1
+      fi
+      ;;
+  esac
+  if [[ "$service" = ioc-scale-cf-mgmt-plane-ui ]]; then
+    require_env NEXTAUTH_SECRET
+  fi
+  # Pull first so management is checked against the version we will start.
+  image_compose pull "$service"
+  if [[ "$service" = ioc-scale-cf-mgmt-svc ]]; then
+    image_compose run --rm --no-deps -T --entrypoint python3 "$service" - \
+      < "$cfn_dir/deploy/local/check_mgmt_migrations.py"
+  fi
+  # Do not pull a different mutable tag after checking its migration graph.
+  # Management's selected image runs its own Alembic entrypoint migrations.
+  image_compose up --pull never --no-deps --force-recreate \
+    --abort-on-container-exit --exit-code-from "$service" "$service"
 }
 
 require_service() {
@@ -82,18 +187,15 @@ set_local_postgres() {
 }
 
 ensure_local_databases() {
-  compose exec -T ioc-scale-db sh -ec '
+  compose exec -T -e "LOCAL_CF_MGMT_DB=${LOCAL_CF_MGMT_DB:-cfn_mgmt_local}" ioc-scale-db sh -ec '
     export PGPASSWORD="$POSTGRES_PASSWORD"
-    for db_name in cfn_mgmt_local cfn_audit_local; do
-      existing="$(psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -tAc "SELECT 1 FROM pg_database WHERE datname = '\''$db_name'\''")"
-      if [ "$existing" = 1 ]; then
-        echo "Database $db_name already exists"
-      else
-        createdb -U "$POSTGRES_USER" --maintenance-db="$POSTGRES_DB" "$db_name"
-        echo "Created database $db_name"
-      fi
-    done
-  '
+    exec psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" -v mgmt_db="$LOCAL_CF_MGMT_DB"
+  ' <<'SQL'
+SELECT format('CREATE DATABASE %I', :'mgmt_db')
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = :'mgmt_db') \gexec
+SELECT 'CREATE DATABASE cfn_audit_local'
+WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'cfn_audit_local') \gexec
+SQL
 }
 
 require_cf_checkouts() {
@@ -220,12 +322,12 @@ wait_for_local_proxy() {
 start_local_proxy() {
   local other
   proxy_settings
-  require_cf_containers_stopped
+  require_local_cf_containers
   require_proxy_ownership
   other="$(docker ps -a --filter 'name=^/ioc-scale-enforcement-proxy-shadi-verifier$' --format '{{.Names}}')"
   [[ -z "$other" ]] || fail "A SHADi enforcement container exists. Stop/remove it before using the local Envoy workflow."
   render_proxy_config
-  # The source CFN and NOA are started later. No published CF dependencies or
+  # CFN and source NOA may be started later. No published CF dependencies or
   # example echo upstream are started by these explicit --no-deps calls.
   proxy_compose stop ioc-scale-enforcement-proxy-envoy
   proxy_compose up -d --no-deps ioc-scale-enforcement-proxy-mediation
@@ -233,7 +335,7 @@ start_local_proxy() {
   proxy_compose up --no-deps --abort-on-container-exit --exit-code-from ioc-scale-enforcement-proxy-wasm-installer ioc-scale-enforcement-proxy-wasm-installer
   proxy_compose up -d --no-deps --force-recreate ioc-scale-enforcement-proxy-envoy
   wait_for_local_proxy
-  printf 'Local proxy ready on port %s; source CFN and NOA may be started next.\n' "${ENVOY_HTTP_PORT:-9010}"
+  printf 'Local proxy ready on port %s; source/image CFN and source NOA may be started next.\n' "${ENVOY_HTTP_PORT:-9010}"
 }
 
 stop_local_proxy() {
@@ -270,6 +372,7 @@ case "${1:-}" in
     require_local_env
     validate_noa_modes
     require_docker_compose
+    require_local_cf_containers
     compose up -d "${infra_services[@]}"
     ensure_local_databases
     if [[ "$NOA_ENFORCEMENT_MODE" = proxy ]]; then
@@ -279,9 +382,26 @@ case "${1:-}" in
   infra-down)
     require_local_env
     require_docker_compose
-    require_cf_containers_stopped
+    require_local_cf_containers
+    running="$(running_cf_services)" || fail "Could not inspect local CF images."
+    if [[ -n "$running" ]]; then
+      # Only stop owned services; the standalone image file has no infra services.
+      image_compose stop "${cf_services[@]}"
+    fi
     stop_local_proxy
     compose stop "${infra_services[@]}"
+    ;;
+  run-cfn-mgmt-image)
+    run_cf_image ioc-scale-cf-mgmt-svc 9000
+    ;;
+  run-cfn-image)
+    run_cf_image ioc-scale-cfn-svc 9002 9003
+    ;;
+  run-cf-ui-image)
+    run_cf_image ioc-scale-cf-mgmt-plane-ui 9001
+    ;;
+  run-demo-ce-image)
+    run_cf_image ioc-scale-cf-demo-ce 18000 18001
     ;;
   proxy-logs)
     require_local_env
@@ -294,12 +414,13 @@ case "${1:-}" in
     repo="$deployment_dir/../ioc-scale-cf-mgmt-svc"
     require_checkout "$repo" pyproject.toml https://github.com/cisco-eti/ioc-scale-cf-mgmt-svc
     require_docker_compose
-    require_cf_containers_stopped
+    require_service_container_stopped ioc-scale-cf-mgmt-svc
+    require_ports_free 9000
     [[ ! -f "$repo/.env" ]] || fail "$repo/.env overrides the database settings in management code. Remove or rename it before running local CF."
     require_tool poetry
     require_env ADMIN_USER_PASSWORD
     set_local_postgres
-    export POSTGRES_DB=cfn_mgmt_local
+    export POSTGRES_DB="${LOCAL_CF_MGMT_DB:-cfn_mgmt_local}"
     unset ALEMBIC_DB_URL
     export CFN_SVC_URL=http://localhost:9002
     # The management app logs an admin API key when this is enabled.
@@ -309,17 +430,19 @@ case "${1:-}" in
     export PYTHONPATH="$repo/src"
     cd "$repo"
     poetry run python -c 'import alembic, fastapi, uvicorn' >/dev/null 2>&1 || fail "Management dependencies are missing. Run 'poetry install' in $repo."
-    [[ "$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB" = "localhost:${IOC_SCALE_DB_PORT:-5456}/cfn_mgmt_local" && -z "${ALEMBIC_DB_URL:-}" ]] || fail "Management migration target is not the local CF database."
+    [[ "$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB" = "localhost:${IOC_SCALE_DB_PORT:-5456}/${LOCAL_CF_MGMT_DB:-cfn_mgmt_local}" && -z "${ALEMBIC_DB_URL:-}" ]] || fail "Management migration target is not the local CF database."
+    poetry run python "$cfn_dir/deploy/local/check_mgmt_migrations.py"
     poetry run alembic upgrade head
-    require_cf_containers_stopped
-    exec poetry run uvicorn server.main:app --app-dir src --host 127.0.0.1 --port 9000 --reload
+    require_service_container_stopped ioc-scale-cf-mgmt-svc
+    exec poetry run uvicorn server.main:app --app-dir src --host "${LOCAL_CF_BIND_HOST:-127.0.0.1}" --port 9000 --reload
     ;;
   run-cfn)
     require_local_env
     repo="$cfn_dir"
     require_checkout "$repo" go.mod https://github.com/cisco-eti/ioc-scale-cfn-svc
     require_docker_compose
-    require_cf_containers_stopped
+    require_service_container_stopped ioc-scale-cfn-svc
+    require_ports_free 9002 9003
     require_service http://localhost:9000/health 'Local CF management'
     require_tool go
     set_local_postgres
@@ -332,7 +455,7 @@ case "${1:-}" in
     cd "$repo"
     export CGO_ENABLED=0
     export GOPROXY=off
-    require_cf_containers_stopped
+    require_service_container_stopped ioc-scale-cfn-svc
     exec go run ./cmd/cfn
     ;;
   run-cf-ui)
@@ -340,7 +463,8 @@ case "${1:-}" in
     repo="$deployment_dir/../ioc-scale-cf-ui"
     require_checkout "$repo" package.json https://github.com/cisco-eti/ioc-scale-cf-ui
     require_docker_compose
-    require_cf_containers_stopped
+    require_service_container_stopped ioc-scale-cf-mgmt-plane-ui
+    require_ports_free 9001
     require_service http://localhost:9000/health 'Local CF management'
     require_tool node
     require_tool npm
@@ -351,7 +475,7 @@ case "${1:-}" in
     export NEXTAUTH_URL=http://localhost:9001
     export NODE_ENV=development
     cd "$repo"
-    require_cf_containers_stopped
+    require_service_container_stopped ioc-scale-cf-mgmt-plane-ui
     exec npm run dev
     ;;
   run-full-mas)
@@ -359,7 +483,7 @@ case "${1:-}" in
     validate_noa_modes
     mode="$NOA_MODE"
     require_docker_compose
-    require_cf_containers_stopped
+    require_local_cf_containers
     if [[ "$mode" = published ]]; then
       compose --profile full-mas up --no-build --no-deps noa-trip-planner
     else
@@ -392,12 +516,14 @@ case "${1:-}" in
     repo="$deployment_dir/../ioc-scale-cf-demo-ce/template-ce"
     require_checkout "$deployment_dir/../ioc-scale-cf-demo-ce" template-ce/pyproject.toml https://github.com/cisco-eti/ioc-scale-cf-demo-ce
     require_docker_compose
-    require_cf_containers_stopped
+    require_service_container_stopped ioc-scale-cf-demo-ce
+    require_ports_free 50051 8082 8080
     require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
     require_service http://localhost:8081/healthz 'OXP API'
     require_tool uv
     export CFN_URL=http://localhost:9002
-    export COGNITION_ENGINE_HOST=localhost
+    ce_host="$(source_ce_host)"
+    export COGNITION_ENGINE_HOST="$ce_host"
     export GRPC_PORT=50051
     # The template CE starts separate health and notification servers; both default to 8080.
     export HEALTH_PORT=8082 HTTP_PORT=8080
@@ -405,7 +531,7 @@ case "${1:-}" in
     [[ -z "${TEMPLATE_CE_NAME:-}" ]] || export CE_NAME="$TEMPLATE_CE_NAME"
     export COGNITION_STORE_URL=http://localhost:8081
     cd "$repo"
-    require_cf_containers_stopped
+    require_service_container_stopped ioc-scale-cf-demo-ce
     # Sync locked runtime dependencies after sibling updates, preserving installed extras.
     exec uv run --frozen python -m src
     ;;
@@ -413,27 +539,22 @@ case "${1:-}" in
     require_local_env
     repo="$deployment_dir/../ioc-scale-cf-demo-ce/demo-ce"
     require_checkout "$deployment_dir/../ioc-scale-cf-demo-ce" demo-ce/go.mod https://github.com/cisco-eti/ioc-scale-cf-demo-ce
-    require_env CE_CONFIG_FILE
-    # Task is invoked from CFN; resolve relative config paths before changing directory.
-    [[ "$CE_CONFIG_FILE" = /* ]] || CE_CONFIG_FILE="$cfn_dir/$CE_CONFIG_FILE"
-    [[ -f "$CE_CONFIG_FILE" ]] || fail "Config file not found at $CE_CONFIG_FILE. See deploy/README.md for demo CE setup."
-    export CE_CONFIG_FILE
-    if [[ -n "${CE_MAS_FILE:-}" ]]; then
-      [[ "$CE_MAS_FILE" = /* ]] || CE_MAS_FILE="$cfn_dir/$CE_MAS_FILE"
-      export CE_MAS_FILE
-    fi
+    prepare_demo_config
     require_docker_compose
-    require_cf_containers_stopped
+    require_service_container_stopped ioc-scale-cf-demo-ce
+    require_ports_free 18000 18001
     require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
     require_service http://localhost:8081/healthz 'OXP API'
     require_tool go
     export CFN_URL=http://localhost:9002
     export OXP_API_URL=http://localhost:8081
-    export GRPC_LISTEN_ADDRESS=127.0.0.1:18001
-    export HTTP_LISTEN_ADDRESS=127.0.0.1:18000
-    export ADVERTISED_GRPC_ADDRESS=127.0.0.1:18001
+    bind_host="${LOCAL_CF_BIND_HOST:-127.0.0.1}"
+    export GRPC_LISTEN_ADDRESS="$bind_host:18001"
+    export HTTP_LISTEN_ADDRESS="$bind_host:18000"
+    ce_host="$(source_ce_host)"
+    export ADVERTISED_GRPC_ADDRESS="$ce_host:18001"
     # The CE registers the base URL and a separate /healthz endpoint.
-    export ADVERTISED_HEALTH_URL=http://127.0.0.1:18000
+    export ADVERTISED_HEALTH_URL="http://$ce_host:18000"
     # Registration defaults belong to the CE; forward only an explicit name override.
     [[ -z "${DEMO_CE_NAME:-}" ]] || export CE_NAME="$DEMO_CE_NAME"
     export CGO_ENABLED=0 GOWORK=off
@@ -446,10 +567,10 @@ case "${1:-}" in
     go mod edit -modfile="$build_dir/demo-ce.mod" "-replace=github.com/cisco-eti/ioc-scale-cfn-svc=$cfn_dir"
     printf 'Building demo CE from %s (config: %s)\n' "$repo" "$CE_CONFIG_FILE"
     go build -mod=mod -modfile="$build_dir/demo-ce.mod" -o "$build_dir/demo-ce" ./cmd/demo-ce
-    require_cf_containers_stopped
+    require_service_container_stopped ioc-scale-cf-demo-ce
     "$build_dir/demo-ce"
     ;;
   *)
-    fail "Unknown action '${1:-}'. Use task test, check, infra:up, infra:down, run:cfn-mgmt, run:cfn, run:cf-ui, run:template-ce, run:demo-ce, run:full-mas, or proxy:logs."
+    fail "Unknown action '${1:-}'. Use task --list for source/image service tasks, infrastructure, NOA, and proxy logs."
     ;;
 esac
