@@ -27,6 +27,8 @@ or observed code, surface the conflict instead of silently following the note.
 - [MAS onboarding validation](mas-onboarding-validation.md) — backend enforcement
   of semantic constraints, snapshot retention, transaction lock order, and CE
   metadata retrieval compatibility.
+- [CFN process-level integration tests](cfn-process-integration-tests.md) —
+  Taskfile/CI Postgres split, `go run` SUT, and network-edge mocks.
 
 ## Maintaining the ledger
 

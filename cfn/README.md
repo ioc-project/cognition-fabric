@@ -62,7 +62,8 @@ CF provides:
 ### Prerequisites
 
 - Go 1.25+
-- Docker (for building images)
+- Docker (for building images and local integration tests)
+- [Task](https://taskfile.dev/) (for local integration tests)
 - [swag](https://github.com/swaggo/swag) (for API docs generation)
 - [protoc 35.1](https://github.com/protocolbuffers/protobuf/releases/tag/v35.1) (for regenerating gRPC code)
 
@@ -85,6 +86,7 @@ go install github.com/swaggo/swag/cmd/swag@latest
 | Command | Description |
 |---------|-------------|
 | `make test` | Run unit tests with coverage |
+| `task test:integration` | Run process-level integration tests (starts throwaway Postgres; requires Docker) |
 | `make lint` | Check code formatting and run `go vet` |
 | `make fmt` | Auto-fix code formatting |
 | `make docs` | Generate OpenAPI docs from code annotations |
@@ -94,6 +96,8 @@ go install github.com/swaggo/swag/cmd/swag@latest
 | `make build` | Build Docker image |
 | `make run` | Run service locally |
 | `make clean` | Remove Docker image |
+
+`task test:integration` does not call `task infra:up`. Locally it starts a throwaway Postgres 17 container on `127.0.0.1:55432` via `test/integration/compose.yaml`. GitHub Actions supplies Postgres as a job service and sets `INTEGRATION_SKIP_DB=true`. Management, CEs, and the Enforcement Proxy are mocked by the suite. `make test` and `task test` do not run this suite (`//go:build integration`).
 
 ### Running Locally
 
