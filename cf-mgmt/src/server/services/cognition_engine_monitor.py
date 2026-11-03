@@ -10,12 +10,12 @@ import os
 import time
 
 from server.services.cfn_ce_probe import probe_ce_health
-from server.services.cognition_engine import cognition_engine_service
+from server.services.cognition_engine import CEProbeTarget, cognition_engine_service
 
 logger = logging.getLogger(__name__)
 
 # Default values for CE monitoring
-# - CE_PROBE_INTERVAL_SECONDS: How often every enabled CE is probed (default: 2s)
+# - CE_PROBE_INTERVAL_SECONDS: How often every enabled endpoint owner is probed (default: 2s)
 # - CE_PROBE_TIMEOUT_SECONDS: Time cfn-svc waits for a CE to answer its health_url (default: 1s)
 # - CE_OFFLINE_THRESHOLD_SECONDS: Mark an online CE offline after this long without a successful probe
 #   (default: 6s). Keep it at least 3 x the probe interval so one missed probe does not flip a CE.
@@ -66,26 +66,30 @@ class CognitionEngineMonitor:
         )
 
     async def probe_all(self) -> None:
-        """Probe every enabled CE once, concurrently, and record the results."""
+        """Probe every enabled endpoint owner once, concurrently, and record the results."""
         try:
-            ce_ids = await asyncio.to_thread(cognition_engine_service.list_probe_targets)
+            targets = await asyncio.to_thread(cognition_engine_service.list_probe_targets)
         except Exception as e:
             # Could not read the engines: skip this tick
             logger.error(f"Failed to list Cognition Engines to probe: {e}")
             return
 
-        results = await asyncio.gather(*(self._probe_one(ce_id) for ce_id in ce_ids), return_exceptions=True)
-        for ce_id, result in zip(ce_ids, results):
+        results = await asyncio.gather(*(self._probe_one(target) for target in targets), return_exceptions=True)
+        for target, result in zip(targets, results):
             if isinstance(result, Exception):
-                logger.error(f"Error probing Cognition Engine {ce_id}: {result}", exc_info=result)
+                logger.error(f"Error probing Cognition Engine {target.ce_id}: {result}", exc_info=result)
 
-    async def _probe_one(self, ce_id: str) -> None:
-        healthy = await asyncio.to_thread(probe_ce_health, ce_id, self.probe_timeout)
+    async def _probe_one(self, target: CEProbeTarget) -> None:
+        healthy = await asyncio.to_thread(probe_ce_health, target.ce_id, self.probe_timeout)
         new_status = await asyncio.to_thread(
-            cognition_engine_service.record_probe_result, ce_id, healthy, self.offline_threshold
+            cognition_engine_service.record_probe_result,
+            target.ce_id,
+            healthy,
+            self.offline_threshold,
+            registration_token=target.registration_token,
         )
         if new_status:
-            logger.info(f"Cognition Engine {ce_id} is now {new_status}")
+            logger.info(f"Cognition Engine {target.ce_id} is now {new_status}")
 
     async def start(self):
         """Start the background probe loop"""
