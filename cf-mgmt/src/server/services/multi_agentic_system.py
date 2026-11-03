@@ -52,9 +52,7 @@ class MultiAgenticSystemService:
             config=agent_row.config,
         )
 
-    def _mcp_server_row_to_schema(
-        self, server_row: MCPServerModel, tools: list[MCPToolModel]
-    ) -> MCPServerDetail:
+    def _mcp_server_row_to_schema(self, server_row: MCPServerModel, tools: list[MCPToolModel]) -> MCPServerDetail:
         tool_details = [
             MCPToolDetail(
                 id=tool.id,
@@ -386,10 +384,7 @@ class MultiAgenticSystemService:
         for tool in tools:
             tools_by_server.setdefault(tool.mcp_server_id, []).append(tool)
 
-        return [
-            self._mcp_server_row_to_schema(server, tools_by_server.get(server.id, []))
-            for server in servers
-        ]
+        return [self._mcp_server_row_to_schema(server, tools_by_server.get(server.id, [])) for server in servers]
 
     def create(
         self, workspace_id: str, mas_data: MultiAgenticSystemRequest, user_id: str = "system"
