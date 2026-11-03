@@ -77,8 +77,10 @@ conflict, since the current journal treats that as success.
 | Deadline/cancellation | `DEADLINE_EXCEEDED` / `CANCELED` |
 
 CFN preserves the incoming deadline and uses it for the storage transaction.
-Request sizing runs once in the shared event builder on the actual envelope,
-including unknown fields, so direct callers and the RPC enforce the same limit.
+The RPC handler validates the request envelope and its serialized size,
+including unknown fields, before passing the record to the shared audit event
+builder. The builder validates the record and maps it without applying an
+RPC-envelope size limit.
 PostgreSQL text-length (`22001`) and character encoding/translation
 (`22021`, `22P05`) errors are permanent record rejections. Other class-22 errors,
 such as server-expression failures, remain `INTERNAL` rather than causing the

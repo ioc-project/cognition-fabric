@@ -45,7 +45,7 @@ func TestProxyVariantsAndRoundTrip(t *testing.T) {
 			unknown := protowire.AppendString(protowire.AppendTag(nil, 999, protowire.BytesType), "future metadata")
 			record.ProtoReflect().SetUnknown(unknown)
 			record.RecordedAt.ProtoReflect().SetUnknown(unknown)
-			event, err := NewProxyAuditEvent(&api.AppendAuditRecordRequest{Record: record})
+			event, err := NewProxyAuditEvent(record)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -96,43 +96,6 @@ func TestProxyVariantsAndRoundTrip(t *testing.T) {
 	}
 }
 
-func TestProxyRequestEnvelopeBounds(t *testing.T) {
-	for _, extra := range []int{0, 1} {
-		t.Run(map[int]string{0: "at limit", 1: "over limit"}[extra], func(t *testing.T) {
-			request := &api.AppendAuditRecordRequest{Record: proxyFixture(t, "mediation")}
-			// Fill unknown envelope fields while keeping the embedded record small.
-			// Reconstructing an envelope from Record alone would miss these bytes.
-			overhead := protowire.SizeTag(999) + protowire.SizeVarint(uint64(MaxProxyRequestBytes))
-			padding := make([]byte, MaxProxyRequestBytes-proto.Size(request)-overhead+extra)
-			request.ProtoReflect().SetUnknown(protowire.AppendBytes(protowire.AppendTag(nil, 999, protowire.BytesType), padding))
-			if size := proto.Size(request); size != MaxProxyRequestBytes+extra {
-				t.Fatalf("request size=%d", size)
-			}
-			_, err := NewProxyAuditEvent(request)
-			if extra == 0 && err != nil {
-				t.Fatalf("boundary request rejected: %v", err)
-			}
-			if extra == 1 {
-				var invalid *ValidationError
-				if !errors.As(err, &invalid) {
-					t.Fatalf("oversized envelope should fail validation: %v", err)
-				}
-			}
-		})
-	}
-	if _, err := NewProxyAuditEvent(nil); err == nil {
-		t.Fatal("nil request accepted")
-	}
-	if _, err := NewProxyAuditEvent(&api.AppendAuditRecordRequest{}); err == nil {
-		t.Fatal("missing record accepted")
-	}
-	request := &api.AppendAuditRecordRequest{Record: proxyFixture(t, "mediation")}
-	request.Record.Route = strings.Repeat("x", MaxProxyRequestBytes)
-	if _, err := NewProxyAuditEvent(request); err == nil {
-		t.Fatal("oversized record accepted")
-	}
-}
-
 func TestProxyValidationAndBounds(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -178,7 +141,7 @@ func TestProxyValidationAndBounds(t *testing.T) {
 	}
 	r = proxyFixture(t, "mediation")
 	r.MasId = strings.Repeat("m", 129)
-	event, err := NewProxyAuditEvent(&api.AppendAuditRecordRequest{Record: r})
+	event, err := NewProxyAuditEvent(r)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +176,7 @@ func TestProxyAppliedOutcomeProjection(t *testing.T) {
 		r.ReturnedDisposition = tc.action
 		r.UpstreamInvocation = tc.upstream
 		r.DegradationReason = tc.reason
-		event, err := NewProxyAuditEvent(&api.AppendAuditRecordRequest{Record: r})
+		event, err := NewProxyAuditEvent(r)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -236,14 +199,14 @@ func TestProxyJSONBStorageConstraints(t *testing.T) {
 	} {
 		record := proxyFixture(t, "mediation")
 		mutate(record)
-		if _, err := NewProxyAuditEvent(&api.AppendAuditRecordRequest{Record: record}); err == nil {
+		if _, err := NewProxyAuditEvent(record); err == nil {
 			t.Fatal("accepted text that JSONB cannot persist")
 		}
 	}
 	record := proxyFixture(t, "mediation")
 	record.SubmittedForm.Body = []byte{0, 1, 2}
 	record.Extra = map[string]string{"escaped": `\u0000`}
-	event, err := NewProxyAuditEvent(&api.AppendAuditRecordRequest{Record: record})
+	event, err := NewProxyAuditEvent(record)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -258,7 +221,7 @@ func TestProxyDatabaseRetriesAndSharedOutcomeFilter(t *testing.T) {
 	ctx := context.Background()
 	// Observation intentionally arrives before the authorization it references.
 	for _, variant := range []string{"response", "authorization", "mediation"} {
-		event, err := NewProxyAuditEvent(&api.AppendAuditRecordRequest{Record: proxyFixture(t, variant)})
+		event, err := NewProxyAuditEvent(proxyFixture(t, variant))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -277,7 +240,7 @@ func TestProxyDatabaseRetriesAndSharedOutcomeFilter(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			event, err := NewProxyAuditEvent(&api.AppendAuditRecordRequest{Record: record})
+			event, err := NewProxyAuditEvent(record)
 			if err == nil {
 				err = AppendProxyAuditEvent(ctx, db, event)
 			}
@@ -293,7 +256,7 @@ func TestProxyDatabaseRetriesAndSharedOutcomeFilter(t *testing.T) {
 	}
 	changed := proto.Clone(record).(*api.AuditRecord)
 	changed.Route = "/different"
-	conflict, err := NewProxyAuditEvent(&api.AppendAuditRecordRequest{Record: changed})
+	conflict, err := NewProxyAuditEvent(changed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -421,7 +384,7 @@ func TestProxyConcurrentFirstSubmissions(t *testing.T) {
 					defer done.Done()
 					ready.Done()
 					<-start
-					event, err := NewProxyAuditEvent(&api.AppendAuditRecordRequest{Record: r})
+					event, err := NewProxyAuditEvent(r)
 					if err == nil {
 						err = AppendProxyAuditEvent(context.Background(), db, event)
 					}

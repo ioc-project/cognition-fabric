@@ -16,13 +16,17 @@ import (
 	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/audit"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 func (s *enforcementServer) AppendAuditRecord(ctx context.Context, request *api.AppendAuditRecordRequest) (*api.AppendAuditRecordResponse, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, status.FromContextError(err).Err()
 	}
-	event, err := audit.NewProxyAuditEvent(request)
+	if err := validateRequest(request); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	event, err := audit.NewProxyAuditEvent(request.GetRecord())
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -47,6 +51,18 @@ func (s *enforcementServer) AppendAuditRecord(ctx context.Context, request *api.
 		return nil, status.Error(auditStorageErrorCode(err), "audit storage failed")
 	}
 	return &api.AppendAuditRecordResponse{AuditRecordId: request.GetRecord().GetAuditRecordId()}, nil
+}
+
+// validateRequest checks the RPC envelope, including unknown fields, before
+// passing its record to the audit mapper.
+func validateRequest(request *api.AppendAuditRecordRequest) error {
+	if request == nil || request.GetRecord() == nil {
+		return errors.New("record is required")
+	}
+	if proto.Size(request) > audit.MaxProxyRequestBytes {
+		return errors.New("append request exceeds 4 MiB")
+	}
+	return nil
 }
 
 func auditStorageErrorCode(err error) codes.Code {

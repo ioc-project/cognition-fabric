@@ -163,16 +163,9 @@ func ProxySuccess(record *api.AuditRecord) *bool {
 	return &result
 }
 
-// NewProxyAuditEvent validates the actual request, including unknown envelope
-// fields, once before mapping the record. Direct callers use the same boundary.
-func NewProxyAuditEvent(request *api.AppendAuditRecordRequest) (*Audit, error) {
-	if request == nil || request.GetRecord() == nil {
-		return nil, &ValidationError{msg: "record is required"}
-	}
-	if proto.Size(request) > MaxProxyRequestBytes {
-		return nil, &ValidationError{msg: "append request exceeds 4 MiB"}
-	}
-	record := request.GetRecord()
+// NewProxyAuditEvent validates and maps one record. The RPC handler validates
+// the full request envelope, including unknown fields, before calling this.
+func NewProxyAuditEvent(record *api.AuditRecord) (*Audit, error) {
 	if err := ValidateProxyRecord(record); err != nil {
 		return nil, &ValidationError{msg: err.Error()}
 	}

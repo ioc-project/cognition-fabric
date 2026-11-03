@@ -29,6 +29,7 @@ import (
 	"google.golang.org/grpc/test/bufconn"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/encoding/protowire"
+	"google.golang.org/protobuf/proto"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -44,6 +45,34 @@ func appProxyFixture(t *testing.T, variant string) *api.AuditRecord {
 		t.Fatal(err)
 	}
 	return r
+}
+
+func TestValidateRequestEnvelopeBounds(t *testing.T) {
+	for _, extra := range []int{0, 1} {
+		t.Run(map[int]string{0: "at limit", 1: "over limit"}[extra], func(t *testing.T) {
+			request := &api.AppendAuditRecordRequest{Record: appProxyFixture(t, "mediation")}
+			// Include unknown envelope fields: sizing only the record misses these bytes.
+			overhead := protowire.SizeTag(999) + protowire.SizeVarint(uint64(audit.MaxProxyRequestBytes))
+			padding := make([]byte, audit.MaxProxyRequestBytes-proto.Size(request)-overhead+extra)
+			request.ProtoReflect().SetUnknown(protowire.AppendBytes(protowire.AppendTag(nil, 999, protowire.BytesType), padding))
+			if size := proto.Size(request); size != audit.MaxProxyRequestBytes+extra {
+				t.Fatalf("request size=%d", size)
+			}
+			err := validateRequest(request)
+			if extra == 0 && err != nil {
+				t.Fatalf("boundary request rejected: %v", err)
+			}
+			if extra == 1 && err == nil {
+				t.Fatal("oversized envelope accepted")
+			}
+		})
+	}
+	if err := validateRequest(nil); err == nil {
+		t.Fatal("nil request accepted")
+	}
+	if err := validateRequest(&api.AppendAuditRecordRequest{}); err == nil {
+		t.Fatal("missing record accepted")
+	}
 }
 
 func auditRPCClient(t *testing.T, store database.Store) api.EnforcementClient {
