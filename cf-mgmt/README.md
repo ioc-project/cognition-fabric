@@ -71,6 +71,10 @@ task dev
 
 **API Documentation:** http://localhost:9000/docs
 
+After applying migration `0007`, restart the intended CE if multiple enabled registrations share
+an endpoint. See [CFN's CE lifecycle contract](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/docs/CE-LIFECYCLE.md#endpoint-ownership)
+for ownership, reconnect, and version compatibility details.
+
 ### Encryption Keys
 
 Memory provider credentials are encrypted using a Fernet key. The key is automatically generated on first run and stored in `.secrets/encryption.key` (gitignored). Each developer gets a unique key.

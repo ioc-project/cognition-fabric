@@ -41,7 +41,12 @@ def _register(client, cfn_id, ce_type="CASA", name: str = None, version: str = "
         name = f"test-ce-{uuid.uuid4().hex[:8]}"
     resp = client.post(
         "/api/cognition-engines",
-        json={**_base_payload(cfn_id, ce_type, name, version), **extra},
+        json={
+            **_base_payload(cfn_id, ce_type, name, version),
+            "enforcing_url": f"{name}:50051",
+            "health_url": f"http://{name}:8080",
+            **extra,
+        },
     )
     assert resp.status_code == status.HTTP_201_CREATED
     return resp.json()["ce_id"]
@@ -481,7 +486,12 @@ def _get_ce(ce_id: str) -> dict:
     session = db.get_session()
     try:
         engine = session.query(CognitionEngineModel).filter(CognitionEngineModel.id == ce_id).first()
-        return {"status": engine.status, "last_seen": engine.last_seen, "created_at": engine.created_at}
+        return {
+            "status": engine.status,
+            "last_seen": engine.last_seen,
+            "created_at": engine.created_at,
+            "registration_token": engine.registration_token,
+        }
     finally:
         session.close()
 
@@ -504,6 +514,14 @@ def _config_version(client, cfn_id: str) -> int:
     return client.put(f"/api/cognition-fabric-nodes/{cfn_id}/heartbeat").json()["config_version"]
 
 
+def _record_probe(ce_id, healthy, offline_threshold_seconds, now=None):
+    """Submit a probe against the current generation; race tests capture their token explicitly."""
+    targets = {target.ce_id: target.registration_token for target in cognition_engine_service.list_probe_targets()}
+    return cognition_engine_service.record_probe_result(
+        ce_id, healthy, offline_threshold_seconds, now, registration_token=targets.get(ce_id, "expired")
+    )
+
+
 class TestCognitionEngineHealthProbeResult:
     """Tests for CognitionEngineService.record_probe_result"""
 
@@ -517,7 +535,7 @@ class TestCognitionEngineHealthProbeResult:
         ce_id = _register(client, registered_cfn, "CASA")
         _force_offline(ce_id)
 
-        changed = cognition_engine_service.record_probe_result(ce_id, True, 6)
+        changed = _record_probe(ce_id, True, 6)
 
         assert changed == "online"
         ce = _get_ce(ce_id)
@@ -528,16 +546,16 @@ class TestCognitionEngineHealthProbeResult:
     def test_healthy_probe_updates_last_seen(self, client, registered_cfn):
         ce_id = _register(client, registered_cfn, "CASA")
 
-        cognition_engine_service.record_probe_result(ce_id, True, 6)
+        _record_probe(ce_id, True, 6)
         first = _get_ce(ce_id)["last_seen"]
-        cognition_engine_service.record_probe_result(ce_id, True, 6)
+        _record_probe(ce_id, True, 6)
 
         assert _get_ce(ce_id)["last_seen"] > first
 
     def test_healthy_probe_on_online_engine_reports_no_change(self, client, registered_cfn):
         ce_id = _register(client, registered_cfn, "CASA")
 
-        assert cognition_engine_service.record_probe_result(ce_id, True, 6) is None
+        assert _record_probe(ce_id, True, 6) is None
         assert _get_ce(ce_id)["status"] == "online"
 
     def test_offline_to_online_increments_config_version(self, client, registered_cfn, created_workspace):
@@ -546,7 +564,7 @@ class TestCognitionEngineHealthProbeResult:
         _force_offline(ce_id)
         initial_version = _config_version(client, registered_cfn)
 
-        cognition_engine_service.record_probe_result(ce_id, True, 6)
+        _record_probe(ce_id, True, 6)
 
         assert _config_version(client, registered_cfn) > initial_version
 
@@ -554,7 +572,7 @@ class TestCognitionEngineHealthProbeResult:
         ce_id = _register(client, registered_cfn, "CASA")
         stable_version = _config_version(client, registered_cfn)
 
-        cognition_engine_service.record_probe_result(ce_id, True, 6)
+        _record_probe(ce_id, True, 6)
 
         assert _config_version(client, registered_cfn) == stable_version
 
@@ -563,7 +581,7 @@ class TestCognitionEngineHealthProbeResult:
         now = datetime.now(timezone.utc)
         _set_ce(ce_id, last_seen=now)
 
-        assert cognition_engine_service.record_probe_result(ce_id, False, 6, now=now + timedelta(seconds=4)) is None
+        assert _record_probe(ce_id, False, 6, now=now + timedelta(seconds=4)) is None
         assert _get_ce(ce_id)["status"] == "online"
 
     def test_unhealthy_probe_past_threshold_goes_offline(self, client, registered_cfn):
@@ -571,7 +589,7 @@ class TestCognitionEngineHealthProbeResult:
         now = datetime.now(timezone.utc)
         _set_ce(ce_id, last_seen=now)
 
-        changed = cognition_engine_service.record_probe_result(ce_id, False, 6, now=now + timedelta(seconds=7))
+        changed = _record_probe(ce_id, False, 6, now=now + timedelta(seconds=7))
 
         assert changed == "offline"
         assert _get_ce(ce_id)["status"] == "offline"
@@ -583,37 +601,35 @@ class TestCognitionEngineHealthProbeResult:
         assert ce["last_seen"] is None
 
         early = ce["created_at"] + timedelta(seconds=3)
-        assert cognition_engine_service.record_probe_result(ce_id, False, 6, now=early) is None
-        assert (
-            cognition_engine_service.record_probe_result(ce_id, False, 6, now=ce["created_at"] + timedelta(seconds=7))
-            == "offline"
-        )
+        assert _record_probe(ce_id, False, 6, now=early) is None
+        assert _record_probe(ce_id, False, 6, now=ce["created_at"] + timedelta(seconds=7)) == "offline"
 
     def test_unhealthy_probe_on_offline_engine_reports_no_change(self, client, registered_cfn):
         ce_id = _register(client, registered_cfn, "CASA")
         _force_offline(ce_id)
 
-        changed = cognition_engine_service.record_probe_result(
-            ce_id, False, 6, now=datetime.now(timezone.utc) + timedelta(seconds=60)
-        )
+        changed = _record_probe(ce_id, False, 6, now=datetime.now(timezone.utc) + timedelta(seconds=60))
 
         assert changed is None
         assert _get_ce(ce_id)["status"] == "offline"
 
     def test_unknown_engine_returns_none(self, client):
-        assert cognition_engine_service.record_probe_result("nonexistent-ce", True, 6) is None
+        assert _record_probe("nonexistent-ce", True, 6) is None
 
     def test_probe_result_for_engine_disabled_meanwhile_is_ignored(self, client, registered_cfn):
         """A probe in flight when the CE is disabled must not flip it back online (disabling set it offline)."""
         from server.services.cognition_fabric_node import cognition_fabric_node_service
 
         ce_id = _register(client, registered_cfn, "CASA")
-        assert ce_id in cognition_engine_service.list_probe_targets()
+        assert ce_id in {target.ce_id for target in cognition_engine_service.list_probe_targets()}
+        registration_token = _get_ce(ce_id)["registration_token"]
         assert client.patch(f"/api/cognition-engines/{ce_id}", json={"enabled": False}).status_code == 200
         assert _get_ce(ce_id)["status"] == "offline"
 
         with patch.object(cognition_fabric_node_service, "update_config_for_cfn") as refresh:
-            changed = cognition_engine_service.record_probe_result(ce_id, True, 6)
+            changed = cognition_engine_service.record_probe_result(
+                ce_id, True, 6, registration_token=registration_token
+            )
 
         assert changed is None
         assert _get_ce(ce_id)["status"] == "offline"
@@ -897,7 +913,8 @@ class TestCognitionEngineEndpointProtocol:
         assert detail["notification_protocol"] == "http"
 
         listed = next(
-            ce for ce in client.get(f"/api/cognition-engines?cfn_id={registered_cfn}").json()["cognition_engines"]
+            ce
+            for ce in client.get(f"/api/cognition-engines?cfn_id={registered_cfn}").json()["cognition_engines"]
             if ce["id"] == body["ce_id"]
         )
         assert listed["health_url"] == payload["health_url"]
@@ -912,7 +929,8 @@ class TestCognitionEngineEndpointProtocol:
         ce_id = client.post("/api/cognition-engines", json=payload).json()["ce_id"]
 
         listed = next(
-            ce for ce in client.get(f"/api/cognition-engines?cfn_id={registered_cfn}").json()["cognition_engines"]
+            ce
+            for ce in client.get(f"/api/cognition-engines?cfn_id={registered_cfn}").json()["cognition_engines"]
             if ce["id"] == ce_id
         )
         assert listed["notification_url"] == "http://ce.internal:8080"
@@ -1049,9 +1067,10 @@ class TestCognitionEngineEndpointProtocol:
 
     def test_patch_null_on_required_field_is_ignored(self, client, registered_cfn):
         ce_id = _register(client, registered_cfn)
+        original_health_url = client.get(f"/api/cognition-engines/{ce_id}").json()["health_url"]
         resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"health_url": None, "enabled": True})
         assert resp.status_code == status.HTTP_200_OK
-        assert resp.json()["health_url"] == "http://ce.internal:8080/healthz"
+        assert resp.json()["health_url"] == original_health_url
 
     def test_patch_rejects_endpoint_without_leading_slash(self, client, registered_cfn):
         ce_id = _register(client, registered_cfn)
@@ -1165,7 +1184,7 @@ class TestCognitionEnginePatch:
         return next(e for e in config["cognition_engines"] if e["id"] == ce_id)
 
     def test_patch_health_url_refreshes_the_cfn_config(self, client, registered_cfn):
-        ce_id = _register(client, registered_cfn, "CASA")
+        ce_id = _register(client, registered_cfn, "CASA", health_url="http://ce.internal:8080/healthz")
         initial_version = _config_version(client, registered_cfn)
         assert self._cfn_config_engine(client, registered_cfn, ce_id)["health_url"] == (
             "http://ce.internal:8080/healthz"
@@ -1196,11 +1215,12 @@ class TestCognitionEnginePatch:
 
     def test_patch_with_unchanged_values_does_not_bump_config_version(self, client, registered_cfn):
         ce_id = _register(client, registered_cfn, "CASA")
+        original = client.get(f"/api/cognition-engines/{ce_id}").json()
         before = _config_version(client, registered_cfn)
 
         client.patch(
             f"/api/cognition-engines/{ce_id}",
-            json={"enforcing_url": "http://ce.internal:8080", "health_url": "http://ce.internal:8080/healthz"},
+            json={"enforcing_url": original["enforcing_url"], "health_url": original["health_url"]},
         )
 
         assert _config_version(client, registered_cfn) == before
@@ -1311,7 +1331,9 @@ class TestCognitionEnginePatch:
             client, registered_cfn, "CASA", notification_url="http://old-notification:9999", notification_endpoint="/n"
         )
 
-        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"notification_url": "http://new-notification:9999"})
+        resp = client.patch(
+            f"/api/cognition-engines/{ce_id}", json={"notification_url": "http://new-notification:9999"}
+        )
         assert resp.status_code == status.HTTP_200_OK
         assert resp.json()["notification_url"] == "http://new-notification:9999"
 
@@ -1321,7 +1343,9 @@ class TestCognitionEnginePatch:
             client, registered_cfn, "CASA", notification_url="http://ce.internal:8080", notification_endpoint="/n"
         )
 
-        resp = client.patch(f"/api/cognition-engines/{ce_id}", json={"notification_endpoint": "/notification/v2/mas-events"})
+        resp = client.patch(
+            f"/api/cognition-engines/{ce_id}", json={"notification_endpoint": "/notification/v2/mas-events"}
+        )
         assert resp.status_code == status.HTTP_200_OK
         assert resp.json()["notification_endpoint"] == "/notification/v2/mas-events"
 
@@ -1331,10 +1355,7 @@ class TestCognitionEnginePatch:
 
         resp = client.patch(
             f"/api/cognition-engines/{ce_id}",
-            json={
-                "notification_url": "http://updated-ce:8080",
-                "notification_endpoint": "/notifications/mas"
-            }
+            json={"notification_url": "http://updated-ce:8080", "notification_endpoint": "/notifications/mas"},
         )
         assert resp.status_code == status.HTTP_200_OK
         assert resp.json()["notification_url"] == "http://updated-ce:8080"

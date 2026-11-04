@@ -90,11 +90,12 @@ def get_cognition_engine(
 def patch_cognition_engine(
     ce_id: str,
     patch_data: CognitionEnginePatchRequest,
+    reconnect: bool = Query(False, include_in_schema=False),
     auth_user: dict = Depends(get_auth_user),
 ):
     authz_service.require_permission(auth_user, "update", "cognition_engine")
     user_id = auth_user.get("id", "unknown")
-    return cognition_engine_service.patch(ce_id, patch_data, user_id)
+    return cognition_engine_service.patch(ce_id, patch_data, user_id, reconnect=reconnect)
 
 
 @router.delete(
