@@ -88,32 +88,13 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 	log.Infof("enforcement request: mas_id=%s source=%s dest=%s trace_id=%s span_id=%s",
 		req.Payload.MasId, req.Payload.SourceAgentId, req.Payload.DestinationAgentId, req.Payload.TraceId, req.Payload.SpanId)
 
-	// Check workspace_id is available
-	if WorkspaceID == "" {
-		log.Errorf("enforcement request failed: workspace_id not set")
-		return nil, status.Error(codes.Unavailable, "workspace_id not configured")
-	}
-
-	// Check management plane URL is available
-	if MgmtURL == "" {
-		log.Errorf("enforcement request failed: management plane URL not set")
-		return nil, status.Error(codes.Unavailable, "management plane URL not configured")
-	}
-
-	// Fetch MAS from management plane
-	mgmtClient := mgmt.New(MgmtURL, 30*time.Second)
-	mas, err := mgmtClient.GetMAS(ctx, WorkspaceID, req.Payload.MasId)
+	mas, workspaceID, err := fetchMASForRequest(ctx, req.Payload.MasId)
 	if err != nil {
-		if errors.Is(err, mgmt.ErrNotFound) {
-			log.Warnf("enforcement request failed: MAS not found: mas_id=%s", req.Payload.MasId)
-			return nil, status.Errorf(codes.NotFound, "MAS not found: %s", req.Payload.MasId)
-		}
-		log.Errorf("enforcement request failed: failed to fetch MAS: mas_id=%s error=%v", req.Payload.MasId, err)
-		return nil, status.Errorf(codes.Internal, "failed to fetch MAS: %v", err)
+		return nil, mapFetchMASError(err, req.Payload.MasId)
 	}
 
 	log.Debugf("fetched MAS from management plane: mas_id=%s workspace_id=%s mas_name=%s",
-		mas.ID, mas.WorkspaceID, mas.Name)
+		mas.ID, workspaceID, mas.Name)
 
 	// Find CASA CEs for this MAS
 	casaCEs := mas.FindCASACEs()
@@ -134,6 +115,9 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 			offlineCount++
 			continue
 		}
+		if ce.EnforcingURL == "" {
+			continue
+		}
 		casaCE = ce
 		break
 	}
@@ -151,12 +135,12 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 		return nil, status.Errorf(codes.Unavailable, "no healthy CASA CE available for MAS: %s (disabled=%d, offline=%d)", req.Payload.MasId, disabledCount, offlineCount)
 	}
 
-	log.Infof("calling CASA CE: ce_id=%s base_url=%s endpoint=%s", casaCE.CEID, casaCE.BaseURL, casaCE.Endpoint)
+	log.Infof("calling CASA CE: ce_id=%s enforcing_url=%s enforcing_endpoint=%s", casaCE.CEID, casaCE.EnforcingURL, casaCE.EnforcingEndpoint)
 
 	// Create CASA CE gRPC client
-	// BaseURL is the gRPC address (e.g., "casa-ce:50051")
-	// Endpoint is the gRPC service name (e.g., "ioc.ce.v1.CognitionEngine") - reserved for future use
-	casaClient := casa.New(casaCE.BaseURL, casaCE.Endpoint, 30*time.Second)
+	// EnforcingURL is the gRPC address (e.g., "casa-ce:50051")
+	// EnforcingEndpoint is the gRPC service name (e.g., "ioc.ce.v1.CognitionEngine") - reserved for future use
+	casaClient := casa.New(casaCE.EnforcingURL, casaCE.EnforcingEndpoint, 30*time.Second)
 
 	// Connect to CASA CE
 	if err := casaClient.Connect(ctx); err != nil {
@@ -172,7 +156,7 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 		DestinationAgentId: req.Payload.DestinationAgentId,
 		TraceId:            req.Payload.TraceId,
 		SpanId:             req.Payload.SpanId,
-		WorkspaceId:        WorkspaceID,
+		WorkspaceId:        workspaceID,
 		Extra:              req.Extra,
 	}
 
@@ -242,6 +226,23 @@ func (s *enforcementServer) auditCEInvocation(ceID string, req *cev1.EvaluateReq
 			getLogger().Errorf("failed to write CE invocation audit event: ce_id=%s mas_id=%s error=%v", ceID, req.MasId, err)
 		}
 	}()
+}
+
+func mapFetchMASError(err error, masID string) error {
+	switch {
+	case errors.Is(err, errMgmtURLNotConfigured):
+		getLogger().Errorf("enforcement request failed: management plane URL not set")
+		return status.Error(codes.Unavailable, "management plane URL not configured")
+	case errors.Is(err, errSnapshotUnavailable):
+		getLogger().Errorf("enforcement request failed: config snapshot unavailable: mas_id=%s", masID)
+		return status.Error(codes.Unavailable, "config snapshot unavailable")
+	case errors.Is(err, errMASNotAssigned), errors.Is(err, errMASNotFound):
+		getLogger().Warnf("enforcement request failed: MAS not found: mas_id=%s", masID)
+		return status.Errorf(codes.NotFound, "MAS not found: %s", masID)
+	default:
+		getLogger().Errorf("enforcement request failed: failed to fetch MAS: mas_id=%s error=%v", masID, err)
+		return status.Errorf(codes.Internal, "failed to fetch MAS: %v", err)
+	}
 }
 
 // mapCEDecisionToAction maps CASA CE decision enum to enforcement action enum.

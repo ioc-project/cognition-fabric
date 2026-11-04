@@ -13,9 +13,9 @@ dependencies = [
     "networkx>=3.4.2",
     "ipython>=8.18.0",
     "python-dotenv>=1.2.1",
-    "ioa-observe-sdk>=1.0.49",
+    "ioa-observe-sdk>=1.1.0",
     "grpcio>=1.60.0",
-    "protobuf>=6.32.1,<7",
+    "protobuf>=7.36.2,<8",
 ]
 
 [build-system]

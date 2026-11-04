@@ -23,7 +23,7 @@ tasks:
       - bash deploy/local/cf-local.sh infra-up
 
   infra:down:
-    desc: Stop local infrastructure and source Envoy without deleting volumes
+    desc: Stop local CF images, infrastructure, and local Envoy without deleting volumes
     silent: true
     cmds:
       - bash deploy/local/cf-local.sh infra-down
@@ -40,11 +40,23 @@ tasks:
     cmds:
       - bash deploy/local/cf-local.sh run-cfn-mgmt
 
+  run:cfn-mgmt:image:
+    desc: Pull CF_MGMT_SVC_TAG (default latest) and run management against the local database
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh run-cfn-mgmt-image
+
   run:cfn:
     desc: Run CFN from source against the local CF databases
     silent: true
     cmds:
       - bash deploy/local/cf-local.sh run-cfn
+
+  run:cfn:image:
+    desc: Pull CFN_SVC_TAG (default latest) and run CFN against local management and audit
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh run-cfn-image
 
   run:cf-ui:
     desc: Run the management UI from source
@@ -52,17 +64,29 @@ tasks:
     cmds:
       - bash deploy/local/cf-local.sh run-cf-ui
 
+  run:cf-ui:image:
+    desc: Pull CF_UI_TAG (default latest) and run the UI against local management
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh run-cf-ui-image
+
+  run:template-ce:
+    desc: Run the Python template CE from source against local CFN and shared OXP
+    silent: true
+    cmds:
+      - bash deploy/local/cf-local.sh run-template-ce
+
   run:demo-ce:
-    desc: Run the demo CE from source against local CFN and shared OXP
+    desc: Run the Go demo CE from source using CE_CONFIG_FILE against local CFN and OXP
     silent: true
     cmds:
       - bash deploy/local/cf-local.sh run-demo-ce
 
-  run:policy-ce:
-    desc: Run the policy CE from source using CE_POLICY_FILE against local CFN and OXP
+  run:demo-ce:image:
+    desc: Pull CF_DEMO_CE_TAG (default latest) and run the Go demo CE using CE_CONFIG_FILE
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh run-policy-ce
+      - bash deploy/local/cf-local.sh run-demo-ce-image
 
   run:full-mas:
     desc: Run NOA using NOA_MODE and NOA_ENFORCEMENT_MODE from .env
