@@ -854,7 +854,7 @@ func (s *slowStore) CreateAuditEvent(ctx context.Context, a *audit.Audit) error 
 func (s *slowStore) GetAuditEventByID(ctx context.Context, id uuid.UUID) (*audit.Audit, error) {
 	return nil, nil
 }
-func (s *slowStore) ListAuditEvents(ctx context.Context, resourceType, auditType string, page, pageSize int) (*audit.AuditListResponse, error) {
+func (s *slowStore) ListAuditEvents(ctx context.Context, resourceType, auditType string, page, pageSize int, filters ...audit.ListFilters) (*audit.AuditListResponse, error) {
 	return nil, nil
 }
 

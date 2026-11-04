@@ -46,6 +46,16 @@ func (a *App) getAuditEventHandler(w http.ResponseWriter, r *http.Request) (int,
 func (a *App) listAuditEventsHandler(w http.ResponseWriter, r *http.Request) (int, error) {
 	resourceType := r.URL.Query().Get("resource_type")
 	auditType := r.URL.Query().Get("audit_type")
+	filters := audit.ListFilters{Decision: r.URL.Query().Get("decision")}
+	if r.URL.Query().Has("success") {
+		success, err := strconv.ParseBool(r.URL.Query().Get("success"))
+		if err != nil {
+			return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+				"error": "invalid success: expected true or false",
+			})
+		}
+		filters.Success = &success
+	}
 
 	page, pageSize, err := parseAuditPagination(r)
 	if err != nil {
@@ -54,7 +64,7 @@ func (a *App) listAuditEventsHandler(w http.ResponseWriter, r *http.Request) (in
 		})
 	}
 
-	result, err := a.db.ListAuditEvents(r.Context(), resourceType, auditType, page, pageSize)
+	result, err := a.db.ListAuditEvents(r.Context(), resourceType, auditType, page, pageSize, filters)
 	if err != nil {
 		var verr *audit.ValidationError
 		if errors.As(err, &verr) {
@@ -62,8 +72,8 @@ func (a *App) listAuditEventsHandler(w http.ResponseWriter, r *http.Request) (in
 				"error": err.Error(),
 			})
 		}
-		getLogger().Errorf("failed to list audit events: resource_type=%s audit_type=%s page=%d pageSize=%d error=%v",
-			resourceType, auditType, page, pageSize, err)
+		getLogger().Errorf("failed to list audit events: resource_type=%s audit_type=%s decision=%s success=%s page=%d pageSize=%d error=%v",
+			resourceType, auditType, filters.Decision, r.URL.Query().Get("success"), page, pageSize, err)
 		return eh.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{
 			"error": "failed to list audit events",
 		})

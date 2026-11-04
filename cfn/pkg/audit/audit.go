@@ -25,7 +25,7 @@ import (
 // timeout) so callers can respond with 404 vs 500 correctly.
 var ErrNotFound = errors.New("audit event not found")
 
-// ValidationError indicates a caller-supplied resource_type or audit_type
+// ValidationError indicates a caller-supplied audit filter or field
 // filter/value was invalid, as opposed to a backend failure - callers can
 // distinguish the two with errors.As instead of matching on error text.
 type ValidationError struct {
@@ -43,6 +43,9 @@ const (
 const (
 	// AuditTypeCEInvoked records CFN calling into a CE (e.g. the CASA Evaluate RPC).
 	AuditTypeCEInvoked = "CE_INVOKED"
+	// AuditTypeCENotInvoked records a disposition failure before Evaluate.
+	AuditTypeCENotInvoked = "CE_NOT_INVOKED"
+	SourceCFN             = "CFN"
 )
 
 var validResourceTypes = map[string]bool{
@@ -50,7 +53,8 @@ var validResourceTypes = map[string]bool{
 }
 
 var validAuditTypes = map[string]bool{
-	AuditTypeCEInvoked: true,
+	AuditTypeCEInvoked:    true,
+	AuditTypeCENotInvoked: true,
 }
 
 // IsValidResourceType returns true if the given resource type is a known valid value.
@@ -93,6 +97,14 @@ func ValidateResourceType(rt string) error {
 func ValidateAuditType(at string) error {
 	if !IsValidAuditType(at) {
 		return &ValidationError{msg: fmt.Sprintf("invalid audit_type: %s. Valid values: %s", at, ValidAuditTypesList())}
+	}
+	return nil
+}
+
+// ValidateSource accepts producer identities without limiting future producers.
+func ValidateSource(source string) error {
+	if strings.TrimSpace(source) == "" {
+		return &ValidationError{msg: "audit source must not be empty"}
 	}
 	return nil
 }
@@ -156,6 +168,7 @@ type AuditListResponse struct {
 // Audit represents an immutable audit trail event.
 type Audit struct {
 	ID                      uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
+	Source                  string         `gorm:"not null;default:CFN" json:"source"`
 	OperationID             *string        `gorm:"size:128" json:"operation_id,omitempty"`
 	ResourceType            string         `gorm:"size:64;not null;index" json:"resource_type"`
 	ResourceIdentifier      string         `gorm:"size:128;not null" json:"resource_identifier"`
@@ -163,9 +176,8 @@ type Audit struct {
 	AuditResourceIdentifier string         `gorm:"size:128;not null" json:"audit_resource_identifier"`
 	AuditInformation        datatypes.JSON `gorm:"type:jsonb" json:"audit_information,omitempty"`
 	AuditExtraInformation   *string        `json:"audit_extra_information,omitempty"`
-	// Success indicates whether the audited action itself completed
-	// successfully, when that concept applies (e.g. true/false for a
-	// CE_INVOKED call that reached the CE vs. errored out).
+	// Success describes the entire audited operation, not its policy decision
+	// or the persistence of this row. A completed DENY/BLOCK is successful.
 	Success        *bool     `gorm:"index" json:"success,omitempty"`
 	CreatedBy      uuid.UUID `gorm:"type:uuid;not null" json:"created_by"`
 	CreatedOn      time.Time `gorm:"not null;index" json:"created_on"`
@@ -173,13 +185,29 @@ type Audit struct {
 	LastModifiedOn time.Time `gorm:"not null" json:"last_modified_on"`
 }
 
-// MigrateUp runs GORM AutoMigrate for the Audit table.
+// MigrateUp preserves historical rows and a permanent default for older CFN writers.
 func MigrateUp(db *gorm.DB) error {
-	return db.AutoMigrate(&Audit{})
+	return db.Transaction(func(tx *gorm.DB) error {
+		// Repair a partially migrated nullable column before AutoMigrate adds NOT NULL.
+		if tx.Migrator().HasTable(&Audit{}) && tx.Migrator().HasColumn(&Audit{}, "Source") {
+			if err := tx.Model(&Audit{}).Where("source IS NULL OR source = ?", "").UpdateColumn("source", SourceCFN).Error; err != nil {
+				return err
+			}
+		}
+		if err := tx.AutoMigrate(&Audit{}); err != nil {
+			return err
+		}
+		// GORM does not reliably tighten an existing nullable column. Enforce
+		// both guarantees explicitly, including recovery from a partial upgrade.
+		return tx.Exec("ALTER TABLE audits ALTER COLUMN source SET DEFAULT 'CFN', ALTER COLUMN source SET NOT NULL").Error
+	})
 }
 
 // CreateAuditEvent inserts a new audit event.
 func CreateAuditEvent(ctx context.Context, db *gorm.DB, a *Audit) error {
+	if err := ValidateSource(a.Source); err != nil {
+		return err
+	}
 	if err := ValidateResourceType(a.ResourceType); err != nil {
 		return err
 	}
@@ -206,9 +234,16 @@ func GetAuditEventByID(ctx context.Context, db *gorm.DB, id uuid.UUID) (*Audit, 
 	return &a, nil
 }
 
-// ListAuditEvents returns a page of audit events with optional resource_type and audit_type filters.
+// ListAuditEvents filters events before counting and pagination.
 // page is 0-based. pageSize is clamped to [1, MaxPageSize()] and defaults to DefaultPageSize().
-func ListAuditEvents(ctx context.Context, db *gorm.DB, resourceType, auditType string, page, pageSize int) (*AuditListResponse, error) {
+func ListAuditEvents(ctx context.Context, db *gorm.DB, resourceType, auditType string, page, pageSize int, filters ...ListFilters) (*AuditListResponse, error) {
+	var extra ListFilters
+	if len(filters) > 0 {
+		extra = filters[0]
+	}
+	if err := extra.Validate(); err != nil {
+		return nil, err
+	}
 	if pageSize <= 0 {
 		pageSize = DefaultPageSize()
 	}
@@ -231,6 +266,14 @@ func ListAuditEvents(ctx context.Context, db *gorm.DB, resourceType, auditType s
 			return nil, err
 		}
 		query = query.Where("audit_type = ?", auditType)
+	}
+	if extra.Success != nil {
+		query = query.Where("success = ?", *extra.Success)
+	}
+	if extra.Decision != "" {
+		query = query.Where("source = ? AND resource_type = ?", SourceCFN, ResourceTypeCognitionEngine).
+			Where("audit_type IN ?", []string{AuditTypeCEInvoked, AuditTypeCENotInvoked}).
+			Where(datatypes.JSONQuery("audit_information").Equals(extra.DecisionOutcome(), "outcome"))
 	}
 
 	var totalElements int64

@@ -10,7 +10,7 @@ with the code.
 
 | Spec | Scope | Status |
 |------|-------|--------|
-| — | *No finalized specs yet* | — |
+| [CFN disposition audit](disposition-audit.md) | Shared producer identity and CFN disposition audit records, limits and rollout | Accepted; issue #34 implementation |
 
 ## Pending
 
