@@ -695,7 +695,7 @@ export interface paths {
         };
         /**
          * List CFN Audit Events
-         * @description Retrieve a paginated list of audit events from ioc-cfn-svc. Supports optional filtering by `resource_type`, `audit_type`, `decision` and `success`, before pagination. CFN dispositions use CE_INVOKED for Evaluate attempts or CE_NOT_INVOKED for earlier failures. source identifies the producer; success describes the whole operation, independently of a policy ALLOW/DENY. Filters require support in the upstream CFN version.
+         * @description Retrieve a paginated list of audit events from ioc-cfn-svc. Supports optional filtering by `resource_type`, `audit_type`, `outcome`, `decision` and `success`, before pagination. CFN dispositions use CE_INVOKED for Evaluate attempts or CE_NOT_INVOKED for earlier failures; Proxy records use PROXY_MEDIATED. Canonical outcome filters all producers. source identifies the producer; success describes the whole operation, independently of a policy ALLOW/DENY. Filters require support in the upstream CFN version.
          */
         get: operations["list_audit_events_api_audit_events__get"];
         put?: never;
@@ -844,7 +844,7 @@ export interface components {
             id: string;
             /**
              * Source
-             * @description Original audit producer, e.g. CFN; absent from older CFN versions
+             * @description Original audit producer, e.g. CFN or PROXY; absent from older CFN versions
              */
             source?: string | null;
             /**
@@ -858,23 +858,28 @@ export interface components {
              */
             operation_id?: string | null;
             /**
+             * Outcome
+             * @description Canonical result across producers: ALLOW, BLOCK, MODIFY_REQUESTED, ERROR, DEGRADED, UNSUPPORTED or UNKNOWN; absent from older records/CFN
+             */
+            outcome?: string | null;
+            /**
              * Resource Type
-             * @description Type of the resource (e.g. COGNITION_ENGINE)
+             * @description Type of the resource (e.g. COGNITION_ENGINE or ENFORCEMENT_PROXY)
              */
             resource_type: string;
             /**
              * Resource Identifier
-             * @description Selected CE ID for CFN dispositions; empty if no CE was selected
+             * @description Selected CE ID for CFN dispositions; empty if no CE was selected or for Proxy records
              */
             resource_identifier: string;
             /**
              * Audit Type
-             * @description CFN dispositions use CE_INVOKED when Evaluate was attempted, CE_NOT_INVOKED for an earlier failure
+             * @description CFN dispositions use CE_INVOKED when Evaluate was attempted, CE_NOT_INVOKED for an earlier failure; Proxy records use PROXY_MEDIATED
              */
             audit_type: string;
             /**
              * Audit Resource Identifier
-             * @description MAS association for CFN dispositions; empty if missing or too long for the association column
+             * @description MAS association for CFN and Proxy records; empty if missing or too long; full Proxy MAS ID remains in audit_information
              */
             audit_resource_identifier: string;
             /**
@@ -3207,14 +3212,16 @@ export interface operations {
                 page?: number;
                 /** @description Number of records per page. Defaults to DEFAULT_PAGE_SIZE env var (fallback 20). Clamped to MAX_PAGE_SIZE env var (fallback 100). */
                 pageSize?: number;
-                /** @description Filter by resource type (e.g. COGNITION_ENGINE) */
+                /** @description Filter by resource type (COGNITION_ENGINE or ENFORCEMENT_PROXY) */
                 resource_type?: string | null;
-                /** @description Filter by audit type (CE_INVOKED or CE_NOT_INVOKED; requires upgraded CFN) */
+                /** @description Filter by audit type (CE_INVOKED, CE_NOT_INVOKED or PROXY_MEDIATED; requires upgraded CFN) */
                 audit_type?: string | null;
-                /** @description CFN policy decision: block matches the CE DENY outcome. Requires upgraded CFN. */
+                /** @description Legacy alias for canonical ALLOW, BLOCK or MODIFY_REQUESTED across producers. Requires upgraded CFN. */
                 decision?: ("allow" | "block" | "modify") | null;
                 /** @description Whole-flow status: true for success, false for failure. A completed policy block is successful. */
                 success?: boolean | null;
+                /** @description Canonical outcome across all producers; requires upgraded CFN. */
+                outcome?: ("ALLOW" | "BLOCK" | "MODIFY_REQUESTED" | "ERROR" | "DEGRADED" | "UNSUPPORTED" | "UNKNOWN") | null;
             };
             header?: never;
             path?: never;

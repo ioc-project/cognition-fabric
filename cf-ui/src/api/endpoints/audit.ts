@@ -54,6 +54,7 @@ export interface AuditInformation extends CFNDispositionInformation {
 }
 
 export type AuditDecisionFilter = 'allow' | 'block' | 'modify';
+export type AuditOutcomeFilter = 'ALLOW' | 'BLOCK' | 'MODIFY_REQUESTED' | 'ERROR' | 'DEGRADED' | 'UNSUPPORTED' | 'UNKNOWN';
 
 export interface AuditEventFilters {
   page?: number;
@@ -61,6 +62,7 @@ export interface AuditEventFilters {
   resource_type?: string;
   audit_type?: string;
   decision?: AuditDecisionFilter;
+  outcome?: AuditOutcomeFilter;
   success?: boolean;
 }
 
@@ -82,6 +84,9 @@ export const auditApi = {
     }
     if (filters?.decision) {
       params.append('decision', filters.decision);
+    }
+    if (filters?.outcome) {
+      params.append('outcome', filters.outcome);
     }
     if (filters?.success !== undefined) {
       params.append('success', String(filters.success));

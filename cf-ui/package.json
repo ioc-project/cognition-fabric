@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 9001",
+    "test:audit": "node --test tests/audit-presentation.test.mjs",
     "build": "next build --webpack",
     "build:clean": "rm -rf .next && npm run build",
     "start": "next start",

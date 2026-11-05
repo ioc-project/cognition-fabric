@@ -35,8 +35,21 @@ import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {CollapsibleJsonField} from '@/components/mas/collapsible-json-field';
 import {SyntaxJson} from '@/components/ui/syntax-json';
 import {getApiConfig} from '@/api/config';
-import type {AuditDecisionFilter, AuditEvent, AuditInformation} from '@/api/endpoints/audit';
+import type {AuditOutcomeFilter, AuditEvent, AuditInformation} from '@/api/endpoints/audit';
 import {cn} from '@/lib/utils';
+import {
+  auditEventMatchesMas,
+  auditOutcomeLabels,
+  auditTypeOptions,
+  getAuditActorName,
+  getAuditTraceId,
+  isCfnDispositionEvent,
+  isProxyAuditEvent,
+  getAuditOutcome,
+  getAuditOutcomeLabel,
+  outcomeLabels,
+  type AuditOutcomeType
+} from './audit-presentation';
 
 interface MASAuditLogProps {
   masId: string;
@@ -63,47 +76,6 @@ interface AuditTraceGroup {
   events: ParsedAuditEvent[];
 }
 
-function getAuditTraceId(event: AuditEvent | ParsedAuditEvent): string | null {
-  const info = event.audit_information as AuditInformation | null | undefined;
-  const rawTraceId = info?.trace_id;
-  const truncatedFields = info?.truncated_fields;
-  const traceIdTruncated = Array.isArray(truncatedFields) && truncatedFields.includes('trace_id');
-  return typeof rawTraceId === 'string' && rawTraceId.trim() && !traceIdTruncated ? rawTraceId : null;
-}
-
-function auditEventMatchesMas(event: AuditEvent, masId: string, agentIds: ReadonlySet<string>, selectedAgent: string | null): boolean {
-  if (event.resource_type === 'MAS') {
-    return event.audit_resource_identifier === masId || event.audit_information?.id === masId || event.resource_identifier === masId;
-  }
-  if (event.resource_type === 'MAS-AGENT') {
-    if (selectedAgent) {
-      return event.resource_identifier === selectedAgent;
-    }
-    if ((event.audit_information as AuditInformation | null)?.request?.http_request_body?.mas_id === masId) {
-      return true;
-    }
-    return agentIds.has(event.resource_identifier);
-  }
-  return event.resource_type === 'COGNITION_ENGINE' && event.audit_resource_identifier === masId;
-}
-
-function isCfnDispositionEvent(event: ParsedAuditEvent): boolean {
-  return (
-    event.source === 'CFN' &&
-    event.resource_type === 'COGNITION_ENGINE' &&
-    (event.audit_type === 'CE_INVOKED' || event.audit_type === 'CE_NOT_INVOKED')
-  );
-}
-
-function hasDispositionError(event: ParsedAuditEvent): boolean {
-  return event.success === false || event.audit_information?.outcome === 'ERROR';
-}
-
-function getDispositionDecision(event: ParsedAuditEvent): string | undefined {
-  const outcome = event.audit_information?.outcome;
-  return outcome && outcome !== 'ERROR' ? outcome.replace(/^DECISION_/, '') : undefined;
-}
-
 function formatAuditTimestamp(value: string, shortYear = false): string {
   const timestamp = new Date(value);
   if (Number.isNaN(timestamp.getTime())) {
@@ -116,29 +88,8 @@ function formatAuditTimestamp(value: string, shortYear = false): string {
   return `${date} ${time}`;
 }
 
-type AuditOutcomeType = 'allow' | 'deny' | 'modify' | 'error' | 'other';
-
-function getAuditOutcome(event: ParsedAuditEvent): AuditOutcomeType {
-  if (!isCfnDispositionEvent(event)) {
-    return 'other';
-  }
-  if (hasDispositionError(event)) {
-    return 'error';
-  }
-  switch (getDispositionDecision(event)) {
-    case 'ALLOW':
-      return 'allow';
-    case 'DENY':
-      return 'deny';
-    case 'MODIFY':
-      return 'modify';
-    default:
-      return 'other';
-  }
-}
-
 function AuditOutcome({outcome, label, count, title}: {outcome: AuditOutcomeType; label?: string; count?: number; title?: string}) {
-  const labels = {allow: 'Allow', deny: 'Deny', modify: 'Modify', error: 'Error', other: 'Other'};
+  const outcomeLabel = label || auditOutcomeLabels[outcome];
   const iconClass = 'h-4 w-4 shrink-0';
   let icon: ReactNode;
   switch (outcome) {
@@ -166,6 +117,12 @@ function AuditOutcome({outcome, label, count, title}: {outcome: AuditOutcomeType
         </svg>
       );
       break;
+    case 'degraded':
+      icon = <TriangleAlert className={cn(iconClass, 'text-amber-600')} aria-hidden="true" />;
+      break;
+    case 'unsupported':
+      icon = <CircleMinus className={cn(iconClass, 'text-muted-foreground')} aria-hidden="true" />;
+      break;
     case 'error':
       icon = <TriangleAlert className={cn(iconClass, 'text-red-600')} aria-hidden="true" />;
       break;
@@ -174,10 +131,13 @@ function AuditOutcome({outcome, label, count, title}: {outcome: AuditOutcomeType
   }
 
   return (
-    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5 whitespace-nowrap text-xs text-[hsl(var(--foreground))]" title={title}>
+    <span
+      className="inline-flex min-w-0 max-w-full items-center gap-1.5 whitespace-nowrap text-xs text-[hsl(var(--foreground))]"
+      title={title ? `${outcomeLabel}: ${title}` : outcomeLabel}
+    >
       {icon}
       <span className="truncate">
-        {label || labels[outcome]}
+        {outcomeLabel}
         {count !== undefined ? `: ${count}` : ''}
       </span>
     </span>
@@ -186,14 +146,12 @@ function AuditOutcome({outcome, label, count, title}: {outcome: AuditOutcomeType
 
 function AuditEventTable({
   children,
-  hasOtherSources = false,
   groupByTrace,
   hasTraceGroups,
   allTracesExpanded,
   onToggleAllTraces
 }: {
   children: ReactNode;
-  hasOtherSources?: boolean;
   groupByTrace: boolean;
   hasTraceGroups: boolean;
   allTracesExpanded: boolean;
@@ -223,10 +181,10 @@ function AuditEventTable({
             </th>
           )}
           <th scope="col" className={headerClass}>
-            {hasOtherSources ? 'CE / source' : 'CE'}
+            Actor
           </th>
           <th scope="col" className={headerClass}>
-            Decision
+            Outcome
           </th>
           <th scope="col" className={headerClass}>
             Source agent
@@ -314,15 +272,17 @@ function AuditEventRow({
   flashing?: boolean;
 }) {
   const isCfnDisposition = isCfnDispositionEvent(event);
-  const info = isCfnDisposition ? event.audit_information : undefined;
-  const ceName = isCfnDisposition ? info?.ce_name?.trim() : event.source || 'Source unavailable';
+  const info = isCfnDisposition || isProxyAuditEvent(event) ? event.audit_information : undefined;
+  const ceName = getAuditActorName(event);
   const ceId = isCfnDisposition ? event.resource_identifier : undefined;
   const outcome = getAuditOutcome(event);
-  const unknownDecision = isCfnDisposition && outcome === 'other' ? getDispositionDecision(event) || 'N/A' : undefined;
+  const outcomeLabel = getAuditOutcomeLabel(event);
   const resultTitle =
     outcome === 'error'
       ? [info?.grpc_status, info?.reason].filter(Boolean).join(': ') || 'Processing failed'
-      : unknownDecision || (isCfnDisposition ? 'CE decision' : getAuditTypeLabel(event.audit_type));
+      : isCfnDisposition
+        ? 'CE decision'
+        : getAuditTypeLabel(event.audit_type);
   const sourceAgent = info?.source_agent_id || 'N/A';
   const destinationAgent = info?.destination_agent_id || 'N/A';
   const timestamp = formatAuditTimestamp(event.created_on, showTraceId);
@@ -353,7 +313,7 @@ function AuditEventRow({
           )}
         </td>
         <td className="px-2 py-2.5">
-          <AuditOutcome outcome={outcome} label={unknownDecision} title={resultTitle} />
+          <AuditOutcome outcome={outcome} label={outcomeLabel} title={resultTitle} />
         </td>
         <td className="px-2 py-2.5">
           <span className="block truncate whitespace-nowrap" title={sourceAgent}>
@@ -476,6 +436,7 @@ function getAuditTypeLabel(auditType: string): string {
     REASONING_FEEDBACK: 'Reasoning Feedback',
     MEMORY_OPERATION: 'Memory Operation',
     AGENT_MEMORY_OPERATION: 'Agent Memory Operation',
+    PROXY_MEDIATED: 'Proxy Mediated',
     CE_INVOKED: 'CE Invoked',
     CE_NOT_INVOKED: 'CE Not Invoked'
   };
@@ -499,7 +460,7 @@ function AuditTraceRows({
   onToggle: () => void;
   children: ReactNode;
 }) {
-  const summary = {allow: 0, deny: 0, modify: 0, error: 0, other: 0};
+  const summary = {allow: 0, deny: 0, modify: 0, error: 0, degraded: 0, unsupported: 0, unknown: 0, other: 0};
   for (const event of events) {
     summary[getAuditOutcome(event)]++;
   }
@@ -518,11 +479,11 @@ function AuditTraceRows({
               <span className="sr-only">{events.length} audit items</span>
             </span>
             <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Summary of loaded audit items">
-              {summary.allow > 0 && <AuditOutcome outcome="allow" count={summary.allow} />}
-              {summary.deny > 0 && <AuditOutcome outcome="deny" count={summary.deny} />}
-              {summary.modify > 0 && <AuditOutcome outcome="modify" count={summary.modify} />}
-              {summary.error > 0 && <AuditOutcome outcome="error" count={summary.error} />}
-              {summary.other > 0 && <AuditOutcome outcome="other" count={summary.other} />}
+              {(Object.keys(summary) as AuditOutcomeType[])
+                .filter((kind) => summary[kind] > 0)
+                .map((kind) => (
+                  <AuditOutcome key={kind} outcome={kind} count={summary[kind]} />
+                ))}
             </div>
           </div>
         </td>
@@ -710,25 +671,18 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
   const [activityDeadlines, setActivityDeadlines] = useState<Map<string, number>>(new Map());
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [selectedAuditType, setSelectedAuditType] = useState<string | null>(null);
-  const [selectedDecision, setSelectedDecision] = useState<AuditDecisionFilter | null>(null);
+  const [selectedOutcome, setSelectedOutcome] = useState<AuditOutcomeFilter | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<'success' | 'failed' | null>(null);
   const {auditRefreshIntervalMs, auditFlashDurationMs} = getApiConfig();
   const activityEnabled = auditRefreshIntervalMs > 0 && auditFlashDurationMs > 0;
 
-  const decisionLabels: Record<AuditDecisionFilter, string> = {allow: 'Allow', block: 'Block (Deny)', modify: 'Modify'};
-
-  const ALL_AUDIT_TYPES = [
-    {value: 'CE_INVOKED', label: 'CE Invoked'},
-    {value: 'CE_NOT_INVOKED', label: 'CE Not Invoked'}
-  ];
-
-  const availableAuditTypes = ALL_AUDIT_TYPES;
+  const availableAuditTypes = auditTypeOptions;
 
   useEffect(() => {
     if (isOpen) {
       setSelectedAgent(null);
       setSelectedAuditType(null);
-      setSelectedDecision(null);
+      setSelectedOutcome(null);
       setSelectedStatus(null);
       setExpandedEvents(new Set());
       setCollapsedTraces(new Set());
@@ -739,7 +693,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
 
   const apiFilters = {
     ...auditTypeFilter,
-    ...(selectedDecision ? {decision: selectedDecision} : {}),
+    ...(selectedOutcome ? {outcome: selectedOutcome} : {}),
     ...(selectedStatus ? {success: selectedStatus === 'success'} : {})
   };
 
@@ -783,7 +737,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
 
   useEffect(() => {
     setActivityDeadlines((previous) => (previous.size === 0 ? previous : new Map()));
-  }, [isOpen, masId, selectedAgent, selectedAuditType, selectedDecision, selectedStatus, activityEnabled]);
+  }, [isOpen, masId, selectedAgent, selectedAuditType, selectedOutcome, selectedStatus, activityEnabled]);
 
   useEffect(() => {
     if (activityDeadlines.size === 0) {
@@ -807,7 +761,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
 
     void reset();
     void retry();
-  }, [isOpen, selectedAgent, selectedAuditType, selectedDecision, selectedStatus, reset, retry]);
+  }, [isOpen, selectedAgent, selectedAuditType, selectedOutcome, selectedStatus, reset, retry]);
 
   const availableAgents = useMemo(() => agents?.map((a) => a.agent_id) ?? [], [agents]);
 
@@ -1001,17 +955,19 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
             </Select>
 
             <Select
-              value={selectedDecision || 'ALL'}
-              onValueChange={(value) => setSelectedDecision(value === 'ALL' ? null : (value as AuditDecisionFilter))}
+              value={selectedOutcome || 'ALL'}
+              onValueChange={(value) => setSelectedOutcome(value === 'ALL' ? null : (value as AuditOutcomeFilter))}
             >
-              <SelectTrigger className="w-[170px]" aria-label="Filter by decision">
-                <SelectValue>{selectedDecision ? decisionLabels[selectedDecision] : 'Decision: All'}</SelectValue>
+              <SelectTrigger className="w-[170px]" aria-label="Filter by outcome">
+                <SelectValue>{selectedOutcome ? outcomeLabels[selectedOutcome] : 'Outcome: All'}</SelectValue>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="ALL">All decisions</SelectItem>
-                <SelectItem value="allow">Allow</SelectItem>
-                <SelectItem value="block">Block (Deny)</SelectItem>
-                <SelectItem value="modify">Modify</SelectItem>
+                <SelectItem value="ALL">All outcomes</SelectItem>
+                {(Object.keys(outcomeLabels) as AuditOutcomeFilter[]).map((value) => (
+                  <SelectItem key={value} value={value}>
+                    {outcomeLabels[value]}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -1029,7 +985,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
               </SelectContent>
             </Select>
 
-            {(selectedAgent || selectedAuditType || selectedDecision || selectedStatus) && (
+            {(selectedAgent || selectedAuditType || selectedOutcome || selectedStatus) && (
               <Button
                 type="button"
                 variant="ghost"
@@ -1040,7 +996,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
                 onClick={() => {
                   setSelectedAgent(null);
                   setSelectedAuditType(null);
-                  setSelectedDecision(null);
+                  setSelectedOutcome(null);
                   setSelectedStatus(null);
                 }}
               >
@@ -1081,7 +1037,6 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
                 }}
               >
                 <AuditEventTable
-                  hasOtherSources={parsedEvents.some((event) => !isCfnDispositionEvent(event))}
                   groupByTrace={groupByTrace}
                   hasTraceGroups={expandableTraceGroups.length > 0}
                   allTracesExpanded={allTracesExpanded}
@@ -1103,7 +1058,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
                         </AuditTraceRows>
                       ) : (
                         <tbody key={group.key}>
-                          {isCfnDispositionEvent(group.events[0]) ? (
+                          {isCfnDispositionEvent(group.events[0]) || isProxyAuditEvent(group.events[0]) ? (
                             renderAuditRow(group.events[0])
                           ) : (
                             <tr>
