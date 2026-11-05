@@ -1,6 +1,27 @@
 @import 'tailwindcss';
 @import './tokens.css';
 
+@keyframes audit-trace-flash {
+  0%,
+  100% {
+    background-color: hsl(var(--muted));
+  }
+  50% {
+    background-color: color-mix(in srgb, hsl(var(--muted)) 70%, hsl(var(--sidebar-active-border)) 30%);
+  }
+}
+
+.audit-trace-flash {
+  animation: audit-trace-flash 1.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .audit-trace-flash {
+    animation: none;
+    background-color: color-mix(in srgb, hsl(var(--muted)) 70%, hsl(var(--sidebar-active-border)) 30%);
+  }
+}
+
 :root {
   --background: 216 29% 97%;
   --foreground: 222.2 84% 4.9%;
@@ -64,7 +85,7 @@
   --rdp-range-color: hsl(var(--sidebar-hover));
   --rdp-accent-text-color: hsl(var(--sidebar-text-active));
 
-  --badge-info-text: 219 100% 55%;
+  --badge-info-text: 219 100% 35%;
   --badge-info-bg: 219 100% 97%;
   --badge-info-border: 219 100% 85%;
 
@@ -155,10 +176,6 @@
   --rdp-accent-color-dark: hsl(var(--sidebar-active));
   --rdp-range-color: hsl(var(--sidebar-hover));
   --rdp-accent-text-color: hsl(var(--sidebar-text-active));
-
-  --badge-info-text: 210 80% 65%;
-  --badge-info-bg: 210 50% 17%;
-  --badge-info-border: 210 50% 32%;
 
   --card-shadow: 0 4px 4px rgba(0, 0, 0, 0.35);
 

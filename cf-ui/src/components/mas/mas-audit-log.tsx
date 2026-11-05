@@ -4,19 +4,38 @@
 
 'use client';
 
-import {useEffect, useMemo, useState} from 'react';
-import {ChevronDown, ChevronRight, Edit, Plus, Trash2, User, History} from 'lucide-react';
+import {Fragment, useCallback, useEffect, useId, useMemo, useState, type ReactNode} from 'react';
+import {
+  Check,
+  ChevronDown,
+  ChevronRight,
+  CircleCheck,
+  CircleHelp,
+  CircleMinus,
+  Copy,
+  Edit,
+  Plus,
+  Trash2,
+  TriangleAlert,
+  User,
+  History,
+  X
+} from 'lucide-react';
+import {toast} from 'sonner';
 import {useAuditEvents} from '@/hooks/useAuditEvents';
 import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {ActionButton} from '@/components/ui/action-button';
 import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from '@/components/ui/dialog';
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select';
+import {Switch} from '@/components/ui/switch';
 import {InlineId} from '@/components/ui/inline-id';
 import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {CollapsibleJsonField} from '@/components/mas/collapsible-json-field';
-import type {AuditEvent, AuditInformation} from '@/api/endpoints/audit';
+import {SyntaxJson} from '@/components/ui/syntax-json';
+import {getApiConfig} from '@/api/config';
+import type {AuditDecisionFilter, AuditEvent, AuditInformation} from '@/api/endpoints/audit';
 import {cn} from '@/lib/utils';
 
 interface MASAuditLogProps {
@@ -36,6 +55,338 @@ interface ParsedAuditEvent extends Omit<AuditEvent, 'audit_information'> {
   audit_information?: AuditInformation | null;
   agentChanges?: AgentChange[];
   masChanges?: string[];
+}
+
+interface AuditTraceGroup {
+  key: string;
+  traceId: string | null;
+  events: ParsedAuditEvent[];
+}
+
+function getAuditTraceId(event: AuditEvent | ParsedAuditEvent): string | null {
+  const info = event.audit_information as AuditInformation | null | undefined;
+  const rawTraceId = info?.trace_id;
+  const truncatedFields = info?.truncated_fields;
+  const traceIdTruncated = Array.isArray(truncatedFields) && truncatedFields.includes('trace_id');
+  return typeof rawTraceId === 'string' && rawTraceId.trim() && !traceIdTruncated ? rawTraceId : null;
+}
+
+function auditEventMatchesMas(event: AuditEvent, masId: string, agentIds: ReadonlySet<string>, selectedAgent: string | null): boolean {
+  if (event.resource_type === 'MAS') {
+    return event.audit_resource_identifier === masId || event.audit_information?.id === masId || event.resource_identifier === masId;
+  }
+  if (event.resource_type === 'MAS-AGENT') {
+    if (selectedAgent) {
+      return event.resource_identifier === selectedAgent;
+    }
+    if ((event.audit_information as AuditInformation | null)?.request?.http_request_body?.mas_id === masId) {
+      return true;
+    }
+    return agentIds.has(event.resource_identifier);
+  }
+  return event.resource_type === 'COGNITION_ENGINE' && event.audit_resource_identifier === masId;
+}
+
+function isCfnDispositionEvent(event: ParsedAuditEvent): boolean {
+  return (
+    event.source === 'CFN' &&
+    event.resource_type === 'COGNITION_ENGINE' &&
+    (event.audit_type === 'CE_INVOKED' || event.audit_type === 'CE_NOT_INVOKED')
+  );
+}
+
+function hasDispositionError(event: ParsedAuditEvent): boolean {
+  return event.success === false || event.audit_information?.outcome === 'ERROR';
+}
+
+function getDispositionDecision(event: ParsedAuditEvent): string | undefined {
+  const outcome = event.audit_information?.outcome;
+  return outcome && outcome !== 'ERROR' ? outcome.replace(/^DECISION_/, '') : undefined;
+}
+
+function formatAuditTimestamp(value: string, shortYear = false): string {
+  const timestamp = new Date(value);
+  if (Number.isNaN(timestamp.getTime())) {
+    return 'N/A';
+  }
+  const pad = (part: number, length = 2) => String(part).padStart(length, '0');
+  const year = pad(timestamp.getUTCFullYear(), 4);
+  const date = `${pad(timestamp.getUTCMonth() + 1)}/${pad(timestamp.getUTCDate())}/${shortYear ? year.slice(-2) : year}`;
+  const time = `${pad(timestamp.getUTCHours())}:${pad(timestamp.getUTCMinutes())}:${pad(timestamp.getUTCSeconds())}`;
+  return `${date} ${time}`;
+}
+
+type AuditOutcomeType = 'allow' | 'deny' | 'modify' | 'error' | 'other';
+
+function getAuditOutcome(event: ParsedAuditEvent): AuditOutcomeType {
+  if (!isCfnDispositionEvent(event)) {
+    return 'other';
+  }
+  if (hasDispositionError(event)) {
+    return 'error';
+  }
+  switch (getDispositionDecision(event)) {
+    case 'ALLOW':
+      return 'allow';
+    case 'DENY':
+      return 'deny';
+    case 'MODIFY':
+      return 'modify';
+    default:
+      return 'other';
+  }
+}
+
+function AuditOutcome({outcome, label, count, title}: {outcome: AuditOutcomeType; label?: string; count?: number; title?: string}) {
+  const labels = {allow: 'Allow', deny: 'Deny', modify: 'Modify', error: 'Error', other: 'Other'};
+  const iconClass = 'h-4 w-4 shrink-0';
+  let icon: ReactNode;
+  switch (outcome) {
+    case 'allow':
+      icon = <CircleCheck className={cn(iconClass, 'text-green-600')} aria-hidden="true" />;
+      break;
+    case 'deny':
+      icon = <CircleMinus className={cn(iconClass, 'text-red-600')} aria-hidden="true" />;
+      break;
+    case 'modify':
+      icon = (
+        <svg
+          className={cn(iconClass, 'text-amber-600')}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <path d="m8 13-.5 3.5L11 16l6-6-3-3-6 6Z" />
+          <path d="m13 8 3 3" />
+        </svg>
+      );
+      break;
+    case 'error':
+      icon = <TriangleAlert className={cn(iconClass, 'text-red-600')} aria-hidden="true" />;
+      break;
+    default:
+      icon = <CircleHelp className={cn(iconClass, 'text-muted-foreground')} aria-hidden="true" />;
+  }
+
+  return (
+    <span className="inline-flex min-w-0 max-w-full items-center gap-1.5 whitespace-nowrap text-xs text-[hsl(var(--foreground))]" title={title}>
+      {icon}
+      <span className="truncate">
+        {label || labels[outcome]}
+        {count !== undefined ? `: ${count}` : ''}
+      </span>
+    </span>
+  );
+}
+
+function AuditEventTable({
+  children,
+  hasOtherSources = false,
+  groupByTrace,
+  hasTraceGroups,
+  allTracesExpanded,
+  onToggleAllTraces
+}: {
+  children: ReactNode;
+  hasOtherSources?: boolean;
+  groupByTrace: boolean;
+  hasTraceGroups: boolean;
+  allTracesExpanded: boolean;
+  onToggleAllTraces: () => void;
+}) {
+  const headerClass = 'sticky top-0 z-10 bg-[hsl(var(--card))] px-2 py-3 font-normal';
+
+  return (
+    <table className="w-[43.5rem] table-fixed text-left text-xs text-[hsl(var(--foreground))]" aria-label="Audit items">
+      <colgroup>
+        <col className={groupByTrace ? 'w-[10.5rem]' : 'w-[9rem]'} />
+        {!groupByTrace && <col className="w-[7.5rem]" />}
+        <col className={groupByTrace ? 'w-[7rem]' : 'w-[5rem]'} />
+        <col className={groupByTrace ? 'w-[6rem]' : 'w-[5rem]'} />
+        <col className={groupByTrace ? 'w-[8.5rem]' : 'w-[7rem]'} />
+        <col className={groupByTrace ? 'w-[9.5rem]' : 'w-[8rem]'} />
+        <col className="w-[2rem]" />
+      </colgroup>
+      <thead>
+        <tr className="text-muted-foreground">
+          <th scope="col" className={headerClass}>
+            Timestamp (UTC)
+          </th>
+          {!groupByTrace && (
+            <th scope="col" className={headerClass}>
+              Trace ID
+            </th>
+          )}
+          <th scope="col" className={headerClass}>
+            {hasOtherSources ? 'CE / source' : 'CE'}
+          </th>
+          <th scope="col" className={headerClass}>
+            Decision
+          </th>
+          <th scope="col" className={headerClass}>
+            Source agent
+          </th>
+          <th scope="col" className={headerClass}>
+            Destination agent
+          </th>
+          <th scope="col" className={cn(headerClass, 'px-1')}>
+            {groupByTrace ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={onToggleAllTraces}
+                disabled={!hasTraceGroups}
+                className="h-6 w-6 p-0"
+                aria-expanded={allTracesExpanded}
+                aria-label={allTracesExpanded ? 'Collapse all trace groups' : 'Expand all trace groups'}
+                title={allTracesExpanded ? 'Collapse all trace groups' : 'Expand all trace groups'}
+              >
+                {allTracesExpanded ? <ChevronDown className="h-4 w-4" aria-hidden="true" /> : <ChevronRight className="h-4 w-4" aria-hidden="true" />}
+              </Button>
+            ) : (
+              <span className="sr-only">Details</span>
+            )}
+          </th>
+        </tr>
+      </thead>
+      {children}
+    </table>
+  );
+}
+
+function AuditEventJson({event}: {event: ParsedAuditEvent}) {
+  const code = JSON.stringify(event, null, 2);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) {
+      return;
+    }
+    const timeout = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timeout);
+  }, [copied]);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+    } catch {
+      setCopied(false);
+      toast.error('Could not copy audit JSON');
+    }
+  };
+
+  return (
+    <div className="relative rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))] overflow-hidden [&_pre]:pr-12">
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={handleCopy}
+        className="absolute right-2 top-2 h-6 w-6 p-0"
+        aria-label={copied ? 'Audit JSON copied' : 'Copy entire audit JSON'}
+        title={copied ? 'Copied' : 'Copy entire audit JSON'}
+      >
+        {copied ? <Check className="h-4 w-4 text-black" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
+      </Button>
+      <SyntaxJson code={code} />
+    </div>
+  );
+}
+
+function AuditEventRow({
+  event,
+  expanded,
+  onToggle,
+  showTraceId = false,
+  flashing = false
+}: {
+  event: ParsedAuditEvent;
+  expanded: boolean;
+  onToggle: () => void;
+  showTraceId?: boolean;
+  flashing?: boolean;
+}) {
+  const isCfnDisposition = isCfnDispositionEvent(event);
+  const info = isCfnDisposition ? event.audit_information : undefined;
+  const ceName = isCfnDisposition ? info?.ce_name?.trim() : event.source || 'Source unavailable';
+  const ceId = isCfnDisposition ? event.resource_identifier : undefined;
+  const outcome = getAuditOutcome(event);
+  const unknownDecision = isCfnDisposition && outcome === 'other' ? getDispositionDecision(event) || 'N/A' : undefined;
+  const resultTitle =
+    outcome === 'error'
+      ? [info?.grpc_status, info?.reason].filter(Boolean).join(': ') || 'Processing failed'
+      : unknownDecision || (isCfnDisposition ? 'CE decision' : getAuditTypeLabel(event.audit_type));
+  const sourceAgent = info?.source_agent_id || 'N/A';
+  const destinationAgent = info?.destination_agent_id || 'N/A';
+  const timestamp = formatAuditTimestamp(event.created_on, showTraceId);
+  const traceId = showTraceId ? getAuditTraceId(event) : null;
+
+  return (
+    <Fragment>
+      <tr className={cn('border-t border-[hsl(var(--border))]', flashing && 'audit-trace-flash')}>
+        <td className="px-2 py-2.5">
+          <time
+            dateTime={event.created_on}
+            title={`${formatAuditTimestamp(event.created_on)} UTC`}
+            className="block whitespace-nowrap font-mono tabular-nums"
+          >
+            {timestamp}
+          </time>
+        </td>
+        {showTraceId && (
+          <td className="px-2 py-2.5">{traceId ? <InlineId value={traceId} alwaysShowCopyIcon copiedIconClassName="text-black" /> : 'N/A'}</td>
+        )}
+        <td className="px-2 py-2.5">
+          {!ceName && ceId ? (
+            <InlineId value={ceId} alwaysShowCopyIcon copiedIconClassName="text-black" className="w-full min-w-0" />
+          ) : (
+            <span className="block truncate whitespace-nowrap" title={ceName || 'N/A'}>
+              {ceName || 'N/A'}
+            </span>
+          )}
+        </td>
+        <td className="px-2 py-2.5">
+          <AuditOutcome outcome={outcome} label={unknownDecision} title={resultTitle} />
+        </td>
+        <td className="px-2 py-2.5">
+          <span className="block truncate whitespace-nowrap" title={sourceAgent}>
+            {sourceAgent}
+          </span>
+        </td>
+        <td className="px-2 py-2.5">
+          <span className="block truncate whitespace-nowrap" title={destinationAgent}>
+            {destinationAgent}
+          </span>
+        </td>
+        <td className="px-1 py-2.5">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggle}
+            className="h-6 w-6 p-0"
+            aria-expanded={expanded}
+            aria-label={expanded ? 'Hide audit JSON' : 'Show audit JSON'}
+          >
+            {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          </Button>
+        </td>
+      </tr>
+      {expanded && (
+        <tr>
+          <td colSpan={showTraceId ? 7 : 6} className="px-2 pb-3">
+            <AuditEventJson event={event} />
+          </td>
+        </tr>
+      )}
+    </Fragment>
+  );
 }
 
 function parseAgentChanges(currentEvent: ParsedAuditEvent, previousEvent?: ParsedAuditEvent): AgentChange[] {
@@ -125,9 +476,74 @@ function getAuditTypeLabel(auditType: string): string {
     REASONING_FEEDBACK: 'Reasoning Feedback',
     MEMORY_OPERATION: 'Memory Operation',
     AGENT_MEMORY_OPERATION: 'Agent Memory Operation',
-    CE_INVOKED: 'CE Invoked'
+    CE_INVOKED: 'CE Invoked',
+    CE_NOT_INVOKED: 'CE Not Invoked'
   };
   return labels[auditType] || auditType.replace(/_/g, ' ');
+}
+
+function AuditTraceRows({
+  traceId,
+  events,
+  hasMore,
+  expanded,
+  flashing,
+  onToggle,
+  children
+}: {
+  traceId: string;
+  events: ParsedAuditEvent[];
+  hasMore: boolean;
+  expanded: boolean;
+  flashing: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  const summary = {allow: 0, deny: 0, modify: 0, error: 0, other: 0};
+  for (const event of events) {
+    summary[getAuditOutcome(event)]++;
+  }
+
+  return (
+    <tbody aria-label={`Trace ${traceId}`}>
+      <tr className={cn('border-y border-[hsl(var(--border))] bg-[hsl(var(--muted))]', flashing && 'audit-trace-flash')}>
+        <td colSpan={5} className="px-2 py-2.5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <InlineId label="Trace ID" value={traceId} alwaysShowCopyIcon copiedIconClassName="text-black" />
+            <span
+              className="text-xs text-muted-foreground"
+              title={hasMore ? 'Count of loaded items; more may be available.' : 'Count of items in this view.'}
+            >
+              <span aria-hidden="true">Σ: {events.length}</span>
+              <span className="sr-only">{events.length} audit items</span>
+            </span>
+            <div className="flex flex-wrap items-center gap-3" role="group" aria-label="Summary of loaded audit items">
+              {summary.allow > 0 && <AuditOutcome outcome="allow" count={summary.allow} />}
+              {summary.deny > 0 && <AuditOutcome outcome="deny" count={summary.deny} />}
+              {summary.modify > 0 && <AuditOutcome outcome="modify" count={summary.modify} />}
+              {summary.error > 0 && <AuditOutcome outcome="error" count={summary.error} />}
+              {summary.other > 0 && <AuditOutcome outcome="other" count={summary.other} />}
+            </div>
+          </div>
+        </td>
+        <td className="px-1 py-2.5">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onToggle}
+            className="h-6 w-6 p-0"
+            aria-expanded={expanded}
+            aria-label={`${expanded ? 'Collapse' : 'Expand'} trace ${traceId}`}
+            title={expanded ? 'Collapse trace' : 'Expand trace'}
+          >
+            {expanded ? <ChevronDown className="h-4 w-4" aria-hidden="true" /> : <ChevronRight className="h-4 w-4" aria-hidden="true" />}
+          </Button>
+        </td>
+      </tr>
+      {expanded && children}
+    </tbody>
+  );
 }
 
 function AuditEventCard({
@@ -157,6 +573,7 @@ function AuditEventCard({
             <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">
               {getAuditTypeLabel(event.audit_type)}
             </span>
+            <Badge variant="info">{event.source || 'Unavailable'}</Badge>
             {httpStatus && (
               <Badge
                 variant={httpStatus >= 200 && httpStatus < 300 ? 'default' : httpStatus >= 400 ? 'destructive' : 'secondary'}
@@ -244,15 +661,9 @@ function AuditEventCard({
             <User className="w-3 h-3" />
             <span>{createdBy}</span>
           </div>
-          <div className="text-[11px] text-muted-foreground/70 font-normal">
-            {new Date(event.created_on).toLocaleString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit'
-            })}
-          </div>
+          <time dateTime={event.created_on} className="shrink-0 whitespace-nowrap text-[11px] text-muted-foreground/70 font-normal tabular-nums">
+            {formatAuditTimestamp(event.created_on)}
+          </time>
         </div>
 
         {expanded && event.audit_information && (
@@ -291,12 +702,25 @@ function AuditEventCard({
 }
 
 export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}: MASAuditLogProps) {
+  const groupingSwitchId = useId();
   const [isOpen, setIsOpen] = useState(false);
-  const [collapsedEvents, setCollapsedEvents] = useState<Set<string>>(new Set());
+  const [groupByTrace, setGroupByTrace] = useState(false);
+  const [expandedEvents, setExpandedEvents] = useState<Set<string>>(new Set());
+  const [collapsedTraces, setCollapsedTraces] = useState<Set<string>>(new Set());
+  const [activityDeadlines, setActivityDeadlines] = useState<Map<string, number>>(new Map());
   const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
   const [selectedAuditType, setSelectedAuditType] = useState<string | null>(null);
+  const [selectedDecision, setSelectedDecision] = useState<AuditDecisionFilter | null>(null);
+  const [selectedStatus, setSelectedStatus] = useState<'success' | 'failed' | null>(null);
+  const {auditRefreshIntervalMs, auditFlashDurationMs} = getApiConfig();
+  const activityEnabled = auditRefreshIntervalMs > 0 && auditFlashDurationMs > 0;
 
-  const ALL_AUDIT_TYPES = [{value: 'CE_INVOKED', label: 'CE Invoked'}];
+  const decisionLabels: Record<AuditDecisionFilter, string> = {allow: 'Allow', block: 'Block (Deny)', modify: 'Modify'};
+
+  const ALL_AUDIT_TYPES = [
+    {value: 'CE_INVOKED', label: 'CE Invoked'},
+    {value: 'CE_NOT_INVOKED', label: 'CE Not Invoked'}
+  ];
 
   const availableAuditTypes = ALL_AUDIT_TYPES;
 
@@ -304,26 +728,86 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
     if (isOpen) {
       setSelectedAgent(null);
       setSelectedAuditType(null);
-      setCollapsedEvents(new Set());
+      setSelectedDecision(null);
+      setSelectedStatus(null);
+      setExpandedEvents(new Set());
+      setCollapsedTraces(new Set());
     }
   }, [isOpen]);
 
   const auditTypeFilter = selectedAuditType ? {audit_type: selectedAuditType} : {};
 
   const apiFilters = {
-    ...auditTypeFilter
+    ...auditTypeFilter,
+    ...(selectedDecision ? {decision: selectedDecision} : {}),
+    ...(selectedStatus ? {success: selectedStatus === 'success'} : {})
   };
 
-  const {auditEvents, isLoading, error, hasMore, loadMore, reset, mutate} = useAuditEvents(isOpen ? apiFilters : undefined);
+  const handleIncomingAuditEvents = useCallback(
+    (events: AuditEvent[]) => {
+      if (!isOpen || !activityEnabled) {
+        return;
+      }
+      const agentIds = new Set(agents?.map((agent) => agent.agent_id) ?? []);
+      const changedItems = new Set<string>();
+      for (const event of events) {
+        if (!auditEventMatchesMas(event, masId, agentIds, selectedAgent)) {
+          continue;
+        }
+        changedItems.add(`event:${event.id}`);
+        const traceId = getAuditTraceId(event);
+        if (traceId) {
+          changedItems.add(`trace:${traceId}`);
+        }
+      }
+      if (changedItems.size > 0) {
+        const expiresAt = Date.now() + auditFlashDurationMs;
+        setActivityDeadlines((previous) => {
+          const next = new Map(previous);
+          for (const key of changedItems) {
+            next.set(key, expiresAt);
+          }
+          return next;
+        });
+      }
+    },
+    [isOpen, activityEnabled, agents, masId, selectedAgent, auditFlashDurationMs]
+  );
+
+  const {auditEvents, hasLoaded, isLoading, isLoadingMore, isValidating, error, hasMore, loadMore, reset, retry} = useAuditEvents(
+    isOpen ? apiFilters : undefined,
+    {
+      onIncomingEvents: activityEnabled ? handleIncomingAuditEvents : undefined
+    }
+  );
+
+  useEffect(() => {
+    setActivityDeadlines((previous) => (previous.size === 0 ? previous : new Map()));
+  }, [isOpen, masId, selectedAgent, selectedAuditType, selectedDecision, selectedStatus, activityEnabled]);
+
+  useEffect(() => {
+    if (activityDeadlines.size === 0) {
+      return;
+    }
+    const nextExpiry = Math.min(...activityDeadlines.values());
+    const timer = setTimeout(
+      () => {
+        const now = Date.now();
+        setActivityDeadlines((previous) => new Map([...previous].filter(([, expiresAt]) => expiresAt > now)));
+      },
+      Math.max(0, nextExpiry - Date.now())
+    );
+    return () => clearTimeout(timer);
+  }, [activityDeadlines]);
 
   useEffect(() => {
     if (!isOpen) {
       return;
     }
 
-    reset();
-    void mutate();
-  }, [isOpen, selectedAgent, selectedAuditType, reset, mutate]);
+    void reset();
+    void retry();
+  }, [isOpen, selectedAgent, selectedAuditType, selectedDecision, selectedStatus, reset, retry]);
 
   const availableAgents = useMemo(() => agents?.map((a) => a.agent_id) ?? [], [agents]);
 
@@ -340,24 +824,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
   const parsedEvents = useMemo<ParsedAuditEvent[]>(() => {
     const agentIds = new Set(agents?.map((a) => a.agent_id) || []);
 
-    const combined = auditEvents.filter((event) => {
-      if (event.resource_type === 'MAS') {
-        return event.audit_resource_identifier === masId || event.audit_information?.id === masId || event.resource_identifier === masId;
-      }
-      if (event.resource_type === 'MAS-AGENT') {
-        if (selectedAgent) {
-          return event.resource_identifier === selectedAgent;
-        }
-        if ((event.audit_information as AuditInformation | null)?.request?.http_request_body?.mas_id === masId) {
-          return true;
-        }
-        return agentIds.has(event.resource_identifier);
-      }
-      if (event.resource_type === 'COGNITION_ENGINE') {
-        return event.audit_resource_identifier === masId;
-      }
-      return false;
-    });
+    const combined = auditEvents.filter((event) => auditEventMatchesMas(event, masId, agentIds, selectedAgent));
 
     const sorted = [...combined].sort((a, b) => new Date(b.created_on).getTime() - new Date(a.created_on).getTime());
 
@@ -378,10 +845,30 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
     });
   }, [auditEvents, masId, agents, selectedAgent]);
 
-  const showLoadMore = hasMore && parsedEvents.length >= 10;
+  const traceGroups = useMemo<AuditTraceGroup[]>(() => {
+    const groups = new Map<string, AuditTraceGroup>();
+    // parsedEvents is already newest first, so insertion order preserves that
+    // order for traces and for the rows inside each trace.
+    for (const event of parsedEvents) {
+      const traceId = getAuditTraceId(event);
+      // Missing or truncated trace IDs must not combine unrelated requests.
+      const key = traceId ? `trace:${traceId}` : `event:${event.id}`;
+      let group = groups.get(key);
+      if (!group) {
+        group = {key, traceId, events: []};
+        groups.set(key, group);
+      }
+      group.events.push(event);
+    }
+    return Array.from(groups.values());
+  }, [parsedEvents]);
+
+  const expandableTraceGroups = traceGroups.filter((group) => group.traceId !== null);
+  const allTracesExpanded = expandableTraceGroups.length > 0 && expandableTraceGroups.every((group) => !collapsedTraces.has(group.key));
+  const showLoadMore = hasMore;
 
   const toggleExpanded = (eventId: string) => {
-    setCollapsedEvents((prev) => {
+    setExpandedEvents((prev) => {
       const next = new Set(prev);
       if (next.has(eventId)) {
         next.delete(eventId);
@@ -392,11 +879,72 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
     });
   };
 
+  const toggleTraceExpanded = (groupKey: string) => {
+    setCollapsedTraces((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupKey)) {
+        next.delete(groupKey);
+      } else {
+        next.add(groupKey);
+      }
+      return next;
+    });
+  };
+
+  const toggleAllTracesExpanded = () => {
+    setCollapsedTraces((previous) => {
+      const next = new Set(previous);
+      const expandAll = expandableTraceGroups.some((group) => previous.has(group.key));
+      for (const group of expandableTraceGroups) {
+        if (expandAll) {
+          next.delete(group.key);
+        } else {
+          next.add(group.key);
+        }
+      }
+      return next;
+    });
+  };
+
+  const renderAuditEvent = (event: ParsedAuditEvent) => (
+    <AuditEventCard
+      key={event.id}
+      event={event}
+      expanded={expandedEvents.has(event.id)}
+      onToggle={() => toggleExpanded(event.id)}
+      resolvedResourceName={
+        event.resource_type === 'MAS'
+          ? masName
+          : event.resource_type === 'MAS-AGENT'
+            ? agentNameMap[event.resource_identifier] || event.resource_identifier
+            : undefined
+      }
+    />
+  );
+
+  const renderAuditRow = (event: ParsedAuditEvent) => (
+    <AuditEventRow
+      key={event.id}
+      event={event}
+      expanded={expandedEvents.has(event.id)}
+      onToggle={() => toggleExpanded(event.id)}
+      showTraceId={!groupByTrace}
+      flashing={!groupByTrace && activityDeadlines.has(`event:${event.id}`)}
+    />
+  );
+
+  const handleOpenChange = (open: boolean) => {
+    if (open) {
+      setGroupByTrace(false);
+    }
+    setIsOpen(open);
+  };
+
   return (
     <>
-      <ActionButton icon={History} label="Audit" onClick={() => setIsOpen(true)} />
+      <ActionButton icon={History} label="Audit" onClick={() => handleOpenChange(true)} />
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <Dialog open={isOpen} onOpenChange={handleOpenChange}>
         <DialogContent
           className={cn(
             'max-w-3xl h-screen max-h-screen overflow-hidden p-0 gap-0 flex flex-col bg-card',
@@ -405,15 +953,19 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
           )}
         >
           <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
-            <div className="flex items-start justify-between">
-              <div>
-                <DialogTitle className="text-xl">Audit Trail</DialogTitle>
-                <DialogDescription className="mt-1">View audit logs and actions for {masName}</DialogDescription>
+            <DialogTitle className="text-xl">Audit Trail</DialogTitle>
+            <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <DialogDescription className="min-w-0 text-left">View audit logs and actions for {masName}</DialogDescription>
+              <div className="ml-auto flex shrink-0 items-center gap-2">
+                <label htmlFor={groupingSwitchId} className="cursor-pointer text-xs text-[hsl(var(--foreground))]">
+                  Group by Trace ID
+                </label>
+                <Switch id={groupingSwitchId} checked={groupByTrace} onCheckedChange={setGroupByTrace} />
               </div>
             </div>
           </DialogHeader>
 
-          <div className="px-6 py-4 flex items-center gap-3 border-b flex-shrink-0">
+          <div className="px-6 py-4 flex flex-wrap items-center gap-3 border-b flex-shrink-0">
             <Select
               value={selectedAgent || 'ALL'}
               onValueChange={(value) => {
@@ -421,7 +973,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
                 setSelectedAuditType(null);
               }}
             >
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-[150px]" aria-label="Filter by agent">
                 <SelectValue>{selectedAgent ? agentNameMap[selectedAgent] || selectedAgent : 'Agents'}</SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -435,7 +987,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
             </Select>
 
             <Select value={selectedAuditType || 'ALL'} onValueChange={(value) => setSelectedAuditType(value === 'ALL' ? null : value)}>
-              <SelectTrigger className="w-[220px]">
+              <SelectTrigger className="w-[170px]" aria-label="Filter by event type">
                 <SelectValue>{selectedAuditType ? getAuditTypeLabel(selectedAuditType) : 'Events'}</SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -448,56 +1000,134 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
               </SelectContent>
             </Select>
 
-            {(selectedAgent || selectedAuditType) && (
+            <Select
+              value={selectedDecision || 'ALL'}
+              onValueChange={(value) => setSelectedDecision(value === 'ALL' ? null : (value as AuditDecisionFilter))}
+            >
+              <SelectTrigger className="w-[170px]" aria-label="Filter by decision">
+                <SelectValue>{selectedDecision ? decisionLabels[selectedDecision] : 'Decision: All'}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All decisions</SelectItem>
+                <SelectItem value="allow">Allow</SelectItem>
+                <SelectItem value="block">Block (Deny)</SelectItem>
+                <SelectItem value="modify">Modify</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={selectedStatus || 'ALL'}
+              onValueChange={(value) => setSelectedStatus(value === 'ALL' ? null : (value as 'success' | 'failed'))}
+            >
+              <SelectTrigger className="w-[150px]" aria-label="Filter by status">
+                <SelectValue>{selectedStatus === 'success' ? 'Success' : selectedStatus === 'failed' ? 'Failed' : 'Status: All'}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All statuses</SelectItem>
+                <SelectItem value="success">Success</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {(selectedAgent || selectedAuditType || selectedDecision || selectedStatus) && (
               <Button
+                type="button"
                 variant="ghost"
                 size="sm"
+                className="ml-auto h-10 w-6 shrink-0 p-0"
+                aria-label="Clear filters"
+                title="Clear filters"
                 onClick={() => {
                   setSelectedAgent(null);
                   setSelectedAuditType(null);
+                  setSelectedDecision(null);
+                  setSelectedStatus(null);
                 }}
               >
-                Clear filters
+                <X className="h-4 w-4" aria-hidden="true" />
               </Button>
             )}
           </div>
 
           <div className="flex-1 overflow-hidden flex flex-col">
-            <ConditionalSWRRenderer
-              data={parsedEvents}
-              error={error}
-              itemName="audit events"
-              customIsLoading={isLoading}
-              emptyListStateProps={{
-                title: 'No audit events found',
-                description: 'Try adjusting your filters or check back after activity occurs.'
-              }}
-            >
-              <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
-                {parsedEvents.map((event) => (
-                  <AuditEventCard
-                    key={event.id}
-                    event={event}
-                    expanded={!collapsedEvents.has(event.id)}
-                    onToggle={() => toggleExpanded(event.id)}
-                    resolvedResourceName={
-                      event.resource_type === 'MAS'
-                        ? masName
-                        : event.resource_type === 'MAS-AGENT'
-                          ? agentNameMap[event.resource_identifier] || event.resource_identifier
-                          : undefined
-                    }
-                  />
-                ))}
-                {showLoadMore && (
-                  <div className="flex justify-center pt-4">
-                    <Button variant="outline" size="sm" onClick={loadMore} disabled={isLoading}>
-                      {isLoading ? 'Loading...' : 'Load more'}
-                    </Button>
-                  </div>
-                )}
+            {hasLoaded && error && (
+              <div className="flex shrink-0 items-center justify-between gap-3 px-6 py-2 text-xs text-[hsl(var(--muted-foreground))]" role="status">
+                <span>
+                  Could not update audit events. Showing previously loaded data.
+                  {auditRefreshIntervalMs > 0 && ' Retrying automatically.'}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 shrink-0 px-2 text-xs"
+                  onClick={retry}
+                  disabled={isValidating}
+                  aria-label="Retry loading audit events"
+                >
+                  Retry
+                </Button>
               </div>
-            </ConditionalSWRRenderer>
+            )}
+            <div className="flex-1 overflow-auto px-6 pb-4 min-h-0">
+              <ConditionalSWRRenderer
+                data={parsedEvents}
+                error={hasLoaded ? undefined : error}
+                itemName="audit events"
+                customIsLoading={isLoading}
+                emptyListStateProps={{
+                  title: 'No audit events found',
+                  description: 'Try adjusting your filters or check back after activity occurs.'
+                }}
+              >
+                <AuditEventTable
+                  hasOtherSources={parsedEvents.some((event) => !isCfnDispositionEvent(event))}
+                  groupByTrace={groupByTrace}
+                  hasTraceGroups={expandableTraceGroups.length > 0}
+                  allTracesExpanded={allTracesExpanded}
+                  onToggleAllTraces={toggleAllTracesExpanded}
+                >
+                  {groupByTrace ? (
+                    traceGroups.map((group) =>
+                      group.traceId ? (
+                        <AuditTraceRows
+                          key={group.key}
+                          traceId={group.traceId}
+                          events={group.events}
+                          hasMore={hasMore}
+                          expanded={!collapsedTraces.has(group.key)}
+                          flashing={activityDeadlines.has(group.key)}
+                          onToggle={() => toggleTraceExpanded(group.key)}
+                        >
+                          {group.events.map(renderAuditRow)}
+                        </AuditTraceRows>
+                      ) : (
+                        <tbody key={group.key}>
+                          {isCfnDispositionEvent(group.events[0]) ? (
+                            renderAuditRow(group.events[0])
+                          ) : (
+                            <tr>
+                              <td colSpan={6} className="py-3">
+                                {renderAuditEvent(group.events[0])}
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      )
+                    )
+                  ) : (
+                    <tbody>{parsedEvents.map(renderAuditRow)}</tbody>
+                  )}
+                </AuditEventTable>
+              </ConditionalSWRRenderer>
+              {showLoadMore && (
+                <div className="flex justify-center pt-4">
+                  <Button variant="outline" size="sm" onClick={loadMore} disabled={isValidating}>
+                    {isLoadingMore ? 'Loading...' : 'Load more'}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>

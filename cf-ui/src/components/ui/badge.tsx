@@ -16,9 +16,11 @@ const badgeVariants = cva(
         secondary: 'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80',
         destructive: 'border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80',
         outline: 'text-foreground',
-        // Semantic status variants
-        success: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-400',
-        warning: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-400',
+        generic: 'border-border bg-transparent text-foreground',
+        // Highlighted badges keep a light fill and dark text in either theme.
+        success: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+        error: 'border-red-200 bg-red-50 text-red-800',
+        warning: 'border-amber-200 bg-amber-50 text-amber-800',
         info: 'border-[hsl(var(--badge-info-border))] bg-[hsl(var(--badge-info-bg))] text-[hsl(var(--badge-info-text))]',
         active: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-400',
         inactive: 'border-transparent bg-muted text-muted-foreground',

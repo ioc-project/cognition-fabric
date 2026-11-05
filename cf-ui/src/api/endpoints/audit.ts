@@ -9,7 +9,35 @@ export type AuditEvent = components['schemas']['AuditCfnEventResponse'];
 export type AuditPageInfo = components['schemas']['AuditCfnPageInfo'];
 export type AuditEventListResponse = components['schemas']['AuditCfnEventListResponse'];
 
-export interface AuditInformation {
+export interface CFNDispositionInformation {
+  action?: 'get_disposition';
+  mas_id?: string;
+  source_agent_id?: string;
+  destination_agent_id?: string;
+  trace_id?: string;
+  span_id?: string;
+  ce_name?: string;
+  ce_version?: string;
+  ce_invoked?: boolean;
+  outcome?: string;
+  reason?: string;
+  grpc_status?: string;
+  returned_action?: string;
+  returned_modify?: boolean;
+  failure_category?: string;
+  eligibility_counts?: {disabled: number; offline: number; no_enforcing_endpoint: number};
+  ce_details?: {
+    denial_reason?: string;
+    missing_context_cause?: string;
+    context_sufficiency?: string;
+    timestamp?: string;
+    trace_id?: string;
+    checks_run?: Array<{check_id: string; passed: boolean}>;
+  };
+  truncated_fields?: string[];
+}
+
+export interface AuditInformation extends CFNDispositionInformation {
   status?: string;
   http_status?: number;
   request?: {
@@ -25,11 +53,15 @@ export interface AuditInformation {
   [key: string]: any;
 }
 
+export type AuditDecisionFilter = 'allow' | 'block' | 'modify';
+
 export interface AuditEventFilters {
   page?: number;
   pageSize?: number;
   resource_type?: string;
   audit_type?: string;
+  decision?: AuditDecisionFilter;
+  success?: boolean;
 }
 
 export const auditApi = {
@@ -47,6 +79,12 @@ export const auditApi = {
     }
     if (filters?.audit_type) {
       params.append('audit_type', filters.audit_type);
+    }
+    if (filters?.decision) {
+      params.append('decision', filters.decision);
+    }
+    if (filters?.success !== undefined) {
+      params.append('success', String(filters.success));
     }
 
     const queryString = params.toString();

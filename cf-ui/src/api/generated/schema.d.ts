@@ -695,7 +695,7 @@ export interface paths {
         };
         /**
          * List CFN Audit Events
-         * @description Retrieve a paginated list of audit events from ioc-cfn-svc. Supports optional filtering by `resource_type` and `audit_type`.
+         * @description Retrieve a paginated list of audit events from ioc-cfn-svc. Supports optional filtering by `resource_type`, `audit_type`, `decision` and `success`, before pagination. CFN dispositions use CE_INVOKED for Evaluate attempts or CE_NOT_INVOKED for earlier failures. source identifies the producer; success describes the whole operation, independently of a policy ALLOW/DENY. Filters require support in the upstream CFN version.
          */
         get: operations["list_audit_events_api_audit_events__get"];
         put?: never;
@@ -843,6 +843,16 @@ export interface components {
              */
             id: string;
             /**
+             * Source
+             * @description Original audit producer, e.g. CFN; absent from older CFN versions
+             */
+            source?: string | null;
+            /**
+             * Success
+             * @description Whether the entire audited operation completed without an operational error; a completed policy DENY/BLOCK is successful
+             */
+            success?: boolean | null;
+            /**
              * Operation Id
              * @description Operation identifier
              */
@@ -854,17 +864,17 @@ export interface components {
             resource_type: string;
             /**
              * Resource Identifier
-             * @description Identifier of the resource
+             * @description Selected CE ID for CFN dispositions; empty if no CE was selected
              */
             resource_identifier: string;
             /**
              * Audit Type
-             * @description Type of audit event (e.g. CE_INVOKED)
+             * @description CFN dispositions use CE_INVOKED when Evaluate was attempted, CE_NOT_INVOKED for an earlier failure
              */
             audit_type: string;
             /**
              * Audit Resource Identifier
-             * @description Identifier of the audited resource
+             * @description MAS association for CFN dispositions; empty if missing or too long for the association column
              */
             audit_resource_identifier: string;
             /**
@@ -3199,8 +3209,12 @@ export interface operations {
                 pageSize?: number;
                 /** @description Filter by resource type (e.g. COGNITION_ENGINE) */
                 resource_type?: string | null;
-                /** @description Filter by audit type (e.g. CE_INVOKED) */
+                /** @description Filter by audit type (CE_INVOKED or CE_NOT_INVOKED; requires upgraded CFN) */
                 audit_type?: string | null;
+                /** @description CFN policy decision: block matches the CE DENY outcome. Requires upgraded CFN. */
+                decision?: ("allow" | "block" | "modify") | null;
+                /** @description Whole-flow status: true for success, false for failure. A completed policy block is successful. */
+                success?: boolean | null;
             };
             header?: never;
             path?: never;
@@ -3216,6 +3230,13 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AuditCfnEventListResponse"];
                 };
+            };
+            /** @description Invalid pagination or an unsupported upstream resource/event type */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

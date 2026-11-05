@@ -23,6 +23,12 @@ export function Providers({children}: {children: React.ReactNode}) {
         if (config.apiBaseUrl) {
           updateApiConfig({baseUrl: config.apiBaseUrl});
         }
+        if (typeof config.auditRefreshIntervalMs === 'number') {
+          updateApiConfig({auditRefreshIntervalMs: config.auditRefreshIntervalMs});
+        }
+        if (typeof config.auditFlashDurationMs === 'number') {
+          updateApiConfig({auditFlashDurationMs: config.auditFlashDurationMs});
+        }
         setConfigLoaded(true);
       })
       .catch(() => {

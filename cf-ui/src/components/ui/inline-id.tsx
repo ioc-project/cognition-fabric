@@ -4,20 +4,44 @@
 
 'use client';
 
-import {useState} from 'react';
+import {useEffect, useRef, useState} from 'react';
 import {Copy, Check} from 'lucide-react';
+import {toast} from 'sonner';
+import {cn} from '@/lib/utils';
 
 interface InlineIdProps {
   label?: string;
   value: string;
+  alwaysShowCopyIcon?: boolean;
+  copiedIconClassName?: string;
+  className?: string;
 }
 
-export function InlineId({label, value}: InlineIdProps) {
+export function InlineId({label, value, alwaysShowCopyIcon = false, copiedIconClassName, className}: InlineIdProps) {
   const [copied, setCopied] = useState(false);
+  const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (copyTimer.current) {
+        clearTimeout(copyTimer.current);
+      }
+    },
+    []
+  );
+
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(value);
+      if (copyTimer.current) {
+        clearTimeout(copyTimer.current);
+      }
+      setCopied(true);
+      copyTimer.current = setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+      toast.error('Could not copy ID');
+    }
   };
   const display = `${value.slice(0, 8)}...`;
   return (
@@ -25,14 +49,21 @@ export function InlineId({label, value}: InlineIdProps) {
       type="button"
       onClick={handleCopy}
       title={value}
-      className="group flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+      aria-label={copied ? `${label || 'ID'} copied` : `Copy ${label || 'ID'}`}
+      className={cn('group flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors', className)}
     >
       {label && <span className="font-medium">{label}</span>}
-      <span className="font-mono">{display}</span>
+      <span className="min-w-0 truncate font-mono">{display}</span>
       {copied ? (
-        <Check className="w-3 h-3 text-green-500 shrink-0" />
+        <Check className={cn('w-3 h-3 text-green-500 shrink-0', copiedIconClassName)} aria-hidden="true" />
       ) : (
-        <Copy className="w-3 h-3 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <Copy
+          className={cn(
+            'w-3 h-3 shrink-0 transition-opacity',
+            alwaysShowCopyIcon ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100'
+          )}
+          aria-hidden="true"
+        />
       )}
     </button>
   );

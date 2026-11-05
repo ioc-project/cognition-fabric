@@ -13,4 +13,6 @@ services:
       - .env.docker
     environment:
       - NODE_ENV=production
+      - CFN_UI_AUDIT_REFRESH_INTERVAL_SECONDS=${CFN_UI_AUDIT_REFRESH_INTERVAL_SECONDS:-30}
+      - CFN_UI_AUDIT_FLASH_DURATION_SECONDS=${CFN_UI_AUDIT_FLASH_DURATION_SECONDS:-60}
     restart: unless-stopped

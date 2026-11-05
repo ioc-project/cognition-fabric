@@ -5,6 +5,8 @@
 export interface ApiConfig {
   baseUrl: string;
   timeout: number;
+  auditRefreshIntervalMs: number;
+  auditFlashDurationMs: number;
   headers: Record<string, string>;
 }
 
@@ -19,6 +21,8 @@ const getDefaultBaseUrl = (): string => {
 let apiConfig: ApiConfig = {
   baseUrl: getDefaultBaseUrl(),
   timeout: parseInt(process.env.CFN_UI_API_TIMEOUT || '15000', 10),
+  auditRefreshIntervalMs: 30_000,
+  auditFlashDurationMs: 60_000,
   headers: {
     'Content-Type': 'application/json'
   }
@@ -49,6 +53,8 @@ export function resetApiConfig(): void {
   apiConfig = {
     baseUrl: getDefaultBaseUrl(),
     timeout: parseInt(process.env.CFN_UI_API_TIMEOUT || '15000', 10),
+    auditRefreshIntervalMs: 30_000,
+    auditFlashDurationMs: 60_000,
     headers: {
       'Content-Type': 'application/json'
     }
