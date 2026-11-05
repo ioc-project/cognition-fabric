@@ -88,8 +88,6 @@ func TestRunRegistersOnceAndThenSendsNothing(t *testing.T) {
 	var registrations, others atomic.Int32
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method + " " + r.URL.Path {
-		case "GET /api/internal/diagnostics/health":
-			w.WriteHeader(200)
 		case "POST /api/cognition-engine":
 			registrations.Add(1)
 			w.WriteHeader(201)
@@ -103,6 +101,7 @@ func TestRunRegistersOnceAndThenSendsNothing(t *testing.T) {
 	l := Lifecycle{Base: api.URL, Address: "poc-ce:18001", HealthURL: "http://poc-ce:18000", Name: "poc-ce", Client: api.Client()}
 
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	var ready atomic.Bool
 	done := make(chan struct{})
 	go func() { defer close(done); l.Run(ctx, ready.Store) }()
@@ -125,67 +124,53 @@ func TestRunRegistersOnceAndThenSendsNothing(t *testing.T) {
 	}
 }
 
-func TestRunWaitsForCFNBeforeRegistering(t *testing.T) {
-	var healthy, registrations atomic.Int32
+func TestRunRetriesRegistrationUntilAccepted(t *testing.T) {
+	var registrations, others atomic.Int32
+	var accepting atomic.Bool
+	firstAttempt := make(chan struct{})
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/api/internal/diagnostics/health":
-			if healthy.Load() == 0 {
+		switch r.Method + " " + r.URL.Path {
+		case "POST /api/cognition-engine":
+			attempt := registrations.Add(1)
+			if !accepting.Load() {
 				w.WriteHeader(503)
+				if attempt == 1 {
+					close(firstAttempt)
+				}
 				return
 			}
-			w.WriteHeader(200)
-		case "/api/cognition-engine":
-			registrations.Add(1)
 			w.WriteHeader(201)
 			w.Write([]byte(`{"ce_id":"ce-1"}`))
+		default:
+			others.Add(1)
+			w.WriteHeader(404)
 		}
 	}))
 	defer api.Close()
 	l := Lifecycle{Base: api.URL, Address: "poc-ce:18001", HealthURL: "http://poc-ce:18000", Name: "poc-ce", Client: api.Client()}
 
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	var ready atomic.Bool
 	done := make(chan struct{})
 	go func() { defer close(done); l.Run(ctx, ready.Store) }()
 
-	time.Sleep(300 * time.Millisecond)
-	if registrations.Load() != 0 || ready.Load() {
-		t.Fatalf("registered or became ready while CFN was unhealthy: registrations=%d", registrations.Load())
+	select {
+	case <-firstAttempt:
+	case <-time.After(time.Second):
+		t.Fatal("the CE did not attempt registration immediately")
 	}
-	healthy.Store(1)
+	if ready.Load() {
+		t.Fatal("the CE became ready before CFN accepted its registration")
+	}
+	accepting.Store(true)
 	deadline := time.Now().Add(3 * time.Second)
 	for !ready.Load() && time.Now().Before(deadline) {
 		time.Sleep(10 * time.Millisecond)
 	}
-	if !ready.Load() || registrations.Load() != 1 {
-		t.Fatalf("ready=%v registrations=%d after CFN became healthy", ready.Load(), registrations.Load())
+	if !ready.Load() || registrations.Load() < 2 || others.Load() != 0 {
+		t.Fatalf("ready=%v registrations=%d other requests=%d after CFN accepted registration", ready.Load(), registrations.Load(), others.Load())
 	}
 	cancel()
 	<-done
-}
-
-// The published CF contract must preserve span_id, and DENY wins over allowlist order.
-
-func TestLifecycleHealthFollowsCFNHealthEndpoint(t *testing.T) {
-	status := http.StatusServiceUnavailable
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/internal/diagnostics/health" {
-			t.Errorf("unexpected path %s", r.URL.Path)
-		}
-		w.WriteHeader(status)
-	}))
-	defer server.Close()
-	l := Lifecycle{Base: server.URL, Client: server.Client()}
-	if l.Healthy(context.Background()) {
-		t.Fatal("an unhealthy CFN was reported healthy")
-	}
-	status = http.StatusOK
-	if !l.Healthy(context.Background()) {
-		t.Fatal("a healthy CFN was reported unhealthy")
-	}
-	server.Close()
-	if l.Healthy(context.Background()) {
-		t.Fatal("an unreachable CFN was reported healthy")
-	}
 }

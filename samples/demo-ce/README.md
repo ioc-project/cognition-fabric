@@ -5,8 +5,8 @@ application: it loads identity and content rules per MAS from a JSON file and an
 The JSON config supplies the demo rules.
 
 CFN calls the CE over gRPC (`:18001`, `ce.v1`, the contract comes from the `ioc-scale-cfn-svc` Go module).
-The CE registers itself with CFN over REST (`POST /api/cognition-engine`, conflict recovery by `PATCH`), once
-per second until it succeeds and only while CFN answers `/api/internal/diagnostics/health`. It declares a
+The CE registers itself with CFN over REST (`POST /api/cognition-engine`, conflict recovery by `PATCH`),
+attempting registration immediately and retrying once per second until it succeeds. It declares a
 `health_url` (its `GET /healthz`) and CFN probes it every couple of seconds to decide whether the CE is online,
 so the CE sends no heartbeats.
 

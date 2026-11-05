@@ -38,23 +38,6 @@ func HealthURL(advertisedGRPCAddress, httpListenAddress string) (string, error) 
 	return "http://" + net.JoinHostPort(host, port), nil
 }
 
-// Healthy reports whether CFN answers its own health endpoint. The lifecycle loop holds registration
-// until it does, so a CFN that is starting or restarting is one message.
-func (l *Lifecycle) Healthy(ctx context.Context) bool {
-	ctx, cancel := context.WithTimeout(ctx, time.Second)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, l.Base+"/api/internal/diagnostics/health", nil)
-	if err != nil {
-		return false
-	}
-	resp, err := l.Client.Do(req)
-	if err != nil {
-		return false
-	}
-	defer resp.Body.Close()
-	return resp.StatusCode == http.StatusOK
-}
-
 func (l *Lifecycle) Register(ctx context.Context) (string, error) {
 	version := l.Version
 	if version == "" {
@@ -106,36 +89,23 @@ func (l *Lifecycle) Register(ctx context.Context) (string, error) {
 	return result.ID, nil
 }
 
-// Run registers the CE with CFN, once per second while CFN answers its health endpoint, until a registration
-// succeeds, and then waits for ctx to end: CFN probes health_url from then on, so there is nothing more to send.
-// setReady is told whether the CE is registered. A CFN that is starting or restarting is one "waiting" line and
-// one "reachable again" line.
+// Run attempts registration immediately and retries once per second until it succeeds,
+// then waits for ctx to end: CFN probes health_url from then on, so there is nothing more to send.
+// setReady is told whether the CE is registered.
 func (l *Lifecycle) Run(ctx context.Context, setReady func(bool)) {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
-	waiting := false
 	for {
-		if !l.Healthy(ctx) {
-			if !waiting && ctx.Err() == nil {
-				slog.WarnContext(ctx, "Waiting for CFN before registering", "event", "cfn.waiting", "stage", "CFN")
-			}
-			waiting = true
-		} else {
-			if waiting {
-				slog.InfoContext(ctx, "CFN reachable again", "event", "cfn.reachable", "stage", "CFN")
-				waiting = false
-			}
-			id, err := l.Register(ctx)
-			if err == nil {
-				slog.InfoContext(ctx, "Demo CE registered; CFN will probe its health endpoint", "event", "cfn.registered", "stage", "CFN", "ce_id", id, "ce_name", l.Name)
-				setReady(true)
-				<-ctx.Done()
-				setReady(false)
-				return
-			}
-			if ctx.Err() == nil {
-				slog.WarnContext(ctx, "CE registration unavailable; retrying", "event", "cfn.registration_failed", "stage", "CFN")
-			}
+		id, err := l.Register(ctx)
+		if err == nil {
+			slog.InfoContext(ctx, "Demo CE registered; CFN will probe its health endpoint", "event", "cfn.registered", "stage", "CFN", "ce_id", id, "ce_name", l.Name)
+			setReady(true)
+			<-ctx.Done()
+			setReady(false)
+			return
+		}
+		if ctx.Err() == nil {
+			slog.WarnContext(ctx, "CE registration unavailable; retrying", "event", "cfn.registration_failed", "stage", "CFN")
 		}
 		select {
 		case <-ctx.Done():
