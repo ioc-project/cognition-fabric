@@ -12,6 +12,7 @@ Open questions and discussions that have not yet been resolved into ADRs or fina
 | [D2](0002-workspace-mas-id-flow-from-oxp.md) | Mas and Workspace Identity Propagation | Open | CF + OXP| 2026-08-11 |
 | [D3](0003-mas-lifecycle-notifications.md) | MAS Lifecycle Notifications | Implemented | CF Team, CE Teams | 2026-10-12 |
 | [D4](0004-ce-lifecycle-pull-vs-push.md) | CE lifecycle, pull vs push model | Open | CF + CE teams | 2026-10-13 |
+| [D5](0005-enforcement-proxy-audit-api.md) | Enforcement Proxy Audit API | Draft | CF + Enforcement Proxy T3 | 2026-10-29 |
 
 
 

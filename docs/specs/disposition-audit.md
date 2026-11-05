@@ -142,12 +142,13 @@ best-effort persistence, without a durable queue or a change to enforcement beha
 CFN's existing audit read endpoints return the enriched entity. Management forwards
 the JSON and publishes optional source/success fields to tolerate older CFN versions.
 Both CFN event types retain their existing MAS association semantics in the UI.
-The audit panel has top-level Decision (All, Allow, Block (Deny), Modify) and Status
-(All, Success, Failed) filters. Decision matches the recorded CFN policy outcome;
+Issue #41 extends the panel with a shared canonical Outcome filter, described in
+[Proxy audit ingestion](proxy-audit-ingestion.md). It covers CFN and Proxy events;
+the legacy decision aliases also match canonical outcomes across producers.
 Block matches DECISION_DENY, whose returned action is ACTION_BLOCK. Status matches
 the whole-flow success flag, so a completed policy block can match Success. Missing
-historical statuses are included only by All. The UI sends optional decision
-(allow/block/modify) and success (true/false) query parameters through Management to
+historical statuses are included only by All. The UI sends optional outcome
+and success (true/false) query parameters through Management to
 CFN. Apply them together with existing API filters before counting and pagination,
 so older matching records can be found. All omits the corresponding query parameter.
 Changing these filters resets pagination; automatic refresh retains their selections.
@@ -180,10 +181,11 @@ truncate other overflowing text with an ellipsis and expose its full value in a
 tooltip. On narrow screens, scroll the table horizontally rather
 than wrapping the row or changing column widths.
 The trace divider shows a shortened trace ID with an always-visible copy icon that
-copies the complete stored ID, plus nonzero item counts for ALLOW, DENY, MODIFY and
-ERROR. Hide zero counts. Show Other when there are unknown results or other producers;
-do not assume that those producers use the CFN payload. A failed CFN flow counts
-only as ERROR; a completed policy DENY counts as DENY. Counts describe the loaded
+copies the complete stored ID, plus nonzero counts for the shared canonical
+outcomes, using the same labels as the filter and rows. Hide zero counts. Show
+Unknown for unknown outcomes and Other for unrelated events; do not assume those
+events use the CFN payload. A failed CFN flow counts only as Error; a completed
+policy DENY counts as Block. Counts describe the loaded
 items in the current view; show the total as "Σ: N",
 with the loaded scope explained in its tooltip while more pages exist.
 Each divider has a chevron in the rightmost control column, aligned with the
@@ -254,7 +256,7 @@ looking up today's CE inventory. Show N/A only when no CE name or ID is availabl
 CE or agent badges, persistent outcome backgrounds or error outlines are used.
 Both group summaries and item decisions use a single colored SVG icon followed
 by neutral text (black in the light theme), without a badge: ALLOW uses a green
-circle check, DENY a red circle minus, MODIFY an amber circle pencil and ERROR a
+circle check, BLOCK a red circle minus, MODIFY_REQUESTED an amber circle pencil and ERROR a
 red triangle exclamation. Unknown results use a neutral circle question icon and
 do not imply a policy result. Shared badge variants used elsewhere are unaffected.
 For other or missing sources in a trace, show the source in place of the CE,
@@ -263,7 +265,9 @@ record remains in the JSON. Untraced non-CFN records keep their generic display.
 If success=false or outcome=ERROR, show Error in place of the decision, using its
 triangle icon. Keep the actual gRPC status and reason in the result tooltip and
 the JSON. Unavailable historical success values alone do not imply a failure.
-A completed policy DENY remains Deny rather than a processing Error.
+A completed policy DENY displays Block rather than a processing Error. Filters,
+rows and trace summaries use the common labels for all producers, including
+Modify requested for CFN; the original source decision remains in JSONB.
 The expanded JSON panel always uses the standard neutral background, border and
 syntax colors. Expanding a row shows the complete audit record through the existing JSON
 renderer, including CE ID, reason, returned disposition, correlation and structured
