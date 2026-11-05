@@ -8,9 +8,11 @@ attempts, including errors, and CE_NOT_INVOKED for earlier failures. Both carry
 action=get_disposition. A completed policy DENY/BLOCK has success=true; operational
 failure has success=false. Never put a truncated MAS ID in the association column.
 The source field identifies the producer, separately from the deciding CE.
-Top-level Decision and Status filters run in CFN before pagination through optional
-decision=allow/block/modify and success=true/false read parameters forwarded by
-Management. Block matches the CE DENY outcome; status uses whole-flow success, so
+Shared Outcome and Status filters run in CFN before pagination through optional
+outcome and success=true/false parameters forwarded by Management. The legacy
+decision=allow/block/modify aliases now use the same canonical outcomes across
+producers, as specified in [Proxy audit ingestion](../specs/proxy-audit-ingestion.md).
+Block matches the CE DENY outcome; status uses whole-flow success, so
 a completed policy block matches Success. Missing status values match only All.
 Filter changes reset pagination, refresh preserves selections, and Clear filters
 or reopening reset them. Trace summaries describe loaded, matching records.
@@ -23,10 +25,12 @@ Management responses. N/A means neither CE name nor ID is available. Constrain
 the fallback text and preserve its copy icon inside the fixed CE column; never
 reconstruct missing names from today's inventory. Keep details in collapsed JSON with its
 standard neutral background and syntax styles. Processing failure (success=false
-or outcome=ERROR) replaces the decision with Error; a completed policy DENY stays
-Deny. Use colored icons and neutral text (black in the light theme) for both item
-results and group counts: green circle check for Allow, red circle minus for Deny,
-amber circle pencil for Modify and red triangle exclamation for Error. Unknown
+or outcome=ERROR) replaces the decision with Error; a completed policy DENY displays
+the common Block label. Filters, rows and trace summaries share labels across
+producers; original decisions remain in JSONB. Use colored icons and neutral text
+(black in the light theme) for both item results and group counts: green circle
+check for Allow, red circle minus for Block, amber circle pencil for Modify requested
+and red triangle exclamation for Error. Unknown
 results use a neutral circle question icon. No decision badges or persistent backgrounds
 based on outcome.
 Use one table with a single sticky column header. Put items with the same exact
@@ -67,7 +71,8 @@ Preserve individual JSON expansion state during this action.
 Keep the header summary visible when collapsed; preserve group collapse and
 per-item JSON expansion through refresh and pagination. Reopening resets groups.
 Summaries count loaded items only, with processing errors separate from policy
-DENY and unknown results counted as Other. Missing or truncated trace IDs do not
+BLOCK, with unknown results counted as Unknown and unrelated events as Other.
+Missing or truncated trace IDs do not
 group unrelated requests. Loading additional pages merges items into their trace.
 Show the count as Σ: N and explain the loaded scope in its tooltip. Hide zero outcome
 counts rather than showing colored icons for absent results. Audit records

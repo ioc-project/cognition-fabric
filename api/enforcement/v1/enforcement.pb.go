@@ -13,6 +13,7 @@ package enforcementv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -24,6 +25,168 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+type DispositionAction int32
+
+const (
+	DispositionAction_DISPOSITION_ACTION_UNSPECIFIED DispositionAction = 0
+	DispositionAction_DISPOSITION_ACTION_ALLOW       DispositionAction = 1
+	DispositionAction_DISPOSITION_ACTION_BLOCK       DispositionAction = 2
+	DispositionAction_DISPOSITION_ACTION_MODIFY      DispositionAction = 3
+	DispositionAction_DISPOSITION_ACTION_INJECT      DispositionAction = 4
+)
+
+// Enum value maps for DispositionAction.
+var (
+	DispositionAction_name = map[int32]string{
+		0: "DISPOSITION_ACTION_UNSPECIFIED",
+		1: "DISPOSITION_ACTION_ALLOW",
+		2: "DISPOSITION_ACTION_BLOCK",
+		3: "DISPOSITION_ACTION_MODIFY",
+		4: "DISPOSITION_ACTION_INJECT",
+	}
+	DispositionAction_value = map[string]int32{
+		"DISPOSITION_ACTION_UNSPECIFIED": 0,
+		"DISPOSITION_ACTION_ALLOW":       1,
+		"DISPOSITION_ACTION_BLOCK":       2,
+		"DISPOSITION_ACTION_MODIFY":      3,
+		"DISPOSITION_ACTION_INJECT":      4,
+	}
+)
+
+func (x DispositionAction) Enum() *DispositionAction {
+	p := new(DispositionAction)
+	*p = x
+	return p
+}
+
+func (x DispositionAction) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DispositionAction) Descriptor() protoreflect.EnumDescriptor {
+	return file_api_proto_enforcement_v1_enforcement_proto_enumTypes[0].Descriptor()
+}
+
+func (DispositionAction) Type() protoreflect.EnumType {
+	return &file_api_proto_enforcement_v1_enforcement_proto_enumTypes[0]
+}
+
+func (x DispositionAction) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use DispositionAction.Descriptor instead.
+func (DispositionAction) EnumDescriptor() ([]byte, []int) {
+	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{0}
+}
+
+type AppliedOutcome int32
+
+const (
+	AppliedOutcome_APPLIED_OUTCOME_UNSPECIFIED AppliedOutcome = 0
+	AppliedOutcome_APPLIED_OUTCOME_ALLOWED     AppliedOutcome = 1
+	AppliedOutcome_APPLIED_OUTCOME_BLOCKED     AppliedOutcome = 2
+	AppliedOutcome_APPLIED_OUTCOME_DEGRADED    AppliedOutcome = 3
+	AppliedOutcome_APPLIED_OUTCOME_UNSUPPORTED AppliedOutcome = 4
+)
+
+// Enum value maps for AppliedOutcome.
+var (
+	AppliedOutcome_name = map[int32]string{
+		0: "APPLIED_OUTCOME_UNSPECIFIED",
+		1: "APPLIED_OUTCOME_ALLOWED",
+		2: "APPLIED_OUTCOME_BLOCKED",
+		3: "APPLIED_OUTCOME_DEGRADED",
+		4: "APPLIED_OUTCOME_UNSUPPORTED",
+	}
+	AppliedOutcome_value = map[string]int32{
+		"APPLIED_OUTCOME_UNSPECIFIED": 0,
+		"APPLIED_OUTCOME_ALLOWED":     1,
+		"APPLIED_OUTCOME_BLOCKED":     2,
+		"APPLIED_OUTCOME_DEGRADED":    3,
+		"APPLIED_OUTCOME_UNSUPPORTED": 4,
+	}
+)
+
+func (x AppliedOutcome) Enum() *AppliedOutcome {
+	p := new(AppliedOutcome)
+	*p = x
+	return p
+}
+
+func (x AppliedOutcome) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AppliedOutcome) Descriptor() protoreflect.EnumDescriptor {
+	return file_api_proto_enforcement_v1_enforcement_proto_enumTypes[1].Descriptor()
+}
+
+func (AppliedOutcome) Type() protoreflect.EnumType {
+	return &file_api_proto_enforcement_v1_enforcement_proto_enumTypes[1]
+}
+
+func (x AppliedOutcome) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AppliedOutcome.Descriptor instead.
+func (AppliedOutcome) EnumDescriptor() ([]byte, []int) {
+	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{1}
+}
+
+type UpstreamInvocationState int32
+
+const (
+	UpstreamInvocationState_UPSTREAM_INVOCATION_STATE_UNSPECIFIED UpstreamInvocationState = 0
+	UpstreamInvocationState_UPSTREAM_INVOCATION_STATE_NOT_CALLED  UpstreamInvocationState = 1
+	UpstreamInvocationState_UPSTREAM_INVOCATION_STATE_ATTEMPTED   UpstreamInvocationState = 2
+	UpstreamInvocationState_UPSTREAM_INVOCATION_STATE_COMPLETED   UpstreamInvocationState = 3
+)
+
+// Enum value maps for UpstreamInvocationState.
+var (
+	UpstreamInvocationState_name = map[int32]string{
+		0: "UPSTREAM_INVOCATION_STATE_UNSPECIFIED",
+		1: "UPSTREAM_INVOCATION_STATE_NOT_CALLED",
+		2: "UPSTREAM_INVOCATION_STATE_ATTEMPTED",
+		3: "UPSTREAM_INVOCATION_STATE_COMPLETED",
+	}
+	UpstreamInvocationState_value = map[string]int32{
+		"UPSTREAM_INVOCATION_STATE_UNSPECIFIED": 0,
+		"UPSTREAM_INVOCATION_STATE_NOT_CALLED":  1,
+		"UPSTREAM_INVOCATION_STATE_ATTEMPTED":   2,
+		"UPSTREAM_INVOCATION_STATE_COMPLETED":   3,
+	}
+)
+
+func (x UpstreamInvocationState) Enum() *UpstreamInvocationState {
+	p := new(UpstreamInvocationState)
+	*p = x
+	return p
+}
+
+func (x UpstreamInvocationState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (UpstreamInvocationState) Descriptor() protoreflect.EnumDescriptor {
+	return file_api_proto_enforcement_v1_enforcement_proto_enumTypes[2].Descriptor()
+}
+
+func (UpstreamInvocationState) Type() protoreflect.EnumType {
+	return &file_api_proto_enforcement_v1_enforcement_proto_enumTypes[2]
+}
+
+func (x UpstreamInvocationState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use UpstreamInvocationState.Descriptor instead.
+func (UpstreamInvocationState) EnumDescriptor() ([]byte, []int) {
+	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{2}
+}
 
 // Action represents the enforcement disposition.
 type GetDispositionResponse_Action int32
@@ -67,11 +230,11 @@ func (x GetDispositionResponse_Action) String() string {
 }
 
 func (GetDispositionResponse_Action) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_proto_enforcement_v1_enforcement_proto_enumTypes[0].Descriptor()
+	return file_api_proto_enforcement_v1_enforcement_proto_enumTypes[3].Descriptor()
 }
 
 func (GetDispositionResponse_Action) Type() protoreflect.EnumType {
-	return &file_api_proto_enforcement_v1_enforcement_proto_enumTypes[0]
+	return &file_api_proto_enforcement_v1_enforcement_proto_enumTypes[3]
 }
 
 func (x GetDispositionResponse_Action) Number() protoreflect.EnumNumber {
@@ -277,11 +440,650 @@ func (x *GetDispositionResponse) GetModify() bool {
 	return false
 }
 
+type CapturedForm struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ContentType       string                 `protobuf:"bytes,1,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	Body              []byte                 `protobuf:"bytes,2,opt,name=body,proto3" json:"body,omitempty"`
+	Truncated         bool                   `protobuf:"varint,3,opt,name=truncated,proto3" json:"truncated,omitempty"`
+	Redacted          bool                   `protobuf:"varint,4,opt,name=redacted,proto3" json:"redacted,omitempty"`
+	OriginalBodyBytes int64                  `protobuf:"varint,5,opt,name=original_body_bytes,json=originalBodyBytes,proto3" json:"original_body_bytes,omitempty"`
+	// Required for each form injected by the Cognition Fabric. These fields
+	// identify the fabric actor and carry its provenance assertion.
+	FabricOriginId          string `protobuf:"bytes,6,opt,name=fabric_origin_id,json=fabricOriginId,proto3" json:"fabric_origin_id,omitempty"`
+	FabricOriginAttestation string `protobuf:"bytes,7,opt,name=fabric_origin_attestation,json=fabricOriginAttestation,proto3" json:"fabric_origin_attestation,omitempty"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
+}
+
+func (x *CapturedForm) Reset() {
+	*x = CapturedForm{}
+	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CapturedForm) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CapturedForm) ProtoMessage() {}
+
+func (x *CapturedForm) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CapturedForm.ProtoReflect.Descriptor instead.
+func (*CapturedForm) Descriptor() ([]byte, []int) {
+	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *CapturedForm) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *CapturedForm) GetBody() []byte {
+	if x != nil {
+		return x.Body
+	}
+	return nil
+}
+
+func (x *CapturedForm) GetTruncated() bool {
+	if x != nil {
+		return x.Truncated
+	}
+	return false
+}
+
+func (x *CapturedForm) GetRedacted() bool {
+	if x != nil {
+		return x.Redacted
+	}
+	return false
+}
+
+func (x *CapturedForm) GetOriginalBodyBytes() int64 {
+	if x != nil {
+		return x.OriginalBodyBytes
+	}
+	return 0
+}
+
+func (x *CapturedForm) GetFabricOriginId() string {
+	if x != nil {
+		return x.FabricOriginId
+	}
+	return ""
+}
+
+func (x *CapturedForm) GetFabricOriginAttestation() string {
+	if x != nil {
+		return x.FabricOriginAttestation
+	}
+	return ""
+}
+
+// A completed sender authorization, not proof that transport or execution ran.
+type AuthorizationContext struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	EvaluationId  string                 `protobuf:"bytes,1,opt,name=evaluation_id,json=evaluationId,proto3" json:"evaluation_id,omitempty"`
+	MessageId     string                 `protobuf:"bytes,2,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	SendTraceId   string                 `protobuf:"bytes,3,opt,name=send_trace_id,json=sendTraceId,proto3" json:"send_trace_id,omitempty"`
+	SendSpanId    string                 `protobuf:"bytes,4,opt,name=send_span_id,json=sendSpanId,proto3" json:"send_span_id,omitempty"`
+	LatencyMs     int64                  `protobuf:"varint,5,opt,name=latency_ms,json=latencyMs,proto3" json:"latency_ms,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AuthorizationContext) Reset() {
+	*x = AuthorizationContext{}
+	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuthorizationContext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuthorizationContext) ProtoMessage() {}
+
+func (x *AuthorizationContext) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuthorizationContext.ProtoReflect.Descriptor instead.
+func (*AuthorizationContext) Descriptor() ([]byte, []int) {
+	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *AuthorizationContext) GetEvaluationId() string {
+	if x != nil {
+		return x.EvaluationId
+	}
+	return ""
+}
+
+func (x *AuthorizationContext) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+func (x *AuthorizationContext) GetSendTraceId() string {
+	if x != nil {
+		return x.SendTraceId
+	}
+	return ""
+}
+
+func (x *AuthorizationContext) GetSendSpanId() string {
+	if x != nil {
+		return x.SendSpanId
+	}
+	return ""
+}
+
+func (x *AuthorizationContext) GetLatencyMs() int64 {
+	if x != nil {
+		return x.LatencyMs
+	}
+	return 0
+}
+
+// What the trusted sender observed after an authorized A2A dispatch.
+// A transport reply does not attest successful remote business execution.
+type ResponseObservation struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	AuthorizationRecordId string                 `protobuf:"bytes,1,opt,name=authorization_record_id,json=authorizationRecordId,proto3" json:"authorization_record_id,omitempty"`
+	Authorization         *AuthorizationContext  `protobuf:"bytes,2,opt,name=authorization,proto3" json:"authorization,omitempty"`
+	StartedAt             *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=started_at,json=startedAt,proto3" json:"started_at,omitempty"`
+	CompletedAt           *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	ResponseForm          *CapturedForm          `protobuf:"bytes,5,opt,name=response_form,json=responseForm,proto3,oneof" json:"response_form,omitempty"`
+	ErrorCode             string                 `protobuf:"bytes,6,opt,name=error_code,json=errorCode,proto3" json:"error_code,omitempty"`
+	LatencyMs             int64                  `protobuf:"varint,7,opt,name=latency_ms,json=latencyMs,proto3" json:"latency_ms,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *ResponseObservation) Reset() {
+	*x = ResponseObservation{}
+	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ResponseObservation) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ResponseObservation) ProtoMessage() {}
+
+func (x *ResponseObservation) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ResponseObservation.ProtoReflect.Descriptor instead.
+func (*ResponseObservation) Descriptor() ([]byte, []int) {
+	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ResponseObservation) GetAuthorizationRecordId() string {
+	if x != nil {
+		return x.AuthorizationRecordId
+	}
+	return ""
+}
+
+func (x *ResponseObservation) GetAuthorization() *AuthorizationContext {
+	if x != nil {
+		return x.Authorization
+	}
+	return nil
+}
+
+func (x *ResponseObservation) GetStartedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartedAt
+	}
+	return nil
+}
+
+func (x *ResponseObservation) GetCompletedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CompletedAt
+	}
+	return nil
+}
+
+func (x *ResponseObservation) GetResponseForm() *CapturedForm {
+	if x != nil {
+		return x.ResponseForm
+	}
+	return nil
+}
+
+func (x *ResponseObservation) GetErrorCode() string {
+	if x != nil {
+		return x.ErrorCode
+	}
+	return ""
+}
+
+func (x *ResponseObservation) GetLatencyMs() int64 {
+	if x != nil {
+		return x.LatencyMs
+	}
+	return 0
+}
+
+// AuditRecord is the canonical proxy-local evidence record for one mediated item.
+type AuditRecord struct {
+	state               protoimpl.MessageState  `protogen:"open.v1"`
+	AuditRecordId       string                  `protobuf:"bytes,1,opt,name=audit_record_id,json=auditRecordId,proto3" json:"audit_record_id,omitempty"`
+	RecordedAt          *timestamppb.Timestamp  `protobuf:"bytes,2,opt,name=recorded_at,json=recordedAt,proto3" json:"recorded_at,omitempty"`
+	TraceId             string                  `protobuf:"bytes,3,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"`
+	MediationItemId     string                  `protobuf:"bytes,4,opt,name=mediation_item_id,json=mediationItemId,proto3" json:"mediation_item_id,omitempty"`
+	EpisodeUrn          string                  `protobuf:"bytes,5,opt,name=episode_urn,json=episodeUrn,proto3" json:"episode_urn,omitempty"`
+	MasId               string                  `protobuf:"bytes,6,opt,name=mas_id,json=masId,proto3" json:"mas_id,omitempty"`
+	SourceAgentId       string                  `protobuf:"bytes,7,opt,name=source_agent_id,json=sourceAgentId,proto3" json:"source_agent_id,omitempty"`
+	DestinationAgentId  string                  `protobuf:"bytes,8,opt,name=destination_agent_id,json=destinationAgentId,proto3" json:"destination_agent_id,omitempty"`
+	Protocol            string                  `protobuf:"bytes,9,opt,name=protocol,proto3" json:"protocol,omitempty"`
+	Route               string                  `protobuf:"bytes,10,opt,name=route,proto3" json:"route,omitempty"`
+	ItemKind            string                  `protobuf:"bytes,11,opt,name=item_kind,json=itemKind,proto3" json:"item_kind,omitempty"`
+	OperatingModel      string                  `protobuf:"bytes,12,opt,name=operating_model,json=operatingModel,proto3" json:"operating_model,omitempty"`
+	SubmittedForm       *CapturedForm           `protobuf:"bytes,13,opt,name=submitted_form,json=submittedForm,proto3" json:"submitted_form,omitempty"`
+	ReturnedDisposition DispositionAction       `protobuf:"varint,14,opt,name=returned_disposition,json=returnedDisposition,proto3,enum=ioc.cf.enforcement.v1.DispositionAction" json:"returned_disposition,omitempty"`
+	AppliedOutcome      AppliedOutcome          `protobuf:"varint,15,opt,name=applied_outcome,json=appliedOutcome,proto3,enum=ioc.cf.enforcement.v1.AppliedOutcome" json:"applied_outcome,omitempty"`
+	DispositionReason   string                  `protobuf:"bytes,16,opt,name=disposition_reason,json=dispositionReason,proto3" json:"disposition_reason,omitempty"`
+	DecidingCfIdentity  string                  `protobuf:"bytes,17,opt,name=deciding_cf_identity,json=decidingCfIdentity,proto3" json:"deciding_cf_identity,omitempty"`
+	DegradationReason   string                  `protobuf:"bytes,18,opt,name=degradation_reason,json=degradationReason,proto3" json:"degradation_reason,omitempty"`
+	UpstreamInvocation  UpstreamInvocationState `protobuf:"varint,19,opt,name=upstream_invocation,json=upstreamInvocation,proto3,enum=ioc.cf.enforcement.v1.UpstreamInvocationState" json:"upstream_invocation,omitempty"`
+	// Reserved, optional extension slots. Current CF replies carry no content contract.
+	ModifiedForm  *CapturedForm   `protobuf:"bytes,20,opt,name=modified_form,json=modifiedForm,proto3,oneof" json:"modified_form,omitempty"`
+	InjectedForms []*CapturedForm `protobuf:"bytes,21,rep,name=injected_forms,json=injectedForms,proto3" json:"injected_forms,omitempty"`
+	// Registered enforcement metadata submitted for this mediated item, retained
+	// as proxy-local evidence (for example SLIM addressing).
+	Extra map[string]string `protobuf:"bytes,22,rep,name=extra,proto3" json:"extra,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Protected activity span submitted to CF, paired with trace_id. Empty for
+	// historical writers or when no activity reference was available.
+	SpanId string `protobuf:"bytes,23,opt,name=span_id,json=spanId,proto3" json:"span_id,omitempty"`
+	// Absent for legacy/Envoy final mediation records. Each variant has its own
+	// validation; endpoint observations never fabricate applied/upstream states.
+	//
+	// Types that are valid to be assigned to Observation:
+	//
+	//	*AuditRecord_Authorization
+	//	*AuditRecord_ResponseObservation
+	Observation isAuditRecord_Observation `protobuf_oneof:"observation"`
+	// Publication evidence is proxy-local, never CF enforcement metadata.
+	BoundaryEvidence map[string]string `protobuf:"bytes,26,rep,name=boundary_evidence,json=boundaryEvidence,proto3" json:"boundary_evidence,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
+}
+
+func (x *AuditRecord) Reset() {
+	*x = AuditRecord{}
+	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AuditRecord) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AuditRecord) ProtoMessage() {}
+
+func (x *AuditRecord) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AuditRecord.ProtoReflect.Descriptor instead.
+func (*AuditRecord) Descriptor() ([]byte, []int) {
+	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *AuditRecord) GetAuditRecordId() string {
+	if x != nil {
+		return x.AuditRecordId
+	}
+	return ""
+}
+
+func (x *AuditRecord) GetRecordedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.RecordedAt
+	}
+	return nil
+}
+
+func (x *AuditRecord) GetTraceId() string {
+	if x != nil {
+		return x.TraceId
+	}
+	return ""
+}
+
+func (x *AuditRecord) GetMediationItemId() string {
+	if x != nil {
+		return x.MediationItemId
+	}
+	return ""
+}
+
+func (x *AuditRecord) GetEpisodeUrn() string {
+	if x != nil {
+		return x.EpisodeUrn
+	}
+	return ""
+}
+
+func (x *AuditRecord) GetMasId() string {
+	if x != nil {
+		return x.MasId
+	}
+	return ""
+}
+
+func (x *AuditRecord) GetSourceAgentId() string {
+	if x != nil {
+		return x.SourceAgentId
+	}
+	return ""
+}
+
+func (x *AuditRecord) GetDestinationAgentId() string {
+	if x != nil {
+		return x.DestinationAgentId
+	}
+	return ""
+}
+
+func (x *AuditRecord) GetProtocol() string {
+	if x != nil {
+		return x.Protocol
+	}
+	return ""
+}
+
+func (x *AuditRecord) GetRoute() string {
+	if x != nil {
+		return x.Route
+	}
+	return ""
+}
+
+func (x *AuditRecord) GetItemKind() string {
+	if x != nil {
+		return x.ItemKind
+	}
+	return ""
+}
+
+func (x *AuditRecord) GetOperatingModel() string {
+	if x != nil {
+		return x.OperatingModel
+	}
+	return ""
+}
+
+func (x *AuditRecord) GetSubmittedForm() *CapturedForm {
+	if x != nil {
+		return x.SubmittedForm
+	}
+	return nil
+}
+
+func (x *AuditRecord) GetReturnedDisposition() DispositionAction {
+	if x != nil {
+		return x.ReturnedDisposition
+	}
+	return DispositionAction_DISPOSITION_ACTION_UNSPECIFIED
+}
+
+func (x *AuditRecord) GetAppliedOutcome() AppliedOutcome {
+	if x != nil {
+		return x.AppliedOutcome
+	}
+	return AppliedOutcome_APPLIED_OUTCOME_UNSPECIFIED
+}
+
+func (x *AuditRecord) GetDispositionReason() string {
+	if x != nil {
+		return x.DispositionReason
+	}
+	return ""
+}
+
+func (x *AuditRecord) GetDecidingCfIdentity() string {
+	if x != nil {
+		return x.DecidingCfIdentity
+	}
+	return ""
+}
+
+func (x *AuditRecord) GetDegradationReason() string {
+	if x != nil {
+		return x.DegradationReason
+	}
+	return ""
+}
+
+func (x *AuditRecord) GetUpstreamInvocation() UpstreamInvocationState {
+	if x != nil {
+		return x.UpstreamInvocation
+	}
+	return UpstreamInvocationState_UPSTREAM_INVOCATION_STATE_UNSPECIFIED
+}
+
+func (x *AuditRecord) GetModifiedForm() *CapturedForm {
+	if x != nil {
+		return x.ModifiedForm
+	}
+	return nil
+}
+
+func (x *AuditRecord) GetInjectedForms() []*CapturedForm {
+	if x != nil {
+		return x.InjectedForms
+	}
+	return nil
+}
+
+func (x *AuditRecord) GetExtra() map[string]string {
+	if x != nil {
+		return x.Extra
+	}
+	return nil
+}
+
+func (x *AuditRecord) GetSpanId() string {
+	if x != nil {
+		return x.SpanId
+	}
+	return ""
+}
+
+func (x *AuditRecord) GetObservation() isAuditRecord_Observation {
+	if x != nil {
+		return x.Observation
+	}
+	return nil
+}
+
+func (x *AuditRecord) GetAuthorization() *AuthorizationContext {
+	if x != nil {
+		if x, ok := x.Observation.(*AuditRecord_Authorization); ok {
+			return x.Authorization
+		}
+	}
+	return nil
+}
+
+func (x *AuditRecord) GetResponseObservation() *ResponseObservation {
+	if x != nil {
+		if x, ok := x.Observation.(*AuditRecord_ResponseObservation); ok {
+			return x.ResponseObservation
+		}
+	}
+	return nil
+}
+
+func (x *AuditRecord) GetBoundaryEvidence() map[string]string {
+	if x != nil {
+		return x.BoundaryEvidence
+	}
+	return nil
+}
+
+type isAuditRecord_Observation interface {
+	isAuditRecord_Observation()
+}
+
+type AuditRecord_Authorization struct {
+	Authorization *AuthorizationContext `protobuf:"bytes,24,opt,name=authorization,proto3,oneof"`
+}
+
+type AuditRecord_ResponseObservation struct {
+	ResponseObservation *ResponseObservation `protobuf:"bytes,25,opt,name=response_observation,json=responseObservation,proto3,oneof"`
+}
+
+func (*AuditRecord_Authorization) isAuditRecord_Observation() {}
+
+func (*AuditRecord_ResponseObservation) isAuditRecord_Observation() {}
+
+// AppendAuditRecordRequest carries one complete, final mediated-item record.
+// The writer supplies audit_record_id as its stable retry/deduplication key.
+type AppendAuditRecordRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Record        *AuditRecord           `protobuf:"bytes,1,opt,name=record,proto3" json:"record,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AppendAuditRecordRequest) Reset() {
+	*x = AppendAuditRecordRequest{}
+	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AppendAuditRecordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AppendAuditRecordRequest) ProtoMessage() {}
+
+func (x *AppendAuditRecordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AppendAuditRecordRequest.ProtoReflect.Descriptor instead.
+func (*AppendAuditRecordRequest) Descriptor() ([]byte, []int) {
+	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *AppendAuditRecordRequest) GetRecord() *AuditRecord {
+	if x != nil {
+		return x.Record
+	}
+	return nil
+}
+
+type AppendAuditRecordResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AuditRecordId string                 `protobuf:"bytes,1,opt,name=audit_record_id,json=auditRecordId,proto3" json:"audit_record_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AppendAuditRecordResponse) Reset() {
+	*x = AppendAuditRecordResponse{}
+	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AppendAuditRecordResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AppendAuditRecordResponse) ProtoMessage() {}
+
+func (x *AppendAuditRecordResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AppendAuditRecordResponse.ProtoReflect.Descriptor instead.
+func (*AppendAuditRecordResponse) Descriptor() ([]byte, []int) {
+	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *AppendAuditRecordResponse) GetAuditRecordId() string {
+	if x != nil {
+		return x.AuditRecordId
+	}
+	return ""
+}
+
 var File_api_proto_enforcement_v1_enforcement_proto protoreflect.FileDescriptor
 
 const file_api_proto_enforcement_v1_enforcement_proto_rawDesc = "" +
 	"\n" +
-	"*api/proto/enforcement/v1/enforcement.proto\x12\x15ioc.cf.enforcement.v1\"\xe8\x01\n" +
+	"*api/proto/enforcement/v1/enforcement.proto\x12\x15ioc.cf.enforcement.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe8\x01\n" +
 	"\x15GetDispositionRequest\x12M\n" +
 	"\x05extra\x18\x01 \x03(\v27.ioc.cf.enforcement.v1.GetDispositionRequest.ExtraEntryR\x05extra\x12F\n" +
 	"\apayload\x18\x02 \x01(\v2,.ioc.cf.enforcement.v1.GetDispositionPayloadR\apayload\x1a8\n" +
@@ -303,9 +1105,99 @@ const file_api_proto_enforcement_v1_enforcement_proto_rawDesc = "" +
 	"\fACTION_ALLOW\x10\x01\x12\x10\n" +
 	"\fACTION_BLOCK\x10\x02\x12\x11\n" +
 	"\rACTION_MODIFY\x10\x03\x12\x11\n" +
-	"\rACTION_INJECT\x10\x042|\n" +
+	"\rACTION_INJECT\x10\x04\"\x95\x02\n" +
+	"\fCapturedForm\x12!\n" +
+	"\fcontent_type\x18\x01 \x01(\tR\vcontentType\x12\x12\n" +
+	"\x04body\x18\x02 \x01(\fR\x04body\x12\x1c\n" +
+	"\ttruncated\x18\x03 \x01(\bR\ttruncated\x12\x1a\n" +
+	"\bredacted\x18\x04 \x01(\bR\bredacted\x12.\n" +
+	"\x13original_body_bytes\x18\x05 \x01(\x03R\x11originalBodyBytes\x12(\n" +
+	"\x10fabric_origin_id\x18\x06 \x01(\tR\x0efabricOriginId\x12:\n" +
+	"\x19fabric_origin_attestation\x18\a \x01(\tR\x17fabricOriginAttestation\"\xbf\x01\n" +
+	"\x14AuthorizationContext\x12#\n" +
+	"\revaluation_id\x18\x01 \x01(\tR\fevaluationId\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x02 \x01(\tR\tmessageId\x12\"\n" +
+	"\rsend_trace_id\x18\x03 \x01(\tR\vsendTraceId\x12 \n" +
+	"\fsend_span_id\x18\x04 \x01(\tR\n" +
+	"sendSpanId\x12\x1d\n" +
+	"\n" +
+	"latency_ms\x18\x05 \x01(\x03R\tlatencyMs\"\xb9\x03\n" +
+	"\x13ResponseObservation\x126\n" +
+	"\x17authorization_record_id\x18\x01 \x01(\tR\x15authorizationRecordId\x12Q\n" +
+	"\rauthorization\x18\x02 \x01(\v2+.ioc.cf.enforcement.v1.AuthorizationContextR\rauthorization\x129\n" +
+	"\n" +
+	"started_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tstartedAt\x12=\n" +
+	"\fcompleted_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12M\n" +
+	"\rresponse_form\x18\x05 \x01(\v2#.ioc.cf.enforcement.v1.CapturedFormH\x00R\fresponseForm\x88\x01\x01\x12\x1d\n" +
+	"\n" +
+	"error_code\x18\x06 \x01(\tR\terrorCode\x12\x1d\n" +
+	"\n" +
+	"latency_ms\x18\a \x01(\x03R\tlatencyMsB\x10\n" +
+	"\x0e_response_form\"\xe3\f\n" +
+	"\vAuditRecord\x12&\n" +
+	"\x0faudit_record_id\x18\x01 \x01(\tR\rauditRecordId\x12;\n" +
+	"\vrecorded_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"recordedAt\x12\x19\n" +
+	"\btrace_id\x18\x03 \x01(\tR\atraceId\x12*\n" +
+	"\x11mediation_item_id\x18\x04 \x01(\tR\x0fmediationItemId\x12\x1f\n" +
+	"\vepisode_urn\x18\x05 \x01(\tR\n" +
+	"episodeUrn\x12\x15\n" +
+	"\x06mas_id\x18\x06 \x01(\tR\x05masId\x12&\n" +
+	"\x0fsource_agent_id\x18\a \x01(\tR\rsourceAgentId\x120\n" +
+	"\x14destination_agent_id\x18\b \x01(\tR\x12destinationAgentId\x12\x1a\n" +
+	"\bprotocol\x18\t \x01(\tR\bprotocol\x12\x14\n" +
+	"\x05route\x18\n" +
+	" \x01(\tR\x05route\x12\x1b\n" +
+	"\titem_kind\x18\v \x01(\tR\bitemKind\x12'\n" +
+	"\x0foperating_model\x18\f \x01(\tR\x0eoperatingModel\x12J\n" +
+	"\x0esubmitted_form\x18\r \x01(\v2#.ioc.cf.enforcement.v1.CapturedFormR\rsubmittedForm\x12[\n" +
+	"\x14returned_disposition\x18\x0e \x01(\x0e2(.ioc.cf.enforcement.v1.DispositionActionR\x13returnedDisposition\x12N\n" +
+	"\x0fapplied_outcome\x18\x0f \x01(\x0e2%.ioc.cf.enforcement.v1.AppliedOutcomeR\x0eappliedOutcome\x12-\n" +
+	"\x12disposition_reason\x18\x10 \x01(\tR\x11dispositionReason\x120\n" +
+	"\x14deciding_cf_identity\x18\x11 \x01(\tR\x12decidingCfIdentity\x12-\n" +
+	"\x12degradation_reason\x18\x12 \x01(\tR\x11degradationReason\x12_\n" +
+	"\x13upstream_invocation\x18\x13 \x01(\x0e2..ioc.cf.enforcement.v1.UpstreamInvocationStateR\x12upstreamInvocation\x12M\n" +
+	"\rmodified_form\x18\x14 \x01(\v2#.ioc.cf.enforcement.v1.CapturedFormH\x01R\fmodifiedForm\x88\x01\x01\x12J\n" +
+	"\x0einjected_forms\x18\x15 \x03(\v2#.ioc.cf.enforcement.v1.CapturedFormR\rinjectedForms\x12C\n" +
+	"\x05extra\x18\x16 \x03(\v2-.ioc.cf.enforcement.v1.AuditRecord.ExtraEntryR\x05extra\x12\x17\n" +
+	"\aspan_id\x18\x17 \x01(\tR\x06spanId\x12S\n" +
+	"\rauthorization\x18\x18 \x01(\v2+.ioc.cf.enforcement.v1.AuthorizationContextH\x00R\rauthorization\x12_\n" +
+	"\x14response_observation\x18\x19 \x01(\v2*.ioc.cf.enforcement.v1.ResponseObservationH\x00R\x13responseObservation\x12e\n" +
+	"\x11boundary_evidence\x18\x1a \x03(\v28.ioc.cf.enforcement.v1.AuditRecord.BoundaryEvidenceEntryR\x10boundaryEvidence\x1a8\n" +
+	"\n" +
+	"ExtraEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aC\n" +
+	"\x15BoundaryEvidenceEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\r\n" +
+	"\vobservationB\x10\n" +
+	"\x0e_modified_form\"V\n" +
+	"\x18AppendAuditRecordRequest\x12:\n" +
+	"\x06record\x18\x01 \x01(\v2\".ioc.cf.enforcement.v1.AuditRecordR\x06record\"C\n" +
+	"\x19AppendAuditRecordResponse\x12&\n" +
+	"\x0faudit_record_id\x18\x01 \x01(\tR\rauditRecordId*\xb1\x01\n" +
+	"\x11DispositionAction\x12\"\n" +
+	"\x1eDISPOSITION_ACTION_UNSPECIFIED\x10\x00\x12\x1c\n" +
+	"\x18DISPOSITION_ACTION_ALLOW\x10\x01\x12\x1c\n" +
+	"\x18DISPOSITION_ACTION_BLOCK\x10\x02\x12\x1d\n" +
+	"\x19DISPOSITION_ACTION_MODIFY\x10\x03\x12\x1d\n" +
+	"\x19DISPOSITION_ACTION_INJECT\x10\x04*\xaa\x01\n" +
+	"\x0eAppliedOutcome\x12\x1f\n" +
+	"\x1bAPPLIED_OUTCOME_UNSPECIFIED\x10\x00\x12\x1b\n" +
+	"\x17APPLIED_OUTCOME_ALLOWED\x10\x01\x12\x1b\n" +
+	"\x17APPLIED_OUTCOME_BLOCKED\x10\x02\x12\x1c\n" +
+	"\x18APPLIED_OUTCOME_DEGRADED\x10\x03\x12\x1f\n" +
+	"\x1bAPPLIED_OUTCOME_UNSUPPORTED\x10\x04*\xc0\x01\n" +
+	"\x17UpstreamInvocationState\x12)\n" +
+	"%UPSTREAM_INVOCATION_STATE_UNSPECIFIED\x10\x00\x12(\n" +
+	"$UPSTREAM_INVOCATION_STATE_NOT_CALLED\x10\x01\x12'\n" +
+	"#UPSTREAM_INVOCATION_STATE_ATTEMPTED\x10\x02\x12'\n" +
+	"#UPSTREAM_INVOCATION_STATE_COMPLETED\x10\x032\xf4\x01\n" +
 	"\vEnforcement\x12m\n" +
-	"\x0eGetDisposition\x12,.ioc.cf.enforcement.v1.GetDispositionRequest\x1a-.ioc.cf.enforcement.v1.GetDispositionResponseBMZKgithub.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1;enforcementv1b\x06proto3"
+	"\x0eGetDisposition\x12,.ioc.cf.enforcement.v1.GetDispositionRequest\x1a-.ioc.cf.enforcement.v1.GetDispositionResponse\x12v\n" +
+	"\x11AppendAuditRecord\x12/.ioc.cf.enforcement.v1.AppendAuditRecordRequest\x1a0.ioc.cf.enforcement.v1.AppendAuditRecordResponseBMZKgithub.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1;enforcementv1b\x06proto3"
 
 var (
 	file_api_proto_enforcement_v1_enforcement_proto_rawDescOnce sync.Once
@@ -319,26 +1211,56 @@ func file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP() []byte {
 	return file_api_proto_enforcement_v1_enforcement_proto_rawDescData
 }
 
-var file_api_proto_enforcement_v1_enforcement_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_api_proto_enforcement_v1_enforcement_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_api_proto_enforcement_v1_enforcement_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_api_proto_enforcement_v1_enforcement_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_api_proto_enforcement_v1_enforcement_proto_goTypes = []any{
-	(GetDispositionResponse_Action)(0), // 0: ioc.cf.enforcement.v1.GetDispositionResponse.Action
-	(*GetDispositionRequest)(nil),      // 1: ioc.cf.enforcement.v1.GetDispositionRequest
-	(*GetDispositionPayload)(nil),      // 2: ioc.cf.enforcement.v1.GetDispositionPayload
-	(*GetDispositionResponse)(nil),     // 3: ioc.cf.enforcement.v1.GetDispositionResponse
-	nil,                                // 4: ioc.cf.enforcement.v1.GetDispositionRequest.ExtraEntry
+	(DispositionAction)(0),             // 0: ioc.cf.enforcement.v1.DispositionAction
+	(AppliedOutcome)(0),                // 1: ioc.cf.enforcement.v1.AppliedOutcome
+	(UpstreamInvocationState)(0),       // 2: ioc.cf.enforcement.v1.UpstreamInvocationState
+	(GetDispositionResponse_Action)(0), // 3: ioc.cf.enforcement.v1.GetDispositionResponse.Action
+	(*GetDispositionRequest)(nil),      // 4: ioc.cf.enforcement.v1.GetDispositionRequest
+	(*GetDispositionPayload)(nil),      // 5: ioc.cf.enforcement.v1.GetDispositionPayload
+	(*GetDispositionResponse)(nil),     // 6: ioc.cf.enforcement.v1.GetDispositionResponse
+	(*CapturedForm)(nil),               // 7: ioc.cf.enforcement.v1.CapturedForm
+	(*AuthorizationContext)(nil),       // 8: ioc.cf.enforcement.v1.AuthorizationContext
+	(*ResponseObservation)(nil),        // 9: ioc.cf.enforcement.v1.ResponseObservation
+	(*AuditRecord)(nil),                // 10: ioc.cf.enforcement.v1.AuditRecord
+	(*AppendAuditRecordRequest)(nil),   // 11: ioc.cf.enforcement.v1.AppendAuditRecordRequest
+	(*AppendAuditRecordResponse)(nil),  // 12: ioc.cf.enforcement.v1.AppendAuditRecordResponse
+	nil,                                // 13: ioc.cf.enforcement.v1.GetDispositionRequest.ExtraEntry
+	nil,                                // 14: ioc.cf.enforcement.v1.AuditRecord.ExtraEntry
+	nil,                                // 15: ioc.cf.enforcement.v1.AuditRecord.BoundaryEvidenceEntry
+	(*timestamppb.Timestamp)(nil),      // 16: google.protobuf.Timestamp
 }
 var file_api_proto_enforcement_v1_enforcement_proto_depIdxs = []int32{
-	4, // 0: ioc.cf.enforcement.v1.GetDispositionRequest.extra:type_name -> ioc.cf.enforcement.v1.GetDispositionRequest.ExtraEntry
-	2, // 1: ioc.cf.enforcement.v1.GetDispositionRequest.payload:type_name -> ioc.cf.enforcement.v1.GetDispositionPayload
-	0, // 2: ioc.cf.enforcement.v1.GetDispositionResponse.action:type_name -> ioc.cf.enforcement.v1.GetDispositionResponse.Action
-	1, // 3: ioc.cf.enforcement.v1.Enforcement.GetDisposition:input_type -> ioc.cf.enforcement.v1.GetDispositionRequest
-	3, // 4: ioc.cf.enforcement.v1.Enforcement.GetDisposition:output_type -> ioc.cf.enforcement.v1.GetDispositionResponse
-	4, // [4:5] is the sub-list for method output_type
-	3, // [3:4] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	13, // 0: ioc.cf.enforcement.v1.GetDispositionRequest.extra:type_name -> ioc.cf.enforcement.v1.GetDispositionRequest.ExtraEntry
+	5,  // 1: ioc.cf.enforcement.v1.GetDispositionRequest.payload:type_name -> ioc.cf.enforcement.v1.GetDispositionPayload
+	3,  // 2: ioc.cf.enforcement.v1.GetDispositionResponse.action:type_name -> ioc.cf.enforcement.v1.GetDispositionResponse.Action
+	8,  // 3: ioc.cf.enforcement.v1.ResponseObservation.authorization:type_name -> ioc.cf.enforcement.v1.AuthorizationContext
+	16, // 4: ioc.cf.enforcement.v1.ResponseObservation.started_at:type_name -> google.protobuf.Timestamp
+	16, // 5: ioc.cf.enforcement.v1.ResponseObservation.completed_at:type_name -> google.protobuf.Timestamp
+	7,  // 6: ioc.cf.enforcement.v1.ResponseObservation.response_form:type_name -> ioc.cf.enforcement.v1.CapturedForm
+	16, // 7: ioc.cf.enforcement.v1.AuditRecord.recorded_at:type_name -> google.protobuf.Timestamp
+	7,  // 8: ioc.cf.enforcement.v1.AuditRecord.submitted_form:type_name -> ioc.cf.enforcement.v1.CapturedForm
+	0,  // 9: ioc.cf.enforcement.v1.AuditRecord.returned_disposition:type_name -> ioc.cf.enforcement.v1.DispositionAction
+	1,  // 10: ioc.cf.enforcement.v1.AuditRecord.applied_outcome:type_name -> ioc.cf.enforcement.v1.AppliedOutcome
+	2,  // 11: ioc.cf.enforcement.v1.AuditRecord.upstream_invocation:type_name -> ioc.cf.enforcement.v1.UpstreamInvocationState
+	7,  // 12: ioc.cf.enforcement.v1.AuditRecord.modified_form:type_name -> ioc.cf.enforcement.v1.CapturedForm
+	7,  // 13: ioc.cf.enforcement.v1.AuditRecord.injected_forms:type_name -> ioc.cf.enforcement.v1.CapturedForm
+	14, // 14: ioc.cf.enforcement.v1.AuditRecord.extra:type_name -> ioc.cf.enforcement.v1.AuditRecord.ExtraEntry
+	8,  // 15: ioc.cf.enforcement.v1.AuditRecord.authorization:type_name -> ioc.cf.enforcement.v1.AuthorizationContext
+	9,  // 16: ioc.cf.enforcement.v1.AuditRecord.response_observation:type_name -> ioc.cf.enforcement.v1.ResponseObservation
+	15, // 17: ioc.cf.enforcement.v1.AuditRecord.boundary_evidence:type_name -> ioc.cf.enforcement.v1.AuditRecord.BoundaryEvidenceEntry
+	10, // 18: ioc.cf.enforcement.v1.AppendAuditRecordRequest.record:type_name -> ioc.cf.enforcement.v1.AuditRecord
+	4,  // 19: ioc.cf.enforcement.v1.Enforcement.GetDisposition:input_type -> ioc.cf.enforcement.v1.GetDispositionRequest
+	11, // 20: ioc.cf.enforcement.v1.Enforcement.AppendAuditRecord:input_type -> ioc.cf.enforcement.v1.AppendAuditRecordRequest
+	6,  // 21: ioc.cf.enforcement.v1.Enforcement.GetDisposition:output_type -> ioc.cf.enforcement.v1.GetDispositionResponse
+	12, // 22: ioc.cf.enforcement.v1.Enforcement.AppendAuditRecord:output_type -> ioc.cf.enforcement.v1.AppendAuditRecordResponse
+	21, // [21:23] is the sub-list for method output_type
+	19, // [19:21] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_enforcement_v1_enforcement_proto_init() }
@@ -346,13 +1268,18 @@ func file_api_proto_enforcement_v1_enforcement_proto_init() {
 	if File_api_proto_enforcement_v1_enforcement_proto != nil {
 		return
 	}
+	file_api_proto_enforcement_v1_enforcement_proto_msgTypes[5].OneofWrappers = []any{}
+	file_api_proto_enforcement_v1_enforcement_proto_msgTypes[6].OneofWrappers = []any{
+		(*AuditRecord_Authorization)(nil),
+		(*AuditRecord_ResponseObservation)(nil),
+	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_enforcement_v1_enforcement_proto_rawDesc), len(file_api_proto_enforcement_v1_enforcement_proto_rawDesc)),
-			NumEnums:      1,
-			NumMessages:   4,
+			NumEnums:      4,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

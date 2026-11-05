@@ -12,6 +12,7 @@ with the code.
 |------|-------|--------|
 | [CFN disposition audit](disposition-audit.md) | Shared producer identity and CFN disposition audit records, limits and rollout | Accepted; issue #34 implementation |
 | [CE evaluation response](ce-evaluation-response.md) | Neutral decision, optional CE details, legacy binary compatibility and audit capture | Issue #55; local implementation |
+| [Proxy audit ingestion](proxy-audit-ingestion.md) | CF-owned append, shared outcomes/filtering, persistence and combined audit UI | Issue #41 CF implementation; Proxy delivery qualification pending |
 
 ## Pending
 

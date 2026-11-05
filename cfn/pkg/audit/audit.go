@@ -15,7 +15,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/tools/logger"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
@@ -36,7 +38,8 @@ func (e *ValidationError) Error() string { return e.msg }
 
 // ResourceType enum values
 const (
-	ResourceTypeCognitionEngine = "COGNITION_ENGINE"
+	ResourceTypeCognitionEngine  = "COGNITION_ENGINE"
+	ResourceTypeEnforcementProxy = "ENFORCEMENT_PROXY"
 )
 
 // AuditType enum values
@@ -44,17 +47,21 @@ const (
 	// AuditTypeCEInvoked records CFN calling into a CE (e.g. the CASA Evaluate RPC).
 	AuditTypeCEInvoked = "CE_INVOKED"
 	// AuditTypeCENotInvoked records a disposition failure before Evaluate.
-	AuditTypeCENotInvoked = "CE_NOT_INVOKED"
-	SourceCFN             = "CFN"
+	AuditTypeCENotInvoked  = "CE_NOT_INVOKED"
+	SourceCFN              = "CFN"
+	SourceProxy            = "PROXY"
+	AuditTypeProxyMediated = "PROXY_MEDIATED"
 )
 
 var validResourceTypes = map[string]bool{
-	ResourceTypeCognitionEngine: true,
+	ResourceTypeCognitionEngine:  true,
+	ResourceTypeEnforcementProxy: true,
 }
 
 var validAuditTypes = map[string]bool{
-	AuditTypeCEInvoked:    true,
-	AuditTypeCENotInvoked: true,
+	AuditTypeCEInvoked:     true,
+	AuditTypeCENotInvoked:  true,
+	AuditTypeProxyMediated: true,
 }
 
 // IsValidResourceType returns true if the given resource type is a known valid value.
@@ -168,7 +175,9 @@ type AuditListResponse struct {
 // Audit represents an immutable audit trail event.
 type Audit struct {
 	ID                      uuid.UUID      `gorm:"type:uuid;primaryKey" json:"id"`
-	Source                  string         `gorm:"not null;default:CFN" json:"source"`
+	Source                  string         `gorm:"not null;default:CFN;uniqueIndex:idx_audits_source_record,priority:1" json:"source"`
+	SourceRecordID          *string        `gorm:"size:128;uniqueIndex:idx_audits_source_record,priority:2" json:"-"`
+	Outcome                 *string        `gorm:"size:64" json:"outcome,omitempty"`
 	OperationID             *string        `gorm:"size:128" json:"operation_id,omitempty"`
 	ResourceType            string         `gorm:"size:64;not null;index" json:"resource_type"`
 	ResourceIdentifier      string         `gorm:"size:128;not null" json:"resource_identifier"`
@@ -185,9 +194,23 @@ type Audit struct {
 	LastModifiedOn time.Time `gorm:"not null" json:"last_modified_on"`
 }
 
+// Keep this key stable across CFN versions so startup migrations cooperate.
+const auditMigrationLockKey int64 = 0x43464e5f41554449 // "CFN_AUDI"
+
 // MigrateUp preserves historical rows and a permanent default for older CFN writers.
 func MigrateUp(db *gorm.DB) error {
-	return db.Transaction(func(tx *gorm.DB) error {
+	return migrateUp(db, logger.SubPkg("audit"))
+}
+
+func migrateUp(db *gorm.DB, log *zap.SugaredLogger) error {
+	const backfill = "cfn_disposition_outcome"
+	var updatedRows int64
+	err := db.Transaction(func(tx *gorm.DB) error {
+		// Acquire before inspecting schema. The same transaction holds the lock
+		// through DDL and backfill; PostgreSQL releases it on commit or rollback.
+		if err := tx.Exec("SELECT pg_advisory_xact_lock(?)", auditMigrationLockKey).Error; err != nil {
+			return fmt.Errorf("acquire audit migration lock: %w", err)
+		}
 		// Repair a partially migrated nullable column before AutoMigrate adds NOT NULL.
 		if tx.Migrator().HasTable(&Audit{}) && tx.Migrator().HasColumn(&Audit{}, "Source") {
 			if err := tx.Model(&Audit{}).Where("source IS NULL OR source = ?", "").UpdateColumn("source", SourceCFN).Error; err != nil {
@@ -197,10 +220,30 @@ func MigrateUp(db *gorm.DB) error {
 		if err := tx.AutoMigrate(&Audit{}); err != nil {
 			return err
 		}
+		// Only project existing CFN outcomes; preserve original evidence and IDs.
+		result := tx.Exec(`UPDATE audits SET outcome = CASE audit_information->>'outcome'
+			WHEN 'DECISION_ALLOW' THEN 'ALLOW'
+			WHEN 'DECISION_DENY' THEN 'BLOCK'
+			WHEN 'DECISION_MODIFY' THEN 'MODIFY_REQUESTED'
+			WHEN 'ERROR' THEN 'ERROR' ELSE 'UNKNOWN' END
+			WHERE outcome IS NULL AND source = ? AND resource_type = ?
+			AND audit_type IN (?, ?) AND audit_information->>'outcome' IS NOT NULL`,
+			SourceCFN, ResourceTypeCognitionEngine, AuditTypeCEInvoked, AuditTypeCENotInvoked)
+		if result.Error != nil {
+			return fmt.Errorf("backfill CFN disposition audit outcomes: %w", result.Error)
+		}
+		updatedRows = result.RowsAffected
 		// GORM does not reliably tighten an existing nullable column. Enforce
 		// both guarantees explicitly, including recovery from a partial upgrade.
 		return tx.Exec("ALTER TABLE audits ALTER COLUMN source SET DEFAULT 'CFN', ALTER COLUMN source SET NOT NULL").Error
 	})
+	if err != nil {
+		log.Errorw("audit migration failed", "backfill", backfill, "error", err)
+		return err
+	}
+	// Report committed changes only, including zero rows on repeat startups.
+	log.Infow("audit backfill completed", "backfill", backfill, "rows_updated", updatedRows)
+	return nil
 }
 
 // CreateAuditEvent inserts a new audit event.
@@ -215,6 +258,7 @@ func CreateAuditEvent(ctx context.Context, db *gorm.DB, a *Audit) error {
 		return err
 	}
 	a.ID = uuid.New()
+	PopulateCFNOutcome(a)
 	now := time.Now()
 	a.CreatedOn = now
 	a.LastModifiedOn = now
@@ -270,10 +314,8 @@ func ListAuditEvents(ctx context.Context, db *gorm.DB, resourceType, auditType s
 	if extra.Success != nil {
 		query = query.Where("success = ?", *extra.Success)
 	}
-	if extra.Decision != "" {
-		query = query.Where("source = ? AND resource_type = ?", SourceCFN, ResourceTypeCognitionEngine).
-			Where("audit_type IN ?", []string{AuditTypeCEInvoked, AuditTypeCENotInvoked}).
-			Where(datatypes.JSONQuery("audit_information").Equals(extra.DecisionOutcome(), "outcome"))
+	if outcome := extra.CanonicalOutcome(); outcome != "" {
+		query = query.Where("outcome = ?", outcome)
 	}
 
 	var totalElements int64

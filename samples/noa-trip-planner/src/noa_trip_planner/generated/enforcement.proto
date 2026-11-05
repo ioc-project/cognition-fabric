@@ -6,6 +6,8 @@ syntax = "proto3";
 
 package ioc.cf.enforcement.v1;
 
+import "google/protobuf/timestamp.proto";
+
 option go_package = "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1;enforcementv1";
 
 // Enforcement provides disposition decisions for L9 interactions.
@@ -15,6 +17,11 @@ service Enforcement {
   // GetDisposition returns the enforcement disposition for an interaction.
   // This is a blocking/synchronous call on the live agent conversation path.
   rpc GetDisposition(GetDispositionRequest) returns (GetDispositionResponse);
+
+  // AppendAuditRecord commits one finalized Proxy record. OK echoes its stable
+  // audit_record_id, including identical retries. Invalid records, application
+  // size violations and conflicting retries return INVALID_ARGUMENT.
+  rpc AppendAuditRecord(AppendAuditRecordRequest) returns (AppendAuditRecordResponse);
 }
 
 // GetDispositionRequest contains identifiers only (reference-only submit).
@@ -64,3 +71,105 @@ message GetDispositionResponse {
     ACTION_INJECT = 4;
   }
 }
+
+enum DispositionAction {
+  DISPOSITION_ACTION_UNSPECIFIED = 0;
+  DISPOSITION_ACTION_ALLOW = 1;
+  DISPOSITION_ACTION_BLOCK = 2;
+  DISPOSITION_ACTION_MODIFY = 3;
+  DISPOSITION_ACTION_INJECT = 4;
+}
+
+enum AppliedOutcome {
+  APPLIED_OUTCOME_UNSPECIFIED = 0;
+  APPLIED_OUTCOME_ALLOWED = 1;
+  APPLIED_OUTCOME_BLOCKED = 2;
+  APPLIED_OUTCOME_DEGRADED = 3;
+  APPLIED_OUTCOME_UNSUPPORTED = 4;
+}
+
+enum UpstreamInvocationState {
+  UPSTREAM_INVOCATION_STATE_UNSPECIFIED = 0;
+  UPSTREAM_INVOCATION_STATE_NOT_CALLED = 1;
+  UPSTREAM_INVOCATION_STATE_ATTEMPTED = 2;
+  UPSTREAM_INVOCATION_STATE_COMPLETED = 3;
+}
+
+message CapturedForm {
+  string content_type = 1;
+  bytes body = 2;
+  bool truncated = 3;
+  bool redacted = 4;
+  int64 original_body_bytes = 5;
+  // Required for each form injected by the Cognition Fabric. These fields
+  // identify the fabric actor and carry its provenance assertion.
+  string fabric_origin_id = 6;
+  string fabric_origin_attestation = 7;
+}
+
+// A completed sender authorization, not proof that transport or execution ran.
+message AuthorizationContext {
+  string evaluation_id = 1;
+  string message_id = 2;
+  string send_trace_id = 3;
+  string send_span_id = 4;
+  int64 latency_ms = 5;
+}
+
+// What the trusted sender observed after an authorized A2A dispatch.
+// A transport reply does not attest successful remote business execution.
+message ResponseObservation {
+  string authorization_record_id = 1;
+  AuthorizationContext authorization = 2;
+  google.protobuf.Timestamp started_at = 3;
+  google.protobuf.Timestamp completed_at = 4;
+  optional CapturedForm response_form = 5;
+  string error_code = 6;
+  int64 latency_ms = 7;
+}
+
+// AuditRecord is the canonical proxy-local evidence record for one mediated item.
+message AuditRecord {
+  string audit_record_id = 1;
+  google.protobuf.Timestamp recorded_at = 2;
+  string trace_id = 3;
+  string mediation_item_id = 4;
+  string episode_urn = 5;
+  string mas_id = 6;
+  string source_agent_id = 7;
+  string destination_agent_id = 8;
+  string protocol = 9;
+  string route = 10;
+  string item_kind = 11;
+  string operating_model = 12;
+  CapturedForm submitted_form = 13;
+  DispositionAction returned_disposition = 14;
+  AppliedOutcome applied_outcome = 15;
+  string disposition_reason = 16;
+  string deciding_cf_identity = 17;
+  string degradation_reason = 18;
+  UpstreamInvocationState upstream_invocation = 19;
+  // Reserved, optional extension slots. Current CF replies carry no content contract.
+  optional CapturedForm modified_form = 20;
+  repeated CapturedForm injected_forms = 21;
+  // Registered enforcement metadata submitted for this mediated item, retained
+  // as proxy-local evidence (for example SLIM addressing).
+  map<string, string> extra = 22;
+  // Protected activity span submitted to CF, paired with trace_id. Empty for
+  // historical writers or when no activity reference was available.
+  string span_id = 23;
+  // Absent for legacy/Envoy final mediation records. Each variant has its own
+  // validation; endpoint observations never fabricate applied/upstream states.
+  oneof observation {
+    AuthorizationContext authorization = 24;
+    ResponseObservation response_observation = 25;
+  }
+  // Publication evidence is proxy-local, never CF enforcement metadata.
+  map<string, string> boundary_evidence = 26;
+}
+
+// AppendAuditRecordRequest carries one complete, final mediated-item record.
+// The writer supplies audit_record_id as its stable retry/deduplication key.
+message AppendAuditRecordRequest { AuditRecord record = 1; }
+
+message AppendAuditRecordResponse { string audit_record_id = 1; }

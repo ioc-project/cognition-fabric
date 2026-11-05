@@ -18,6 +18,8 @@ or observed code, surface the conflict instead of silently following the note.
   independent fixtures and bounded CE-specific audit JSON.
 - [CFN disposition audit semantics](disposition-audit.md) — producer identity,
   resource associations, event types and processing success for issue #34.
+- [Shared Proxy audit contract](proxy-audit.md) — minimal schema, contract ownership,
+  canonical outcome filtering and the Proxy delivery boundary for issue #41.
 - [CE endpoint ownership](ce-endpoint-ownership.md) — registration and reconnect ownership,
   unchanged HTTP health contract, and protection against stale probe results.
 - [Local NOA enforcement modes](local-noa-enforcement.md) — source/proxy setup,

@@ -4,36 +4,48 @@
 
 package audit
 
-import (
-	"encoding/json"
-	"fmt"
-)
+import "fmt"
 
-// ListFilters adds optional policy-decision and whole-flow success filters.
-// A nil Success and an empty Decision leave the corresponding field unfiltered.
+// ListFilters adds shared outcome and independent operational-success filters.
+// Decision is retained as a legacy alias for three canonical outcomes.
 type ListFilters struct {
+	Outcome  string
 	Decision string
 	Success  *bool
 }
 
-// DecisionOutcome maps the displayed Block action to the recorded CE DENY decision.
+// DecisionOutcome maps legacy query values to the common outcome vocabulary.
 func (f ListFilters) DecisionOutcome() string {
 	switch f.Decision {
 	case "allow":
-		return "DECISION_ALLOW"
+		return OutcomeAllow
 	case "block":
-		return "DECISION_DENY"
+		return OutcomeBlock
 	case "modify":
-		return "DECISION_MODIFY"
+		return OutcomeModifyRequested
 	default:
 		return ""
 	}
 }
 
-// Validate rejects unsupported policy-decision filters.
+// CanonicalOutcome resolves the legacy decision alias into the shared vocabulary.
+func (f ListFilters) CanonicalOutcome() string {
+	if f.Outcome != "" {
+		return f.Outcome
+	}
+	return f.DecisionOutcome()
+}
+
+// Validate rejects unsupported or conflicting outcome filters.
 func (f ListFilters) Validate() error {
 	if f.Decision != "" && f.DecisionOutcome() == "" {
 		return &ValidationError{msg: fmt.Sprintf("invalid decision: %s. Valid values: allow, block, modify", f.Decision)}
+	}
+	if f.Outcome != "" && !IsValidOutcome(f.Outcome) {
+		return &ValidationError{msg: fmt.Sprintf("invalid outcome: %s", f.Outcome)}
+	}
+	if f.Decision != "" && f.Outcome != "" && f.DecisionOutcome() != f.Outcome {
+		return &ValidationError{msg: "decision and outcome filters must agree"}
 	}
 	return nil
 }
@@ -43,15 +55,6 @@ func (f ListFilters) Matches(a *Audit) bool {
 	if f.Success != nil && (a.Success == nil || *a.Success != *f.Success) {
 		return false
 	}
-	if f.Decision == "" {
-		return true
-	}
-	if a.Source != SourceCFN || a.ResourceType != ResourceTypeCognitionEngine ||
-		(a.AuditType != AuditTypeCEInvoked && a.AuditType != AuditTypeCENotInvoked) {
-		return false
-	}
-	var info struct {
-		Outcome string `json:"outcome"`
-	}
-	return json.Unmarshal(a.AuditInformation, &info) == nil && info.Outcome == f.DecisionOutcome()
+	outcome := f.CanonicalOutcome()
+	return outcome == "" || (a.Outcome != nil && *a.Outcome == outcome)
 }

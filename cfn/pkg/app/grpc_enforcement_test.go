@@ -845,7 +845,8 @@ type slowStore struct {
 	completed atomic.Bool
 }
 
-func (s *slowStore) Close() error { return nil }
+func (s *slowStore) Close() error                                                    { return nil }
+func (s *slowStore) AppendProxyAuditEvent(ctx context.Context, a *audit.Audit) error { return nil }
 func (s *slowStore) CreateAuditEvent(ctx context.Context, a *audit.Audit) error {
 	<-s.unblock
 	s.completed.Store(true)

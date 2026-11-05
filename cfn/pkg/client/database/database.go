@@ -66,6 +66,10 @@ func (db *Database) CreateAuditEvent(ctx context.Context, a *audit.Audit) error 
 	return audit.CreateAuditEvent(ctx, db.DB, a)
 }
 
+func (db *Database) AppendProxyAuditEvent(ctx context.Context, a *audit.Audit) error {
+	return audit.AppendProxyAuditEvent(ctx, db.DB, a)
+}
+
 // GetAuditEventByID retrieves a single audit event by UUID.
 func (db *Database) GetAuditEventByID(ctx context.Context, id uuid.UUID) (*audit.Audit, error) {
 	return audit.GetAuditEventByID(ctx, db.DB, id)

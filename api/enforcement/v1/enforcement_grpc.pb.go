@@ -23,7 +23,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	Enforcement_GetDisposition_FullMethodName = "/ioc.cf.enforcement.v1.Enforcement/GetDisposition"
+	Enforcement_GetDisposition_FullMethodName    = "/ioc.cf.enforcement.v1.Enforcement/GetDisposition"
+	Enforcement_AppendAuditRecord_FullMethodName = "/ioc.cf.enforcement.v1.Enforcement/AppendAuditRecord"
 )
 
 // EnforcementClient is the client API for Enforcement service.
@@ -37,6 +38,10 @@ type EnforcementClient interface {
 	// GetDisposition returns the enforcement disposition for an interaction.
 	// This is a blocking/synchronous call on the live agent conversation path.
 	GetDisposition(ctx context.Context, in *GetDispositionRequest, opts ...grpc.CallOption) (*GetDispositionResponse, error)
+	// AppendAuditRecord commits one finalized Proxy record. OK echoes its stable
+	// audit_record_id, including identical retries. Invalid records, application
+	// size violations and conflicting retries return INVALID_ARGUMENT.
+	AppendAuditRecord(ctx context.Context, in *AppendAuditRecordRequest, opts ...grpc.CallOption) (*AppendAuditRecordResponse, error)
 }
 
 type enforcementClient struct {
@@ -57,6 +62,16 @@ func (c *enforcementClient) GetDisposition(ctx context.Context, in *GetDispositi
 	return out, nil
 }
 
+func (c *enforcementClient) AppendAuditRecord(ctx context.Context, in *AppendAuditRecordRequest, opts ...grpc.CallOption) (*AppendAuditRecordResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AppendAuditRecordResponse)
+	err := c.cc.Invoke(ctx, Enforcement_AppendAuditRecord_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // EnforcementServer is the server API for Enforcement service.
 // All implementations must embed UnimplementedEnforcementServer
 // for forward compatibility.
@@ -68,6 +83,10 @@ type EnforcementServer interface {
 	// GetDisposition returns the enforcement disposition for an interaction.
 	// This is a blocking/synchronous call on the live agent conversation path.
 	GetDisposition(context.Context, *GetDispositionRequest) (*GetDispositionResponse, error)
+	// AppendAuditRecord commits one finalized Proxy record. OK echoes its stable
+	// audit_record_id, including identical retries. Invalid records, application
+	// size violations and conflicting retries return INVALID_ARGUMENT.
+	AppendAuditRecord(context.Context, *AppendAuditRecordRequest) (*AppendAuditRecordResponse, error)
 	mustEmbedUnimplementedEnforcementServer()
 }
 
@@ -80,6 +99,9 @@ type UnimplementedEnforcementServer struct{}
 
 func (UnimplementedEnforcementServer) GetDisposition(context.Context, *GetDispositionRequest) (*GetDispositionResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetDisposition not implemented")
+}
+func (UnimplementedEnforcementServer) AppendAuditRecord(context.Context, *AppendAuditRecordRequest) (*AppendAuditRecordResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AppendAuditRecord not implemented")
 }
 func (UnimplementedEnforcementServer) mustEmbedUnimplementedEnforcementServer() {}
 func (UnimplementedEnforcementServer) testEmbeddedByValue()                     {}
@@ -120,6 +142,24 @@ func _Enforcement_GetDisposition_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Enforcement_AppendAuditRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AppendAuditRecordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(EnforcementServer).AppendAuditRecord(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Enforcement_AppendAuditRecord_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(EnforcementServer).AppendAuditRecord(ctx, req.(*AppendAuditRecordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Enforcement_ServiceDesc is the grpc.ServiceDesc for Enforcement service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -130,6 +170,10 @@ var Enforcement_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetDisposition",
 			Handler:    _Enforcement_GetDisposition_Handler,
+		},
+		{
+			MethodName: "AppendAuditRecord",
+			Handler:    _Enforcement_AppendAuditRecord_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
