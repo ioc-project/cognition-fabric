@@ -64,4 +64,3 @@ message GetDispositionResponse {
     ACTION_INJECT = 4;
   }
 }
-

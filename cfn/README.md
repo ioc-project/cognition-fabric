@@ -64,7 +64,7 @@ CF provides:
 - Go 1.25+
 - Docker (for building images)
 - [swag](https://github.com/swaggo/swag) (for API docs generation)
-- [protoc](https://grpc.io/docs/protoc-installation/) (for regenerating gRPC code)
+- [protoc 35.1](https://github.com/protocolbuffers/protobuf/releases/tag/v35.1) (for regenerating gRPC code)
 
 ### Setup
 
@@ -89,7 +89,7 @@ go install github.com/swaggo/swag/cmd/swag@latest
 | `make fmt` | Auto-fix code formatting |
 | `make docs` | Generate OpenAPI docs from code annotations |
 | `make docs-check` | Verify API docs are up-to-date |
-| `make proto` | Generate gRPC code from proto files |
+| `make proto` | Generate CE/Enforcement Go bindings and local NOA Enforcement Python bindings |
 | `make proto-check` | Verify gRPC code is up-to-date |
 | `make build` | Build Docker image |
 | `make run` | Run service locally |
@@ -180,14 +180,37 @@ grpcurl -plaintext -d '{
 
 **Regenerating gRPC code:**
 
+Use protoc **35.1**, protoc-gen-go **v1.36.12** and protoc-gen-go-grpc **v1.6.2**
+to reproduce the checked-in CE and Enforcement bindings, including the local NOA
+Python client. Download protoc for your platform from the
+[35.1 release](https://github.com/protocolbuffers/protobuf/releases/tag/v35.1)
+and add its `bin` directory to PATH. Other versions can produce different generated
+headers and fail the freshness check without a contract change.
+
 ```bash
 # Install protoc plugins (one-time setup)
-go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.12
+go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.2
+export PATH="$(go env GOPATH)/bin:$PATH"
 
-# Generate code
+# Confirm the compiler, generate code, then check freshness
+protoc --version # libprotoc 35.1
 make proto
+make proto-check
 ```
+
+If the sibling Template CE is set up with its locked virtual environment, its
+compiler can be selected instead. Run these commands from this CFN repository:
+
+```bash
+make PROTOC='../ioc-scale-cf-demo-ce/template-ce/.venv/bin/python -m grpc_tools.protoc' proto
+make PROTOC='../ioc-scale-cf-demo-ce/template-ce/.venv/bin/python -m grpc_tools.protoc' proto-check
+```
+
+`proto-check` compares the generated `.pb.go` file list and contents against the
+working tree without rewriting files. It also checks the local NOA proto copy
+against the canonical Enforcement contract and checks its generated Python file.
+CI runs these checks with the pinned tools before building or publishing an image.
 
 ### Code Style
 

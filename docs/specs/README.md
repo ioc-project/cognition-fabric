@@ -11,6 +11,7 @@ with the code.
 | Spec | Scope | Status |
 |------|-------|--------|
 | [CFN disposition audit](disposition-audit.md) | Shared producer identity and CFN disposition audit records, limits and rollout | Accepted; issue #34 implementation |
+| [CE evaluation response](ce-evaluation-response.md) | Neutral decision, optional CE details, legacy binary compatibility and audit capture | Issue #55; local implementation |
 
 ## Pending
 

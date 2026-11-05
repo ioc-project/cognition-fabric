@@ -35,22 +35,35 @@ fmt:
 docs:
 	swag init --parseDependency --parseInternal --dir ./cmd/cfn,./pkg/app,./pkg/app/httpapi/cognitionengine --output ./docs/api
 
+PROTOC ?= protoc
+PROTO_FILES = api/proto/enforcement/v1/enforcement.proto api/proto/ce/v1/ce.proto
+PROTO_MODULE = github.com/cisco-eti/ioc-scale-cfn-svc
+NOA_PROTO_ROOT = deploy/local/noa-trip-planner/src
+NOA_PROTO_FILE = $(NOA_PROTO_ROOT)/noa_trip_planner/generated/enforcement.proto
+
 .PHONY: proto
 proto:
-	@echo "Generating gRPC code from proto files..."
-	protoc --go_out=. --go_opt=paths=source_relative \
-		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
-		api/proto/enforcement/v1/enforcement.proto
-	mv api/proto/enforcement/v1/*.pb.go pkg/api/enforcement/v1/
-	@echo "Done. Generated files in pkg/api/enforcement/v1/"
+	$(PROTOC) -I . --go_out=. --go_opt=module=$(PROTO_MODULE) \
+		--go-grpc_out=. --go-grpc_opt=module=$(PROTO_MODULE) $(PROTO_FILES)
+	cp api/proto/enforcement/v1/enforcement.proto $(NOA_PROTO_FILE)
+	$(PROTOC) -I $(NOA_PROTO_ROOT) --python_out=$(NOA_PROTO_ROOT) $(NOA_PROTO_FILE)
 
 .PHONY: proto-check
-proto-check: proto
-	@if [ -n "$$(git diff pkg/api/enforcement)" ]; then \
-		echo "Generated gRPC code is out of date. Run 'make proto' and commit the changes."; \
-		git diff pkg/api/enforcement; \
-		exit 1; \
-	fi
+proto-check:
+	@set -e; generated_dir=$$(mktemp -d); trap 'rm -rf "$$generated_dir"' EXIT; \
+	$(PROTOC) -I . --go_out="$$generated_dir" --go_opt=module=$(PROTO_MODULE) \
+		--go-grpc_out="$$generated_dir" --go-grpc_opt=module=$(PROTO_MODULE) $(PROTO_FILES); \
+	find pkg/api -type f -name '*.pb.go' | LC_ALL=C sort > "$$generated_dir/current-files"; \
+	(cd "$$generated_dir" && find pkg/api -type f -name '*.pb.go' | LC_ALL=C sort) > "$$generated_dir/generated-files"; \
+	diff -u "$$generated_dir/current-files" "$$generated_dir/generated-files"; \
+	while IFS= read -r generated_file; do \
+		diff -u "$$generated_file" "$$generated_dir/$$generated_file"; \
+	done < "$$generated_dir/generated-files"; \
+	diff -u api/proto/enforcement/v1/enforcement.proto $(NOA_PROTO_FILE); \
+	mkdir -p "$$generated_dir/noa"; \
+	$(PROTOC) -I $(NOA_PROTO_ROOT) --python_out="$$generated_dir/noa" $(NOA_PROTO_FILE); \
+	diff -u $(NOA_PROTO_ROOT)/noa_trip_planner/generated/enforcement_pb2.py \
+		"$$generated_dir/noa/noa_trip_planner/generated/enforcement_pb2.py"
 
 .PHONY: docs-check
 docs-check: docs
