@@ -285,7 +285,6 @@ services:
     container_name: ioc-scale-oxp-api
     environment:
       CLARIS_API_RELOAD: "false"
-      CACHE_REDIS_URL: redis://redis:6379/0
       CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-clickhouse-server}
       CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
       CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME:-admin}
@@ -319,28 +318,12 @@ services:
       retries: 20
       start_period: 20s
     depends_on:
-      redis:
-        condition: service_healthy
       neo4j:
         condition: service_healthy
       ioc-scale-db:
         condition: service_healthy
       clickhouse-server:
         condition: service_healthy
-
-  redis:
-    image: redis:7-alpine
-    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
-    container_name: ioc-scale-oxp-redis
-    ports:
-      - "6379:6379"
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 5
-      start_period: 5s
 
   # Knowledge Graph store for OXP
   # Port Mapping: 7474 (HTTP), 7687 (Bolt)
