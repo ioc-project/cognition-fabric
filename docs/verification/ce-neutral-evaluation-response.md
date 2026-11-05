@@ -123,8 +123,28 @@ With the matching Go plugins on PATH, the compiler used here can be selected wit
 make PROTOC='../ioc-scale-cf-demo-ce/template-ce/.venv/bin/python -m grpc_tools.protoc' proto-check
 ```
 
-Run the sample suites using [Demo CE's temporary modfile instructions](https://github.com/cisco-eti/ioc-scale-cf-demo-ce/blob/main/demo-ce/README.md#evaluation-response-and-local-contract-development)
-and Template CE's `.venv/bin/python -m pytest -q` / generator freshness command.
+For workspace verification against the local CFN source, run the following from
+the CFN repository root. It tests the sibling Go Demo CE using temporary module
+files and leaves the sample's checked-in dependency pin unchanged:
+
+```bash
+(
+  set -e
+  ce55_mod_dir=$(mktemp -d)
+  trap 'rm -rf "$ce55_mod_dir"' EXIT
+  ce55_cfn_dir=$PWD
+  cp ../ioc-scale-cf-demo-ce/demo-ce/go.mod "$ce55_mod_dir/demo.mod"
+  cp ../ioc-scale-cf-demo-ce/demo-ce/go.sum "$ce55_mod_dir/demo.sum"
+  cd ../ioc-scale-cf-demo-ce/demo-ce
+  go mod edit -modfile="$ce55_mod_dir/demo.mod" \
+    -replace="github.com/cisco-eti/ioc-scale-cfn-svc=$ce55_cfn_dir"
+  go test -mod=mod -modfile="$ce55_mod_dir/demo.mod" ./...
+)
+```
+
+For Template CE, run `.venv/bin/python -m pytest -q` and
+`.venv/bin/python scripts/generate_proto.py --check` from the sibling
+`ioc-scale-cf-demo-ce/template-ce` directory.
 
 For live image checks, stop the source Demo CE first. Keep source CFN and local
 Management/OXP running. Write this temporary override:
