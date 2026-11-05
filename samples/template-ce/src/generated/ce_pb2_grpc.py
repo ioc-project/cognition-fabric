@@ -26,7 +26,7 @@ if _version_not_supported:
 
 
 class CognitionEngineStub:
-    """CognitionEngine service - the contract Template CE implements
+    """CognitionEngine service - the contract CEs implement
     """
 
     def __init__(self, channel):
@@ -48,7 +48,7 @@ class CognitionEngineStub:
 
 
 class CognitionEngineServicer:
-    """CognitionEngine service - the contract Template CE implements
+    """CognitionEngine service - the contract CEs implement
     """
 
     def Evaluate(self, request, context):
@@ -60,7 +60,7 @@ class CognitionEngineServicer:
         raise NotImplementedError('Method not implemented!')
 
     def GetInfo(self, request, context):
-        """GetInfo - Template CE capabilities/metadata
+        """GetInfo - CE capabilities/metadata
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -88,7 +88,7 @@ def add_CognitionEngineServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class CognitionEngine:
-    """CognitionEngine service - the contract Template CE implements
+    """CognitionEngine service - the contract CEs implement
     """
 
     @staticmethod

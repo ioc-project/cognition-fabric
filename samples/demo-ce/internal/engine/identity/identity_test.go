@@ -38,10 +38,10 @@ func TestEvaluateReferenceConfig(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if got.Outcome != tc.outcome || got.ChecksRun[0].CheckId != tc.check || got.TraceId != trace || got.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC {
+		if got.Outcome != tc.outcome || got.ChecksRun[0].CheckId != tc.check || got.TraceId != trace || got.GetContextSufficiency() != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC {
 			t.Fatalf("%s/%s: %+v", tc.dest, tc.mas, got)
 		}
-		if got.Outcome == cev1.Decision_DECISION_DENY && got.DenialReason == cev1.DenialReason_DENIAL_REASON_UNSPECIFIED {
+		if got.Outcome == cev1.Decision_DECISION_DENY && got.GetDenialReason() == cev1.DenialReason_DENIAL_REASON_UNSPECIFIED {
 			t.Fatal("deny lacks reason")
 		}
 	}

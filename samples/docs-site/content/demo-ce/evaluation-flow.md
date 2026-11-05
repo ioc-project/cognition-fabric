@@ -45,7 +45,7 @@ sequenceDiagram
         end
         ce->>store: POST one finding with final outcome and reason
         store-->>ce: Acknowledge finding
-        ce-->>cfn: Final ALLOW or DENY, checks and context sufficiency
+        ce-->>cfn: Final ALLOW or DENY, reason and CE-owned details
     end
 ```
 
@@ -72,3 +72,11 @@ Optional OXP history can be unavailable without blocking valid pre-call input. I
 is rejected. Model rules requiring tool definitions must obtain those definitions before deciding.
 OXP session/span metadata cannot confirm trace identity, so span fallback or OXP-sourced definitions
 report `DEGRADED_ATOMIC`. See the [log events](logs.md) for the evidence source used on an actual request.
+
+## Response diagnostics
+
+The wire response keeps outcome/reason and metadata. Checks and context diagnostics
+are in `details` under `schema: demo-ce.v1`; the four deprecated top-level diagnostics
+are omitted. Each check retains its ID, passed flag and reason. Internal evaluation,
+finding attribution and logging use typed diagnostics before this final serialization.
+This packaging does not change the policy decisions described above.

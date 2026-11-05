@@ -65,8 +65,8 @@ func (r Rule) Judges(role string) bool {
 // MissingContext denies out because the evidence the rules need is not available.
 func MissingContext(out *cev1.EvaluateResponse, cause cev1.MissingContextCause, reason string) *cev1.EvaluateResponse {
 	out.Outcome = cev1.Decision_DECISION_DENY
-	out.DenialReason = cev1.DenialReason_DENIAL_REASON_MISSING_CONTEXT
-	out.MissingContextCause = cause
+	out.DenialReason = cev1.DenialReason_DENIAL_REASON_MISSING_CONTEXT.Enum()
+	out.MissingContextCause = cause.Enum()
 	out.Reason = reason
 	out.ChecksRun = append(out.ChecksRun, &cev1.CheckResult{CheckId: "OXP_SESSION_CONTEXT", Passed: false, Reason: reason})
 	return out

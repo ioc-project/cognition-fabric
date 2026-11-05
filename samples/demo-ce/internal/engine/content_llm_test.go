@@ -78,8 +78,8 @@ func TestRealPreCallEventWithSensitiveRequestIsDenied(t *testing.T) {
 	if out.Outcome != cev1.Decision_DECISION_DENY || !strings.Contains(out.Reason, "LLM_SENSITIVE_EXPORT") {
 		t.Fatalf("expected a content denial, got %v %q", out.Outcome, out.Reason)
 	}
-	if out.DenialReason != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT || out.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
-		t.Fatalf("unexpected denial shape: %v %v", out.DenialReason, out.ContextSufficiency)
+	if out.GetDenialReason() != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT || out.GetContextSufficiency() != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
+		t.Fatalf("unexpected denial shape: %v %v", out.GetDenialReason(), out.GetContextSufficiency())
 	}
 }
 
@@ -91,8 +91,8 @@ func TestRealPreCallEventWithNeutralRequestIsAllowed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if out.Outcome != cev1.Decision_DECISION_ALLOW || out.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
-		t.Fatalf("expected an allowed decision with complete context, got %v %v %q", out.Outcome, out.ContextSufficiency, out.Reason)
+	if out.Outcome != cev1.Decision_DECISION_ALLOW || out.GetContextSufficiency() != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
+		t.Fatalf("expected an allowed decision with complete context, got %v %v %q", out.Outcome, out.GetContextSufficiency(), out.Reason)
 	}
 }
 
@@ -113,8 +113,8 @@ func TestNoPreCallEventIsMissingContextRace(t *testing.T) {
 	event := llmFixture(t, "llm_started_sensitive.json")
 	started := time.Now()
 	out, _ := engine.Evaluate(context.Background(), llmRequestFor(event, nil))
-	if out.Outcome != cev1.Decision_DECISION_DENY || out.DenialReason != cev1.DenialReason_DENIAL_REASON_MISSING_CONTEXT || out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
-		t.Fatalf("expected a missing-context RACE denial, got %v %v %v", out.Outcome, out.DenialReason, out.MissingContextCause)
+	if out.Outcome != cev1.Decision_DECISION_DENY || out.GetDenialReason() != cev1.DenialReason_DENIAL_REASON_MISSING_CONTEXT || out.GetMissingContextCause() != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
+		t.Fatalf("expected a missing-context RACE denial, got %v %v %v", out.Outcome, out.GetDenialReason(), out.GetMissingContextCause())
 	}
 	if time.Since(started) < 140*time.Millisecond {
 		t.Fatal("the CE must wait for the event before denying")
@@ -141,7 +141,7 @@ func TestOnlyTheExactSpanIsUsed(t *testing.T) {
 	request := llmRequestFor(event, nil)
 	request.SpanId = "0000000000000001"
 	out, _ := engine.Evaluate(context.Background(), request)
-	if out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
+	if out.GetMissingContextCause() != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
 		t.Fatalf("an event of another span must not be used, got %v %q", out.Outcome, out.Reason)
 	}
 }
@@ -152,7 +152,7 @@ func TestObserveSDKGenAIInputShapeIsJudged(t *testing.T) {
 	event := llmFixture(t, "llm_started_genai.json")
 	pushEvent(t, in, event)
 	out, _ := engine.Evaluate(context.Background(), llmRequestFor(event, nil))
-	if out.Outcome != cev1.Decision_DECISION_ALLOW || out.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
+	if out.Outcome != cev1.Decision_DECISION_ALLOW || out.GetContextSufficiency() != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
 		t.Fatalf("a neutral SDK-shaped request must be allowed with complete context, got %v %q", out.Outcome, out.Reason)
 	}
 	sensitive := llmFixture(t, "llm_started_genai.json")
@@ -190,8 +190,8 @@ func TestSessionOfTheEventMustMatchTheSubmittedOne(t *testing.T) {
 	event := llmFixture(t, "llm_started_benign.json")
 	pushEvent(t, in, event)
 	out, _ := engine.Evaluate(context.Background(), llmRequestFor(event, map[string]string{"ioc.observe.session_id": "another-session_1"}))
-	if out.Outcome != cev1.Decision_DECISION_DENY || out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP {
-		t.Fatalf("a session mismatch must be missing context, got %v %v", out.Outcome, out.MissingContextCause)
+	if out.Outcome != cev1.Decision_DECISION_DENY || out.GetMissingContextCause() != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP {
+		t.Fatalf("a session mismatch must be missing context, got %v %v", out.Outcome, out.GetMissingContextCause())
 	}
 	out, _ = engine.Evaluate(context.Background(), llmRequestFor(event, map[string]string{"ioc.observe.session_id": sessionOf(event)}))
 	if out.Outcome != cev1.Decision_DECISION_ALLOW {
@@ -295,8 +295,8 @@ func TestLargePreCallEventIsAccepted(t *testing.T) {
 	out := evaluateVariant(t, llmExportRule(), func(request map[string]any) {
 		request["messages"] = append(request["messages"].([]any), map[string]any{"role": "tool", "tool_call_id": "call_1", "content": strings.Repeat("timetable row\n", 30000)})
 	})
-	if out.Outcome != cev1.Decision_DECISION_ALLOW || out.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
-		t.Fatalf("a request of several hundred KiB must reach the CE and be judged, got %v %v", out.Outcome, out.MissingContextCause)
+	if out.Outcome != cev1.Decision_DECISION_ALLOW || out.GetContextSufficiency() != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
+		t.Fatalf("a request of several hundred KiB must reach the CE and be judged, got %v %v", out.Outcome, out.GetMissingContextCause())
 	}
 }
 

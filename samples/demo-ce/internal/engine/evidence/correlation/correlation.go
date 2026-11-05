@@ -119,10 +119,10 @@ func (j *Judge) Evaluate(ctx context.Context, r *cev1.EvaluateRequest, out *cev1
 				if !event.realtime && !reflect.DeepEqual(event.snapshot, j.Inbox.Lookup(r.TraceId, r.SpanId)) {
 					continue
 				}
-				out.ContextSufficiency = cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE
+				out.ContextSufficiency = cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE.Enum()
 				reason := "input published before send, bound by exact trace/span"
 				if requireDefinitions {
-					out.ContextSufficiency = cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC
+					out.ContextSufficiency = cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC.Enum()
 					reason = "messages bound by pre-call trace/span; required OXP tool definitions are session/span scoped, trace identity unconfirmed"
 				}
 				if event.realtime {
@@ -150,7 +150,7 @@ func (j *Judge) Evaluate(ctx context.Context, r *cev1.EvaluateRequest, out *cev1
 			if history != nil && waitCtx.Err() == nil {
 				if texts, ok := inputTexts(history.Current, j.Kind); ok {
 					if j.Kind != config.EvidenceLLMInput || !needsDefinitions(rules) || hasDefinitions(history.Current) {
-						out.ContextSufficiency = cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC
+						out.ContextSufficiency = cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC.Enum()
 						logging.FromContext(ctx).InfoContext(ctx, "Using OXP session/span input as fallback; trace identity is unconfirmed", "event", "evidence.selected", "stage", "EVIDENCE", "source", "oxp_span_fallback", "evidence", j.Kind, "trace_identity_confirmed", false)
 						j.recordContext(out, history, false)
 						return j.decide(ctx, out, rules, texts, "input of the selected OXP session/span; trace identity unconfirmed")
@@ -262,7 +262,7 @@ func (j *Judge) decide(ctx context.Context, out *cev1.EvaluateResponse, rules []
 	check := &cev1.CheckResult{CheckId: "DEMO_CONTENT_CONFIG", Passed: hit == "", Reason: reason}
 	if hit != "" {
 		out.Outcome = cev1.Decision_DECISION_DENY
-		out.DenialReason = cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT
+		out.DenialReason = cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT.Enum()
 		out.Reason = "deterministic content rule " + hit
 		check.Reason = out.Reason
 	}

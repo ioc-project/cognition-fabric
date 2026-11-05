@@ -99,7 +99,7 @@ func TestForeignMASDoesNotAccessStore(t *testing.T) {
 	r := storeTestRequest()
 	r.MasId = "foreign"
 	got, err := s.Evaluate(context.Background(), r)
-	if err != nil || got.Outcome != cev1.Decision_DECISION_DENY || got.ChecksRun[0].CheckId != "MAS_SCOPE" {
+	if err != nil || got.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, got).ChecksRun[0].CheckId != "MAS_SCOPE" {
 		t.Fatalf("scope decision %+v %v", got, err)
 	}
 }

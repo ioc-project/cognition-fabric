@@ -20,10 +20,10 @@ title: Extend Template CE
 ## Replace the stub
 
 1. Confirm the receiving CFN's contract and reconcile the local proto before adding fields.
-2. Replace the always-ALLOW branch in `CognitionEngineServicer.Evaluate` with your decision logic.
+2. Replace the configured allow/deny branch in `CognitionEngineServicer.Evaluate` with your decision logic.
 3. Validate the identifiers and scope needed by that logic before accessing external state.
 4. Decide which context is required and what failures mean for your engine.
-5. Persist the intended finding and return the outcome, reason and checks.
+5. Persist the intended finding and return outcome, reason and your own optional details.
 6. Update `GetInfo` to describe the behavior your implementation actually provides.
 
 The local template proto and the Go service's imported CFN proto are separate sources.
@@ -38,7 +38,13 @@ these failures; the stub does not enforce that requirement for you.
 
 ## Contract changes
 
-Edit `proto/ce.proto` as the source of truth and regenerate the stubs using compatible `grpcio-tools`.
+Keep `proto/ce.proto` aligned with the shared CFN contract and regenerate with
+`uv run --frozen python scripts/generate_proto.py`; add `--check` to verify freshness.
+The common response is outcome/reason; optional `details` contains this CE's own
+fields. The template uses `schema: template-ce.v1`, `mode: forced` and
+`configured_decision: allow` or `deny`, omitting deprecated CASA diagnostics.
+Existing real CEs keep their old bindings and fields. Optional enum presence can
+change regenerated source APIs while preserving the binary contract.
 Preserve the package-relative import in the generated gRPC module. Do not manually implement new
 protobuf fields in generated files. Verify interoperability with CFN after regeneration.
 

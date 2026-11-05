@@ -22,6 +22,10 @@ ioc-scale-cf-demo-ce/
 └── docker-compose.yml    # Run demo-ce locally
 ```
 
+For local issue #55 contract work, follow [Demo CE's module-override instructions](demo-ce/README.md#evaluation-response-and-local-contract-development).
+Standalone Go builds await a published CFN module version containing the new
+response; Template CE carries its own regenerated bindings.
+
 ## Quick Start
 
 ### Run Demo CE

@@ -9,6 +9,8 @@ const (
 )
 
 // testEngine is a contentEngine with the inbox its event evidence reads, so tests can publish events.
+// It runs below the Router, so its responses keep the typed internal diagnostics; tests through
+// the Router read the published details with diagnostics(t, out).
 type testEngine struct {
 	*contentEngine
 	events *inbox.Inbox

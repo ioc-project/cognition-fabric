@@ -56,6 +56,22 @@ Authorization decision for an in-scope MAS action.
 - `outcome` - ALLOW, DENY, MODIFY
 - `reason` - Human-readable explanation
 - `trace_id` - Echo of request
+- `details` - `{"schema":"template-ce.v1","mode":"forced","configured_decision":"allow"}`
+  (or `deny`). The four deprecated CASA diagnostic fields are omitted.
+
+The response remains readable by older CFN/CE clients using their existing
+bindings. Existing real CEs can keep returning legacy diagnostics unchanged.
+See [the shared response contract](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/docs/specs/ce-evaluation-response.md).
+
+Regenerate and check the Python bindings using the locked toolchain:
+
+```bash
+uv run --frozen python scripts/generate_proto.py
+uv run --frozen python scripts/generate_proto.py --check
+```
+
+The helper preserves package-relative generated imports. Never regenerate the
+frozen legacy descriptor in `tests/fixtures/` from the new contract.
 
 ### `GetInfo` RPC
 

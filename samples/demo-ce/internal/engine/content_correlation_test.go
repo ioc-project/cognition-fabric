@@ -60,7 +60,7 @@ func TestUnifiedContextUsesNativePreCallInputAndOXPHistory(t *testing.T) {
 		t.Fatalf("%+v %v", out, err)
 	}
 	found := false
-	for _, check := range out.ChecksRun {
+	for _, check := range diagnostics(t, out).ChecksRun {
 		found = found || check.CheckId == "OXP_CAUSAL_CONTEXT" && check.Passed
 	}
 	if !found {
@@ -90,7 +90,7 @@ func TestOXPFallbackJudgesActualInputShapes(t *testing.T) {
 				_ = json.NewEncoder(w).Encode(map[string]any{"spans": []any{evidenceSpan(span, "", tc.spanType, tc.attrs)}})
 			})
 			out, err := engine.Evaluate(context.Background(), spanRequest(span))
-			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.DenialReason != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT || !strings.Contains(out.Reason, "NO_SECRET") {
+			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, out).GetDenialReason() != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT || !strings.Contains(out.Reason, "NO_SECRET") {
 				t.Fatalf("input was not judged: %+v %v", out, err)
 			}
 		})
@@ -129,10 +129,10 @@ func TestOXPFallbackDoesNotJudgeASiblingsOrAncestorsContent(t *testing.T) {
 		t.Fatalf("unrelated text judged: %+v %v", out, err)
 	}
 	found := false
-	for _, check := range out.ChecksRun {
+	for _, check := range diagnostics(t, out).ChecksRun {
 		found = found || check.CheckId == "OXP_CAUSAL_CONTEXT" && check.Passed
 	}
-	if !found || out.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC {
+	if !found || diagnostics(t, out).GetContextSufficiency() != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC {
 		t.Fatalf("session/span context must not claim confirmed trace identity: %+v", out)
 	}
 }
@@ -147,7 +147,7 @@ func TestOXPFallbackWaitsForActivityAndItsCausalContext(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(map[string]any{"spans": rows})
 	})
 	out, err := engine.Evaluate(context.Background(), spanRequest(span))
-	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.DenialReason != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT || calls.Load() < 2 {
+	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, out).GetDenialReason() != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT || calls.Load() < 2 {
 		t.Fatalf("did not await parent: %+v %v", out, err)
 	}
 }
@@ -160,7 +160,7 @@ func TestOXPFallbackMissingEvidenceFailsWithinCallerDeadline(t *testing.T) {
 	defer cancel()
 	start := time.Now()
 	out, err := engine.Evaluate(ctx, spanRequest(span))
-	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.DenialReason != cev1.DenialReason_DENIAL_REASON_MISSING_CONTEXT || out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
+	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, out).GetDenialReason() != cev1.DenialReason_DENIAL_REASON_MISSING_CONTEXT || diagnostics(t, out).GetMissingContextCause() != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
 		t.Fatalf("%+v %v", out, err)
 	}
 	if time.Since(start) > 400*time.Millisecond {
@@ -176,7 +176,7 @@ func TestOXPFallbackNeverGuessesInputFromAnotherSpan(t *testing.T) {
 		}})
 	})
 	out, err := engine.Evaluate(context.Background(), spanRequest(span))
-	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.DenialReason != cev1.DenialReason_DENIAL_REASON_MISSING_CONTEXT {
+	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, out).GetDenialReason() != cev1.DenialReason_DENIAL_REASON_MISSING_CONTEXT {
 		t.Fatalf("invented current input: %+v %v", out, err)
 	}
 }

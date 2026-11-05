@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 import uuid
 
 import grpc
+from google.protobuf import struct_pb2
 from grpc_reflection.v1alpha import reflection
 
 from generated import ce_pb2, ce_pb2_grpc
@@ -83,11 +84,6 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
             deny = self._decision == "deny"
             response = ce_pb2.EvaluateResponse(
                 outcome=ce_pb2.DECISION_DENY if deny else ce_pb2.DECISION_ALLOW,
-                denial_reason=(
-                    ce_pb2.DENIAL_REASON_DEVIATES_FROM_INTENT
-                    if deny else ce_pb2.DENIAL_REASON_UNSPECIFIED
-                ),
-                context_sufficiency=ce_pb2.CONTEXT_SUFFICIENCY_UNSPECIFIED,
                 reason=(
                     "Configured demo policy: DENY (simulated intent deviation)"
                     if deny else "Configured demo policy: ALLOW"
@@ -95,6 +91,12 @@ class CognitionEngineServicer(ce_pb2_grpc.CognitionEngineServicer):
                 trace_id=request.trace_id,
                 timestamp=datetime.now(timezone.utc).isoformat(),
             )
+            response.details.CopyFrom(struct_pb2.Struct())
+            response.details.update({
+                "schema": "template-ce.v1",
+                "mode": "forced",
+                "configured_decision": self._decision,
+            })
             logger.info(f"[Evaluate] Decision: {ce_pb2.Decision.Name(response.outcome)} - {response.reason}")
 
             # 3. Store finding in Cognition Store

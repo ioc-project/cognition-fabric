@@ -11,6 +11,7 @@ import grpc
 from concurrent import futures
 
 from generated import ce_pb2, ce_pb2_grpc
+from google.protobuf import descriptor_pool, descriptor_pb2, message_factory
 from service import CognitionEngineServicer
 
 
@@ -106,3 +107,34 @@ class TestGetInfoRPC:
         assert response.ce_type == "CASA"
         assert response.version == "1.0.0"
         assert response.matcher_strategy == "hybrid"
+
+
+@pytest.mark.parametrize("decision,expected", [("allow", ce_pb2.DECISION_ALLOW), ("deny", ce_pb2.DECISION_DENY)])
+def test_neutral_response_and_legacy_consumer(monkeypatch, decision, expected):
+    monkeypatch.setenv("TEMPLATE_CE_DECISION", decision)
+    servicer = CognitionEngineServicer()
+    class Context:
+        def set_code(self, code):
+            pytest.fail(f"unexpected gRPC error: {code}")
+    try:
+        response = servicer.Evaluate(make_request(trace_id="legacy-client-trace"), Context())
+    finally:
+        servicer._loop.close()
+    assert response.outcome == expected
+    assert response.details["schema"] == "template-ce.v1"
+    assert response.details["configured_decision"] == decision
+    for field in ("denial_reason", "missing_context_cause", "context_sufficiency"):
+        assert not response.HasField(field)
+    assert not response.checks_run
+    # Frozen before this change; never regenerate it from the current contract.
+    descriptors = descriptor_pb2.FileDescriptorSet.FromString(
+        (Path(__file__).parent / "fixtures/legacy-ce.protoset").read_bytes()
+    )
+    pool = descriptor_pool.DescriptorPool()
+    for descriptor in descriptors.file:
+        pool.Add(descriptor)
+    old_type = message_factory.GetMessageClass(pool.FindMessageTypeByName("ioc.ce.v1.EvaluateResponse"))
+    old = old_type.FromString(response.SerializeToString())
+    assert old.outcome == expected
+    assert old.reason == response.reason
+    assert old.trace_id == "legacy-client-trace"

@@ -43,8 +43,8 @@ func TestRealToolCallWithNeutralArgumentsIsAllowed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if out.Outcome != cev1.Decision_DECISION_ALLOW || out.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
-		t.Fatalf("expected an allowed decision with complete context, got %v %v %q", out.Outcome, out.ContextSufficiency, out.Reason)
+	if out.Outcome != cev1.Decision_DECISION_ALLOW || out.GetContextSufficiency() != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
+		t.Fatalf("expected an allowed decision with complete context, got %v %v %q", out.Outcome, out.GetContextSufficiency(), out.Reason)
 	}
 }
 
@@ -85,8 +85,8 @@ func TestToolCallWithoutAPublishedEventIsMissingContext(t *testing.T) {
 	engine := mcpEngine(t, 100*time.Millisecond)
 	event := llmFixture(t, "mcp_tool_started_read.json")
 	out, _ := engine.Evaluate(context.Background(), mcpRequestFor(event, "tool_call", nil))
-	if out.Outcome != cev1.Decision_DECISION_DENY || out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
-		t.Fatalf("a tool call without its event must be missing context, got %v %v", out.Outcome, out.MissingContextCause)
+	if out.Outcome != cev1.Decision_DECISION_DENY || out.GetMissingContextCause() != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
+		t.Fatalf("a tool call without its event must be missing context, got %v %v", out.Outcome, out.GetMissingContextCause())
 	}
 }
 
@@ -109,7 +109,7 @@ func TestOtherEventTypesAreNotToolEvidence(t *testing.T) {
 	event["type"] = "tool.completed"
 	pushEvent(t, engine.events, event)
 	out, _ := engine.Evaluate(context.Background(), mcpRequestFor(event, "tool_call", nil))
-	if out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
+	if out.GetMissingContextCause() != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
 		t.Fatalf("only tool.started is accepted as the request, got %v %q", out.Outcome, out.Reason)
 	}
 }
@@ -119,8 +119,8 @@ func TestToolEventOfAnotherSessionIsMissingContext(t *testing.T) {
 	event := llmFixture(t, "mcp_tool_started_read.json")
 	pushEvent(t, engine.events, event)
 	out, _ := engine.Evaluate(context.Background(), mcpRequestFor(event, "tool_call", map[string]string{"ioc.observe.session_id": "another-session_1"}))
-	if out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP {
-		t.Fatalf("a session mismatch must be missing context, got %v %v", out.Outcome, out.MissingContextCause)
+	if out.GetMissingContextCause() != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP {
+		t.Fatalf("a session mismatch must be missing context, got %v %v", out.Outcome, out.GetMissingContextCause())
 	}
 }
 
