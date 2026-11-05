@@ -101,14 +101,19 @@ and list them in `needs` of `reusable-workflow-ci-status`, the required status j
 
 | CE | Jobs | Notes |
 |---|---|---|
-| `demo-ce` (Go) | `demo-ce-unit-tests`, `demo-ce-docker-build-push` | Needs a short-lived token for the private `cisco-eti/ioc-scale-cfn-svc` module, issued through Vault by `.github/actions/cfn-token` (vars `KEEPER_URL`, `VAULT_NAMESPACE`, `VAULT_SECRET_PATH`; secrets `VAULT_APPROLE_ROLE_ID`, `VAULT_APPROLE_SECRET_ID`); images are published from `main` only |
+| `demo-ce` (Go) | `demo-ce-unit-tests`, `demo-ce-docker-build-push` | Needs a short-lived token for the private `cisco-eti/ioc-scale-cfn-svc` module, issued through Vault by `.github/actions/cfn-token` (vars `KEEPER_URL`, `VAULT_NAMESPACE`, `VAULT_SECRET_PATH`; secrets `VAULT_APPROLE_ROLE_ID`, `VAULT_APPROLE_SECRET_ID`); `ci.yaml` publishes from `main` only |
 
-CI automatically runs on:
+CI (`ci.yaml`) automatically runs on:
 - **Pull Requests** - Unit tests + Docker build validation (no push)
 - **Main branch** - Build + push `:latest` + `:YYYY-MM-DD-<sha>`
 - **Manual runs** - Unit tests + Docker build validation (no push)
 
-Tag pushes do not trigger this workflow.
+Tag pushes run `.github/workflows/release.yaml` instead. Supported names are
+`vX.Y.Z` or a prerelease such as `v1.2.3-rc.1`. The Docker tag equals the Git
+tag and does not move `latest`. A Git tag names a commit, not a branch; the
+tagged commit must contain this workflow. Who may push tags is the SRE process
+in `CONTRIBUTING.md`. Operator selection is documented in the CFN repository
+[`deploy/README.md`](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/deploy/README.md).
 
 ### Docker Images
 
@@ -117,6 +122,7 @@ Images are published to GitHub Container Registry:
 ```
 ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:latest
 ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:YYYY-MM-DD-<sha>
+ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:vX.Y.Z
 ```
 
 ## Contributing
@@ -126,7 +132,7 @@ ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:YYYY-MM-DD-<sha>
    - Python (see `template-ce/`): proto definitions in `<name>/proto/`, service in `<name>/src/`, tests in `<name>/tests/`
    - Go (see `demo-ce/`): the contract comes from the `ioc-scale-cfn-svc` Go module; `cmd/`, `internal/` and `pkg/`, with the tests next to the code
 3. Add it to `docker-compose.yml`
-4. Add its jobs to `.github/workflows/ci.yaml` and to `needs` of `reusable-workflow-ci-status`
+4. Add its jobs to `.github/workflows/ci.yaml` and to `needs` of `reusable-workflow-ci-status`, and the corresponding tag-publish jobs to `.github/workflows/release.yaml`
 5. Document it in your engine's `README.md`
 6. Test locally
 7. Submit PR
