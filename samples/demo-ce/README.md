@@ -12,7 +12,7 @@ so the CE sends no heartbeats.
 
 See the [documentation site source](../docs/README.md) for the full Demo CE guide.
 
-## Evaluation response and local contract development
+## Evaluation response
 
 The common response is `outcome`, free-text `reason` and the existing metadata.
 Demo diagnostics now live in `details` with `schema: demo-ce.v1`, `checks_run`
@@ -22,26 +22,8 @@ findings and logs retain their previous behavior. Existing consumers still decod
 outcome/reason; unchanged real CEs can keep using their existing bindings.
 See the [shared response contract](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/docs/specs/ce-evaluation-response.md).
 
-During local issue #55 development, use CFN's `task run:demo-ce`: it builds with
-an isolated temporary modfile pointing at the sibling CFN contract. For tests from
-this repository's root:
-
-```bash
-ce55_mod_dir=$(mktemp -d)
-ce55_cfn_dir=$(cd ../ioc-scale-cfn-svc && pwd)
-cp demo-ce/go.mod "$ce55_mod_dir/demo.mod"
-cp demo-ce/go.sum "$ce55_mod_dir/demo.sum"
-(cd demo-ce && go mod edit -modfile="$ce55_mod_dir/demo.mod" \
-  -replace="github.com/cisco-eti/ioc-scale-cfn-svc=$ce55_cfn_dir")
-(cd demo-ce && go test -mod=mod -modfile="$ce55_mod_dir/demo.mod" ./...)
-rm -rf "$ce55_mod_dir"
-```
-
-`go.mod` still pins the published legacy CFN version. A standalone build/CI of
-these new response fields needs a real CFN module version containing #55; pin it
-when that version exists. Until then, ordinary builds without the local override
-are pending. Do not substitute invented versions. The frozen descriptor under
-`internal/engine/testdata/` must remain independent of current generation.
+The frozen descriptor under `internal/engine/testdata/` must remain independent
+of current generation.
 
 ## Stack and repositories
 
@@ -349,6 +331,16 @@ docker compose logs -f --no-log-prefix demo-ce | jq 'select(.event == "evaluatio
 ```
 
 ## Build and test
+
+Generated CE protobuf/gRPC types come from the `github.com/cisco-eti/ioc-scale-cfn-svc`
+Go module at the version pinned in [go.mod](go.mod). Go downloads this dependency;
+a local CFN checkout is not required.
+
+> **Draft dependency update:** This branch still pins the older CFN bindings.
+> After [CFN PR #68](https://github.com/cisco-eti/ioc-scale-cfn-svc/pull/68) merges,
+> update `go.mod` and `go.sum` to that commit before standalone builds and CI can pass.
+
+Run these commands from the `demo-ce/` directory:
 
 ```bash
 go test -race ./...
