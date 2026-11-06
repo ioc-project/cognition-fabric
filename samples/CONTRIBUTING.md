@@ -1,3 +1,3 @@
 - [Please follow this general contribution guide for SRE repos](https://wwwin-github.cisco.com/pages/eti/eti-platform-docs/development/contribution_guide/)
 - For pushing git tags/branches to this repo, please reach out to [SRE team](mailto:eti-sre-admins@cisco.com)
-- Supported release tags are `vX.Y.Z` or a prerelease such as `v1.2.3-rc.1`. Pushing one runs [`.github/workflows/release.yaml`](.github/workflows/release.yaml) and publishes that commit as `ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:<tag>`, without moving `latest`.
+- Supported release tags are `vX.Y.Z` or a prerelease such as `v1.2.3-rc.1`. Pushing one runs [`.github/workflows/release.yaml`](.github/workflows/release.yaml) and publishes that commit as `ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:<tag>` and `ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/template-ce:<tag>`, without moving `latest`.

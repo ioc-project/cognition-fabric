@@ -138,13 +138,92 @@ jobs:
           cache-to: type=gha,mode=max,scope=demo-ce
           provenance: false
 
+  ################################## template-ce (Python) ######################
+  ###############################################################################
+  template-ce-unit-tests:
+    name: template-ce Unit Tests
+    runs-on:
+      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run Unit Tests
+        run: |
+          cd template-ce
+          uv sync --frozen --extra test
+          uv run pytest
+
+  # Template CE images are published from main; PRs and manual runs validate the build.
+  template-ce-docker-build-push:
+    name: template-ce Build & Push Docker Image
+    needs: [ template-ce-unit-tests ]
+    runs-on:
+      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Generate metadata
+        id: meta
+        run: |
+          echo "short_sha=${GITHUB_SHA:0:7}" >> "$GITHUB_OUTPUT"
+          echo "build_date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image (validation only)
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: template-ce
+          file: template-ce/Dockerfile
+          push: false
+          platforms: linux/amd64
+          tags: |
+            ghcr.io/${{ github.repository }}/template-ce:${{ steps.meta.outputs.build_date }}-${{ steps.meta.outputs.short_sha }}
+          cache-from: type=gha,scope=template-ce
+          cache-to: type=gha,mode=max,scope=template-ce
+          provenance: false
+
+      - name: Build and push Docker image (main)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: docker/build-push-action@v6
+        with:
+          context: template-ce
+          file: template-ce/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ github.repository }}/template-ce:latest
+            ghcr.io/${{ github.repository }}/template-ce:${{ steps.meta.outputs.build_date }}-${{ steps.meta.outputs.short_sha }}
+          cache-from: type=gha,scope=template-ce
+          cache-to: type=gha,mode=max,scope=template-ce
+          provenance: false
+
   ################################## Send Status for PR Checks ###########################
   ########################################################################################
   # This Job is REQUIRED, it is what allows for the WHOLE workflow to show up in the PR status checks as a requirement for branch rules
   reusable-workflow-ci-status:
     name: Reusable Workflow CI Status
     # This should be an array of ALL active jobs that are used/run
-    needs: [ demo-ce-unit-tests, demo-ce-docker-build-push ]
+    needs: [ demo-ce-unit-tests, demo-ce-docker-build-push, template-ce-unit-tests, template-ce-docker-build-push ]
     if: always()
     runs-on:
       group: ${{ vars.DEFAULT_ARC_RUNNERS }}

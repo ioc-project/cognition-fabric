@@ -95,13 +95,14 @@ uv run pytest -v
 
 ### Continuous Integration
 
-`.github/workflows/ci.yaml` tests and builds `demo-ce`. The Python `template-ce/` template is tested locally
-and is not built or published by CI. When you add a deployed CE, add its unit-test and Docker build jobs
-and list them in `needs` of `reusable-workflow-ci-status`, the required status job.
+`.github/workflows/ci.yaml` tests and builds `demo-ce` and `template-ce`. When you add a deployed CE,
+add its unit-test and Docker build jobs and list them in `needs` of `reusable-workflow-ci-status`,
+the required status job.
 
 | CE | Jobs | Notes |
 |---|---|---|
 | `demo-ce` (Go) | `demo-ce-unit-tests`, `demo-ce-docker-build-push` | Needs a short-lived token for the private `cisco-eti/ioc-scale-cfn-svc` module, issued through Vault by `.github/actions/cfn-token` (vars `KEEPER_URL`, `VAULT_NAMESPACE`, `VAULT_SECRET_PATH`; secrets `VAULT_APPROLE_ROLE_ID`, `VAULT_APPROLE_SECRET_ID`); `ci.yaml` publishes from `main` only |
+| `template-ce` (Python) | `template-ce-unit-tests`, `template-ce-docker-build-push` | No private CFN module; `ci.yaml` publishes from `main` only |
 
 CI (`ci.yaml`) automatically runs on:
 - **Pull Requests** - Unit tests + Docker build validation (no push)
@@ -123,6 +124,9 @@ Images are published to GitHub Container Registry:
 ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:latest
 ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:YYYY-MM-DD-<sha>
 ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:vX.Y.Z
+ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/template-ce:latest
+ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/template-ce:YYYY-MM-DD-<sha>
+ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/template-ce:vX.Y.Z
 ```
 
 ## Contributing
