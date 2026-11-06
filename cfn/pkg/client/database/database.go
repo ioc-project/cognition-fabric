@@ -66,12 +66,16 @@ func (db *Database) CreateAuditEvent(ctx context.Context, a *audit.Audit) error 
 	return audit.CreateAuditEvent(ctx, db.DB, a)
 }
 
+func (db *Database) AppendProxyAuditEvent(ctx context.Context, a *audit.Audit) error {
+	return audit.AppendProxyAuditEvent(ctx, db.DB, a)
+}
+
 // GetAuditEventByID retrieves a single audit event by UUID.
 func (db *Database) GetAuditEventByID(ctx context.Context, id uuid.UUID) (*audit.Audit, error) {
 	return audit.GetAuditEventByID(ctx, db.DB, id)
 }
 
-// ListAuditEvents returns audit events with optional resource_type and audit_type filters.
-func (db *Database) ListAuditEvents(ctx context.Context, resourceType, auditType string, page, pageSize int) (*audit.AuditListResponse, error) {
-	return audit.ListAuditEvents(ctx, db.DB, resourceType, auditType, page, pageSize)
+// ListAuditEvents returns audit events with optional filters applied before pagination.
+func (db *Database) ListAuditEvents(ctx context.Context, resourceType, auditType string, page, pageSize int, filters ...audit.ListFilters) (*audit.AuditListResponse, error) {
+	return audit.ListAuditEvents(ctx, db.DB, resourceType, auditType, page, pageSize, filters...)
 }

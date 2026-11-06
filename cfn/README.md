@@ -159,6 +159,10 @@ The CFN exposes a gRPC Enforcement API on port 9003 (configurable via `GRPC_PORT
 | Method | Description |
 |--------|-------------|
 | `GetDisposition` | Returns disposition (allow/block) for an L9 interaction |
+| `AppendAuditRecord` | Commits a finalized Proxy audit record with an idempotent receipt |
+
+See the [Proxy audit contract](docs/specs/proxy-audit-ingestion.md) for record
+variants, size limits, error/receipt semantics, common outcome filtering and rollout.
 
 **Testing with grpcurl:**
 

@@ -1,4 +1,4 @@
-# D5: MAS onboarding metadata for CEs
+# D6: MAS onboarding metadata for CEs
 
 **Status:** Open — draft proposal; not implemented.
 

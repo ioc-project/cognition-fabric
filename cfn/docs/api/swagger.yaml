@@ -192,7 +192,11 @@ definitions:
         type: string
       enforcing_url:
         type: string
+      name:
+        type: string
       status:
+        type: string
+      version:
         type: string
     type: object
   mgmt.MASResponse:

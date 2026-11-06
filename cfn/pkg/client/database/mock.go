@@ -31,6 +31,9 @@ func (m *MockDatabase) CreateAuditEvent(ctx context.Context, a *audit.Audit) err
 	if err := ctx.Err(); err != nil {
 		return err
 	}
+	if err := audit.ValidateSource(a.Source); err != nil {
+		return err
+	}
 	if err := audit.ValidateResourceType(a.ResourceType); err != nil {
 		return err
 	}
@@ -41,6 +44,7 @@ func (m *MockDatabase) CreateAuditEvent(ctx context.Context, a *audit.Audit) err
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	a.ID = uuid.New()
+	audit.PopulateCFNOutcome(a)
 	now := time.Now()
 	a.CreatedOn = now
 	a.LastModifiedOn = now
@@ -61,8 +65,15 @@ func (m *MockDatabase) GetAuditEventByID(ctx context.Context, id uuid.UUID) (*au
 	return a, nil
 }
 
-func (m *MockDatabase) ListAuditEvents(ctx context.Context, resourceType, auditType string, page, pageSize int) (*audit.AuditListResponse, error) {
+func (m *MockDatabase) ListAuditEvents(ctx context.Context, resourceType, auditType string, page, pageSize int, filters ...audit.ListFilters) (*audit.AuditListResponse, error) {
 	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	var extra audit.ListFilters
+	if len(filters) > 0 {
+		extra = filters[0]
+	}
+	if err := extra.Validate(); err != nil {
 		return nil, err
 	}
 	if resourceType != "" {
@@ -96,6 +107,9 @@ func (m *MockDatabase) ListAuditEvents(ctx context.Context, resourceType, auditT
 		if auditType != "" && a.AuditType != auditType {
 			continue
 		}
+		if !extra.Matches(a) {
+			continue
+		}
 		filtered = append(filtered, *a)
 	}
 	sort.Slice(filtered, func(i, j int) bool { return filtered[i].CreatedOn.After(filtered[j].CreatedOn) })
@@ -123,3 +137,26 @@ func (m *MockDatabase) ListAuditEvents(ctx context.Context, resourceType, auditT
 }
 
 var _ Store = (*MockDatabase)(nil)
+
+func (m *MockDatabase) AppendProxyAuditEvent(ctx context.Context, a *audit.Audit) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, stored := range m.events {
+		if stored.Source == a.Source && stored.SourceRecordID != nil && a.SourceRecordID != nil && *stored.SourceRecordID == *a.SourceRecordID {
+			same, err := audit.EqualProxyInformation(stored.AuditInformation, a.AuditInformation)
+			if err != nil {
+				return err
+			}
+			if !same {
+				return audit.ErrRecordConflict
+			}
+			return nil
+		}
+	}
+	a.ID = uuid.New()
+	m.events[a.ID] = a
+	return nil
+}

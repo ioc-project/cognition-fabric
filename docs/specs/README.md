@@ -10,7 +10,8 @@ with the code.
 
 | Spec | Scope | Status |
 |------|-------|--------|
-| — | *No finalized specs yet* | — |
+| [CFN disposition audit](disposition-audit.md) | Shared producer identity and CFN disposition audit records, limits and rollout | Accepted; issue #34 implementation |
+| [Proxy audit ingestion](proxy-audit-ingestion.md) | CF-owned append, shared outcomes/filtering, persistence and combined audit UI | Issue #41 CF implementation; Proxy delivery qualification pending |
 
 ## Pending
 

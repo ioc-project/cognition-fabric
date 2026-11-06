@@ -529,7 +529,13 @@ const docTemplate = `{
                 "enforcing_url": {
                     "type": "string"
                 },
+                "name": {
+                    "type": "string"
+                },
                 "status": {
+                    "type": "string"
+                },
+                "version": {
                     "type": "string"
                 }
             }

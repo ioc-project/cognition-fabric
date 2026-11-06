@@ -1,0 +1,35 @@
+{
+  "mas_id": "fa7c634b-38a1-4ad0-aeb6-ffda79c7b6cb",
+  "trace_id": "579d6c3efa084969378c34a67b060a26",
+  "span_id": "1234567890abcdef",
+  "source_agent_id": "planner",
+  "destination_agent_id": "schedule_agent",
+  "protocol": "http",
+  "route": "/ask",
+  "submitted_form": {
+    "content_type": "application/json"
+  },
+  "audit_record_id": "bbed065b-9ded-48c2-89cc-758f21efcf69",
+  "recorded_at": "2026-10-29T08:00:01Z",
+  "returned_disposition": "DISPOSITION_ACTION_ALLOW",
+  "applied_outcome": "APPLIED_OUTCOME_ALLOWED",
+  "upstream_invocation": "UPSTREAM_INVOCATION_STATE_COMPLETED",
+  "response_observation": {
+    "authorization_record_id": "4e7c6a14-7254-4d07-b10f-6c3b9205c59f",
+    "authorization": {
+      "evaluation_id": "evaluation-1",
+      "message_id": "message-1",
+      "send_trace_id": "579d6c3efa084969378c34a67b060a26",
+      "send_span_id": "1234567890abcdef",
+      "latency_ms": 12
+    },
+    "started_at": "2026-10-29T08:00:00.100Z",
+    "completed_at": "2026-10-29T08:00:00.200Z",
+    "response_form": {
+      "content_type": "application/json",
+      "body": "e30=",
+      "original_body_bytes": "2"
+    },
+    "latency_ms": 100
+  }
+}

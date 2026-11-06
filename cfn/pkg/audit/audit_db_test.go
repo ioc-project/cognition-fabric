@@ -53,6 +53,7 @@ func TestCreateAndGetAuditEvent(t *testing.T) {
 	db := testDB(t)
 
 	event := &Audit{
+		Source:                  SourceCFN,
 		ResourceType:            ResourceTypeCognitionEngine,
 		ResourceIdentifier:      "ce-casa-1",
 		AuditType:               AuditTypeCEInvoked,
@@ -90,6 +91,7 @@ func TestCreateAuditEvent_InvalidResourceType(t *testing.T) {
 	db := testDB(t)
 
 	event := &Audit{
+		Source:                  SourceCFN,
 		ResourceType:            "BOGUS",
 		ResourceIdentifier:      "x",
 		AuditType:               AuditTypeCEInvoked,
@@ -108,6 +110,7 @@ func TestListAuditEvents_FiltersAndPagination(t *testing.T) {
 
 	for i := 0; i < 3; i++ {
 		event := &Audit{
+			Source:                  SourceCFN,
 			ResourceType:            ResourceTypeCognitionEngine,
 			ResourceIdentifier:      "ce-casa-1",
 			AuditType:               AuditTypeCEInvoked,
@@ -141,6 +144,7 @@ func TestListAuditEvents_DefaultsAndClamping(t *testing.T) {
 
 	for i := 0; i < 3; i++ {
 		event := &Audit{
+			Source:                  SourceCFN,
 			ResourceType:            ResourceTypeCognitionEngine,
 			ResourceIdentifier:      "ce-1",
 			AuditType:               AuditTypeCEInvoked,

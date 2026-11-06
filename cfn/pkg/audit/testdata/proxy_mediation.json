@@ -1,0 +1,28 @@
+{
+  "mas_id": "fa7c634b-38a1-4ad0-aeb6-ffda79c7b6cb",
+  "trace_id": "579d6c3efa084969378c34a67b060a26",
+  "span_id": "1234567890abcdef",
+  "source_agent_id": "planner",
+  "destination_agent_id": "schedule_agent",
+  "protocol": "http",
+  "route": "/ask",
+  "submitted_form": {
+    "content_type": "application/json",
+    "body": "e30=",
+    "truncated": true,
+    "redacted": true,
+    "original_body_bytes": "100"
+  },
+  "audit_record_id": "bf1e4f61-e0fb-4c9c-b979-f95a71fa88df",
+  "recorded_at": "2026-10-29T08:00:00.123456789Z",
+  "returned_disposition": "DISPOSITION_ACTION_ALLOW",
+  "applied_outcome": "APPLIED_OUTCOME_ALLOWED",
+  "upstream_invocation": "UPSTREAM_INVOCATION_STATE_COMPLETED",
+  "extra": {
+    "z": "last",
+    "a": "first"
+  },
+  "boundary_evidence": {
+    "publication": "observed"
+  }
+}

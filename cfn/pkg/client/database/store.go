@@ -15,9 +15,10 @@ import (
 // server, so tests can inject an in-memory MockDatabase instead of a real
 // Postgres connection.
 type Store interface {
+	AppendProxyAuditEvent(ctx context.Context, a *audit.Audit) error
 	CreateAuditEvent(ctx context.Context, a *audit.Audit) error
 	GetAuditEventByID(ctx context.Context, id uuid.UUID) (*audit.Audit, error)
-	ListAuditEvents(ctx context.Context, resourceType, auditType string, page, pageSize int) (*audit.AuditListResponse, error)
+	ListAuditEvents(ctx context.Context, resourceType, auditType string, page, pageSize int, filters ...audit.ListFilters) (*audit.AuditListResponse, error)
 	Close() error
 }
 

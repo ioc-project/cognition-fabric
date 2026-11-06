@@ -157,7 +157,7 @@ func New(port, grpcPort int) (*App, error) {
 	a.server = easyhttp.NewServer(port, rtr)
 
 	// Initialize gRPC server
-	a.grpcServer = grpc.NewServer()
+	a.grpcServer = grpc.NewServer(grpc.MaxRecvMsgSize(audit.ProxyTransportMaxBytes))
 	a.enforcementSrv = newEnforcementServer(db)
 	enforcementv1.RegisterEnforcementServer(a.grpcServer, a.enforcementSrv)
 	reflection.Register(a.grpcServer)

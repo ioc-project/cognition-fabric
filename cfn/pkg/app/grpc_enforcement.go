@@ -6,10 +6,10 @@ package app
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
 	enforcementv1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
@@ -62,11 +62,23 @@ func (s *enforcementServer) WaitTimeout(timeout time.Duration) bool {
 
 // GetDisposition handles enforcement requests from the Enforcement Proxy.
 // This is a blocking/synchronous call on the live agent conversation path.
-func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcementv1.GetDispositionRequest) (*enforcementv1.GetDispositionResponse, error) {
+func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcementv1.GetDispositionRequest) (response *enforcementv1.GetDispositionResponse, returnErr error) {
 	log := getLogger()
+	payload := req.GetPayload()
+	info := audit.DispositionInformation{
+		Action:             audit.DispositionAction,
+		MASID:              payload.GetMasId(),
+		SourceAgentID:      payload.GetSourceAgentId(),
+		DestinationAgentID: payload.GetDestinationAgentId(),
+		TraceID:            payload.GetTraceId(),
+		SpanID:             payload.GetSpanId(),
+		FailureCategory:    audit.FailureInvalidRequest,
+	}
+	var selectedCEID string
+	defer func() { s.auditDisposition(selectedCEID, info, response, returnErr) }()
 
 	// Validate request
-	if req.Payload == nil {
+	if payload == nil {
 		return nil, status.Error(codes.InvalidArgument, "payload is required")
 	}
 	if req.Payload.MasId == "" {
@@ -90,6 +102,14 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 
 	mas, workspaceID, err := fetchMASForRequest(ctx, req.Payload.MasId)
 	if err != nil {
+		switch {
+		case errors.Is(err, errMgmtURLNotConfigured), errors.Is(err, errSnapshotUnavailable):
+			info.FailureCategory = audit.FailureConfiguration
+		case errors.Is(err, errMASNotAssigned), errors.Is(err, errMASNotFound):
+			info.FailureCategory = audit.FailureMASNotFound
+		default:
+			info.FailureCategory = audit.FailureManagementLookup
+		}
 		return nil, mapFetchMASError(err, req.Payload.MasId)
 	}
 
@@ -99,13 +119,14 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 	// Find CASA CEs for this MAS
 	casaCEs := mas.FindCASACEs()
 	if len(casaCEs) == 0 {
+		info.FailureCategory = audit.FailureNoAssociatedCE
 		log.Warnf("enforcement request failed: no CASA CE associated with MAS: mas_id=%s", req.Payload.MasId)
 		return nil, status.Errorf(codes.NotFound, "no CASA CE associated with MAS: %s", req.Payload.MasId)
 	}
 
 	// Find first online and enabled CASA CE, tracking why others were skipped
 	var casaCE *mgmt.MASCognitionEngine
-	var disabledCount, offlineCount int
+	var disabledCount, offlineCount, noEnforcingEndpointCount int
 	for _, ce := range casaCEs {
 		if !ce.Enabled {
 			disabledCount++
@@ -116,12 +137,25 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 			continue
 		}
 		if ce.EnforcingURL == "" {
+			noEnforcingEndpointCount++
 			continue
 		}
 		casaCE = ce
 		break
 	}
 	if casaCE == nil {
+		info.EligibilityCounts = &audit.EligibilityCounts{
+			Disabled: disabledCount, Offline: offlineCount, NoEnforcingEndpoint: noEnforcingEndpointCount,
+		}
+		info.FailureCategory = audit.FailureNoEligibleCE
+		switch len(casaCEs) {
+		case disabledCount:
+			info.FailureCategory = audit.FailureCEDisabled
+		case offlineCount:
+			info.FailureCategory = audit.FailureCEOffline
+		case noEnforcingEndpointCount:
+			info.FailureCategory = audit.FailureCENoEnforcingEndpoint
+		}
 		// Provide specific error based on why no CE was available
 		if disabledCount > 0 && offlineCount == 0 {
 			log.Warnf("enforcement request failed: all CASA CEs disabled for MAS: mas_id=%s (disabled=%d)", req.Payload.MasId, disabledCount)
@@ -135,6 +169,9 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 		return nil, status.Errorf(codes.Unavailable, "no healthy CASA CE available for MAS: %s (disabled=%d, offline=%d)", req.Payload.MasId, disabledCount, offlineCount)
 	}
 
+	selectedCEID = casaCE.CEID
+	info.CEName, info.CEVersion = casaCE.Name, casaCE.Version
+	info.FailureCategory = audit.FailureCEConnection
 	log.Infof("calling CASA CE: ce_id=%s enforcing_url=%s enforcing_endpoint=%s", casaCE.CEID, casaCE.EnforcingURL, casaCE.EnforcingEndpoint)
 
 	// Create CASA CE gRPC client
@@ -161,15 +198,18 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 	}
 
 	// Call CASA CE Evaluate RPC
+	info.CEInvoked = true
+	info.FailureCategory = audit.FailureCEEvaluation
 	casaResp, err := casaClient.Evaluate(ctx, casaReq)
 	if err != nil {
 		log.Errorf("CASA CE Evaluate failed: ce_id=%s error=%v", casaCE.CEID, err)
-		s.auditCEInvocation(casaCE.CEID, casaReq, "ERROR", err.Error())
+		info.Reason = err.Error()
 		return nil, status.Errorf(codes.Internal, "CASA CE Evaluate failed: %v", err)
 	}
 
 	log.Infof("CASA CE response: ce_id=%s outcome=%s reason=%s", casaCE.CEID, casaResp.Outcome, casaResp.Reason)
-	s.auditCEInvocation(casaCE.CEID, casaReq, casaResp.Outcome.String(), casaResp.Reason)
+	info.CaptureResponse(casaResp)
+	info.FailureCategory = ""
 
 	// Map CASA CE decision to enforcement action
 	action := mapCEDecisionToAction(casaResp.Outcome)
@@ -183,47 +223,56 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 	}, nil
 }
 
-// auditCEInvocation records CFN's call into a CE. It is fire-and-forget: a
-// write failure is logged but never affects the GetDisposition response,
-// since this runs on the latency-sensitive live-conversation path.
-func (s *enforcementServer) auditCEInvocation(ceID string, req *cev1.EvaluateRequest, outcome, reason string) {
+// auditDisposition snapshots one completed handler flow before scheduling a
+// best-effort write. It never changes the response returned to the caller.
+func (s *enforcementServer) auditDisposition(ceID string, info audit.DispositionInformation, response *enforcementv1.GetDispositionResponse, returnErr error) {
 	if s.db == nil {
+		getLogger().Error("cannot write disposition audit: audit store is unavailable")
 		return
 	}
-
-	infoBytes, err := json.Marshal(map[string]any{
-		"mas_id":               req.MasId,
-		"source_agent_id":      req.SourceAgentId,
-		"destination_agent_id": req.DestinationAgentId,
-		"trace_id":             req.TraceId,
-		"span_id":              req.SpanId,
-		"outcome":              outcome,
-		"reason":               reason,
-	})
+	info.GRPCStatus = status.Code(returnErr).String()
+	success := returnErr == nil && response != nil
+	if returnErr != nil {
+		info.Outcome = "ERROR"
+		if info.Reason == "" {
+			info.Reason = status.Convert(returnErr).Message()
+		}
+	} else if response != nil {
+		action, modify := response.Action.String(), response.Modify
+		info.ReturnedAction, info.ReturnedModify = &action, &modify
+	}
+	infoBytes, err := info.Encode()
 	if err != nil {
-		getLogger().Errorf("failed to marshal audit_information for CE invocation: ce_id=%s error=%v", ceID, err)
+		getLogger().Errorf("failed to marshal disposition audit: ce_id=%s error=%v", ceID, err)
 		return
 	}
-
-	success := outcome != "ERROR"
-
+	auditType := audit.AuditTypeCENotInvoked
+	if info.CEInvoked {
+		auditType = audit.AuditTypeCEInvoked
+	}
+	masAssociation := info.MASID
+	if utf8.RuneCountInString(masAssociation) > 128 {
+		masAssociation = ""
+	}
+	event := &audit.Audit{
+		Source:                  audit.SourceCFN,
+		ResourceType:            audit.ResourceTypeCognitionEngine,
+		ResourceIdentifier:      ceID,
+		AuditType:               auditType,
+		AuditResourceIdentifier: masAssociation,
+		AuditInformation:        datatypes.JSON(infoBytes),
+		Success:                 &success,
+		CreatedBy:               systemActorID,
+		LastModifiedBy:          systemActorID,
+	}
+	audit.PopulateCFNOutcome(event)
 	s.auditWG.Add(1)
 	go func() {
 		defer s.auditWG.Done()
-		event := &audit.Audit{
-			ResourceType:            audit.ResourceTypeCognitionEngine,
-			ResourceIdentifier:      ceID,
-			AuditType:               audit.AuditTypeCEInvoked,
-			AuditResourceIdentifier: req.MasId,
-			AuditInformation:        datatypes.JSON(infoBytes),
-			Success:                 &success,
-			CreatedBy:               systemActorID,
-			LastModifiedBy:          systemActorID,
-		}
 		// Not the RPC's ctx: that gets cancelled the moment GetDisposition returns,
 		// which would kill this write before it has a chance to run.
 		if err := s.db.CreateAuditEvent(context.Background(), event); err != nil {
-			getLogger().Errorf("failed to write CE invocation audit event: ce_id=%s mas_id=%s error=%v", ceID, req.MasId, err)
+			getLogger().Errorf("failed to write disposition audit: ce_id=%s mas_id=%s error=%v", ceID, masAssociation, err)
 		}
 	}()
 }
