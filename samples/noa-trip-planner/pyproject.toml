@@ -13,7 +13,7 @@ dependencies = [
     "networkx>=3.4.2",
     "ipython>=8.18.0",
     "python-dotenv>=1.2.1",
-    "ioa-observe-sdk>=1.1.0",
+    "ioa-observe-sdk>=1.1.1",
     "grpcio>=1.60.0",
     "protobuf>=7.36.2,<8",
 ]
@@ -28,3 +28,7 @@ packages = ["src/noa_trip_planner"]
 [project.scripts]
 main = "noa_trip_planner.api:main"
 quiet_ask = "noa_trip_planner.multi_agent_system:run_quiet"
+
+[dependency-groups]
+experiments = ["httpx>=0.27.0"]
+dev = ["pytest>=8.0.0", "httpx>=0.27.0"]
