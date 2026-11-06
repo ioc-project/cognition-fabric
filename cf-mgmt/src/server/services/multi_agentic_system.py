@@ -44,6 +44,7 @@ class MultiAgenticSystemService:
             )
 
         return AgentDetail(
+            cf_agent_id=agent_row.cf_agent_id,
             agent_id=agent_row.agent_id,
             name=agent_row.name,
             description=agent_row.description,
@@ -151,7 +152,7 @@ class MultiAgenticSystemService:
         return agent_rows
 
     def _sync_agents(self, session, mas_id: str, incoming_agents) -> None:
-        """Diff-based agent sync: insert new, update existing, hard-delete removed."""
+        """Sync agents by runtime ID, deleting removed rows before reusing their names."""
         now = datetime.now(timezone.utc)
 
         # Assign server-generated UUIDs where agent_id is not provided
@@ -183,10 +184,15 @@ class MultiAgenticSystemService:
         existing_rows = session.query(AgentModel).filter(AgentModel.mas_id == mas_id).all()
         existing_map = {row.agent_id: row for row in existing_rows}
 
-        incoming_ids = set()
-        for agent_cfg in incoming_agents:
-            incoming_ids.add(agent_cfg.agent_id)
+        incoming_ids = {agent_cfg.agent_id for agent_cfg in incoming_agents}
+        removed_rows = [row for agent_id, row in existing_map.items() if agent_id not in incoming_ids]
+        for row in removed_rows:
+            session.delete(row)
+        if removed_rows:
+            # Release removed names before SQLAlchemy flushes inserts/updates.
+            session.flush()
 
+        for agent_cfg in incoming_agents:
             identity_type = None
             identity_identifiers = None
             if agent_cfg.identity:
@@ -214,11 +220,6 @@ class MultiAgenticSystemService:
                     config=agent_cfg.config,
                 )
                 session.add(row)
-
-        # Hard-delete agents removed from the incoming list
-        for agent_id, row in existing_map.items():
-            if agent_id not in incoming_ids:
-                session.delete(row)
 
     def _validate_mcp_server_names(self, mcp_servers_data) -> None:
         """Validate no duplicate server names in the request."""

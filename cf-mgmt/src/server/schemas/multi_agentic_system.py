@@ -61,7 +61,7 @@ class AgentConfig(BaseModel):
     """Schema for individual agent configuration in MAS (input)"""
 
     agent_id: Optional[str] = Field(
-        None, description="Unique identifier for the agent (server-generated, ignored on input)"
+        None, description="Runtime agent identifier, unique within the MAS; generated if omitted"
     )
     name: Optional[str] = Field(None, description="Human-readable agent name")
     description: Optional[str] = Field(None, description="Agent description (used for governance integrity checks)")
@@ -73,7 +73,12 @@ class AgentConfig(BaseModel):
 class AgentDetail(BaseModel):
     """Schema for agent details (output)"""
 
-    agent_id: str = Field(..., description="Unique identifier for the agent")
+    cf_agent_id: str = Field(
+        ...,
+        description="Immutable CF-generated storage identifier for this agent",
+        json_schema_extra={"format": "uuid", "readOnly": True},
+    )
+    agent_id: str = Field(..., description="Runtime agent identifier, unique within the MAS")
     name: Optional[str] = Field(None, description="Human-readable agent name")
     description: Optional[str] = Field(None, description="Agent description (used for governance integrity checks)")
     url: Optional[str] = Field(None, description="Agent endpoint URL")

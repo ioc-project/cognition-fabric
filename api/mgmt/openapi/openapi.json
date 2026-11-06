@@ -1870,7 +1870,7 @@
               }
             ],
             "title": "Agent Id",
-            "description": "Unique identifier for the agent (server-generated, ignored on input)"
+            "description": "Runtime agent identifier, unique within the MAS; generated if omitted"
           },
           "name": {
             "anyOf": [
@@ -1939,10 +1939,17 @@
       },
       "AgentDetail": {
         "properties": {
+          "cf_agent_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Cf Agent Id",
+            "description": "Immutable CF-generated storage identifier for this agent",
+            "readOnly": true
+          },
           "agent_id": {
             "type": "string",
             "title": "Agent Id",
-            "description": "Unique identifier for the agent"
+            "description": "Runtime agent identifier, unique within the MAS"
           },
           "name": {
             "anyOf": [
@@ -2007,6 +2014,7 @@
         },
         "type": "object",
         "required": [
+          "cf_agent_id",
           "agent_id"
         ],
         "title": "AgentDetail",

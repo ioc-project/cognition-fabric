@@ -75,6 +75,12 @@ After applying migration `0007`, restart the intended CE if multiple enabled reg
 an endpoint. See [CFN's CE lifecycle contract](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/docs/CE-LIFECYCLE.md#endpoint-ownership)
 for ownership, reconnect, and version compatibility details.
 
+Migration `agent_identity_0008` changes the agent storage key. Stop older Management writers for
+the target database before applying it; this is an application/key
+cutover, not a mixed-version rolling upgrade. Existing runtime agent IDs remain
+unchanged, and Management reads add a read-only `cf_agent_id` UUID. See the
+[agent identity migration and manual checks](docs/DATABASE_MIGRATIONS.md#agent-storage-identity-agent_identity_0008).
+
 ### Encryption Keys
 
 Memory provider credentials are encrypted using a Fernet key. The key is automatically generated on first run and stored in `.secrets/encryption.key` (gitignored). Each developer gets a unique key.

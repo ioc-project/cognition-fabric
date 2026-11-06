@@ -70,7 +70,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision = "c103410d7e70"
-down_revision = "0008"       # points to the previous migration
+down_revision = "agent_identity_0008"  # use the actual previous revision
 
 
 def upgrade() -> None:
@@ -89,7 +89,7 @@ task db-migrate-apply
 
 Output:
 ```
-Running upgrade 0008 -> c103410d7e70, add foo to workspace
+Running upgrade agent_identity_0008 -> c103410d7e70, add foo to workspace
 ```
 
 ### Step 6 — Verify it worked
@@ -150,12 +150,97 @@ task db-migrate-downgrade
 
 This runs the `downgrade()` function from the most recent migration (e.g., drops the column you just added).
 
+Key-changing migrations can require additional cutover steps or refuse a downgrade;
+see the agent identity migration below before rolling back `agent_identity_0008`.
+
 ### Undo multiple migrations
 
 ```bash
 # Go back to revision 0006
 PYTHONPATH=src poetry run alembic downgrade 0006
 ```
+
+---
+
+## Agent storage identity (agent_identity_0008)
+
+`cf_agent_id` is a CF-generated UUID primary key. `agent_id` keeps its existing
+runtime value and becomes unique within `(mas_id, agent_id)`. The same runtime
+ID can therefore be registered in different MAS records. Display-name uniqueness
+within a MAS remains unchanged, and renaming an agent keeps its CF UUID.
+
+The revision follows `0007` and lives in `0008_agent_storage_identity.py`. Its
+identifier deliberately differs from `0008`: older Docker entrypoints used that
+ambiguous marker without running this migration. Both Alembic and the local
+lineage preflight must reject such a marker rather than resolve it as a prefix
+of the new revision. The new entrypoint refuses automatic legacy stamping; an
+unversioned legacy database needs explicit schema/history reconciliation first.
+
+The migration adds/backfills the UUID, then replaces the key in one PostgreSQL
+transaction. It preserves all legacy runtime IDs (including previously generated
+UUID strings), agent content/timestamps, MAS timestamps, CE associations and saved
+CFN config/version values. Backfill does not regenerate config or produce a
+migration-only `mas.updated` hint. Management reads expose the new UUID; CFN's
+existing MAS-details representation is unchanged in this stage.
+
+### Cutover
+
+1. Back up the target database and record the current agent/runtime-ID mapping.
+   Inspect any custom foreign keys to `agent.agent_id`; `agent_identity_0008` rejects those
+   references rather than dropping or rewriting them.
+2. Stop every old Management writer using that database. The database itself
+   stays running. Old writers assume globally unique runtime IDs and must not
+   overlap the new writer once MAS-scoped duplicates are possible.
+3. Apply `agent_identity_0008` using the normal migration entrypoint for the new Management
+   build, then start that build. In the CFN local source workflow, the normal
+   `task run:cfn-mgmt` start performs the existing Alembic lineage preflight and
+   applies pending migrations. Confirm that it targets the intended local
+   database before starting it.
+4. Keep the source/image lineage preflight enabled when switching implementations.
+   An old published Management image may not recognize `agent_identity_0008`; use a compatible
+   build or a separate `LOCAL_CF_MGMT_DB`, as described in the
+   [CF local workflow](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/deploy/README.md).
+   Do not stamp, reset, or automatically downgrade the shared database to bypass
+   a preflight rejection.
+
+The new key is output-only in the API. Requests continue to identify agents by
+the MAS URL and runtime `agent_id`; supplying a `cf_agent_id` does not select or
+rename a record. Omitting `agent_id` keeps the existing generated-ID behavior.
+There are no CE protobuf or NOA changes in this stage.
+
+### Manual verification
+
+Use the Management Swagger UI or API in the target workspace:
+
+1. Create MAS A with an unnamed agent using
+   `{"agent_id": "shared-runtime", "config": {"opaque": {"keep": true}}}`.
+   Read it back and record its `cf_agent_id`.
+2. Create MAS B with the same runtime ID. Its `cf_agent_id` must differ. Duplicate
+   runtime IDs within a single create/update request must return 422.
+3. Open MAS A in the Web UI, edit an unrelated field and save. The unnamed agent,
+   runtime ID, opaque config and CF UUID must survive. Giving the agent a display
+   name must preserve that same CF UUID.
+4. Explicitly remove the agent row from MAS A and save. MAS B's agent must remain
+   unchanged. Existing CE associations and unrelated configuration must survive
+   the preceding edits.
+5. Compare pre/post-backfill MAS `updated_at`, saved snapshot `last_updated_on`
+   and CFN config versions before making ordinary content changes: the key
+   migration alone must not advance them. Normal user edits still update
+   freshness/config as before.
+
+### Rollback boundary
+
+Downgrade to `0007` is an explicit maintenance operation, never an automatic
+fallback. Stop Management writers first. It is refused if runtime IDs repeat
+across MAS records or if foreign keys reference `agent.cf_agent_id`. Reconcile
+such references deliberately; the migration never renames IDs or deletes agents
+to force an old global key to fit.
+
+A successful downgrade removes the CF UUID column and its mapping. Even without
+database foreign keys, callers may already have recorded these UUIDs; preserve a
+backup and account for those references before choosing downgrade. Re-upgrading
+after a downgrade generates new CF UUIDs. A failed upgrade/downgrade rolls back
+without leaving a partially changed key.
 
 ---
 

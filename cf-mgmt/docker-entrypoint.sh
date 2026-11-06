@@ -11,19 +11,18 @@ echo "Running database migrations..."
 
 DB_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
 
-# One-time transition from the old bash migrate.sh runner to Alembic.
-# If this database was previously managed by migrate.sh (has schema_migrations
-# table) but has never seen Alembic (no alembic_version table), we stamp the
-# current head revision so Alembic doesn't re-run migrations that already exist.
-# This block is safe to leave permanently -- once stamped, the condition is false.
+# A bash-runner database does not establish which Alembic changes were applied.
+# Never guess/stamp a revision: that can skip a required key/data migration.
 OLD_TRACKER=$(psql "$DB_URL" --no-psqlrc -tA -c \
   "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'schema_migrations');" 2>/dev/null || echo "f")
 ALEMBIC_TRACKER=$(psql "$DB_URL" --no-psqlrc -tA -c \
   "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'alembic_version');" 2>/dev/null || echo "f")
 
 if [ "$OLD_TRACKER" = "t" ] && [ "$ALEMBIC_TRACKER" = "f" ]; then
-    echo "  Migrating from bash runner to Alembic -- stamping revision 0008..."
-    alembic stamp 0008
+    echo "Legacy database has schema_migrations but no Alembic history." >&2
+    echo "Reconcile its actual schema and migration lineage explicitly before starting Management." >&2
+    echo "No revisions were stamped or migrations applied." >&2
+    exit 1
 fi
 
 alembic upgrade head
