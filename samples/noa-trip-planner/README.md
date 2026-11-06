@@ -4,12 +4,19 @@ This is a CF-owned copy of the NOA sample application from
 [`cisco-eti/oxp-sample-apps`](https://github.com/cisco-eti/oxp-sample-apps/tree/ecfa422a38227bfc0011fb5bf8b796792e481e31/noa-trip-planner).
 The application and fictional travel data were copied from that revision.
 Upstream was checked through
-[`a1edc89`](https://github.com/cisco-eti/oxp-sample-apps/commit/a1edc891e83abd864ab174407249bb702c5d90aa);
-the original `noa-trip-planner` application and data have not changed since the copy.
-Its Observe SDK dependency is now 1.1.0, following the upstream A2A sample at
-that revision. The A2A and SLIM dependency updates apply to the separate
+[`60f1886`](https://github.com/cisco-eti/oxp-sample-apps/commit/60f1886).
+The HTTP agent-selection API and experiment runners were adopted from
+[`cc0c0f2`](https://github.com/cisco-eti/oxp-sample-apps/commit/cc0c0f2);
+the core agents and fictional travel data remain unchanged upstream.
+This copy also returns the graph's message history from `/ask`, so experiment
+message counts include the actual conversation rather than the finalizer's
+answer-only update.
+The local Observe SDK lock is 1.1.1, following the shared dependency update in
+the upstream A2A sample at
+[`1f3500f`](https://github.com/cisco-eti/oxp-sample-apps/commit/1f3500f).
+A2A and SLIM transports and dependencies belong to the separate
 `noa-trip-planner-a2a` application.
-Observe SDK 1.1.0 requires protobuf 7.36.2 or newer. The local protobuf constraint
+Observe SDK 1.1.1 requires protobuf 7.36.2 or newer. The local protobuf constraint
 allows version 7; the existing generated CFN bindings use the supported
 [older Python gencode with a newer runtime](https://protobuf.dev/support/cross-version-runtime-guarantee/#python-specific-guarantees).
 The local CF workflow runs this copy; it does not require an `oxp-sample-apps`
@@ -38,6 +45,34 @@ task run:full-mas
 
 After dependency or lockfile changes, stop NOA and repeat `uv sync --frozen`;
 `task run:full-mas` uses the existing environment without synchronizing it.
+
+## Agent selection and experiments
+
+`POST /ask` accepts optional `available_agents`: omit it or use `null` to enable
+all three specialists, pass `[]` for moderator only, or supply any combination
+of `schedule_agent`, `itinerary_agent`, and `concierge_agent`. Unknown names
+return HTTP 422. Selected agents retain the configured direct or proxy tool
+enforcement. The default request behaviour is unchanged.
+
+The [experiment guide](experiments/README.md) describes the upstream runners
+adapted for this local copy. The HTTP runner calls an already running source
+NOA instance; its default URL is `http://localhost:8125`. For example, from
+this directory:
+
+```bash
+uv run --frozen --group experiments -m experiments.run_experiment_http \
+  --base-url http://localhost:8125 --coalition all_agents
+```
+
+Regression checks use fake LLM responses and local test transports to verify
+agent selection, direct authorization, proxy forwarding, trace correlation,
+and blocked/unavailable tool handling with the locked SDK:
+
+```bash
+uv run --frozen --group dev python -m pytest tests -q
+```
+
+## MAS identity
 
 Set `NOA_MODE=source`, `NOA_ENFORCEMENT_MODE=direct`, and `NOA_MAS_ID` in
 the CFN repository `.env`. Use the MAS ID created in the local

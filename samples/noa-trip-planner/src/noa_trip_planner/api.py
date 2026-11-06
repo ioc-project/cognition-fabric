@@ -1,4 +1,6 @@
 import os
+from typing import Literal
+
 import uvicorn
 
 from fastapi import FastAPI
@@ -30,11 +32,18 @@ class AskRequest(BaseModel):
     question: str
     thread_id: str = "default"
     debugging: bool = True
+    # None = all agents, [] = moderator only
+    available_agents: list[Literal["schedule_agent", "itinerary_agent", "concierge_agent"]] | None = None
 
 
 @app.post("/ask")
 def ask(payload: AskRequest):
-    result = ask_question(payload.question, payload.thread_id, payload.debugging)
+    result = ask_question(
+        payload.question,
+        payload.thread_id,
+        payload.debugging,
+        available_agents=payload.available_agents,
+    )
     return result
 
 def main():
