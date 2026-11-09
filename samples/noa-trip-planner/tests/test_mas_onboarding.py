@@ -61,6 +61,7 @@ class NOADeclarationTests(unittest.TestCase):
                     ):
                         moderator_targets.add(string(node.value))
         expected = set()
+        source_edges = set()
         for node in ast.walk(self.workflow):
             if not isinstance(node, ast.Call) or not isinstance(
                 node.func, ast.Attribute
@@ -68,6 +69,7 @@ class NOADeclarationTests(unittest.TestCase):
                 continue
             if node.func.attr == "add_edge":
                 source, destination = map(string, node.args[:2])
+                source_edges.add((source, destination))
                 if source in visible and destination in visible:
                     expected.add((source, destination))
             elif node.func.attr == "add_conditional_edges":
@@ -82,11 +84,15 @@ class NOADeclarationTests(unittest.TestCase):
                     for target in targets
                     if source in visible and target in visible
                 )
+        # Collapse the non-agent finalization helper into the completion edge.
+        self.assertIn(("moderator", "finalize"), source_edges)
+        self.assertIn(("finalize", "__end__"), source_edges)
+        expected.add(("moderator", "__end__"))
         actual = {(entry["source"], entry["target"]) for entry in graph["edges"]}
         self.assertEqual(actual, expected)
-        self.assertEqual(len(actual), 7)
+        self.assertEqual(len(actual), 8)
         self.assertEqual(graph["completeness"], "partial")
-        self.assertFalse(any("__end__" in pair for pair in actual))
+        self.assertIn(("moderator", "__end__"), actual)
 
     def test_markers_are_independently_optional_and_not_agents(self):
         original = self.value["topologies"][0]
@@ -114,7 +120,7 @@ class NOADeclarationTests(unittest.TestCase):
                         },
                         agent_ids,
                     )
-                    self.assertEqual(len(edges), 7 if start else 6)
+                    self.assertEqual(len(edges), 6 + int(start) + int(end))
                     self.assertTrue(
                         all(
                             entry["source"] in ids and entry["target"] in ids

@@ -20,9 +20,11 @@ box, or the full request in JSON mode. Start/end markers are independently
 optional. Clearing the box sends `topologies: []`; leaving it untouched retains
 the saved graph.
 
-Read-only mode displays persisted, highlighted JSON that can be collapsed and
-copied. Graph visualization follows in stage 4, retaining the JSON view beside
-it. Optional observed OXP topology follows in stage 5 and is currently disabled.
+Read-only mode displays the provided graph with directed edges and optional
+Start/End markers. Hovering or selecting an agent shows a dashed outline, and
+clicking it opens its details and assigned tools in the right-hand Inspect panel.
+The matching highlighted JSON remains collapsible and copyable alongside the
+graph. Optional observed OXP topology follows in stage 5 and is currently disabled.
 There is no browser-only pending topology after a successful save.
 
 Reload the details page to verify persisted data. Expanded CE retrieval is
@@ -40,9 +42,9 @@ default all-agents capability graph; `available_agents` may select fewer
 specialists per request. It is not an observed trace.
 
 The graph retains entry to `moderator`, its three delegation edges and the three
-specialist returns. The optional end marker is disconnected because execution
-exits through the non-agent `finalize` helper. Tool-executor loops are omitted.
-No direct moderator-to-end edge is invented; completeness is **partial**.
+specialist returns. The `moderator` → `__end__` edge represents completion through
+the non-agent `finalize` helper, which is collapsed into that edge. Tool-executor
+loops are omitted, so completeness remains **partial**.
 
 Runtime tool assignments come from the read-only `tool_registry.py`: schedule
 uses `list_documents`/`read_document`, itinerary uses

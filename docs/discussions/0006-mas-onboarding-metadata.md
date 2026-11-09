@@ -215,9 +215,15 @@ remain issue #38.
 Create supports Form and full JSON. Edit offers full JSON at page level and a
 JSON editor in the fifth Topology tab. Untouched graph/binding fields are omitted
 by form saves; full JSON sends the explicit supported request. Read-only mode
-shows persisted syntax-highlighted, collapsible JSON. Stage 4 adds a read-only
-graph alongside it, with agents/edges and tools on node selection, aligned with
-`/fabric`; there is no graph editor.
+shows a read-only graph alongside persisted syntax-highlighted, collapsible JSON,
+with actual directed agent relationships and distinct optional Start/End nodes.
+Agent hover and selection show the same dashed outline as `/fabric`. Clicking
+an agent opens a right-hand Inspect panel with its details and assigned tools;
+nodes do not expand. Pan/zoom/fit and the canvas palette also align with `/fabric`;
+there is no graph editor. Provided
+and Observed remain independent, and an unavailable source never substitutes the
+other graph or its JSON. Stage 4 uses only the stored Management response;
+optional observed-source requests remain stage 5.
 
 The standalone [NOA declaration](../../deploy/local/mas-onboarding/noa-mas.json)
 contains runtime agents, actual tools/assignments and a partial source projection.

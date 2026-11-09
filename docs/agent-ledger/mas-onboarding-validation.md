@@ -76,3 +76,59 @@ on it. Leave nested JSON and raw Management/config snapshot timestamps unchanged
 Evidence: [CFN retrieval](../../pkg/app/handlers_mas.go),
 [representation tests](../../pkg/app/handlers_mas_metadata_test.go), and
 [the implemented contract](../discussions/0006-mas-onboarding-metadata.md).
+
+## Read-only topology presentation
+
+The fifth MAS tab reads its graph from the existing workspace-scoped Management
+MAS response. Keep Provided and Observed independent: render only the selected
+available graph and its matching collapsible JSON, and show an unavailable
+source's own status without fallback. An absent graph differs from an available
+graph with empty nodes/edges. Stage 4 adds no OXP/CFN request; observed data comes
+only from fixtures until the optional adapter/read boundary is implemented.
+
+Use the same source header for available, empty and unavailable graphs. Reserve
+the timestamp slot and toolbar-note footprint even when their content is absent
+or hidden, so source selection does not change header height or position. Verify
+both-source and missing-source cases at wide and narrow viewport widths.
+
+Preserve supplied agent/start/end nodes and directed edges, including cycles,
+self-edges and disconnected nodes. Management preserves omission of node `type`;
+interpret an omitted type as `agent` in the presentation without changing its
+source JSON. Explicit Start/End types are never inferred from node ID strings.
+Match `/fabric` interactions: circular agent nodes, a dashed outline on hover
+and selection, and a right-hand Inspect panel on click. Do not expand nodes. The
+panel shows the selected agent’s full available details and only its explicitly
+assigned runtime tools; missing assignments are unknown, while `[]` declares
+no tools. Marker inspection has no agent tool list. Layout and pan/zoom are local;
+the existing topology JSON editor is the management write path.
+
+Place nodes by breadth-first directed ranks from Start nodes or incoming-free
+roots; rank each node only once and seed otherwise-unreached cyclic components.
+Stack each rank vertically, keep End markers in the last column and place
+isolated nodes below the connected flow with no fabricated relationships.
+Use measured node heights to keep same-column nodes separated.
+Return edges use the source's left side and target's right side with a distinct
+curve; opposite same-rank relationships use opposite gutters. Long connections
+route outside intermediate columns. Check the actual NOA SVG geometry in a
+browser: model ranks alone cannot prove that edges avoid unrelated cards.
+
+Disabling React Flow selection/dragging also disables its node wrapper's pointer
+events. Explicitly retain pointer events for the native Inspect buttons
+while leaving connecting, dragging, reconnecting and keyboard deletion disabled.
+Verify real mouse clicks and Enter/Space in a browser; model tests alone do not
+cover that interaction. Check the hover/selected dashed outlines, right-hand
+panel contents, panel close/canvas deselection, Escape and focus restoration.
+Inspecting details or copying IDs issues no writes. A failed background refresh
+must retain loaded MAS data
+and unsaved JSON edits rather than replace the whole page with an error.
+
+Keep selection/Inspect state outside React Flow's node objects. React Flow 12.10
+discards measurements and handle bounds when a replacement node omits its
+measured size, briefly hiding nodes and edges. Pass selection through React
+context so click/deselect updates leave the node array and objects unchanged.
+Verify with browser mutation and animation-frame sampling during repeated
+selection: no hidden nodes and no missing edges after initial layout settles.
+
+Evidence: [graph view](../../../ioc-scale-cf-ui/src/components/mas/mas-topology.tsx),
+[source/model tests](../../../ioc-scale-cf-ui/tests/mas-topology.test.mjs), and
+[the UI guidance](../../../ioc-scale-cf-ui/README.md#mas-metadata-onboarding).

@@ -99,6 +99,10 @@
         {
           "source": "concierge_agent",
           "target": "moderator"
+        },
+        {
+          "source": "moderator",
+          "target": "__end__"
         }
       ]
     }
