@@ -27,16 +27,9 @@ tasks:
           exit 0
         fi
         docker compose -f {{.INTEGRATION_COMPOSE_FILE}} up -d --wait
-    defer:
-      - |
-        if [ "${INTEGRATION_SKIP_DB:-}" = "true" ]; then
-          exit 0
-        fi
-        docker compose -f {{.INTEGRATION_COMPOSE_FILE}} down -v
 
   test:integration:
     desc: Run CFN process-level integration tests (Docker required locally)
-    deps: [test:integration:db]
     env:
       POSTGRES_USER: "{{.INTEGRATION_PG_USER}}"
       POSTGRES_PASSWORD: "{{.INTEGRATION_PG_PASSWORD}}"
@@ -46,6 +39,12 @@ tasks:
       POSTGRES_PORT:
         sh: 'if [ "${INTEGRATION_SKIP_DB:-}" = "true" ]; then echo "${POSTGRES_PORT:-5432}"; else echo "{{.INTEGRATION_PG_PORT}}"; fi'
     cmds:
+      - task: test:integration:db
+      - defer: |
+          if [ "${INTEGRATION_SKIP_DB:-}" = "true" ]; then
+            exit 0
+          fi
+          docker compose -f {{.INTEGRATION_COMPOSE_FILE}} down -v
       - go vet -tags integration ./test/integration/...
       - go test -v -tags integration -count=1 ./test/integration/...
 
