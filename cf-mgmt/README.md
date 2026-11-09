@@ -124,6 +124,11 @@ poetry run python -m server.main
 - Multi-Agentic Systems: `GET|POST|DELETE /api/workspaces/{workspace_id}/multi-agentic-systems`
 - Cognitive Fabric Nodes: `GET|POST|PUT|DELETE /api/workspaces/{workspace_id}/cognitive-fabric-node`
 
+MCP server names must be unique within a MAS; tool names must be unique within
+their MCP server. Empty names are allowed individually and follow the same
+uniqueness rule. Create and update reject duplicates with HTTP 422, including
+direct API calls. The same native tool name may occur on different servers.
+
 **CFN Audit Events** (from `cfn_cp` database):
 - List all events: `GET /api/audit-events`
 - Filter events: `GET /api/audit-events?resource_type=COGNITION_ENGINE&audit_type=CE_INVOKED`

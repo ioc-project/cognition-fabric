@@ -222,31 +222,28 @@ class MultiAgenticSystemService:
                 session.add(row)
 
     def _validate_mcp_server_names(self, mcp_servers_data) -> None:
-        """Validate no duplicate server names in the request."""
+        """Match persisted name uniqueness, including empty server/tool names."""
         if not mcp_servers_data:
             return
 
         seen_names = set()
         for server_cfg in mcp_servers_data:
-            if server_cfg.name:
-                if server_cfg.name in seen_names:
+            if server_cfg.name in seen_names:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Duplicate MCP server name in request: '{server_cfg.name}'",
+                )
+            seen_names.add(server_cfg.name)
+
+            # A blank server name does not exempt its tools from validation.
+            seen_tool_names = set()
+            for tool_cfg in server_cfg.tools or []:
+                if tool_cfg.name in seen_tool_names:
                     raise HTTPException(
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                        detail=f"Duplicate MCP server name in request: '{server_cfg.name}'",
+                        detail=f"Duplicate tool name '{tool_cfg.name}' in MCP server '{server_cfg.name}'",
                     )
-                seen_names.add(server_cfg.name)
-
-                # Validate tool names within each server
-                if server_cfg.tools:
-                    seen_tool_names = set()
-                    for tool_cfg in server_cfg.tools:
-                        if tool_cfg.name:
-                            if tool_cfg.name in seen_tool_names:
-                                raise HTTPException(
-                                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                                    detail=f"Duplicate tool name '{tool_cfg.name}' in MCP server '{server_cfg.name}'",
-                                )
-                            seen_tool_names.add(tool_cfg.name)
+                seen_tool_names.add(tool_cfg.name)
 
     def _save_mcp_servers(self, session, mas_id: str, mcp_servers_data) -> list:
         """Create MCP server and tool rows. Returns the created MCPServerModel instances."""
