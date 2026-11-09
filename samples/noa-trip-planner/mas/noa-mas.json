@@ -29,22 +29,160 @@
       "source": "provided",
       "completeness": "partial",
       "nodes": [
-        {"id": "__start__", "type": "start"},
-        {"id": "moderator", "type": "agent"},
-        {"id": "schedule_agent", "type": "agent"},
-        {"id": "itinerary_agent", "type": "agent"},
-        {"id": "concierge_agent", "type": "agent"},
-        {"id": "__end__", "type": "end"}
+        {
+          "id": "__start__",
+          "type": "start"
+        },
+        {
+          "id": "moderator",
+          "type": "agent",
+          "tool_ids": []
+        },
+        {
+          "id": "schedule_agent",
+          "type": "agent",
+          "tool_ids": [
+            "list_documents",
+            "read_document"
+          ]
+        },
+        {
+          "id": "itinerary_agent",
+          "type": "agent",
+          "tool_ids": [
+            "query_graph_database",
+            "calculate"
+          ]
+        },
+        {
+          "id": "concierge_agent",
+          "type": "agent",
+          "tool_ids": [
+            "list_documents",
+            "read_document",
+            "calculate"
+          ]
+        },
+        {
+          "id": "__end__",
+          "type": "end"
+        }
       ],
       "edges": [
-        {"source": "__start__", "target": "moderator"},
-        {"source": "moderator", "target": "schedule_agent", "interaction_type": "delegation"},
-        {"source": "schedule_agent", "target": "moderator"},
-        {"source": "moderator", "target": "itinerary_agent", "interaction_type": "delegation"},
-        {"source": "itinerary_agent", "target": "moderator"},
-        {"source": "moderator", "target": "concierge_agent", "interaction_type": "delegation"},
-        {"source": "concierge_agent", "target": "moderator"}
+        {
+          "source": "__start__",
+          "target": "moderator"
+        },
+        {
+          "source": "moderator",
+          "target": "schedule_agent",
+          "interaction_type": "delegation"
+        },
+        {
+          "source": "schedule_agent",
+          "target": "moderator"
+        },
+        {
+          "source": "moderator",
+          "target": "itinerary_agent",
+          "interaction_type": "delegation"
+        },
+        {
+          "source": "itinerary_agent",
+          "target": "moderator"
+        },
+        {
+          "source": "moderator",
+          "target": "concierge_agent",
+          "interaction_type": "delegation"
+        },
+        {
+          "source": "concierge_agent",
+          "target": "moderator"
+        }
       ]
+    }
+  ],
+  "tools": [
+    {
+      "tool_id": "calculate",
+      "definition": {
+        "name": "calculate",
+        "description": "Perform mathematical calculations on the given expression.\n\nSupports basic arithmetic operations (+, -, *, /), parentheses, and common\nmathematical functions (sqrt, pow, abs, round).\n\nArgs:\n    expression: A mathematical expression as a string (e.g., \"2 + 3 * 4\", \"sqrt(16)\")\n\nReturns:\n    The result of the calculation as a string, or an error message if calculation fails.\n\nExamples:\n    \"2 + 3\" -> \"5\"\n    \"10 * (5 + 3)\" -> \"80\"\n    \"sqrt(25)\" -> \"5.0\"",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "expression": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "expression"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "metadata": {
+        "source": "NOA Python tool declaration",
+        "transport": "http"
+      }
+    },
+    {
+      "tool_id": "list_documents",
+      "definition": {
+        "name": "list_documents",
+        "description": "List all documents in the agent's data directory.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "metadata": {
+        "source": "NOA Python tool declaration",
+        "transport": "http"
+      }
+    },
+    {
+      "tool_id": "query_graph_database",
+      "definition": {
+        "name": "query_graph_database",
+        "description": "Query the city graph database to find all possible paths between cities.\n\nLoads the graph from the saved file and returns all possible paths\nwith their total travel times (edge weights in hours).\n\nReturns:\n    A formatted string listing all possible paths with their total travel times.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "metadata": {
+        "source": "NOA Python tool declaration",
+        "transport": "http"
+      }
+    },
+    {
+      "tool_id": "read_document",
+      "definition": {
+        "name": "read_document",
+        "description": "Read a .txt file and return its content.\n\nArgs:\n    file_path: Full absolute path to the file\n\nReturns:\n    The content of the file as a string, or an error message if reading fails.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "file_path": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "file_path"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "metadata": {
+        "source": "NOA Python tool declaration",
+        "transport": "http"
+      }
     }
   ]
 }

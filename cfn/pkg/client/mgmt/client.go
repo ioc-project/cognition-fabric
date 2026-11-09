@@ -21,23 +21,38 @@ import (
 
 // MASResponse represents a Multi-Agentic System from the management plane.
 type MASResponse struct {
-	ID               string               `json:"id"`
-	WorkspaceID      string               `json:"workspace_id"`
-	Name             string               `json:"name"`
-	CognitionEngines []MASCognitionEngine `json:"cognition_engines"`
+	Description           json.RawMessage      `json:"description,omitempty" swaggertype:"string"`
+	MetadataSchemaVersion *string              `json:"metadata_schema_version,omitempty"`
+	Tag                   *string              `json:"tag,omitempty"`
+	Version               *string              `json:"version,omitempty"`
+	Metadata              json.RawMessage      `json:"metadata,omitempty" swaggertype:"object"`
+	Documentation         json.RawMessage      `json:"documentation,omitempty" swaggertype:"array,object"`
+	Agents                json.RawMessage      `json:"agents,omitempty" swaggertype:"array,object"`
+	MCPServers            json.RawMessage      `json:"mcp_servers,omitempty" swaggertype:"array,object"`
+	Tools                 json.RawMessage      `json:"tools,omitempty" swaggertype:"array,object"`
+	Topologies            json.RawMessage      `json:"topologies,omitempty" swaggertype:"array,object"`
+	TopologySources       json.RawMessage      `json:"topology_sources,omitempty" swaggertype:"object"`
+	Config                json.RawMessage      `json:"config,omitempty" swaggertype:"object"`
+	CreatedAt             json.RawMessage      `json:"created_at,omitempty" swaggertype:"string"`
+	UpdatedAt             json.RawMessage      `json:"updated_at,omitempty" swaggertype:"string"`
+	ID                    string               `json:"id"`
+	WorkspaceID           string               `json:"workspace_id"`
+	Name                  string               `json:"name"`
+	CognitionEngines      []MASCognitionEngine `json:"cognition_engines"`
 }
 
 // MASCognitionEngine represents a CE associated with a MAS.
 type MASCognitionEngine struct {
-	CEID              string `json:"ce_id"`
-	Name              string `json:"name"`
-	Version           string `json:"version"`
-	CEType            string `json:"ce_type"`
-	EnforcingURL      string `json:"enforcing_url"`
-	EnforcingEndpoint string `json:"enforcing_endpoint"`
-	EnforcingProtocol string `json:"enforcing_protocol"`
-	Enabled           bool   `json:"enabled"`
-	Status            string `json:"status"`
+	MASConfig         json.RawMessage `json:"mas_config,omitempty" swaggertype:"object"`
+	CEID              string          `json:"ce_id"`
+	Name              string          `json:"name"`
+	Version           string          `json:"version"`
+	CEType            string          `json:"ce_type"`
+	EnforcingURL      string          `json:"enforcing_url"`
+	EnforcingEndpoint string          `json:"enforcing_endpoint"`
+	EnforcingProtocol string          `json:"enforcing_protocol"`
+	Enabled           bool            `json:"enabled"`
+	Status            string          `json:"status"`
 }
 
 // ErrNotFound is returned when a resource is not found.

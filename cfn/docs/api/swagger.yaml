@@ -192,6 +192,8 @@ definitions:
         type: string
       enforcing_url:
         type: string
+      mas_config:
+        type: object
       name:
         type: string
       status:
@@ -201,13 +203,51 @@ definitions:
     type: object
   mgmt.MASResponse:
     properties:
+      agents:
+        items:
+          type: object
+        type: array
       cognition_engines:
         items:
           $ref: '#/definitions/mgmt.MASCognitionEngine'
         type: array
+      config:
+        type: object
+      created_at:
+        type: string
+      description:
+        type: string
+      documentation:
+        items:
+          type: object
+        type: array
       id:
         type: string
+      mcp_servers:
+        items:
+          type: object
+        type: array
+      metadata:
+        type: object
+      metadata_schema_version:
+        type: string
       name:
+        type: string
+      tag:
+        type: string
+      tools:
+        items:
+          type: object
+        type: array
+      topologies:
+        items:
+          type: object
+        type: array
+      topology_sources:
+        type: object
+      updated_at:
+        type: string
+      version:
         type: string
       workspace_id:
         type: string
@@ -371,9 +411,14 @@ paths:
       - internal
   /api/multi-agentic-systems/{masId}:
     get:
-      description: Get details of a specific Multi-Agentic System. Proxies to management
-        plane.
+      description: Get MAS details from Management using its assigned workspace. Default
+        response preserves the legacy CE contract; metadata=true opts into persisted
+        onboarding metadata.
       parameters:
+      - description: Opt in to expanded onboarding metadata; legacy shape is the default
+        in: query
+        name: metadata
+        type: boolean
       - description: MAS ID
         in: path
         name: masId

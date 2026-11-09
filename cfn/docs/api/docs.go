@@ -234,7 +234,7 @@ const docTemplate = `{
         },
         "/api/multi-agentic-systems/{masId}": {
             "get": {
-                "description": "Get details of a specific Multi-Agentic System. Proxies to management plane.",
+                "description": "Get MAS details from Management using its assigned workspace. Default response preserves the legacy CE contract; metadata=true opts into persisted onboarding metadata.",
                 "produces": [
                     "application/json"
                 ],
@@ -243,6 +243,12 @@ const docTemplate = `{
                 ],
                 "summary": "Get MAS details",
                 "parameters": [
+                    {
+                        "type": "boolean",
+                        "description": "Opt in to expanded onboarding metadata; legacy shape is the default",
+                        "name": "metadata",
+                        "in": "query"
+                    },
                     {
                         "type": "string",
                         "description": "MAS ID",
@@ -529,6 +535,9 @@ const docTemplate = `{
                 "enforcing_url": {
                     "type": "string"
                 },
+                "mas_config": {
+                    "type": "object"
+                },
                 "name": {
                     "type": "string"
                 },
@@ -543,16 +552,73 @@ const docTemplate = `{
         "mgmt.MASResponse": {
             "type": "object",
             "properties": {
+                "agents": {
+                    "type": "array",
+                    "items": {
+                        "type": "object"
+                    }
+                },
                 "cognition_engines": {
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/mgmt.MASCognitionEngine"
                     }
                 },
+                "config": {
+                    "type": "object"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "documentation": {
+                    "type": "array",
+                    "items": {
+                        "type": "object"
+                    }
+                },
                 "id": {
                     "type": "string"
                 },
+                "mcp_servers": {
+                    "type": "array",
+                    "items": {
+                        "type": "object"
+                    }
+                },
+                "metadata": {
+                    "type": "object"
+                },
+                "metadata_schema_version": {
+                    "type": "string"
+                },
                 "name": {
+                    "type": "string"
+                },
+                "tag": {
+                    "type": "string"
+                },
+                "tools": {
+                    "type": "array",
+                    "items": {
+                        "type": "object"
+                    }
+                },
+                "topologies": {
+                    "type": "array",
+                    "items": {
+                        "type": "object"
+                    }
+                },
+                "topology_sources": {
+                    "type": "object"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "version": {
                     "type": "string"
                 },
                 "workspace_id": {
