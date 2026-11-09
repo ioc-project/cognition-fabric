@@ -7,6 +7,7 @@
 package integration_test
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/google/uuid"
@@ -141,5 +142,82 @@ var _ = Describe("GetDisposition", Serial, func() {
 		Expect(ok).To(BeTrue())
 		Expect(st.Code()).To(Equal(codes.Internal))
 		Expect(st.Message()).To(ContainSubstring("CASA CE Evaluate failed"))
+	})
+})
+
+var _ = Describe("AppendAuditRecord", Serial, func() {
+	It("commits a mediation record and echoes the stable audit_record_id", func() {
+		record := proxyAuditFixture("mediation")
+
+		receipt, err := appendAuditRecord(record)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(receipt.GetAuditRecordId()).To(Equal(record.GetAuditRecordId()))
+
+		code, _, rows := listAuditEvents("?audit_type=PROXY_MEDIATED")
+		Expect(code).To(Equal(http.StatusOK))
+		Expect(rows).To(HaveLen(1))
+		Expect(mustString(rows[0], "source")).To(Equal("PROXY"))
+	})
+
+	It("accepts authorization and response observation variants", func() {
+		for _, variant := range []string{"authorization", "response"} {
+			record := proxyAuditFixture(variant)
+			receipt, err := appendAuditRecord(record)
+			Expect(err).NotTo(HaveOccurred(), variant)
+			Expect(receipt.GetAuditRecordId()).To(Equal(record.GetAuditRecordId()), variant)
+		}
+
+		code, _, rows := listAuditEvents("?resource_type=ENFORCEMENT_PROXY&audit_type=PROXY_MEDIATED")
+		Expect(code).To(Equal(http.StatusOK))
+		Expect(rows).To(HaveLen(2))
+	})
+
+	It("returns the same receipt for an identical retry without adding a row", func() {
+		record := proxyAuditFixture("mediation")
+		first, err := appendAuditRecord(record)
+		Expect(err).NotTo(HaveOccurred())
+
+		second, err := appendAuditRecord(proxyAuditFixture("mediation"))
+		Expect(err).NotTo(HaveOccurred())
+		Expect(second.GetAuditRecordId()).To(Equal(first.GetAuditRecordId()))
+
+		_, _, rows := listAuditEvents("?audit_type=PROXY_MEDIATED")
+		Expect(rows).To(HaveLen(1))
+	})
+
+	It("returns InvalidArgument when a retry has the same ID but different contents", func() {
+		record := proxyAuditFixture("mediation")
+		_, err := appendAuditRecord(record)
+		Expect(err).NotTo(HaveOccurred())
+
+		conflict := proxyAuditFixture("mediation")
+		conflict.Route = "/conflict"
+		_, err = appendAuditRecord(conflict)
+		Expect(err).To(HaveOccurred())
+		st, ok := status.FromError(err)
+		Expect(ok).To(BeTrue())
+		Expect(st.Code()).To(Equal(codes.InvalidArgument))
+
+		_, _, rows := listAuditEvents("?audit_type=PROXY_MEDIATED")
+		Expect(rows).To(HaveLen(1))
+		Expect(mustString(nestedMap(rows[0], "audit_information"), "route")).To(Equal("/ask"))
+	})
+
+	It("returns InvalidArgument when the record is missing", func() {
+		_, err := appendAuditRecordRequest(&enforcementv1.AppendAuditRecordRequest{})
+		Expect(err).To(HaveOccurred())
+		st, ok := status.FromError(err)
+		Expect(ok).To(BeTrue())
+		Expect(st.Code()).To(Equal(codes.InvalidArgument))
+	})
+
+	It("returns InvalidArgument for an invalid record", func() {
+		record := proxyAuditFixture("mediation")
+		record.AuditRecordId = "not-a-uuid"
+		_, err := appendAuditRecord(record)
+		Expect(err).To(HaveOccurred())
+		st, ok := status.FromError(err)
+		Expect(ok).To(BeTrue())
+		Expect(st.Code()).To(Equal(codes.InvalidArgument))
 	})
 })

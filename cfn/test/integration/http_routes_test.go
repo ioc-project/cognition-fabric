@@ -249,13 +249,11 @@ var _ = Describe("HTTP routes", Serial, func() {
 
 			var event map[string]any
 			Eventually(func() bool {
-				code, body, _ := cfnDo(http.MethodGet, "/api/internal/mgmt/audit?resource_type=COGNITION_ENGINE&audit_type=CE_INVOKED", nil)
+				code, _, rows := listAuditEvents("?resource_type=COGNITION_ENGINE&audit_type=CE_INVOKED")
 				if code != http.StatusOK {
 					return false
 				}
-				data, _ := body["data"].([]any)
-				for _, item := range data {
-					row, _ := item.(map[string]any)
+				for _, row := range rows {
 					if mustString(row, "resource_identifier") == ceID {
 						event = row
 						return true
@@ -264,13 +262,74 @@ var _ = Describe("HTTP routes", Serial, func() {
 				return false
 			}).Should(BeTrue(), "expected CE_INVOKED audit for %s", ceID)
 
+			Expect(mustString(event, "source")).To(Equal("CFN"))
 			Expect(mustString(event, "audit_type")).To(Equal("CE_INVOKED"))
+			Expect(mustString(event, "outcome")).To(Equal("ALLOW"))
+			Expect(event["success"]).To(Equal(true))
+			info := nestedMap(event, "audit_information")
+			Expect(mustString(info, "action")).To(Equal("get_disposition"))
+			Expect(mustString(info, "mas_id")).To(Equal(ids.masID))
 			id := mustString(event, "id")
 			Expect(id).NotTo(BeEmpty())
 
 			code, body, _ := cfnDo(http.MethodGet, "/api/internal/mgmt/audit/"+id, nil)
 			Expect(code).To(Equal(http.StatusOK), "%v", body)
 			Expect(mustString(body, "id")).To(Equal(id))
+			Expect(mustString(body, "source")).To(Equal("CFN"))
+		})
+
+		It("lists PROXY_MEDIATED records with the shared proxy audit format", func() {
+			mediation := proxyAuditFixture("mediation")
+			authorization := proxyAuditFixture("authorization")
+			response := proxyAuditFixture("response")
+			_, err := appendAuditRecord(mediation)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = appendAuditRecord(authorization)
+			Expect(err).NotTo(HaveOccurred())
+			_, err = appendAuditRecord(response)
+			Expect(err).NotTo(HaveOccurred())
+
+			code, _, rows := listAuditEvents("?resource_type=ENFORCEMENT_PROXY&audit_type=PROXY_MEDIATED")
+			Expect(code).To(Equal(http.StatusOK))
+			Expect(rows).To(HaveLen(3))
+
+			got := findAuditByRecordID(rows, mediation.GetAuditRecordId())
+			Expect(got).NotTo(BeNil())
+			Expect(mustString(got, "source")).To(Equal("PROXY"))
+			Expect(mustString(got, "resource_type")).To(Equal("ENFORCEMENT_PROXY"))
+			Expect(mustString(got, "audit_type")).To(Equal("PROXY_MEDIATED"))
+			Expect(mustString(got, "resource_identifier")).To(BeEmpty())
+			Expect(mustString(got, "audit_resource_identifier")).To(Equal(mediation.GetMasId()))
+			Expect(mustString(got, "outcome")).To(Equal("ALLOW"))
+			Expect(got).NotTo(HaveKey("success"))
+			Expect(got).NotTo(HaveKey("source_record_id"))
+			info := nestedMap(got, "audit_information")
+			Expect(mustString(info, "audit_record_id")).To(Equal(mediation.GetAuditRecordId()))
+			Expect(mustString(info, "returned_disposition")).To(Equal("DISPOSITION_ACTION_ALLOW"))
+			Expect(mustString(info, "applied_outcome")).To(Equal("APPLIED_OUTCOME_ALLOWED"))
+			Expect(mustString(info, "mas_id")).To(Equal(mediation.GetMasId()))
+			Expect(mustString(info, "trace_id")).To(Equal(mediation.GetTraceId()))
+			Expect(mustString(info, "span_id")).To(Equal(mediation.GetSpanId()))
+
+			authRow := findAuditByRecordID(rows, authorization.GetAuditRecordId())
+			Expect(authRow).NotTo(BeNil())
+			Expect(mustString(authRow, "outcome")).To(Equal("UNKNOWN"))
+			Expect(authRow).NotTo(HaveKey("success"))
+
+			responseRow := findAuditByRecordID(rows, response.GetAuditRecordId())
+			Expect(responseRow).NotTo(BeNil())
+			Expect(mustString(responseRow, "outcome")).To(Equal("ALLOW"))
+			Expect(responseRow["success"]).To(Equal(true))
+
+			code, _, filtered := listAuditEvents("?audit_type=PROXY_MEDIATED&outcome=ALLOW")
+			Expect(code).To(Equal(http.StatusOK))
+			Expect(filtered).To(HaveLen(2))
+
+			id := mustString(got, "id")
+			code, body, _ := cfnDo(http.MethodGet, "/api/internal/mgmt/audit/"+id, nil)
+			Expect(code).To(Equal(http.StatusOK), "%v", body)
+			Expect(mustString(body, "source")).To(Equal("PROXY"))
+			Expect(mustString(nestedMap(body, "audit_information"), "audit_record_id")).To(Equal(mediation.GetAuditRecordId()))
 		})
 
 		It("returns 400 for an invalid event id", func() {
@@ -295,6 +354,12 @@ var _ = Describe("HTTP routes", Serial, func() {
 			code, body, _ := cfnDo(http.MethodGet, "/api/internal/mgmt/audit?resource_type=NOT_A_TYPE", nil)
 			Expect(code).To(Equal(http.StatusBadRequest))
 			Expect(mustString(body, "error")).NotTo(BeEmpty())
+		})
+
+		It("returns 400 for an unknown outcome filter", func() {
+			code, body, _ := cfnDo(http.MethodGet, "/api/internal/mgmt/audit?outcome=NOT_AN_OUTCOME", nil)
+			Expect(code).To(Equal(http.StatusBadRequest))
+			Expect(mustString(body, "error")).To(ContainSubstring("invalid outcome"))
 		})
 	})
 })

@@ -12,12 +12,16 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
 	"time"
 
 	enforcementv1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
 	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/config"
+	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/protobuf/encoding/protojson"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -125,6 +129,51 @@ func dialEnforcement(ctx context.Context) (*grpc.ClientConn, error) {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithBlock(),
 	)
+}
+
+func proxyAuditFixture(variant string) *enforcementv1.AuditRecord {
+	raw, err := os.ReadFile(filepath.Join(moduleRoot(), "pkg/audit/testdata", "proxy_"+variant+".json"))
+	Expect(err).NotTo(HaveOccurred())
+	record := new(enforcementv1.AuditRecord)
+	Expect(protojson.Unmarshal(raw, record)).To(Succeed())
+	return record
+}
+
+func appendAuditRecord(record *enforcementv1.AuditRecord) (*enforcementv1.AppendAuditRecordResponse, error) {
+	return appendAuditRecordRequest(&enforcementv1.AppendAuditRecordRequest{Record: record})
+}
+
+func appendAuditRecordRequest(req *enforcementv1.AppendAuditRecordRequest) (*enforcementv1.AppendAuditRecordResponse, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+	conn, err := dialEnforcement(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	return enforcementv1.NewEnforcementClient(conn).AppendAuditRecord(ctx, req)
+}
+
+func listAuditEvents(query string) (int, map[string]any, []map[string]any) {
+	code, body, _ := cfnDo(http.MethodGet, "/api/internal/mgmt/audit"+query, nil)
+	data, _ := body["data"].([]any)
+	rows := make([]map[string]any, 0, len(data))
+	for _, item := range data {
+		row, ok := item.(map[string]any)
+		if ok {
+			rows = append(rows, row)
+		}
+	}
+	return code, body, rows
+}
+
+func findAuditByRecordID(rows []map[string]any, recordID string) map[string]any {
+	for _, row := range rows {
+		if mustString(nestedMap(row, "audit_information"), "audit_record_id") == recordID {
+			return row
+		}
+	}
+	return nil
 }
 
 func truncateAudits() error {
