@@ -166,3 +166,8 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE.md](LIC
 ## Third-Party Notices
 
 This project uses third-party open source components. See [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES) for copyright and license information.
+
+## MAS onboarding metadata
+
+See [MAS metadata](docs/MAS_METADATA.md) for the optional Stage 3 contract,
+snapshot semantics, atomic reference validation and additive migration.

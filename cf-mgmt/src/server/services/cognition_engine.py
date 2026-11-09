@@ -7,6 +7,8 @@
 import copy
 import logging
 from dataclasses import dataclass
+from server.services.mas_metadata import lock_mas, utc_now
+
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
@@ -227,7 +229,9 @@ class CognitionEngineService:
         if not predecessor_mas_ids:
             return
 
-        for (mas_id,) in predecessor_mas_ids:
+        for (mas_id,) in sorted(predecessor_mas_ids):
+            mas = lock_mas(session, mas_id)
+            mas.updated_at = utc_now()
             session.add(
                 MasCognitionEngine(
                     mas_id=mas_id,
@@ -348,6 +352,7 @@ class CognitionEngineService:
                         CognitionEngineModel.id == ce_id,
                         CognitionEngineModel.deleted_at.is_(None),
                     )
+                    .with_for_update()
                     .first()
                 )
 
@@ -516,226 +521,98 @@ class CognitionEngineService:
                 detail=f"Failed to update cognition engine: {str(e)}",
             )
 
-    def patch_mas_config(self, mas_id: str, ce_id: str, mas_config: dict) -> None:
-        """Update the mas_config override for a specific CE-MAS association."""
-        try:
-            from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
+    def _engine_for_association(self, session, ce_id):
+        engine = (
+            session.query(CognitionEngineModel)
+            .filter(CognitionEngineModel.id == ce_id, CognitionEngineModel.deleted_at.is_(None))
+            .with_for_update(read=True)
+            .populate_existing()
+            .first()
+        )
+        if not engine:
+            raise HTTPException(404, f"CE {ce_id} not found")
+        _validate_cfn_active(session, engine.cfn_id)
+        return engine
 
-            db = RelationalDB()
-            session = db.get_session()
-            try:
-                engine = session.query(CognitionEngineModel).filter(CognitionEngineModel.id == ce_id).first()
-                if not engine:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Cognition Engine not found",
-                    )
+    def _associate(self, session, mas, ce_id, user_id):
+        from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
+        from server.database.relational_db.models.workspace import Workspace
 
-                # Validate keys against the CE factory default
-                factory_default = engine.mas_config or {}
-                if factory_default:
-                    unknown_keys = set(mas_config.keys()) - set(factory_default.keys())
-                    if unknown_keys:
-                        raise HTTPException(
-                            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                            detail=f"Unknown mas_config keys: {sorted(unknown_keys)}. "
-                            f"Allowed keys: {sorted(factory_default.keys())}",
-                        )
+        engine = self._engine_for_association(session, ce_id)
+        workspace = session.query(Workspace).filter(Workspace.id == mas.workspace_id).first()
+        if not workspace or workspace.cfn_id != engine.cfn_id:
+            raise HTTPException(422, "MAS belongs to a workspace on a different CFN than the CE")
+        existing = session.query(MasCognitionEngine).filter_by(mas_id=mas.id, ce_id=ce_id).first()
+        if existing:
+            raise HTTPException(409, "CE is already associated with this MAS")
+        assoc = MasCognitionEngine(
+            mas_id=mas.id, ce_id=ce_id, mas_config=copy.deepcopy(engine.mas_config), created_by=user_id
+        )
+        session.add(assoc)
+        mas.updated_at = utc_now()
+        session.flush()
+        return assoc
 
-                assoc = (
-                    session.query(MasCognitionEngine)
-                    .filter(
-                        MasCognitionEngine.mas_id == mas_id,
-                        MasCognitionEngine.ce_id == ce_id,
-                    )
-                    .first()
-                )
-                if not assoc:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="CE is not associated with this MAS",
-                    )
-                assoc.mas_config = mas_config
-                session.commit()
+    def _disassociate(self, session, mas, ce_id):
+        from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
 
-                cfn_id = engine.cfn_id
-            finally:
-                session.close()
+        self._engine_for_association(session, ce_id)
+        assoc = session.query(MasCognitionEngine).filter_by(mas_id=mas.id, ce_id=ce_id).first()
+        if not assoc:
+            raise HTTPException(404, f"No association found between CE {ce_id} and MAS {mas.id}")
+        session.delete(assoc)
+        mas.updated_at = utc_now()
 
-            if cfn_id:
-                from server.services.cognition_fabric_node import cognition_fabric_node_service
+    def _patch_mas_config(self, session, mas, ce_id, mas_config, validate_keys=True):
+        from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
 
-                cognition_fabric_node_service.update_config_for_cfn(cfn_id)
-
-        except HTTPException:
-            raise
-        except Exception as e:
+        engine = self._engine_for_association(session, ce_id)
+        if mas_config is not None and not isinstance(mas_config, dict):
+            raise HTTPException(422, "mas_config must be an object or null")
+        factory_default = engine.mas_config or {}
+        unknown = set(mas_config or {}) - set(factory_default) if validate_keys else set()
+        if factory_default and unknown:
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to update mas_config: {str(e)}",
+                422, f"Unknown mas_config keys: {sorted(unknown)}. " f"Allowed keys: {sorted(factory_default)}"
             )
+        assoc = session.query(MasCognitionEngine).filter_by(mas_id=mas.id, ce_id=ce_id).first()
+        if not assoc:
+            raise HTTPException(404, "CE is not associated with this MAS")
+        if assoc.mas_config != mas_config:
+            assoc.mas_config = mas_config
+            mas.updated_at = utc_now()
+
+    def patch_mas_config(self, mas_id: str, ce_id: str, mas_config: dict) -> None:
+        self._mutate_association(mas_id, lambda session, mas: self._patch_mas_config(session, mas, ce_id, mas_config))
 
     def associate(self, mas_id: str, ce_id: str, user_id: str) -> CognitionEngineAssociateResponse:
-        """
-        Associate a CE with a MAS.
-
-        Validates:
-        - CE exists and is not deleted
-        - CE's CFN is active
-        - MAS exists and is not deleted
-        - MAS's workspace belongs to the same CFN as the CE (boundary constraint)
-        - Association does not already exist
-        """
-        try:
-            from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
-            from server.database.relational_db.models.multi_agentic_system import MultiAgenticSystem
-            from server.database.relational_db.models.workspace import Workspace
-
-            db = RelationalDB()
-            session = db.get_session()
-
-            try:
-                engine = (
-                    session.query(CognitionEngineModel)
-                    .filter(
-                        CognitionEngineModel.id == ce_id,
-                        CognitionEngineModel.deleted_at.is_(None),
-                    )
-                    .first()
-                )
-                if not engine:
-                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"CE {ce_id} not found")
-
-                _validate_cfn_active(session, engine.cfn_id)
-
-                mas = (
-                    session.query(MultiAgenticSystem)
-                    .filter(
-                        MultiAgenticSystem.id == mas_id,
-                        MultiAgenticSystem.deleted_at.is_(None),
-                    )
-                    .first()
-                )
-                if not mas:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"MAS {mas_id} not found",
-                    )
-
-                workspace = session.query(Workspace).filter(Workspace.id == mas.workspace_id).first()
-                if not workspace or workspace.cfn_id != engine.cfn_id:
-                    raise HTTPException(
-                        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                        detail="MAS belongs to a workspace on a different CFN than the CE",
-                    )
-
-                workspace_id = mas.workspace_id  # Capture before commit expires attributes
-
-                existing = (
-                    session.query(MasCognitionEngine)
-                    .filter(
-                        MasCognitionEngine.mas_id == mas_id,
-                        MasCognitionEngine.ce_id == ce_id,
-                    )
-                    .first()
-                )
-                if existing:
-                    raise HTTPException(
-                        status_code=status.HTTP_409_CONFLICT,
-                        detail="CE is already associated with this MAS",
-                    )
-
-                association = MasCognitionEngine(
-                    mas_id=mas_id,
-                    ce_id=ce_id,
-                    mas_config=copy.deepcopy(engine.mas_config) if engine.mas_config else None,
-                    created_by=user_id,
-                )
-                session.add(association)
-                session.commit()
-                session.refresh(association)
-
-                response = CognitionEngineAssociateResponse(
-                    ce_id=ce_id,
-                    mas_id=mas_id,
-                    created_at=association.created_at,
-                )
-
-            finally:
-                session.close()
-
-            from server.services.cognition_fabric_node import cognition_fabric_node_service
-
-            cognition_fabric_node_service.update_config_for_workspace(workspace_id)
-
-            return response
-
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to associate cognition engine: {str(e)}",
-            )
+        return self._mutate_association(mas_id, lambda session, mas: self._associate(session, mas, ce_id, user_id))
 
     def disassociate(self, ce_id: str, mas_id: str, user_id: str, workspace_id: Optional[str] = None) -> None:
-        """
-        Remove the association between a CE and a MAS.
+        self._mutate_association(mas_id, lambda session, mas: self._disassociate(session, mas, ce_id))
 
-        Raises 404 if the CE does not exist or the association does not exist.
-        """
+    def _mutate_association(self, mas_id, mutation):
+        session = RelationalDB().get_session()
         try:
-            from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
-
-            db = RelationalDB()
-            session = db.get_session()
-
-            try:
-                engine = (
-                    session.query(CognitionEngineModel)
-                    .filter(
-                        CognitionEngineModel.id == ce_id,
-                        CognitionEngineModel.deleted_at.is_(None),
-                    )
-                    .first()
-                )
-                if not engine:
-                    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"CE {ce_id} not found")
-
-                _validate_cfn_active(session, engine.cfn_id)
-
-                association = (
-                    session.query(MasCognitionEngine)
-                    .filter(
-                        MasCognitionEngine.ce_id == ce_id,
-                        MasCognitionEngine.mas_id == mas_id,
-                    )
-                    .first()
-                )
-                if not association:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"No association found between CE {ce_id} and MAS {mas_id}",
-                    )
-
-                session.delete(association)
-                session.commit()
-
-            finally:
-                session.close()
-
-            if workspace_id:
-                from server.services.cognition_fabric_node import cognition_fabric_node_service
-
-                cognition_fabric_node_service.update_config_for_workspace(workspace_id)
-
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to disassociate cognition engine: {str(e)}",
+            mas = lock_mas(session, mas_id)
+            workspace_id = mas.workspace_id
+            result = mutation(session, mas)
+            session.flush()
+            response = (
+                CognitionEngineAssociateResponse(ce_id=result.ce_id, mas_id=mas_id, created_at=result.created_at)
+                if result is not None
+                else None
             )
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+        from server.services.cognition_fabric_node import cognition_fabric_node_service
+
+        cognition_fabric_node_service.update_config_for_workspace(workspace_id)
+        return response
 
     def list_for_cfn(self, cfn_id: str) -> list:
         """
@@ -874,58 +751,45 @@ class CognitionEngineService:
             logging.getLogger(__name__).error(f"Error recording probe result for cognition engine {ce_id}: {str(e)}")
             return None
 
-    def auto_attach_for_new_mas(self, mas_id: str, cfn_id: str) -> None:
-        """Auto-associate: on MAS create/update, associate all enabled mas_auto_associate=True CEs in the CFN."""
+    def _auto_attach(self, session, mas, cfn_id):
+        from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
+        from server.database.relational_db.models.cognition_fabric_node import CognitionFabricNode
+
         if not cfn_id:
             return
+        active_cfn = (
+            session.query(CognitionFabricNode)
+            .filter(
+                CognitionFabricNode.id == cfn_id,
+                CognitionFabricNode.deleted_at.is_(None),
+                CognitionFabricNode.enabled.is_(True),
+            )
+            .first()
+        )
+        if not active_cfn:
+            logging.getLogger(__name__).warning(
+                "Skipping automatic CE attachment for MAS %s: CFN %s not found or inactive",
+                mas.id,
+                cfn_id,
+            )
+            return
+        auto_ces = (
+            session.query(CognitionEngineModel)
+            .filter(
+                CognitionEngineModel.cfn_id == cfn_id,
+                CognitionEngineModel.mas_auto_associate.is_(True),
+                CognitionEngineModel.enabled.is_(True),
+                CognitionEngineModel.deleted_at.is_(None),
+            )
+            .order_by(CognitionEngineModel.id)
+            .all()
+        )
+        for engine in auto_ces:
+            if not session.query(MasCognitionEngine).filter_by(mas_id=mas.id, ce_id=engine.id).first():
+                self._associate(session, mas, engine.id, "system")
 
-        try:
-            from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
-
-            db = RelationalDB()
-            session = db.get_session()
-
-            try:
-                auto_ces = (
-                    session.query(CognitionEngineModel)
-                    .filter(
-                        CognitionEngineModel.cfn_id == cfn_id,
-                        CognitionEngineModel.mas_auto_associate.is_(True),
-                        CognitionEngineModel.enabled.is_(True),
-                        CognitionEngineModel.deleted_at.is_(None),
-                    )
-                    .all()
-                )
-
-                for ce_engine in auto_ces:
-                    exists = (
-                        session.query(MasCognitionEngine)
-                        .filter(
-                            MasCognitionEngine.ce_id == ce_engine.id,
-                            MasCognitionEngine.mas_id == mas_id,
-                        )
-                        .first()
-                    )
-                    if not exists:
-                        session.add(
-                            MasCognitionEngine(
-                                mas_id=mas_id,
-                                ce_id=ce_engine.id,
-                                mas_config=copy.deepcopy(ce_engine.mas_config) if ce_engine.mas_config else None,
-                                created_by="system",
-                            )
-                        )
-
-                auto_ce_ids = [e.id for e in auto_ces]
-
-                if auto_ce_ids:
-                    session.commit()
-
-            finally:
-                session.close()
-
-        except Exception as e:
-            logging.getLogger(__name__).error(f"Auto-attach MAS {mas_id} to CEs failed: {e}")
+    def auto_attach_for_new_mas(self, mas_id: str, cfn_id: str) -> None:
+        self._mutate_association(mas_id, lambda session, mas: self._auto_attach(session, mas, cfn_id))
 
 
 def _validate_cfn_active(session, cfn_id: str, *, lock: bool = False) -> None:

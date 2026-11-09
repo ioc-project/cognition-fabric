@@ -30,6 +30,16 @@ from server.database.relational_db.models.mcp_tool import MCPTool as MCPToolMode
 from server.database.relational_db.db import RelationalDB
 from server.services.workspace import workspace_service
 from server.utils import generate_uuid
+from server.services.mas_metadata import (
+    apply_metadata,
+    capture_native_snapshots,
+    lock_mas,
+    lock_workspace_cfn,
+    read_metadata,
+    update_agent_metadata,
+    update_native_snapshot,
+    validate_final_state,
+)
 
 
 class MultiAgenticSystemService:
@@ -44,6 +54,8 @@ class MultiAgenticSystemService:
             )
 
         return AgentDetail(
+            agent_descriptions=agent_row.agent_descriptions,
+            metadata=agent_row.agent_metadata,
             cf_agent_id=agent_row.cf_agent_id,
             agent_id=agent_row.agent_id,
             name=agent_row.name,
@@ -56,6 +68,10 @@ class MultiAgenticSystemService:
     def _mcp_server_row_to_schema(self, server_row: MCPServerModel, tools: list[MCPToolModel]) -> MCPServerDetail:
         tool_details = [
             MCPToolDetail(
+                definition=tool.definition,
+                source_snapshot=tool.source_snapshot,
+                provenance=tool.provenance,
+                protocol_version=tool.protocol_version,
                 id=tool.id,
                 name=tool.name,
                 description=tool.description,
@@ -83,6 +99,7 @@ class MultiAgenticSystemService:
         enriched_agents = [self._agent_row_to_schema(a) for a in agents] if agents is not None else None
 
         return MultiAgenticSystemSchema(
+            **read_metadata(mas, mcp_servers),
             id=mas.id,
             workspace_id=mas.workspace_id,
             name=mas.name,
@@ -146,6 +163,7 @@ class MultiAgenticSystemService:
                 identity_identifiers=identity_identifiers,
                 config=agent_cfg.config,
             )
+            update_agent_metadata(row, agent_cfg)
             session.add(row)
             agent_rows.append(row)
 
@@ -220,6 +238,7 @@ class MultiAgenticSystemService:
                     config=agent_cfg.config,
                 )
                 session.add(row)
+            update_agent_metadata(row, agent_cfg)
 
     def _validate_mcp_server_names(self, mcp_servers_data) -> None:
         """Match persisted name uniqueness, including empty server/tool names."""
@@ -276,6 +295,7 @@ class MultiAgenticSystemService:
                         description=tool_cfg.description,
                         parameters=tool_cfg.parameters,
                     )
+                    update_native_snapshot(tool_row, tool_cfg)
                     session.add(tool_row)
 
         return server_rows
@@ -328,6 +348,7 @@ class MultiAgenticSystemService:
                             description=tool_cfg.description,
                             parameters=tool_cfg.parameters,
                         )
+                        update_native_snapshot(tool_row, tool_cfg)
                         session.add(tool_row)
 
         # Delete servers not in incoming list (cascade deletes tools)
@@ -351,6 +372,7 @@ class MultiAgenticSystemService:
                 tool = existing_map[tool_cfg.name]
                 tool.description = tool_cfg.description
                 tool.parameters = tool_cfg.parameters
+                update_native_snapshot(tool, tool_cfg)
                 tool.updated_at = now
             else:
                 # Create new tool
@@ -361,6 +383,7 @@ class MultiAgenticSystemService:
                     description=tool_cfg.description,
                     parameters=tool_cfg.parameters,
                 )
+                update_native_snapshot(tool_row, tool_cfg)
                 session.add(tool_row)
 
         # Delete tools not in incoming list
@@ -384,6 +407,28 @@ class MultiAgenticSystemService:
 
         return [self._mcp_server_row_to_schema(server, tools_by_server.get(server.id, [])) for server in servers]
 
+    def _sync_ce_membership(self, session, mas, request, user_id, creating=False):
+        from server.services.cognition_engine import cognition_engine_service
+        from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
+        from server.database.relational_db.models.workspace import Workspace
+
+        workspace = session.query(Workspace).filter(Workspace.id == mas.workspace_id).first()
+        cognition_engine_service._auto_attach(session, mas, workspace.cfn_id if workspace else None)
+        if request.cognition_engine_ids is not None:
+            existing = {
+                row.ce_id for row in session.query(MasCognitionEngine).filter(MasCognitionEngine.mas_id == mas.id)
+            }
+            incoming = set(request.cognition_engine_ids)
+            for ce_id in sorted(incoming - existing):
+                cognition_engine_service._associate(session, mas, ce_id, user_id)
+            if not creating:
+                for ce_id in sorted(existing - incoming):
+                    cognition_engine_service._disassociate(session, mas, ce_id)
+        session.flush()
+        for ce_id, override in (getattr(request, "cognition_engine_configs", None) or {}).items():
+            if session.query(MasCognitionEngine).filter_by(mas_id=mas.id, ce_id=ce_id).first():
+                cognition_engine_service._patch_mas_config(session, mas, ce_id, override, validate_keys=False)
+
     def create(
         self, workspace_id: str, mas_data: MultiAgenticSystemRequest, user_id: str = "system"
     ) -> MultiAgenticSystemResponse:
@@ -398,6 +443,7 @@ class MultiAgenticSystemService:
             session = db.get_session()
 
             try:
+                lock_workspace_cfn(session, workspace_id)
                 existing = (
                     session.query(MultiAgenticSystemModel)
                     .filter(
@@ -428,29 +474,12 @@ class MultiAgenticSystemService:
                 self._save_agents(session, new_mas.id, mas_data.agents)
                 self._save_mcp_servers(session, new_mas.id, mas_data.mcp_servers)
 
+                session.flush()
+                apply_metadata(session, new_mas, mas_data)
+                validate_final_state(session, new_mas)
+                self._sync_ce_membership(session, new_mas, mas_data, user_id, creating=True)
                 session.commit()
-                session.refresh(new_mas)
-
-                response = MultiAgenticSystemResponse(
-                    id=new_mas.id,
-                    name=new_mas.name,
-                )
-
-                from server.database.relational_db.models.workspace import Workspace
-
-                workspace = session.query(Workspace).filter(Workspace.id == workspace_id).first()
-                workspace_cfn_id = workspace.cfn_id if workspace else None
-
-                from server.services.cognition_engine import cognition_engine_service
-
-                cognition_engine_service.auto_attach_for_new_mas(new_mas.id, workspace_cfn_id)
-
-                for ce_id in mas_data.cognition_engine_ids or []:
-                    try:
-                        cognition_engine_service.associate(new_mas.id, ce_id, user_id)
-                    except HTTPException as e:
-                        if e.status_code != status.HTTP_409_CONFLICT:
-                            raise
+                response = MultiAgenticSystemResponse(id=new_mas.id, name=new_mas.name)
 
                 # Regenerate config after all CE associations are committed
                 from server.services.cognition_fabric_node import cognition_fabric_node_service
@@ -598,6 +627,14 @@ class MultiAgenticSystemService:
             session = db.get_session()
 
             try:
+                # One committed view for the parent and all child inventories,
+                # without blocking concurrent onboarding/CE membership writes.
+                session.connection(
+                    execution_options={
+                        "isolation_level": "REPEATABLE READ",
+                        "postgresql_readonly": True,
+                    }
+                )
                 mas = (
                     session.query(MultiAgenticSystemModel)
                     .filter(
@@ -665,21 +702,10 @@ class MultiAgenticSystemService:
             session = db.get_session()
 
             try:
-                mas = (
-                    session.query(MultiAgenticSystemModel)
-                    .filter(
-                        MultiAgenticSystemModel.id == mas_id,
-                        MultiAgenticSystemModel.workspace_id == workspace_id,
-                        MultiAgenticSystemModel.deleted_at.is_(None),
-                    )
-                    .first()
+                mas = lock_mas(session, mas_id, workspace_id)
+                previous_native = (
+                    capture_native_snapshots(session, mas_id) if "tools" in mas_data.model_fields_set else None
                 )
-
-                if not mas:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Multi-agentic system not found",
-                    )
 
                 if mas_data.name is not None:
                     existing = (
@@ -712,20 +738,10 @@ class MultiAgenticSystemService:
                 if mas_data.config is not None:
                     mas.config = mas_data.config
 
-                if mas_data.cognition_engine_configs is not None:
-                    from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
-
-                    for ce_id, ce_mas_config in mas_data.cognition_engine_configs.items():
-                        assoc = (
-                            session.query(MasCognitionEngine)
-                            .filter(
-                                MasCognitionEngine.mas_id == mas_id,
-                                MasCognitionEngine.ce_id == ce_id,
-                            )
-                            .first()
-                        )
-                        if assoc:
-                            assoc.mas_config = ce_mas_config
+                session.flush()
+                apply_metadata(session, mas, mas_data, previous_native)
+                validate_final_state(session, mas)
+                self._sync_ce_membership(session, mas, mas_data, user_id)
 
                 mas.updated_at = datetime.now(timezone.utc)
 
@@ -739,28 +755,10 @@ class MultiAgenticSystemService:
 
                 cognition_fabric_node_service.update_config_for_workspace(workspace_id)
 
-                from server.database.relational_db.models.workspace import Workspace
-                from server.services.cognition_engine import cognition_engine_service
-
-                workspace_obj = session.query(Workspace).filter(Workspace.id == workspace_id).first()
-                workspace_cfn_id = workspace_obj.cfn_id if workspace_obj else None
-                cognition_engine_service.auto_attach_for_new_mas(mas.id, workspace_cfn_id)
-
                 from server.database.relational_db.models.mas_cognition_engine import MasCognitionEngine
                 from server.database.relational_db.models.cognition_engine import (
                     CognitionEngine as CognitionEngineModel,
                 )
-
-                if mas_data.cognition_engine_ids is not None:
-                    incoming = set(mas_data.cognition_engine_ids)
-                    existing_ce_ids = {
-                        row.ce_id
-                        for row in session.query(MasCognitionEngine).filter(MasCognitionEngine.mas_id == mas.id)
-                    }
-                    for ce_id in incoming - existing_ce_ids:
-                        cognition_engine_service.associate(mas.id, ce_id, user_id)
-                    for ce_id in existing_ce_ids - incoming:
-                        cognition_engine_service.disassociate(ce_id, mas.id, user_id)
 
                 ce_rows = (
                     session.query(MasCognitionEngine, CognitionEngineModel)
@@ -797,6 +795,9 @@ class MultiAgenticSystemService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Database integrity error: {str(e)}",
                 )
+            except Exception:
+                session.rollback()
+                raise
             finally:
                 session.close()
 
@@ -930,21 +931,7 @@ class MultiAgenticSystemService:
             session = db.get_session()
 
             try:
-                mas = (
-                    session.query(MultiAgenticSystemModel)
-                    .filter(
-                        MultiAgenticSystemModel.id == mas_id,
-                        MultiAgenticSystemModel.workspace_id == workspace_id,
-                        MultiAgenticSystemModel.deleted_at.is_(None),
-                    )
-                    .first()
-                )
-
-                if not mas:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Multi-agentic system not found",
-                    )
+                mas = lock_mas(session, mas_id, workspace_id)
 
                 now = datetime.now(timezone.utc)
 

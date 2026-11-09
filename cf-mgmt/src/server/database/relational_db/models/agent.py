@@ -25,6 +25,9 @@ class Agent(Base):
     identity_type = Column(String(50), nullable=True)
     identity_identifiers = Column(JSONB, nullable=True)
     config = Column(JSONB, nullable=True)
+    agent_descriptions = Column(JSONB, nullable=True)
+    agent_metadata = Column(JSONB, nullable=True)
+
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
     updated_at = Column(DateTime, nullable=True, server_default=text("CURRENT_TIMESTAMP"))
     created_by = Column(String(255), nullable=True)

@@ -13,6 +13,9 @@ docs/
 
 ## Documentation Contents
 
+- [MAS onboarding metadata](MAS_METADATA.md) — optional rich snapshots, presence
+  semantics, atomic mutations and the `mas_metadata_0009` migration.
+
 - [Database migrations](DATABASE_MIGRATIONS.md), including the `agent_identity_0008` agent
   storage-key cutover, rollback boundary and manual verification steps.
 

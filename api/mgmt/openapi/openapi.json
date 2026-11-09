@@ -1860,6 +1860,25 @@
     "schemas": {
       "AgentConfig": {
         "properties": {
+          "agent_descriptions": {
+            "items": {
+              "$ref": "#/components/schemas/AgentDescription"
+            },
+            "type": "array",
+            "title": "Agent Descriptions"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
           "agent_id": {
             "anyOf": [
               {
@@ -1937,8 +1956,238 @@
         "title": "AgentConfig",
         "description": "Schema for individual agent configuration in MAS (input)"
       },
+      "AgentDescription": {
+        "properties": {
+          "content": {
+            "title": "Content"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "media_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Type"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "spec_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spec Version"
+          },
+          "schema_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schema Version"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "format"
+        ],
+        "title": "AgentDescription"
+      },
+      "AgentDescriptionRead": {
+        "properties": {
+          "content": {
+            "title": "Content"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "media_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Type"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          },
+          "collected_at": {
+            "type": "string",
+            "title": "Collected At"
+          },
+          "content_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Hash"
+          },
+          "resolution_state": {
+            "type": "string",
+            "enum": [
+              "inline",
+              "unresolved"
+            ],
+            "title": "Resolution State"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "spec_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spec Version"
+          },
+          "schema_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schema Version"
+          },
+          "support_state": {
+            "type": "string",
+            "enum": [
+              "supported",
+              "unsupported"
+            ],
+            "title": "Support State"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "collected_at",
+          "resolution_state",
+          "format",
+          "support_state"
+        ],
+        "title": "AgentDescriptionRead"
+      },
       "AgentDetail": {
         "properties": {
+          "agent_descriptions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AgentDescriptionRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Descriptions"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
           "cf_agent_id": {
             "type": "string",
             "format": "uuid",
@@ -3636,6 +3885,145 @@
         "title": "CognitionFabricTopologyResponse",
         "description": "Aggregated view of the entire Cognition Fabric topology"
       },
+      "DocumentRead": {
+        "properties": {
+          "content": {
+            "title": "Content"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "media_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Type"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          },
+          "collected_at": {
+            "type": "string",
+            "title": "Collected At"
+          },
+          "content_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Hash"
+          },
+          "resolution_state": {
+            "type": "string",
+            "enum": [
+              "inline",
+              "unresolved"
+            ],
+            "title": "Resolution State"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "collected_at",
+          "resolution_state"
+        ],
+        "title": "DocumentRead"
+      },
+      "DocumentSnapshot": {
+        "properties": {
+          "content": {
+            "title": "Content"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "media_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Type"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "DocumentSnapshot"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -3825,6 +4213,41 @@
       },
       "MCPToolConfig": {
         "properties": {
+          "definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "protocol_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Version"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          },
           "name": {
             "type": "string",
             "title": "Name",
@@ -3856,6 +4279,7 @@
             "description": "JSON Schema for tool parameters"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "name"
@@ -3865,6 +4289,53 @@
       },
       "MCPToolDetail": {
         "properties": {
+          "definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "source_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Snapshot"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          },
+          "protocol_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Version"
+          },
           "id": {
             "type": "string",
             "title": "Id",
@@ -4075,6 +4546,96 @@
       },
       "MultiAgenticSystem": {
         "properties": {
+          "metadata_schema_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata Schema Version"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "documentation": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DocumentRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Documentation"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/RuntimeToolRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools"
+          },
+          "topologies": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TopologyRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Topologies"
+          },
+          "topology_sources": {
+            "$ref": "#/components/schemas/TopologySources"
+          },
           "id": {
             "type": "string",
             "title": "Id"
@@ -4196,6 +4757,7 @@
         },
         "type": "object",
         "required": [
+          "topology_sources",
           "id",
           "workspace_id",
           "name",
@@ -4236,6 +4798,73 @@
       },
       "MultiAgenticSystemRequest": {
         "properties": {
+          "metadata_schema_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata Schema Version"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "documentation": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentSnapshot"
+            },
+            "type": "array",
+            "title": "Documentation"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeTool"
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "topologies": {
+            "items": {
+              "$ref": "#/components/schemas/ProvidedTopology"
+            },
+            "type": "array",
+            "maxItems": 1,
+            "title": "Topologies"
+          },
           "name": {
             "type": "string",
             "maxLength": 255,
@@ -4348,6 +4977,73 @@
       },
       "MultiAgenticSystemUpdate": {
         "properties": {
+          "metadata_schema_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata Schema Version"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "documentation": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentSnapshot"
+            },
+            "type": "array",
+            "title": "Documentation"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeTool"
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "topologies": {
+            "items": {
+              "$ref": "#/components/schemas/ProvidedTopology"
+            },
+            "type": "array",
+            "maxItems": 1,
+            "title": "Topologies"
+          },
           "name": {
             "anyOf": [
               {
@@ -4467,6 +5163,385 @@
         ],
         "title": "MultiAgenticSystems",
         "description": "Schema for listing multi-agentic systems"
+      },
+      "ProvidedTopology": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "const": "provided",
+            "title": "Source"
+          },
+          "completeness": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "partial"
+            ],
+            "title": "Completeness"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/TopologyNode"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/TopologyEdge"
+            },
+            "type": "array",
+            "title": "Edges"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "completeness",
+          "nodes",
+          "edges"
+        ],
+        "title": "ProvidedTopology"
+      },
+      "RuntimeTool": {
+        "properties": {
+          "definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "protocol_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Version"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          },
+          "tool_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Tool Id"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolProvider"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tool_id"
+        ],
+        "title": "RuntimeTool"
+      },
+      "RuntimeToolRead": {
+        "properties": {
+          "definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "protocol_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Version"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          },
+          "tool_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Tool Id"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolProvider"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "source_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Snapshot"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tool_id"
+        ],
+        "title": "RuntimeToolRead"
+      },
+      "SourceAvailability": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "absent",
+              "disabled",
+              "unavailable"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "SourceAvailability"
+      },
+      "ToolProvider": {
+        "properties": {
+          "mcp_server_name": {
+            "type": "string",
+            "title": "Mcp Server Name"
+          },
+          "native_tool_name": {
+            "type": "string",
+            "title": "Native Tool Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mcp_server_name",
+          "native_tool_name"
+        ],
+        "title": "ToolProvider"
+      },
+      "TopologyEdge": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "interaction_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interaction Type"
+          },
+          "conditional": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conditional"
+          },
+          "data": {
+            "title": "Data"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "target"
+        ],
+        "title": "TopologyEdge"
+      },
+      "TopologyNode": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "start",
+              "end"
+            ],
+            "title": "Type",
+            "default": "agent"
+          },
+          "tool_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tool Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "TopologyNode"
+      },
+      "TopologyRead": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "provided",
+              "observed"
+            ],
+            "title": "Source"
+          },
+          "completeness": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "partial"
+            ],
+            "title": "Completeness"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/TopologyNode"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/TopologyEdge"
+            },
+            "type": "array",
+            "title": "Edges"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "completeness",
+          "nodes",
+          "edges"
+        ],
+        "title": "TopologyRead"
+      },
+      "TopologySources": {
+        "properties": {
+          "provided": {
+            "$ref": "#/components/schemas/SourceAvailability"
+          },
+          "observed": {
+            "$ref": "#/components/schemas/SourceAvailability"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provided",
+          "observed"
+        ],
+        "title": "TopologySources"
       },
       "ValidationError": {
         "properties": {

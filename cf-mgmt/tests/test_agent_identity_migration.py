@@ -128,7 +128,7 @@ def _state(engine):
 def test_backfill_preserves_runtime_ids_data_associations_and_config(legacy_database):
     engine, config = legacy_database
     before = _state(engine)
-    command.upgrade(config, "head")
+    command.upgrade(config, "agent_identity_0008")
     after = _state(engine)
     mappings = {row["agent_id"]: str(row["cf_agent_id"]) for row in after["agent"]}
     assert len(set(mappings.values())) == 2
@@ -142,15 +142,16 @@ def test_backfill_preserves_runtime_ids_data_associations_and_config(legacy_data
         assert inspector.get_pk_constraint("agent")["constrained_columns"] == ["cf_agent_id"]
         assert any(c["column_names"] == ["mas_id", "agent_id"] for c in inspector.get_unique_constraints("agent"))
         assert any(i["name"] == "uq_agent_mas_name" for i in inspector.get_indexes("agent"))
-    command.upgrade(config, "head")
+    command.upgrade(config, "agent_identity_0008")
     assert {row["agent_id"]: str(row["cf_agent_id"]) for row in _state(engine)["agent"]} == mappings
+    command.upgrade(config, "head")
     with Session(engine) as session:
         assert session.get(Agent, mappings["legacy-client-id"]).agent_id == "legacy-client-id"
 
 
 def test_migrated_constraints_scope_runtime_ids_and_preserve_name_rules(legacy_database):
     engine, config = legacy_database
-    command.upgrade(config, "head")
+    command.upgrade(config, "agent_identity_0008")
     with engine.begin() as connection:
         connection.execute(sa.text("INSERT INTO agent (agent_id, mas_id) VALUES ('legacy-client-id', 'mas-b')"))
     with pytest.raises(sa.exc.IntegrityError):
@@ -171,7 +172,7 @@ def test_migrated_constraints_scope_runtime_ids_and_preserve_name_rules(legacy_d
 
 def test_downgrade_refuses_cross_mas_duplicates_without_partial_changes(legacy_database):
     engine, config = legacy_database
-    command.upgrade(config, "head")
+    command.upgrade(config, "agent_identity_0008")
     with engine.begin() as connection:
         connection.execute(sa.text("INSERT INTO agent (agent_id, mas_id) VALUES ('legacy-client-id', 'mas-b')"))
     before = _state(engine)
@@ -186,7 +187,7 @@ def test_downgrade_refuses_cross_mas_duplicates_without_partial_changes(legacy_d
 def test_explicit_downgrade_restores_legacy_schema_when_ids_are_globally_unique(legacy_database):
     engine, config = legacy_database
     before = _state(engine)
-    command.upgrade(config, "head")
+    command.upgrade(config, "agent_identity_0008")
     command.downgrade(config, "0007")
     assert _state(engine) == before
     with engine.connect() as connection:
@@ -203,7 +204,7 @@ def test_upgrade_reports_external_runtime_id_foreign_keys_before_mutation(legacy
         connection.execute(sa.text("INSERT INTO external_agent_ref VALUES ('legacy-client-id')"))
     before = _state(engine)
     with pytest.raises(RuntimeError, match="foreign keys reference agent.agent_id"):
-        command.upgrade(config, "head")
+        command.upgrade(config, "agent_identity_0008")
     assert _state(engine) == before
     with engine.connect() as connection:
         assert connection.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0007"
@@ -213,7 +214,7 @@ def test_upgrade_reports_external_runtime_id_foreign_keys_before_mutation(legacy
 
 def test_downgrade_reports_references_to_new_storage_identity(legacy_database):
     engine, config = legacy_database
-    command.upgrade(config, "head")
+    command.upgrade(config, "agent_identity_0008")
     with engine.begin() as connection:
         connection.execute(sa.text("CREATE TABLE cf_agent_ref (id uuid REFERENCES agent(cf_agent_id))"))
         connection.execute(sa.text("INSERT INTO cf_agent_ref SELECT cf_agent_id FROM agent LIMIT 1"))
@@ -231,7 +232,7 @@ def test_historical_0008_marker_is_not_accepted_as_new_revision_prefix(legacy_da
         connection.execute(sa.text("UPDATE alembic_version SET version_num = '0008'"))
     before = _state(engine)
     with pytest.raises(CommandError, match="Can't locate revision identified by '0008'"):
-        command.upgrade(config, "head")
+        command.upgrade(config, "agent_identity_0008")
     assert _state(engine) == before
     with engine.connect() as connection:
         assert connection.scalar(sa.text("SELECT version_num FROM alembic_version")) == "0008"

@@ -6,6 +6,13 @@ from pydantic import BaseModel, Field, ConfigDict, model_validator
 from datetime import datetime
 
 from server.schemas.cognition_engine import CEConnection
+from server.schemas.mas_metadata import (
+    AgentDescription,
+    AgentDescriptionRead,
+    MetadataRead,
+    MetadataWrite,
+    ToolSnapshot,
+)
 from typing import Optional, Dict, Any, List
 
 
@@ -19,7 +26,7 @@ class AgentIdentity(BaseModel):
 # MCP Server Schemas
 
 
-class MCPToolConfig(BaseModel):
+class MCPToolConfig(ToolSnapshot):
     """Schema for MCP tool configuration (input)"""
 
     name: str = Field(..., description="Tool name")
@@ -29,6 +36,11 @@ class MCPToolConfig(BaseModel):
 
 class MCPToolDetail(BaseModel):
     """Schema for MCP tool details (output)"""
+
+    definition: Optional[Dict[str, Any]] = Field(None, exclude_if=lambda v: v is None)
+    source_snapshot: Optional[Dict[str, Any]] = Field(None, exclude_if=lambda v: v is None)
+    provenance: Optional[Dict[str, Any]] = Field(None, exclude_if=lambda v: v is None)
+    protocol_version: Optional[str] = Field(None, exclude_if=lambda v: v is None)
 
     id: str = Field(..., description="Unique identifier for the tool")
     name: str = Field(..., description="Tool name")
@@ -60,6 +72,9 @@ class MCPServerDetail(BaseModel):
 class AgentConfig(BaseModel):
     """Schema for individual agent configuration in MAS (input)"""
 
+    agent_descriptions: List[AgentDescription] = Field(default_factory=list)
+    metadata: Optional[Dict[str, Any]] = None
+
     agent_id: Optional[str] = Field(
         None, description="Runtime agent identifier, unique within the MAS; generated if omitted"
     )
@@ -72,6 +87,9 @@ class AgentConfig(BaseModel):
 
 class AgentDetail(BaseModel):
     """Schema for agent details (output)"""
+
+    agent_descriptions: Optional[List[AgentDescriptionRead]] = Field(None, exclude_if=lambda v: v is None)
+    metadata: Optional[Dict[str, Any]] = Field(None, exclude_if=lambda v: v is None)
 
     cf_agent_id: str = Field(
         ...,
@@ -86,7 +104,7 @@ class AgentDetail(BaseModel):
     config: Optional[Dict[str, Any]] = Field(None, description="Agent-specific configuration")
 
 
-class MultiAgenticSystemRequest(BaseModel):
+class MultiAgenticSystemRequest(MetadataWrite):
     """Schema for creating a new Multi-Agentic System"""
 
     name: str = Field(
@@ -117,7 +135,7 @@ class MultiAgenticSystemRequest(BaseModel):
     )
 
 
-class MultiAgenticSystemUpdate(BaseModel):
+class MultiAgenticSystemUpdate(MetadataWrite):
     """Schema for updating a Multi-Agentic System"""
 
     name: Optional[str] = Field(
@@ -180,7 +198,7 @@ class MasCognitionEngineItem(CEConnection):
     mas_config: Optional[dict]
 
 
-class MultiAgenticSystem(BaseModel):
+class MultiAgenticSystem(MetadataRead):
     """Schema for detailed multi-agentic system information"""
 
     model_config = ConfigDict(
