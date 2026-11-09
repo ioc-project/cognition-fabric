@@ -342,6 +342,11 @@ Open <http://localhost:9001> and sign in as `admin` using
 Multi-Agentic System, add its agents, and associate the template CE after it
 registers and appears online. Copy the MAS ID from its details page.
 
+For full-JSON create/edit, use the separate
+[NOA onboarding declaration and instructions](local/mas-onboarding/README.md).
+Its optional topology is currently a browser draft placeholder and is not stored
+by CF; the supported MAS and agent fields use the existing Management API.
+
 Stop a previously running published NOA container first, then set
 `NOA_MAS_ID` to the new MAS ID and `NOA_MODE=source` in the CFN `.env`, and
 start the CF-owned source copy in a fifth terminal:
