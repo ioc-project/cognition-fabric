@@ -92,9 +92,13 @@ func (rt *Router) Evaluate(ctx context.Context, r *cev1.EvaluateRequest) (out *c
 		if out.Outcome == cev1.Decision_DECISION_DENY {
 			level = slog.LevelWarn
 		}
-		logger.Log(ctx, level, "Final decision returned to CFN", "event", "evaluation.complete", "stage", "DECISION", "outcome", logging.Outcome(out), "context_sufficiency", out.ContextSufficiency.String(), "missing_context_cause", out.MissingContextCause.String(), "elapsed_ms", time.Since(started).Milliseconds())
+		logger.Log(ctx, level, "Final decision returned to CFN", "event", "evaluation.complete", "stage", "DECISION", "outcome", logging.Outcome(out), "context_sufficiency", out.GetContextSufficiency().String(), "missing_context_cause", out.GetMissingContextCause().String(), "elapsed_ms", time.Since(started).Milliseconds())
 		for _, check := range out.ChecksRun {
 			logger.InfoContext(ctx, "Evaluation check result", "event", "evaluation.check", "check_id", check.CheckId, "passed", check.Passed)
+		}
+		if detailErr := publishDetails(out); detailErr != nil {
+			out, err = nil, status.Error(codes.Internal, "could not encode demo CE diagnostics")
+			logger.ErrorContext(ctx, "Demo CE details encoding failed", "error", detailErr)
 		}
 	}()
 	if rt.single != nil {
@@ -107,8 +111,8 @@ func (rt *Router) Evaluate(ctx context.Context, r *cev1.EvaluateRequest) (out *c
 	if !ok {
 		reason := "MAS is outside this CE's configured scope"
 		logger.WarnContext(ctx, "MAS outside configured scope; OXP and Cognition Store skipped", "event", "identity.complete", "stage", "IDENTITY", "outcome", "DENY", "check_id", "MAS_SCOPE")
-		return &cev1.EvaluateResponse{TraceId: r.TraceId, Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Outcome: cev1.Decision_DECISION_DENY, DenialReason: cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT, Reason: reason,
-			ContextSufficiency: cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC, ChecksRun: []*cev1.CheckResult{{CheckId: "MAS_SCOPE", Passed: false, Reason: reason}}}, nil
+		return &cev1.EvaluateResponse{TraceId: r.TraceId, Timestamp: time.Now().UTC().Format(time.RFC3339Nano), Outcome: cev1.Decision_DECISION_DENY, DenialReason: cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT.Enum(), Reason: reason,
+			ContextSufficiency: cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC.Enum(), ChecksRun: []*cev1.CheckResult{{CheckId: "MAS_SCOPE", Passed: false, Reason: reason}}}, nil
 	}
 	return se.Evaluate(ctx, r)
 }

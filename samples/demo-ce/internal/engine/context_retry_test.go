@@ -41,7 +41,7 @@ func TestContextAttemptsStopBeforeAnAdditionalLookup(t *testing.T) {
 				_ = json.NewEncoder(w).Encode(map[string]any{"spans": rows})
 			})
 			out, err := engine.Evaluate(context.Background(), spanRequest(span))
-			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE || calls.Load() != int32(attempts) {
+			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, out).GetMissingContextCause() != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE || calls.Load() != int32(attempts) {
 				t.Fatalf("attempt limit not enforced: out=%+v err=%v lookups=%d", out, err, calls.Load())
 			}
 		})
@@ -89,7 +89,7 @@ func TestContextRetryWaitRespectsCallerAndSharedBudget(t *testing.T) {
 			})
 			started := time.Now()
 			out, err := engine.Evaluate(ctx, spanRequest(span))
-			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE || calls.Load() != 1 || time.Since(started) > 500*time.Millisecond {
+			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, out).GetMissingContextCause() != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE || calls.Load() != 1 || time.Since(started) > 500*time.Millisecond {
 				t.Fatalf("retry outlived its budget: out=%+v err=%v lookups=%d elapsed=%s", out, err, calls.Load(), time.Since(started))
 			}
 		})
@@ -122,7 +122,7 @@ func TestPreCallInputInterruptsTheRetryWait(t *testing.T) {
 	pushEvent(t, in, event)
 	select {
 	case out := <-done:
-		if out == nil || out.Outcome != cev1.Decision_DECISION_DENY || !strings.Contains(out.Reason, "NO_SECRET") || out.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
+		if out == nil || out.Outcome != cev1.Decision_DECISION_DENY || !strings.Contains(out.Reason, "NO_SECRET") || diagnostics(t, out).GetContextSufficiency() != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
 			t.Fatalf("pre-call input was missed during retry wait: %+v", out)
 		}
 	case <-time.After(500 * time.Millisecond):

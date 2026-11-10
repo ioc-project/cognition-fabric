@@ -5,12 +5,25 @@ application: it loads identity and content rules per MAS from a JSON file and an
 The JSON config supplies the demo rules.
 
 CFN calls the CE over gRPC (`:18001`, `ce.v1`, the contract comes from the `ioc-scale-cfn-svc` Go module).
-The CE registers itself with CFN over REST (`POST /api/cognition-engine`, conflict recovery by `PATCH`), once
-per second until it succeeds and only while CFN answers `/api/internal/diagnostics/health`. It declares a
+The CE registers itself with CFN over REST (`POST /api/cognition-engine`, conflict recovery by `PATCH`),
+attempting registration immediately and retrying once per second until it succeeds. It declares a
 `health_url` (its `GET /healthz`) and CFN probes it every couple of seconds to decide whether the CE is online,
 so the CE sends no heartbeats.
 
 See the [documentation site source](../docs/README.md) for the full Demo CE guide.
+
+## Evaluation response
+
+The common response is `outcome`, free-text `reason` and the existing metadata.
+Demo diagnostics now live in `details` with `schema: demo-ce.v1`, `checks_run`
+(check ID, passed flag and reason), and supplied denial/context diagnostics. The
+four deprecated top-level diagnostics are omitted. Policy evaluation, evidence,
+findings and logs retain their previous behavior. Existing consumers still decode
+outcome/reason; unchanged real CEs can keep using their existing bindings.
+See the [shared response contract](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/docs/specs/ce-evaluation-response.md).
+
+The frozen descriptor under `internal/engine/testdata/` must remain independent
+of current generation.
 
 ## Stack and repositories
 
@@ -319,7 +332,17 @@ docker compose logs -f --no-log-prefix demo-ce | jq 'select(.event == "evaluatio
 
 ## Build and test
 
+Generated CE protobuf/gRPC types come from the `github.com/cisco-eti/ioc-scale-cfn-svc`
+Go module at the version pinned in [go.mod](go.mod). Go downloads this dependency;
+a local CFN checkout is not required.
+
+The pinned version, `v0.0.0-20261110062707-7bc7f7f66973`, includes the CE response
+contract merged in [CFN PR #68](https://github.com/cisco-eti/ioc-scale-cfn-svc/pull/68).
+
+Run these commands from the `demo-ce/` directory:
+
 ```bash
+go vet ./...
 go test -race ./...
 docker build --secret id=github_token,env=GITHUB_TOKEN -t demo-ce:dev .
 ```

@@ -92,8 +92,9 @@ func realtimeRequest(extra map[string]string) *cev1.EvaluateRequest {
 	return r
 }
 
-func hasCheck(out *cev1.EvaluateResponse, id string) bool {
-	for _, c := range out.ChecksRun {
+func hasCheck(t *testing.T, out *cev1.EvaluateResponse, id string) bool {
+	t.Helper()
+	for _, c := range diagnostics(t, out).ChecksRun {
 		if c.CheckId == id {
 			return true
 		}
@@ -117,7 +118,7 @@ func TestRealtimeParentFallbackSeparatesParallelRequestsOfOneSpan(t *testing.T) 
 	for parent, decision := range want {
 		wg.Go(func() {
 			out, err := engine.Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.event_id": parent}))
-			if err != nil || out.Outcome != decision || !hasCheck(out, "OXP_REALTIME_EVENT") {
+			if err != nil || out.Outcome != decision || !hasCheck(t, out, "OXP_REALTIME_EVENT") {
 				t.Errorf("%s: %+v %v", parent, out, err)
 			}
 		})
@@ -134,7 +135,7 @@ func TestRealtimeWaitsForTheEventToBeIngested(t *testing.T) {
 				f.add(realtimeEvent("pre1", "msg1", trace, span, "secret-value"))
 			}()
 			out, err := realtimeEngine(t, config.EvidenceToolInput, f, nil).Evaluate(context.Background(), realtimeRequest(extra))
-			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.DenialReason != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT {
+			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, out).GetDenialReason() != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT {
 				t.Fatalf("%+v %v", out, err)
 			}
 		})
@@ -158,7 +159,7 @@ func TestRealtimePendingNeverFallsBackToTheSpanInput(t *testing.T) {
 		ContentRules: []config.ContentRule{{ID: "NO_SECRET", Reason: "no secrets", Pattern: "secret-value", Evidence: config.EvidenceToolInput, Destinations: []string{"target"}}},
 	}}, Options{MasID: func() (string, error) { return "mas", nil }, OXPURL: srv.URL, Wait: 300 * time.Millisecond, Attempts: 3, RetryWait: 20 * time.Millisecond})
 	out, err := engine.Evaluate(context.Background(), realtimeRequest(map[string]string{"ioc.observe.event_id": "msg1"}))
-	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
+	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, out).GetMissingContextCause() != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
 		t.Fatalf("%+v %v", out, err)
 	}
 }
@@ -174,7 +175,7 @@ func TestRealtimeFailureKeepsTheInboxBehavior(t *testing.T) {
 		r.TraceId = refs["trace_id"].(string)
 		r.Extra = map[string]string{"ioc.observe.session_id": event["session"].(map[string]any)["id"].(string), "ioc.observe.event_id": "msg1"}
 		out, err := realtimeEngine(t, config.EvidenceA2AMessageInput, f, in).Evaluate(context.Background(), r)
-		if err != nil || out.Outcome != cev1.Decision_DECISION_ALLOW || hasCheck(out, "OXP_REALTIME_EVENT") || out.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
+		if err != nil || out.Outcome != cev1.Decision_DECISION_ALLOW || hasCheck(t, out, "OXP_REALTIME_EVENT") || diagnostics(t, out).GetContextSufficiency() != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
 			t.Fatalf("status %d: %+v %v", status, out, err)
 		}
 	}
@@ -190,7 +191,7 @@ func TestRealtimeContradictoryReferencesAreAGap(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			f := &fakeRealtime{events: tc.events}
 			out, err := realtimeEngine(t, config.EvidenceToolInput, f, nil).Evaluate(context.Background(), realtimeRequest(tc.extra))
-			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP {
+			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, out).GetMissingContextCause() != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP {
 				t.Fatalf("%+v %v", out, err)
 			}
 		})

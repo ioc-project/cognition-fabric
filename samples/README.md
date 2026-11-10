@@ -22,6 +22,10 @@ ioc-scale-cf-demo-ce/
 └── docker-compose.yml    # Run demo-ce locally
 ```
 
+The Go Demo CE uses the merged CFN CE response contract.
+See [build and test](demo-ce/README.md#build-and-test)
+for the dependency requirements and repository-local commands.
+
 ## Quick Start
 
 ### Run Demo CE

@@ -39,7 +39,7 @@ func TestRouterUsesTheConfigOfTheRequestsMAS(t *testing.T) {
 		{"mas-c", "y", cev1.Decision_DECISION_DENY, "MAS_SCOPE"},
 	} {
 		out, err := rt.Evaluate(context.Background(), req(c.mas, c.dst))
-		if err != nil || out.Outcome != c.want || out.ChecksRun[0].CheckId != c.check {
+		if err != nil || out.Outcome != c.want || diagnostics(t, out).ChecksRun[0].CheckId != c.check {
 			t.Errorf("%s->%s: out=%+v err=%v", c.mas, c.dst, out, err)
 		}
 	}

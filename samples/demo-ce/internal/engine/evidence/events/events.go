@@ -62,11 +62,11 @@ func (j *Judge) Evaluate(ctx context.Context, r *cev1.EvaluateRequest, out *cev1
 					}
 				}
 			}
-			out.ContextSufficiency = cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE
+			out.ContextSufficiency = cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE.Enum()
 			check := &cev1.CheckResult{CheckId: "DEMO_CONTENT_CONFIG", Passed: hit == "", Reason: "request published before the call, bound by exact trace and span"}
 			if hit != "" {
 				out.Outcome = cev1.Decision_DECISION_DENY
-				out.DenialReason = cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT
+				out.DenialReason = cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT.Enum()
 				out.Reason = "deterministic content rule " + hit
 				check.Reason = out.Reason
 			}

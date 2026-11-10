@@ -41,8 +41,8 @@ func TestRealA2AMessageWithNeutralTextIsAllowed(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if out.Outcome != cev1.Decision_DECISION_ALLOW || out.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
-		t.Fatalf("expected an allowed decision with complete context, got %v %v %q", out.Outcome, out.ContextSufficiency, out.Reason)
+	if out.Outcome != cev1.Decision_DECISION_ALLOW || out.GetContextSufficiency() != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
+		t.Fatalf("expected an allowed decision with complete context, got %v %v %q", out.Outcome, out.GetContextSufficiency(), out.Reason)
 	}
 }
 
@@ -81,7 +81,7 @@ func TestA2AEventOfAnotherMessageOfTheSameSpanIsIgnored(t *testing.T) {
 	request := a2aRequest(event, "noa-schedule-agent", true)
 	request.Extra["ioc.observe.message_id"] = "another-message-id"
 	out, _ := engine.Evaluate(context.Background(), request)
-	if out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
+	if out.GetMissingContextCause() != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
 		t.Fatalf("an event of another message must not be judged for this one, got %v %q", out.Outcome, out.Reason)
 	}
 }
@@ -90,8 +90,8 @@ func TestA2AMessageWithoutAPublishedEventIsMissingContext(t *testing.T) {
 	engine := mcpEngine(t, 100*time.Millisecond)
 	event := a2aEvent(t, "")
 	out, _ := engine.Evaluate(context.Background(), a2aRequest(event, "noa-schedule-agent", true))
-	if out.Outcome != cev1.Decision_DECISION_DENY || out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
-		t.Fatalf("a message without its event must be missing context, got %v %v", out.Outcome, out.MissingContextCause)
+	if out.Outcome != cev1.Decision_DECISION_DENY || out.GetMissingContextCause() != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_RACE {
+		t.Fatalf("a message without its event must be missing context, got %v %v", out.Outcome, out.GetMissingContextCause())
 	}
 }
 

@@ -47,7 +47,7 @@ func TestPreCallInputCanBeJudgedWhileTheActiveSpanIsPending(t *testing.T) {
 		t.Fatalf("pre-call evidence was held waiting for span completion: %+v %v", out, err)
 	}
 	pending := false
-	for _, check := range out.ChecksRun {
+	for _, check := range diagnostics(t, out).ChecksRun {
 		pending = pending || check.CheckId == "OXP_CAUSAL_CONTEXT" && !check.Passed
 	}
 	if !pending {
@@ -80,7 +80,7 @@ func TestPreCallJoinsHistoryWithinItsEnrichmentBudget(t *testing.T) {
 		t.Fatalf("pre-call input failed: %+v %v", out, err)
 	}
 	found := false
-	for _, check := range out.ChecksRun {
+	for _, check := range diagnostics(t, out).ChecksRun {
 		found = found || check.CheckId == "OXP_CAUSAL_CONTEXT" && check.Passed
 	}
 	if !found {
@@ -95,7 +95,7 @@ func TestPreCallInputSurvivesOptionalHistoryTimeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	out, err := engine.Evaluate(ctx, eventRequest(event))
-	if err != nil || out.Outcome != cev1.Decision_DECISION_ALLOW || out.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
+	if err != nil || out.Outcome != cev1.Decision_DECISION_ALLOW || diagnostics(t, out).GetContextSufficiency() != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
 		t.Fatalf("optional history timeout invalidated known pre-call input: %+v %v", out, err)
 	}
 }
@@ -123,7 +123,7 @@ func TestNewPreCallEventIsObservedWhileOXPLags(t *testing.T) {
 	pushEvent(t, in, event)
 	select {
 	case out := <-done:
-		if out.Outcome != cev1.Decision_DECISION_DENY || out.DenialReason != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT {
+		if out.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, out).GetDenialReason() != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT {
 			t.Fatalf("event arriving during OXP lookup was missed: %+v", out)
 		}
 	case <-time.After(3 * time.Second):
@@ -142,7 +142,7 @@ func TestConflictingPreCallInputsAreMissingContext(t *testing.T) {
 	event["data"].(map[string]any)["input"] = map[string]any{"text": "secret-value"}
 	pushEvent(t, in, event)
 	out, err := engine.Evaluate(context.Background(), eventRequest(event))
-	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.MissingContextCause != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP || reads.Load() != 0 {
+	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, out).GetMissingContextCause() != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_GAP || reads.Load() != 0 {
 		t.Fatalf("conflicting inputs were accepted: %+v %v reads=%d", out, err, reads.Load())
 	}
 }
@@ -166,7 +166,7 @@ func TestPreCallEventArrivingDuringSuccessfulFallbackTakesPriority(t *testing.T)
 	})
 	in = eventInbox
 	out, err := engine.Evaluate(context.Background(), r)
-	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.DenialReason != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT || out.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
+	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, out).GetDenialReason() != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT || diagnostics(t, out).GetContextSufficiency() != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_COMPLETE {
 		t.Fatalf("new pre-call input lost to clean OXP fallback: %+v %v", out, err)
 	}
 }
@@ -178,7 +178,7 @@ func TestMalformedModelMessagesNeverBecomeAnEmptyAllow(t *testing.T) {
 				_ = json.NewEncoder(w).Encode(map[string]any{"spans": []any{evidenceSpan(span, "", "llm", map[string]string{"gen_ai.input.messages": raw})}})
 			})
 			out, err := engine.Evaluate(context.Background(), spanRequest(span))
-			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.DenialReason != cev1.DenialReason_DENIAL_REASON_MISSING_CONTEXT {
+			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, out).GetDenialReason() != cev1.DenialReason_DENIAL_REASON_MISSING_CONTEXT {
 				t.Fatalf("malformed messages passed: %+v %v", out, err)
 			}
 		})
@@ -206,13 +206,13 @@ func TestModelToolDefinitionsAreJoinedFromTheSelectedSpan(t *testing.T) {
 			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY {
 				t.Fatalf("definition rule was skipped: %+v %v", out, err)
 			}
-			if withDefinitions && (!strings.Contains(out.Reason, "NO_SECRET") || out.DenialReason != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT) {
+			if withDefinitions && (!strings.Contains(out.Reason, "NO_SECRET") || diagnostics(t, out).GetDenialReason() != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT) {
 				t.Fatalf("definition was not judged: %+v", out)
 			}
-			if withDefinitions && out.ContextSufficiency != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC {
+			if withDefinitions && diagnostics(t, out).GetContextSufficiency() != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC {
 				t.Fatalf("OXP definitions falsely claimed exact trace binding: %+v", out)
 			}
-			if !withDefinitions && out.DenialReason != cev1.DenialReason_DENIAL_REASON_MISSING_CONTEXT {
+			if !withDefinitions && diagnostics(t, out).GetDenialReason() != cev1.DenialReason_DENIAL_REASON_MISSING_CONTEXT {
 				t.Fatalf("missing definitions were treated as empty: %+v", out)
 			}
 		})
@@ -233,7 +233,7 @@ func TestMalformedNativeDefinitionsAreMissingContext(t *testing.T) {
 			p := config.Config{Rules: []config.Rule{{ID: "A", Effect: "ALLOW", Reason: "approved", Sources: []string{"caller"}, Destinations: []string{"target"}}}, ContentRules: []config.ContentRule{{ID: "C", Reason: "no secrets", Pattern: "secret-value", Evidence: config.EvidenceLLMInput, Roles: []string{config.RoleToolDefinition}, Destinations: []string{"target"}}}}
 			engine := New(config.Set{Single: &p}, Options{MasID: func() (string, error) { return "mas", nil }, Inbox: in, Wait: 35 * time.Millisecond})
 			out, err := engine.Evaluate(context.Background(), eventRequest(event))
-			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.DenialReason != cev1.DenialReason_DENIAL_REASON_MISSING_CONTEXT {
+			if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, out).GetDenialReason() != cev1.DenialReason_DENIAL_REASON_MISSING_CONTEXT {
 				t.Fatalf("malformed definitions passed: %+v %v", out, err)
 			}
 		})
@@ -258,7 +258,7 @@ func TestRequiredOXPContextCanFinishPaginationWithinTheHoldBudget(t *testing.T) 
 		_ = json.NewEncoder(w).Encode(map[string]any{"spans": rows})
 	})
 	out, err := engine.Evaluate(context.Background(), spanRequest(span))
-	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || out.DenialReason != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT {
+	if err != nil || out.Outcome != cev1.Decision_DECISION_DENY || diagnostics(t, out).GetDenialReason() != cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT {
 		t.Fatalf("pagination lost progress inside hold budget: %+v %v", out, err)
 	}
 }
