@@ -22,6 +22,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/encoding/protowire"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"gorm.io/datatypes"
 )
 
@@ -39,7 +40,7 @@ func proxyFixture(t *testing.T, variant string) *api.AuditRecord {
 }
 
 func TestProxyVariantsAndRoundTrip(t *testing.T) {
-	for _, variant := range []string{"mediation", "authorization", "response"} {
+	for _, variant := range []string{"mediation", "authorization", "response", "middleware_authorization", "middleware_response_observation"} {
 		t.Run(variant, func(t *testing.T) {
 			record := proxyFixture(t, variant)
 			unknown := protowire.AppendString(protowire.AppendTag(nil, 999, protowire.BytesType), "future metadata")
@@ -65,9 +66,9 @@ func TestProxyVariantsAndRoundTrip(t *testing.T) {
 			if event.CreatedOn != record.RecordedAt.AsTime() || event.LastModifiedOn.Before(event.CreatedOn) {
 				t.Fatal("event/ingestion timestamps incorrect")
 			}
-			expected := OutcomeAllow
-			if variant == "authorization" {
-				expected = OutcomeUnknown
+			expected := OutcomeUnknown
+			if variant == "mediation" || variant == "response" {
+				expected = OutcomeAllow
 			}
 			if event.Outcome == nil || *event.Outcome != expected {
 				t.Fatalf("outcome = %v", event.Outcome)
@@ -96,6 +97,19 @@ func TestProxyVariantsAndRoundTrip(t *testing.T) {
 	}
 }
 
+func TestMiddlewareObservationWireNumbers(t *testing.T) {
+	fields := (&api.AuditRecord{}).ProtoReflect().Descriptor().Fields()
+	for name, number := range map[protoreflect.Name]protoreflect.FieldNumber{
+		"middleware_authorization":        27,
+		"middleware_response_observation": 28,
+	} {
+		field := fields.ByName(name)
+		if field == nil || field.Number() != number || field.ContainingOneof() == nil || field.ContainingOneof().Name() != "observation" {
+			t.Fatalf("middleware field %s has incorrect oneof or number: %v", name, field)
+		}
+	}
+}
+
 func TestProxyValidationAndBounds(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -110,6 +124,89 @@ func TestProxyValidationAndBounds(t *testing.T) {
 		{"invalid authorization application", "authorization", func(r *api.AuditRecord) { r.AppliedOutcome = api.AppliedOutcome_APPLIED_OUTCOME_ALLOWED }},
 		{"own authorization link", "response", func(r *api.AuditRecord) { r.GetResponseObservation().AuthorizationRecordId = r.AuditRecordId }},
 		{"reversed observation time", "response", func(r *api.AuditRecord) { r.GetResponseObservation().StartedAt.Seconds += 10 }},
+		{"middleware authorization application", "middleware_authorization", func(r *api.AuditRecord) { r.AppliedOutcome = api.AppliedOutcome_APPLIED_OUTCOME_ALLOWED }},
+		{"middleware authorization claims upstream call", "middleware_authorization", func(r *api.AuditRecord) {
+			r.UpstreamInvocation = api.UpstreamInvocationState_UPSTREAM_INVOCATION_STATE_ATTEMPTED
+		}},
+		{"middleware authorization modified form", "middleware_authorization", func(r *api.AuditRecord) { r.ModifiedForm = &api.CapturedForm{} }},
+		{"middleware authorization injected form", "middleware_authorization", func(r *api.AuditRecord) {
+			r.InjectedForms = []*api.CapturedForm{{FabricOriginId: "fabric", FabricOriginAttestation: "attestation"}}
+		}},
+		{"middleware authorization bad fabric provenance", "middleware_authorization", func(r *api.AuditRecord) { r.SubmittedForm.FabricOriginId = "fabric" }},
+		{"middleware authorization request ID", "middleware_authorization", func(r *api.AuditRecord) { r.GetMiddlewareAuthorization().GetContext().RequestId = "" }},
+		{"middleware authorization invalid target", "middleware_authorization", func(r *api.AuditRecord) { r.GetMiddlewareAuthorization().GetContext().Port = 65536 }},
+		{"middleware authorization non-HTTP scheme", "middleware_authorization", func(r *api.AuditRecord) { r.GetMiddlewareAuthorization().GetContext().Scheme = "ftp" }},
+		{"middleware authorization oversized target", "middleware_authorization", func(r *api.AuditRecord) {
+			r.GetMiddlewareAuthorization().GetContext().Path = "/" + strings.Repeat("a", 8192)
+		}},
+		{"middleware authorization control character in target", "middleware_authorization", func(r *api.AuditRecord) {
+			r.GetMiddlewareAuthorization().GetContext().Host = "tool\nexample"
+		}},
+		{"middleware authorization unbounded context ID", "middleware_authorization", func(r *api.AuditRecord) {
+			r.GetMiddlewareAuthorization().GetContext().SandboxId = strings.Repeat("a", 257)
+		}},
+		{"middleware authorization negative latency", "middleware_authorization", func(r *api.AuditRecord) { r.GetMiddlewareAuthorization().LatencyMs = -1 }},
+		{"middleware authorization missing decision", "middleware_authorization", func(r *api.AuditRecord) {
+			r.ReturnedDisposition = api.DispositionAction_DISPOSITION_ACTION_UNSPECIFIED
+			r.DegradationReason = ""
+		}},
+		{"middleware missing trace", "middleware_authorization", func(r *api.AuditRecord) { r.TraceId = "" }},
+		{"middleware missing span", "middleware_authorization", func(r *api.AuditRecord) { r.SpanId = "" }},
+		{"middleware local rejection missing MAS", "middleware_authorization", func(r *api.AuditRecord) {
+			r.MasId = ""
+			r.ReturnedDisposition = api.DispositionAction_DISPOSITION_ACTION_UNSPECIFIED
+			r.DegradationReason = "local_validation"
+			r.GetMiddlewareAuthorization().Context = &api.MiddlewareContext{}
+		}},
+		{"middleware local rejection missing source agent", "middleware_authorization", func(r *api.AuditRecord) {
+			r.SourceAgentId = ""
+			r.ReturnedDisposition = api.DispositionAction_DISPOSITION_ACTION_UNSPECIFIED
+			r.DegradationReason = "local_validation"
+			r.GetMiddlewareAuthorization().Context = &api.MiddlewareContext{}
+		}},
+		{"middleware nonlocal failure with empty context", "middleware_authorization", func(r *api.AuditRecord) {
+			r.ReturnedDisposition = api.DispositionAction_DISPOSITION_ACTION_UNSPECIFIED
+			r.DegradationReason = "cf_unreachable"
+			r.GetMiddlewareAuthorization().Context = &api.MiddlewareContext{}
+		}},
+		{"middleware response top-level decision", "middleware_response_observation", func(r *api.AuditRecord) { r.ReturnedDisposition = api.DispositionAction_DISPOSITION_ACTION_ALLOW }},
+		{"middleware response degradation reason", "middleware_response_observation", func(r *api.AuditRecord) { r.DegradationReason = "local_validation" }},
+		{"middleware response disposition reason", "middleware_response_observation", func(r *api.AuditRecord) { r.DispositionReason = "allowed" }},
+		{"middleware response deciding CF identity", "middleware_response_observation", func(r *api.AuditRecord) { r.DecidingCfIdentity = "cf" }},
+		{"middleware response self link", "middleware_response_observation", func(r *api.AuditRecord) { r.GetMiddlewareResponseObservation().AuthorizationRecordId = r.AuditRecordId }},
+		{"middleware response invalid link", "middleware_response_observation", func(r *api.AuditRecord) { r.GetMiddlewareResponseObservation().AuthorizationRecordId = "not-a-uuid" }},
+		{"middleware response missing start time", "middleware_response_observation", func(r *api.AuditRecord) { r.GetMiddlewareResponseObservation().StartedAt = nil }},
+		{"middleware response reversed timestamps", "middleware_response_observation", func(r *api.AuditRecord) {
+			r.GetMiddlewareResponseObservation().CompletedAt.Seconds--
+		}},
+		{"middleware response top-level body capture", "middleware_response_observation", func(r *api.AuditRecord) { r.SubmittedForm = &api.CapturedForm{Body: []byte("capture")} }},
+		{"middleware response top-level body length", "middleware_response_observation", func(r *api.AuditRecord) { r.SubmittedForm = &api.CapturedForm{OriginalBodyBytes: 1} }},
+		{"middleware response top-level truncated", "middleware_response_observation", func(r *api.AuditRecord) { r.SubmittedForm = &api.CapturedForm{Truncated: true} }},
+		{"middleware response top-level redacted", "middleware_response_observation", func(r *api.AuditRecord) { r.SubmittedForm = &api.CapturedForm{Redacted: true} }},
+		{"middleware response empty terminal", "middleware_response_observation", func(r *api.AuditRecord) {
+			r.GetMiddlewareResponseObservation().Terminal = ""
+			r.GetMiddlewareResponseObservation().StreamComplete = false
+		}},
+		{"middleware response oversized terminal", "middleware_response_observation", func(r *api.AuditRecord) {
+			r.GetMiddlewareResponseObservation().Terminal = strings.Repeat("x", 257)
+			r.GetMiddlewareResponseObservation().StreamComplete = false
+		}},
+		{"middleware response invalid status", "middleware_response_observation", func(r *api.AuditRecord) { r.GetMiddlewareResponseObservation().StatusCode = 600 }},
+		{"middleware response negative latency", "middleware_response_observation", func(r *api.AuditRecord) { r.GetMiddlewareResponseObservation().LatencyMs = -1 }},
+		{"middleware response complete without body", "middleware_response_observation", func(r *api.AuditRecord) {
+			r.GetMiddlewareResponseObservation().BodyObserved = false
+			r.GetMiddlewareResponseObservation().ResponseForm = nil
+		}},
+		{"middleware response capture without body observation", "middleware_response_observation", func(r *api.AuditRecord) {
+			r.GetMiddlewareResponseObservation().BodyObserved = false
+			r.GetMiddlewareResponseObservation().StreamComplete = false
+		}},
+		{"middleware response completion with abnormal terminal", "middleware_response_observation", func(r *api.AuditRecord) {
+			r.GetMiddlewareResponseObservation().Terminal = "MIDDLEWARE_SESSION_END_REASON_UPSTREAM_DISCONNECT"
+		}},
+		{"middleware response capture provenance", "middleware_response_observation", func(r *api.AuditRecord) {
+			r.GetMiddlewareResponseObservation().GetResponseForm().FabricOriginAttestation = "invented"
+		}},
 		{"oversized body", "mediation", func(r *api.AuditRecord) { r.SubmittedForm.Body = make([]byte, MaxProxyFormBytes+1) }},
 	}
 	for _, tc := range cases {
@@ -139,6 +236,14 @@ func TestProxyValidationAndBounds(t *testing.T) {
 	if err := ValidateProxyRecord(r); err != nil {
 		t.Fatalf("valid unreferenced rejection rejected: %v", err)
 	}
+	r = proxyFixture(t, "middleware_authorization")
+	r.TraceId, r.SpanId, r.DestinationAgentId = "", "", ""
+	r.ReturnedDisposition = api.DispositionAction_DISPOSITION_ACTION_UNSPECIFIED
+	r.DegradationReason = "local_validation"
+	r.GetMiddlewareAuthorization().Context = &api.MiddlewareContext{}
+	if err := ValidateProxyRecord(r); err != nil {
+		t.Fatalf("valid unreferenced middleware rejection rejected: %v", err)
+	}
 	r = proxyFixture(t, "mediation")
 	r.MasId = strings.Repeat("m", 129)
 	event, err := NewProxyAuditEvent(r)
@@ -156,6 +261,40 @@ func TestProxyValidationAndBounds(t *testing.T) {
 	if success := ProxySuccess(r); success == nil || *success {
 		t.Fatal("explicit remote error was not a failure")
 	}
+}
+
+func TestMiddlewareAcceptedProducerShapes(t *testing.T) {
+	t.Run("authorization body without a redaction match", func(t *testing.T) {
+		r := proxyFixture(t, "middleware_authorization")
+		r.SubmittedForm.Redacted = false
+		if err := ValidateProxyRecord(r); err != nil {
+			t.Fatalf("ordinary captured request body rejected: %v", err)
+		}
+	})
+
+	t.Run("headers-only response without top-level form", func(t *testing.T) {
+		r := proxyFixture(t, "middleware_response_observation")
+		r.SubmittedForm = nil
+		response := r.GetMiddlewareResponseObservation()
+		response.StatusCode = 204
+		response.BodyObserved = false
+		response.StreamComplete = false
+		response.ResponseForm = nil
+		if err := ValidateProxyRecord(r); err != nil {
+			t.Fatalf("valid headers-only response rejected: %v", err)
+		}
+	})
+
+	t.Run("captured response form without top-level form", func(t *testing.T) {
+		r := proxyFixture(t, "middleware_response_observation")
+		// Keep this explicit shape check alongside the general round-trip test.
+		if r.SubmittedForm != nil {
+			t.Fatal("fixture unexpectedly has a top-level form")
+		}
+		if err := ValidateProxyRecord(r); err != nil {
+			t.Fatalf("valid response-form-only record rejected: %v", err)
+		}
+	})
 }
 
 func TestProxyAppliedOutcomeProjection(t *testing.T) {
@@ -220,13 +359,26 @@ func TestProxyDatabaseRetriesAndSharedOutcomeFilter(t *testing.T) {
 	db := testDB(t)
 	ctx := context.Background()
 	// Observation intentionally arrives before the authorization it references.
-	for _, variant := range []string{"response", "authorization", "mediation"} {
+	for _, variant := range []string{"response", "authorization", "middleware_authorization", "middleware_response_observation", "mediation"} {
 		event, err := NewProxyAuditEvent(proxyFixture(t, variant))
 		if err != nil {
 			t.Fatal(err)
 		}
 		if err := AppendProxyAuditEvent(ctx, db, event); err != nil {
 			t.Fatal(err)
+		}
+		if variant == "middleware_authorization" || variant == "middleware_response_observation" {
+			if err := AppendProxyAuditEvent(ctx, db, event); err != nil {
+				t.Fatalf("identical %s retry: %v", variant, err)
+			}
+			var stored Audit
+			if err := db.Where("source_record_id = ?", *event.SourceRecordID).First(&stored).Error; err != nil {
+				t.Fatal(err)
+			}
+			equal, err := EqualProxyInformation(stored.AuditInformation, event.AuditInformation)
+			if err != nil || !equal {
+				t.Fatalf("stored %s variant did not round trip: equal=%v err=%v", variant, equal, err)
+			}
 		}
 	}
 	record := proxyFixture(t, "mediation")
@@ -290,7 +442,7 @@ func TestProxyDatabaseRetriesAndSharedOutcomeFilter(t *testing.T) {
 		t.Fatalf("legacy alias differs across producers: %+v %v", legacy, err)
 	}
 	all, err := ListAuditEvents(ctx, db, "", "", 0, 20)
-	if err != nil || all.PageInfo.TotalElements != 5 {
+	if err != nil || all.PageInfo.TotalElements != 7 {
 		t.Fatalf("duplicates: %+v %v", all, err)
 	}
 }

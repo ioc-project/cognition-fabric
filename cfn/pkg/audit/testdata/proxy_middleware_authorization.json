@@ -1,0 +1,32 @@
+{
+  "audit_record_id": "82d811cc-dbe2-4ad2-b24b-855b027e1e41",
+  "recorded_at": "2026-11-10T08:00:00Z",
+  "trace_id": "579d6c3efa084969378c34a67b060a26",
+  "span_id": "1234567890abcdef",
+  "mas_id": "fa7c634b-38a1-4ad0-aeb6-ffda79c7b6cb",
+  "source_agent_id": "planner",
+  "destination_agent_id": "schedule_agent",
+  "protocol": "http",
+  "route": "/rpc",
+  "submitted_form": {
+    "content_type": "application/json",
+    "body": "cmVkYWN0ZWQ=",
+    "redacted": true,
+    "original_body_bytes": "8"
+  },
+  "returned_disposition": "DISPOSITION_ACTION_ALLOW",
+  "middleware_authorization": {
+    "context": {
+      "evaluation_id": "evaluation-1",
+      "request_id": "request-1",
+      "gateway_id": "gateway-1",
+      "sandbox_id": "sandbox-1",
+      "method": "POST",
+      "scheme": "http",
+      "host": "tool.example",
+      "path": "/rpc",
+      "port": 8080
+    },
+    "latency_ms": "9"
+  }
+}
