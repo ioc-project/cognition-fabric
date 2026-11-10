@@ -815,8 +815,9 @@ func (x *MiddlewareContext) GetPort() uint32 {
 	return 0
 }
 
-// Request authorization only. The top-level submitted_form may retain bounded,
-// redacted observed request content; applied/upstream states stay unspecified.
+// Request authorization only. The top-level submitted_form may retain bounded
+// observed request content; its redacted flag indicates whether content matched
+// a Proxy secret pattern. Applied/upstream states stay unspecified.
 type MiddlewareAuthorization struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Context       *MiddlewareContext     `protobuf:"bytes,1,opt,name=context,proto3" json:"context,omitempty"`
