@@ -236,10 +236,6 @@ CFN_SVC_TAG=v1.2.3-rc.1 task run:cfn:image
 CF_DEMO_CE_TAG=v1.2.3-rc.1 task run:demo-ce:image
 ```
 
-The CFN local image Compose file pulls `.../demo-ce`. The area deployment
-Compose file still references `.../ce-demo`; pinning `CF_DEMO_CE_TAG` there does
-not pull these git-tag images.
-
 Before management starts, a read-only preflight checks the current
 database revision against that version's Alembic graph. Image management is
 checked after pulling, using Python and migrations from the selected image with
