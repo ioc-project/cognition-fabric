@@ -262,7 +262,7 @@ func TestProxyRPCPostgresAndReadAPI(t *testing.T) {
 	if _, err := client.AppendAuditRecord(context.Background(), &api.AppendAuditRecordRequest{Record: bad}); status.Code(err) != codes.InvalidArgument {
 		t.Fatalf("JSONB-invalid request must fail permanently before PostgreSQL: %v", err)
 	}
-	for _, variant := range []string{"response", "authorization", "mediation", "mediation"} {
+	for _, variant := range []string{"response", "authorization", "middleware_authorization", "middleware_response_observation", "mediation", "mediation"} {
 		record := appProxyFixture(t, variant)
 		receipt, err := client.AppendAuditRecord(context.Background(), &api.AppendAuditRecordRequest{Record: record})
 		if err != nil || receipt.GetAuditRecordId() != record.AuditRecordId {

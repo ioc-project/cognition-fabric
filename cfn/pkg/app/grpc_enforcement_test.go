@@ -705,7 +705,7 @@ func TestGetDisposition_Success_Deny(t *testing.T) {
 	}
 	casaResp := &cev1.EvaluateResponse{
 		Outcome:      cev1.Decision_DECISION_DENY,
-		DenialReason: cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT,
+		DenialReason: cev1.DenialReason_DENIAL_REASON_DEVIATES_FROM_INTENT.Enum(),
 		Reason:       "Tool call deviates from original intent",
 	}
 

@@ -128,6 +128,43 @@ message ResponseObservation {
   int64 latency_ms = 7;
 }
 
+// OpenShell supervisor request identity and observed HTTP target. These are
+// correlation fields, not proof of forwarding or receiver execution.
+message MiddlewareContext {
+  string evaluation_id = 1;
+  string request_id = 2;
+  string gateway_id = 3;
+  string sandbox_id = 4;
+  string method = 5;
+  string scheme = 6;
+  string host = 7;
+  string path = 8;
+  uint32 port = 9;
+}
+
+// Request authorization only. The top-level submitted_form may retain bounded
+// observed request content; its redacted flag indicates whether content matched
+// a Proxy secret pattern. Applied/upstream states stay unspecified.
+message MiddlewareAuthorization {
+  MiddlewareContext context = 1;
+  int64 latency_ms = 2;
+}
+
+// Supervisor response evidence, not a second CF decision or receiver claim.
+// Captures belong only here; top-level disposition/applied/upstream stay unspecified.
+message MiddlewareResponseObservation {
+  MiddlewareContext context = 1;
+  string authorization_record_id = 2;
+  google.protobuf.Timestamp started_at = 3;
+  google.protobuf.Timestamp completed_at = 4;
+  int64 latency_ms = 5;
+  uint32 status_code = 6;
+  string terminal = 7;
+  bool body_observed = 8;
+  bool stream_complete = 9;
+  optional CapturedForm response_form = 10;
+}
+
 // AuditRecord is the canonical proxy-local evidence record for one mediated item.
 message AuditRecord {
   string audit_record_id = 1;
@@ -163,6 +200,8 @@ message AuditRecord {
   oneof observation {
     AuthorizationContext authorization = 24;
     ResponseObservation response_observation = 25;
+    MiddlewareAuthorization middleware_authorization = 27;
+    MiddlewareResponseObservation middleware_response_observation = 28;
   }
   // Publication evidence is proxy-local, never CF enforcement metadata.
   map<string, string> boundary_evidence = 26;
@@ -173,4 +212,3 @@ message AuditRecord {
 message AppendAuditRecordRequest { AuditRecord record = 1; }
 
 message AppendAuditRecordResponse { string audit_record_id = 1; }
-
