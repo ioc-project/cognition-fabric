@@ -1,7 +1,15 @@
-version: '3'
+version: "3"
 
 dotenv:
   - .env
+
+vars:
+  INTEGRATION_PG_PORT: "55432"
+  INTEGRATION_PG_DB: cfn_audit_test
+  INTEGRATION_PG_USER: postgres
+  # Same test password as .github/workflows/ci.yaml; not a production secret.
+  INTEGRATION_PG_PASSWORD: localdev
+  INTEGRATION_COMPOSE_FILE: test/integration/compose.yaml
 
 tasks:
   test:
@@ -9,6 +17,36 @@ tasks:
     silent: true
     cmds:
       - bash deploy/local/cf-local.sh test
+
+  test:integration:db:
+    desc: Start throwaway Postgres for CFN integration tests (no-op when INTEGRATION_SKIP_DB=true)
+    cmds:
+      - |
+        if [ "${INTEGRATION_SKIP_DB:-}" = "true" ]; then
+          echo "using existing Postgres (INTEGRATION_SKIP_DB=true)"
+          exit 0
+        fi
+        docker compose -f {{.INTEGRATION_COMPOSE_FILE}} up -d --wait
+
+  test:integration:
+    desc: Run CFN process-level integration tests (Docker required locally)
+    env:
+      POSTGRES_USER: "{{.INTEGRATION_PG_USER}}"
+      POSTGRES_PASSWORD: "{{.INTEGRATION_PG_PASSWORD}}"
+      POSTGRES_AUDIT_DB: "{{.INTEGRATION_PG_DB}}"
+      POSTGRES_HOST:
+        sh: 'if [ "${INTEGRATION_SKIP_DB:-}" = "true" ]; then echo "${POSTGRES_HOST:-localhost}"; else echo "127.0.0.1"; fi'
+      POSTGRES_PORT:
+        sh: 'if [ "${INTEGRATION_SKIP_DB:-}" = "true" ]; then echo "${POSTGRES_PORT:-5432}"; else echo "{{.INTEGRATION_PG_PORT}}"; fi'
+    cmds:
+      - task: test:integration:db
+      - defer: |
+          if [ "${INTEGRATION_SKIP_DB:-}" = "true" ]; then
+            exit 0
+          fi
+          docker compose -f {{.INTEGRATION_COMPOSE_FILE}} down -v
+      - go vet -tags integration ./test/integration/...
+      - go test -v -tags integration -count=1 ./test/integration/...
 
   check:
     desc: Check formatting, lint, and types before running CF tests

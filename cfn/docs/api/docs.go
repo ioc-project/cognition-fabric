@@ -264,6 +264,15 @@ const docTemplate = `{
                             "$ref": "#/definitions/mgmt.MASResponse"
                         }
                     },
+                    "400": {
+                        "description": "mas_id is required",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "404": {
                         "description": "MAS not found",
                         "schema": {
@@ -282,8 +291,17 @@ const docTemplate = `{
                             }
                         }
                     },
+                    "502": {
+                        "description": "Failed to fetch MAS from management plane",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
                     "503": {
-                        "description": "Management plane unavailable",
+                        "description": "Config snapshot or management plane unavailable",
                         "schema": {
                             "type": "object",
                             "additionalProperties": {

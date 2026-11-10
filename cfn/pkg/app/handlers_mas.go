@@ -26,9 +26,11 @@ import (
 // @Param        metadata query boolean false "Opt in to expanded onboarding metadata; legacy shape is the default"
 // @Param        masId path string true "MAS ID"
 // @Success      200 {object} mgmt.MASResponse "MAS details"
+// @Failure      400 {object} map[string]string "mas_id is required"
 // @Failure      404 {object} map[string]string "MAS not found"
 // @Failure      500 {object} map[string]string "Internal error"
-// @Failure      503 {object} map[string]string "Management plane unavailable"
+// @Failure      502 {object} map[string]string "Failed to fetch MAS from management plane"
+// @Failure      503 {object} map[string]string "Config snapshot or management plane unavailable"
 // @Router       /api/multi-agentic-systems/{masId} [get]
 func (a *App) getMASHandler(w http.ResponseWriter, r *http.Request) (int, error) {
 	log := getLogger()
@@ -43,10 +45,23 @@ func (a *App) getMASHandler(w http.ResponseWriter, r *http.Request) (int, error)
 
 	workspaceID, err := resolveMASWorkspace(masID)
 	if err != nil {
-		log.Errorf("workspace_id not set")
-		return eh.RespondWithJSON(w, http.StatusServiceUnavailable, map[string]string{
-			"error": "workspace not configured",
-		})
+		switch {
+		case errors.Is(err, errMASNotAssigned):
+			log.Warnf("MAS not found: mas_id=%s", masID)
+			return eh.RespondWithJSON(w, http.StatusNotFound, map[string]string{
+				"error": fmt.Sprintf("MAS not found: %s", masID),
+			})
+		case errors.Is(err, errSnapshotUnavailable):
+			log.Errorf("config snapshot unavailable: mas_id=%s", masID)
+			return eh.RespondWithJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"error": "config snapshot unavailable",
+			})
+		default:
+			log.Errorf("failed to resolve MAS workspace: mas_id=%s error=%v", masID, err)
+			return eh.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to resolve MAS workspace",
+			})
+		}
 	}
 
 	// Check management plane URL is available

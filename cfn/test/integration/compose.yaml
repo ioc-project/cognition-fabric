@@ -1,0 +1,20 @@
+# Throwaway Postgres for `task test:integration` (local only).
+# CI uses GitHub Actions services.postgres instead; see INTEGRATION_SKIP_DB.
+name: cfn-integration
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: cfn-integration-postgres
+    environment:
+      # Same test credentials as .github/workflows/ci.yaml (not a production secret).
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: localdev
+      POSTGRES_DB: cfn_audit_test
+    ports:
+      - "127.0.0.1:55432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cfn_audit_test"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
