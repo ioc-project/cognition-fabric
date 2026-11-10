@@ -342,6 +342,15 @@ Open <http://localhost:9001> and sign in as `admin` using
 Multi-Agentic System, add its agents, and associate the template CE after it
 registers and appears online. Copy the MAS ID from its details page.
 
+For full-JSON create/edit, use the separate
+[NOA onboarding declaration and instructions](local/mas-onboarding/README.md).
+Its optional provided topology is stored by Management and displayed in the fifth
+Topology tab. Select an agent in the read-only graph to open its details and
+assigned tools in the right-hand Inspect panel, or view/copy the matching
+collapsible JSON. Edit mode uses the topology JSON box
+and the page's Save/Cancel actions. Observed topology remains disabled until the
+optional OXP integration is available.
+
 Stop a previously running published NOA container first, then set
 `NOA_MAS_ID` to the new MAS ID and `NOA_MODE=source` in the CFN `.env`, and
 start the CF-owned source copy in a fifth terminal:

@@ -24,6 +24,9 @@ or observed code, surface the conflict instead of silently following the note.
   unchanged HTTP health contract, and protection against stale probe results.
 - [Local NOA enforcement modes](local-noa-enforcement.md) — source/proxy setup,
   configuration ownership, and the boundary between routing and content evidence.
+- [MAS onboarding validation](mas-onboarding-validation.md) — backend enforcement
+  of semantic constraints, snapshot retention, transaction lock order, and CE
+  metadata retrieval compatibility.
 
 ## Maintaining the ledger
 
