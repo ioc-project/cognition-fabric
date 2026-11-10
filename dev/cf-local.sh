@@ -14,7 +14,7 @@ cf_services=(
 )
 infra_services=(
   ioc-scale-db ioc-scale-db-init
-  rabbitmq redis neo4j clickhouse-server otel-collector
+  rabbitmq neo4j clickhouse-server otel-collector
   oxp-clickhouse-init oxp-rabbitmq-init oxp-api
   norm embedding mce grouping analysis hierarchical-grouping
   decision-block stateful-eval
