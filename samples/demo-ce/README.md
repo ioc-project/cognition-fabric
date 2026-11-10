@@ -336,13 +336,13 @@ Generated CE protobuf/gRPC types come from the `github.com/cisco-eti/ioc-scale-c
 Go module at the version pinned in [go.mod](go.mod). Go downloads this dependency;
 a local CFN checkout is not required.
 
-> **Draft dependency update:** This branch still pins the older CFN bindings.
-> After [CFN PR #68](https://github.com/cisco-eti/ioc-scale-cfn-svc/pull/68) merges,
-> update `go.mod` and `go.sum` to that commit before standalone builds and CI can pass.
+The pinned version, `v0.0.0-20261110062707-7bc7f7f66973`, includes the CE response
+contract merged in [CFN PR #68](https://github.com/cisco-eti/ioc-scale-cfn-svc/pull/68).
 
 Run these commands from the `demo-ce/` directory:
 
 ```bash
+go vet ./...
 go test -race ./...
 docker build --secret id=github_token,env=GITHUB_TOKEN -t demo-ce:dev .
 ```
