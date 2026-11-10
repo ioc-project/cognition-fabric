@@ -1,0 +1,37 @@
+{
+  "audit_record_id": "5c07707c-7a5b-4f27-836e-d787ecec47f5",
+  "recorded_at": "2026-11-10T08:00:01Z",
+  "trace_id": "579d6c3efa084969378c34a67b060a26",
+  "span_id": "1234567890abcdef",
+  "mas_id": "fa7c634b-38a1-4ad0-aeb6-ffda79c7b6cb",
+  "source_agent_id": "planner",
+  "destination_agent_id": "schedule_agent",
+  "protocol": "http",
+  "route": "/rpc",
+  "middleware_response_observation": {
+    "context": {
+      "evaluation_id": "evaluation-1",
+      "request_id": "request-1",
+      "gateway_id": "gateway-1",
+      "sandbox_id": "sandbox-1",
+      "method": "POST",
+      "scheme": "http",
+      "host": "tool.example",
+      "path": "/rpc",
+      "port": 8080
+    },
+    "authorization_record_id": "82d811cc-dbe2-4ad2-b24b-855b027e1e41",
+    "started_at": "2026-11-10T08:00:00.100Z",
+    "completed_at": "2026-11-10T08:00:00.200Z",
+    "latency_ms": "100",
+    "status_code": 200,
+    "terminal": "MIDDLEWARE_SESSION_END_REASON_NORMAL",
+    "body_observed": true,
+    "stream_complete": true,
+    "response_form": {
+      "content_type": "text/plain",
+      "body": "cmVwbHk=",
+      "original_body_bytes": "5"
+    }
+  }
+}

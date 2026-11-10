@@ -10,20 +10,35 @@ names. Binary compatibility with the Proxy-owned AuditService is not required.
 This CF implementation provides the receiving, persistence and read/UI path.
 The Proxy's real CFN delivery client is separate integration work; its pending
 logging client is not evidence of delivery. The contract reference used here is
-Proxy commit `3a36f0f51cc8c1b3008ce0de99e7de0bfa82533a`.
+Proxy commit [`ac537e2d96189d8e123f8f6ec4d1ef37628d3694`](https://github.com/cisco-eti/ioc-scaling-enforcement-proxy/commit/ac537e2d96189d8e123f8f6ec4d1ef37628d3694).
 
 ## Records and validation
 
 One unary request contains `record: AuditRecord`. Accept final Envoy/legacy
-mediation records, SHADi authorizations and SHADi response observations. Each has
-its own canonical UUID `audit_record_id` and valid `recorded_at`. An observation
-may arrive before its authorization; the link is not a database foreign key.
+mediation records, SHADi authorizations and response observations, and OpenShell
+middleware authorizations and response observations. Each has its own canonical
+UUID `audit_record_id` and valid `recorded_at`. An observation may arrive before
+its linked authorization; the link is not a database foreign key.
 
 Validation follows the Proxy codec's variant rules, including optional presence,
-enum combinations, form metadata and sender observation identities. A missing
-trace/span is accepted only for its unreferenced local rejection case: no
-observation, unspecified returned disposition, degraded outcome, upstream not
-called and `degradation_reason=local_validation`. No synthetic trace is added.
+enum combinations, form metadata and observation identities. Middleware variants
+carry an OpenShell `MiddlewareContext` with evaluation, request, gateway and
+sandbox IDs plus the observed HTTP target. Middleware authorization may include
+a bounded request capture in the top-level `submitted_form`; its `redacted`
+flag indicates whether the Proxy redacted matching content. It cannot
+assert an applied outcome or upstream invocation. Its trace, span and destination
+may be absent only for a `local_validation` rejection with an unspecified CF
+disposition; MAS and source-agent identities remain required. No synthetic trace
+is added.
+
+Middleware response observations carry a distinct authorization record UUID,
+ordered timestamps, latency, terminal classification, optional HTTP status and
+body/stream flags. They cannot assert a CF disposition, application outcome,
+upstream invocation or top-level captured body. Any captured response form belongs
+in `middleware_response_observation.response_form` and requires `body_observed`;
+a complete stream requires an observed body and the normal terminal reason. These
+records describe supervisor evidence, not receiver execution or remote business
+success, so their operational `success` remains unset.
 
 PostgreSQL JSONB cannot represent U+0000 inside text, including metadata keys and
 values. Such records receive `INVALID_ARGUMENT` before storage. This is a storage
@@ -110,8 +125,8 @@ JSONB or identifiers/timestamps/success; absent historical outcomes stay null.
 The migration is repeatable. New CFN disposition writes populate the same field.
 
 CFN success semantics stay as defined in the [disposition spec](disposition-audit.md).
-Proxy success is null for mediation/authorization records, which lack an explicit
-response result. For response observations, an observed reply with no error or a
+Proxy success is null for mediation, authorization and OpenShell middleware
+records. For sender response observations, an observed reply with no error or a
 completed policy block (`error_code=blocked`) is true. Reported transport,
 timeout, cancellation, remote and authorization-unavailable errors are false.
 This describes the recorded transport/application step, never attests successful
@@ -164,7 +179,7 @@ Production transport must be aligned with the Proxy's TLS policy before delivery
 qualification. No new application-authentication exchange is introduced here.
 
 Run the CFN tests with an isolated `POSTGRES_TEST_DB`, Management audit tests, UI
-`npm run test:audit` and type checks. The three [record fixtures](../../pkg/audit/testdata)
+`npm run test:audit` and type checks. The five [record fixtures](../../pkg/audit/testdata)
 cover all variants. Qualify actual Proxy delivery separately, including receipt
 checking, retries, permanent errors and outage recovery; the logging-only client
 cannot satisfy issue #41's complete production-path acceptance.

@@ -23,8 +23,8 @@ const (
 	ProxyTransportMaxBytes = 8 << 20
 )
 
-// ValidateProxyRecord follows the Proxy codec's three variant-specific rules.
-// Reference: Proxy commit 3a36f0f51cc8c1b3008ce0de99e7de0bfa82533a.
+// ValidateProxyRecord follows the Proxy codec's variant-specific rules.
+// Middleware rules are separate because their evidence differs from sender observations.
 func ValidateProxyRecord(r *api.AuditRecord) error {
 	if r == nil {
 		return errors.New("record is required")
@@ -35,6 +35,12 @@ func ValidateProxyRecord(r *api.AuditRecord) error {
 	}
 	if r.GetRecordedAt() == nil || r.GetRecordedAt().CheckValid() != nil {
 		return errors.New("recorded_at must be a valid timestamp")
+	}
+	if !knownAction(r.GetReturnedDisposition()) || !knownOutcome(r.GetAppliedOutcome()) || !knownUpstreamState(r.GetUpstreamInvocation()) {
+		return errors.New("record contains an unknown enum value")
+	}
+	if r.GetMiddlewareAuthorization() != nil || r.GetMiddlewareResponseObservation() != nil {
+		return validateMiddlewareObservation(r)
 	}
 	if strings.TrimSpace(r.GetTraceId()) == "" {
 		// A request rejected before CF can lack any native context. Keep its
@@ -47,9 +53,6 @@ func ValidateProxyRecord(r *api.AuditRecord) error {
 		if !unreferencedRejection {
 			return errors.New("trace_id is required outside unreferenced local rejection")
 		}
-	}
-	if !knownAction(r.GetReturnedDisposition()) || !knownOutcome(r.GetAppliedOutcome()) || !knownUpstreamState(r.GetUpstreamInvocation()) {
-		return errors.New("record contains an unknown enum value")
 	}
 	if r.GetObservation() != nil {
 		return validateObservation(r)
