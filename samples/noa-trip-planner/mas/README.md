@@ -1,6 +1,6 @@
 # Onboard the NOA MAS through Management
 
-Paste [noa-mas.json](noa-mas.json) into **JSON** mode at `/mas/create`. The selected
+Paste [noa-mas-local.json](noa-mas-local.json) into **JSON** mode at `/mas/create`. The selected
 workspace supplies the API path; the body contains no workspace/generated IDs,
 credentials, machine-specific endpoints or CE IDs. Switch to Form to select your
 existing Demo CE, then save. This operator/provider action stores a declaration;

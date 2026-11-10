@@ -6,9 +6,28 @@ from sibling source checkouts. The
 Compose project supplies Postgres, OXP, and their supporting services as
 published containers. You do not need OXP source code. Run the commands below
 from `ioc-scale-cfn-svc` unless a command changes directory explicitly. For an
-all-container deployment, use the deployment repository's README. To keep this
-workflow's integrated source NOA and Envoy while testing published CF services,
-use the [`:image` tasks](#run-cf-services-from-published-images) below.
+all-container deployment, use the deployment repository's README and the
+[NOA onboarding steps](#onboard-noa-with-the-standalone-image-deployment) below.
+To keep this workflow's integrated source NOA and Envoy while testing published
+CF services, use the [`:image` tasks](#run-cf-services-from-published-images) below.
+
+## Onboard NOA with the standalone image deployment
+
+Start the published-image stack using the
+[Deployment quick start](https://github.com/cisco-eti/ioc-scale-cf-deployment#quick-start).
+[noa-mas.json](noa-mas.json), copied from OXP sample apps, declares the NOA Trip
+Planner's agents, in-process Python tools, and partial topology.
+
+1. Open the deployed CF web UI (default <http://localhost:9001>) and sign in as
+   `admin` using `ADMIN_USER_PASSWORD` from the **Deployment** `.env`.
+2. Open **Create MAS** (`/mas/create`), which uses the **Default Workspace**.
+   Switch to **JSON** and paste the contents of [noa-mas.json](noa-mas.json).
+3. Switch to **Form** to select the registered, online Demo CE, then save.
+   Copy the generated MAS ID from its details page. Use that ID when configuring
+   the [Demo CE policy](https://github.com/cisco-eti/ioc-scale-cf-deployment#demo-ce).
+
+This registers the declaration. Start the published NOA app with Deployment's
+`full-mas` profile; onboarding does not add CF enforcement to its in-process tools.
 
 ## Clone the workspace
 
