@@ -12,12 +12,13 @@ import {cn} from '@/lib/utils';
 interface InlineIdProps {
   label?: string;
   value: string;
+  truncate?: boolean;
   alwaysShowCopyIcon?: boolean;
   copiedIconClassName?: string;
   className?: string;
 }
 
-export function InlineId({label, value, alwaysShowCopyIcon = false, copiedIconClassName, className}: InlineIdProps) {
+export function InlineId({label, value, truncate = true, alwaysShowCopyIcon = false, copiedIconClassName, className}: InlineIdProps) {
   const [copied, setCopied] = useState(false);
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -43,17 +44,25 @@ export function InlineId({label, value, alwaysShowCopyIcon = false, copiedIconCl
       toast.error('Could not copy ID');
     }
   };
-  const display = `${value.slice(0, 8)}...`;
+  const display = truncate ? `${value.slice(0, 8)}...` : value;
   return (
     <button
       type="button"
-      onClick={handleCopy}
+      onClick={(event) => {
+        event.stopPropagation();
+        void handleCopy();
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.stopPropagation();
+        }
+      }}
       title={value}
       aria-label={copied ? `${label || 'ID'} copied` : `Copy ${label || 'ID'}`}
       className={cn('group flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors', className)}
     >
-      {label && <span className="font-medium">{label}</span>}
-      <span className="min-w-0 truncate font-mono">{display}</span>
+      {label && <span className="font-medium shrink-0">{label}</span>}
+      <span className={cn('min-w-0 font-mono', truncate ? 'truncate' : 'break-all text-left')}>{display}</span>
       {copied ? (
         <Check className={cn('w-3 h-3 text-green-500 shrink-0', copiedIconClassName)} aria-hidden="true" />
       ) : (

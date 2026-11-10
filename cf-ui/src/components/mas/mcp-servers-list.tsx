@@ -43,6 +43,7 @@ interface MCPServersListProps {
   control: Control<any>;
   watch: UseFormWatch<any>;
   isEditMode: boolean;
+  disabled?: boolean;
   serverExpandedState: Record<string, boolean>;
   onToggleExpand: (id: string) => void;
   onAddServer?: () => void;
@@ -57,6 +58,7 @@ function MCPServerCardWrapper({
   control,
   watch,
   isEditMode,
+  disabled,
   serverExpandedState,
   onToggleExpand,
   onRemoveServer
@@ -66,6 +68,7 @@ function MCPServerCardWrapper({
   control: Control<any>;
   watch: UseFormWatch<any>;
   isEditMode: boolean;
+  disabled?: boolean;
   serverExpandedState: Record<string, boolean>;
   onToggleExpand: (id: string) => void;
   onRemoveServer?: (index: number) => void;
@@ -82,6 +85,7 @@ function MCPServerCardWrapper({
       serverName={serverName}
       isExpanded={isExpanded}
       isEditMode={isEditMode}
+      disabled={disabled}
       control={control}
       toolFields={toolFields}
       onToggleExpand={() => onToggleExpand(server.id)}
@@ -95,6 +99,7 @@ export function MCPServersList({
   control,
   watch,
   isEditMode,
+  disabled,
   serverExpandedState,
   onToggleExpand,
   onAddServer,
@@ -145,6 +150,7 @@ export function MCPServersList({
                 control={control}
                 watch={watch}
                 isEditMode={isEditMode}
+                disabled={disabled}
                 serverExpandedState={serverExpandedState}
                 onToggleExpand={onToggleExpand}
                 onRemoveServer={onRemoveServer}

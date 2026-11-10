@@ -131,3 +131,27 @@ Unless required by applicable law or agreed to in writing, software distributed 
 ## Third-Party Notices
 
 This project uses third-party open source components. See [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES) for copyright and license information.
+
+## MAS metadata onboarding
+
+Create and edit accept the full Management request as JSON. Form edits preserve
+opaque rich metadata, omit unchanged graph/inventory fields and send explicit
+clears. The fifth Topology tab displays the stored provided graph with directed
+relationships and optional Start/End markers. Agent nodes follow the fabric view:
+circular nodes, a dashed outline on hover/selection, and a right-hand Inspect
+panel on click. The panel shows the selected agent’s details and only its assigned
+tools; nodes do not expand. Pan, zoom and fit controls use the fabric canvas
+palette; a text view provides the node and relationship list. The matching
+highlighted, collapsible JSON remains copyable alongside the graph.
+The layout follows directed graph layers, separates return relationships and
+places disconnected nodes below the connected graph without adding edges.
+
+Provided and Observed are independent sources. An absent graph differs from an
+explicitly empty graph; disabled/unavailable sources show their own status without
+substituting another graph or blocking other MAS information. Observed remains
+disabled until the optional source integration is connected; this UI makes no
+OXP/CFN requests. In edit mode the graph is replaced by provided-topology JSON
+using the existing Save/Cancel flow. Browsing never writes metadata or node
+positions, and background refresh failures retain loaded data and unsaved edits.
+See the [CFN metadata contract](../ioc-scale-cfn-svc/docs/discussions/0006-mas-onboarding-metadata.md)
+and [NOA pasteable declaration](../ioc-scale-cfn-svc/deploy/local/mas-onboarding/README.md).

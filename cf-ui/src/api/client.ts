@@ -6,12 +6,14 @@ import {getApiConfig} from './config';
 import {getSession} from 'next-auth/react';
 import createClient from 'openapi-fetch';
 import type {paths} from './generated/schema';
+import {apiErrorMessage} from './error-message';
 
 class ApiError extends Error {
   constructor(
     message: string,
     public status: number,
-    public statusText: string
+    public statusText: string,
+    public body?: unknown
   ) {
     super(message);
     this.name = 'ApiError';
@@ -63,18 +65,15 @@ function setupMiddleware() {
 
       if (!response.ok) {
         let errorMessage = response.statusText;
+        let errorData: unknown;
         try {
-          const errorData = await response.clone().json();
-          errorMessage =
-            (errorData && typeof errorData === 'object' && 'detail' in errorData ? errorData.detail : undefined) ||
-            (errorData && typeof errorData === 'object' && 'message' in errorData ? errorData.message : undefined) ||
-            (errorData && typeof errorData === 'object' && 'error' in errorData ? errorData.error : undefined) ||
-            errorMessage;
+          errorData = await response.clone().json();
+          errorMessage = apiErrorMessage(errorData, errorMessage);
         } catch {
           // Failed to parse error response as JSON
         }
 
-        throw new ApiError(errorMessage, response.status, response.statusText);
+        throw new ApiError(errorMessage, response.status, response.statusText, errorData);
       }
 
       return response;
@@ -116,18 +115,15 @@ export async function fetchAPI<T>(endpoint: string, options?: RequestInit): Prom
 
     if (!response.ok) {
       let errorMessage = response.statusText;
+      let errorData: unknown;
       try {
-        const errorData = await response.json();
-        errorMessage =
-          (errorData && typeof errorData === 'object' && 'detail' in errorData ? errorData.detail : undefined) ||
-          (errorData && typeof errorData === 'object' && 'message' in errorData ? errorData.message : undefined) ||
-          (errorData && typeof errorData === 'object' && 'error' in errorData ? errorData.error : undefined) ||
-          errorMessage;
+        errorData = await response.json();
+        errorMessage = apiErrorMessage(errorData, errorMessage);
       } catch {
         // Failed to parse error response as JSON
       }
 
-      const error = new ApiError(errorMessage, response.status, response.statusText);
+      const error = new ApiError(errorMessage, response.status, response.statusText, errorData);
       throw error;
     }
 

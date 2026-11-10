@@ -25,7 +25,7 @@ import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {toast} from 'sonner';
 import {StatusDot} from '@/components/ui/status-dot';
 import {DetailTabs} from '@/components/ui/detail-tabs';
-import {InlineId} from '@/components/ui/inline-id';
+import {IdHoverCard} from '@/components/ui/id-hover-card';
 import {InfoPanel, InfoRow} from '@/components/ui/info-panel';
 import {MetaCard} from '@/components/ui/meta-card';
 import {Badge} from '@/components/ui/badge';
@@ -177,12 +177,13 @@ export default function CfnDetailsPage() {
         title={cfn?.name || 'CFN Details'}
         customDescription={
           cfn ? (
-            <div className="flex items-center gap-3 flex-wrap">
-              <StatusDot variant="health" active={cfn.status === 'online'} />
-              <span className="text-muted-foreground/30 text-xs select-none">·</span>
-              <StatusDot variant="state" active={cfn.enabled} />
-              <span className="text-muted-foreground/30 text-xs select-none">·</span>
-              <InlineId value={cfn.id} />
+            <div className="flex flex-col items-start gap-2 min-w-0 max-w-full">
+              <div className="flex items-center gap-3 flex-wrap">
+                <StatusDot variant="health" active={cfn.status === 'online'} />
+                <span className="text-muted-foreground/30 text-xs select-none">·</span>
+                <StatusDot variant="state" active={cfn.enabled} />
+              </div>
+              <IdHoverCard value={cfn.id} truncate={false} items={[{label: 'CFN ID', value: cfn.id}]} />
             </div>
           ) : undefined
         }

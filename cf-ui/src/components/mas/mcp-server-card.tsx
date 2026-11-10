@@ -9,6 +9,8 @@ import {InlineId} from '@/components/ui/inline-id';
 import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
+import {JsonEditor} from '@/components/ui/json-editor';
+import {SyntaxJson} from '@/components/ui/syntax-json';
 import {Button} from '@/components/ui/button';
 import {validateJSON, formatJson} from '@/lib/utils';
 import {dtLabel, dtValue, dtRow} from '@/lib/detail-typography';
@@ -31,6 +33,7 @@ interface MCPServerCardProps {
   tools?: MCPToolProps[];
   isExpanded: boolean;
   isEditMode: boolean;
+  disabled?: boolean;
   control: Control<any>;
   toolFields: UseFieldArrayReturn<any, `mcp_servers.${number}.tools`, 'id'>;
   onToggleExpand: () => void;
@@ -47,6 +50,7 @@ export function MCPServerCard({
   tools,
   isExpanded,
   isEditMode,
+  disabled,
   control,
   toolFields,
   onToggleExpand,
@@ -98,7 +102,7 @@ export function MCPServerCard({
       {isExpanded && (
         <div className="px-4 pb-4 border-t border-border bg-card">
           {isEditMode ? (
-            <EditModeFields index={index} control={control} toolFields={toolFields} />
+            <EditModeFields index={index} control={control} toolFields={toolFields} disabled={disabled} />
           ) : (
             <ViewModeFields serverName={serverName} serverTransport={serverTransport} serverDescription={serverDescription} tools={tools} />
           )}
@@ -111,11 +115,13 @@ export function MCPServerCard({
 function EditModeFields({
   index,
   control,
-  toolFields
+  toolFields,
+  disabled
 }: {
   index: number;
   control: Control<any>;
   toolFields: UseFieldArrayReturn<any, `mcp_servers.${number}.tools`, 'id'>;
+  disabled?: boolean;
 }) {
   return (
     <div className="space-y-4 pt-4">
@@ -243,11 +249,16 @@ function EditModeFields({
                         )}
                       </div>
                       <FormControl>
-                        <Textarea
+                        <JsonEditor
+                          label="Parameters (JSON Schema)"
                           placeholder={'{\n  "type": "object",\n  "properties": {}\n}'}
-                          className="font-mono text-xs min-h-[60px] resize-y"
                           {...field}
-                          onBlur={() => field.onChange(formatJson(field.value || ''))}
+                          value={field.value ?? ''}
+                          disabled={disabled || field.disabled}
+                          onBlur={() => {
+                            field.onChange(formatJson(field.value || ''));
+                            field.onBlur();
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -308,9 +319,9 @@ function ViewModeFields({
                 </div>
                 {tool.description && <p className="text-xs text-muted-foreground mb-2">{tool.description}</p>}
                 {tool.parameters && Object.keys(tool.parameters).length > 0 && (
-                  <pre className="font-mono text-xs text-muted-foreground bg-muted border border-border rounded px-2 py-1 whitespace-pre-wrap">
-                    {JSON.stringify(tool.parameters, null, 2)}
-                  </pre>
+                  <div className="rounded border border-border bg-muted">
+                    <SyntaxJson code={JSON.stringify(tool.parameters, null, 2)} />
+                  </div>
                 )}
               </div>
             ))}

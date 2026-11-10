@@ -7,11 +7,10 @@
 import {useEffect, useState} from 'react';
 import {useParams, useRouter, useSearchParams} from 'next/navigation';
 import useSWR, {mutate as globalMutate} from 'swr';
-import {useForm, useFieldArray} from 'react-hook-form';
-import {zodResolver} from '@hookform/resolvers/zod';
+import {useFieldArray} from 'react-hook-form';
 import {swrKeys} from '@/lib/swr-config';
 import {masApi} from '@/api/endpoints';
-import type {MultiAgenticSystem, MultiAgenticSystemUpdate} from '@/api/endpoints/mas';
+import type {MultiAgenticSystem} from '@/api/endpoints/mas';
 import {Button} from '@/components/ui/button';
 import {BasePage} from '@/components/ui/base-page';
 import {Input} from '@/components/ui/input';
@@ -33,7 +32,9 @@ import {MASAuditLog} from './mas-audit-log';
 import {MASAssociateCEModal} from './mas-associate-ce-modal';
 import {AgentsList} from './agents-list';
 import {MCPServersList} from './mcp-servers-list';
-import {UpdateMASFormSchema, type FormValues} from './mas-form-schema';
+import {useMASRequestDraft} from '@/hooks/useMASRequestDraft';
+import {supportedRequest} from './mas-request-draft';
+import {MASInputMode, MASJsonEditor, MASRequestError, TopologyJSON} from './mas-json-editor';
 import {dtSectionHeader, dtPanelHeader} from '@/lib/detail-typography';
 import {DetailTabs} from '@/components/ui/detail-tabs';
 import {StatusDot} from '@/components/ui/status-dot';
@@ -42,9 +43,10 @@ import {MetaCard} from '@/components/ui/meta-card';
 import {CollapsibleJsonField} from './collapsible-json-field';
 import {Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter} from '@/components/ui/dialog';
 import {Label} from '@/components/ui/label';
-import {Textarea} from '@/components/ui/textarea';
+import {JsonEditor} from '@/components/ui/json-editor';
 import {validateJSON, formatJson} from '@/lib/utils';
 import {IdHoverCard} from '@/components/ui/id-hover-card';
+import {MASTopology} from './mas-topology';
 
 export default function MASDetailsPage() {
   const router = useRouter();
@@ -58,7 +60,11 @@ export default function MASDetailsPage() {
 
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'agents' | 'mcp-servers' | 'cognition-engines'>('overview');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [writeFailed, setWriteFailed] = useState(false);
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'agents' | 'mcp-servers' | 'cognition-engines' | 'topology'>('overview');
 
   const [associateModalOpen, setAssociateModalOpen] = useState(false);
   const [selectedCEIds, setSelectedCEIds] = useState<string[]>([]);
@@ -86,40 +92,11 @@ export default function MASDetailsPage() {
   const associatedCeIds = new Set(mas?.cognition_engines?.map((ce) => ce.ce_id) ?? []);
   const availableCEs = cognitionEngines.filter((ce) => !associatedCeIds.has(ce.id));
 
-  const form = useForm<FormValues>({
-    resolver: zodResolver(UpdateMASFormSchema),
-    defaultValues: {name: '', description: '', agents: [], mcp_servers: [], config: ''}
-  });
+  const draft = useMASRequestDraft(workspaceId || '');
+  const {form, reset: resetDraft, seededId} = draft;
 
   const {fields: agentFields, append: appendAgent, remove: removeAgent} = useFieldArray({control: form.control, name: 'agents'});
   const {fields: mcpServerFields, append: appendMcpServer, remove: removeMcpServer} = useFieldArray({control: form.control, name: 'mcp_servers'});
-
-  const buildFormValues = (m: MultiAgenticSystem | undefined): FormValues => {
-    const cleanConfig = typeof m?.config === 'object' && m.config !== null ? {...m.config} : {};
-    return {
-      name: m?.name || '',
-      description: m?.description || '',
-      agents: (m?.agents || []).map((agent) => ({
-        agent_id: agent.agent_id,
-        name: agent.name || '',
-        description: agent.description || '',
-        url: agent.url || '',
-        identity_type: agent.identity?.type || '',
-        identity_identifiers: agent.identity?.identifiers ? JSON.stringify(agent.identity.identifiers, null, 2) : ''
-      })),
-      mcp_servers: (m?.mcp_servers || []).map((server) => ({
-        name: server.name || '',
-        description: server.description || '',
-        transport: server.transport || '',
-        tools: (server.tools || []).map((tool) => ({
-          name: tool.name || '',
-          description: tool.description || '',
-          parameters: tool.parameters ? JSON.stringify(tool.parameters, null, 2) : ''
-        }))
-      })),
-      config: Object.keys(cleanConfig).length > 0 ? JSON.stringify(cleanConfig, null, 2) : ''
-    };
-  };
 
   useEffect(() => {
     if (searchParams.get('edit') === 'true') {
@@ -128,10 +105,10 @@ export default function MASDetailsPage() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (mas) {
-      form.reset(buildFormValues(mas));
+    if (mas && (!isEditMode || seededId.current !== mas.id)) {
+      resetDraft(mas);
     }
-  }, [mas, form]);
+  }, [mas, isEditMode, resetDraft, seededId]);
 
   useEffect(() => {
     if (!isWorkspaceLoading && (!workspaceId || !masId)) {
@@ -164,59 +141,40 @@ export default function MASDetailsPage() {
     });
   };
 
-  const handleSave = async (values: FormValues) => {
+  const handleSave = async () => {
+    if (isSaving) {
+      return;
+    }
+    setSaveError(null);
+    setWriteFailed(false);
+    draft.clearErrors();
+    let request;
+    let payload;
     try {
-      const parseJsonField = (value?: string): Record<string, unknown> | undefined =>
-        !value || value.trim() === '' ? undefined : (JSON.parse(value) as Record<string, unknown>);
-
-      const agentsPayload = (values.agents || [])
-        .filter((agent) => agent.name?.trim())
-        .map((agent) => ({
-          ...(agent.agent_id && {agent_id: agent.agent_id}),
-          name: agent.name!.trim(),
-          ...(agent.description?.trim() && {description: agent.description.trim()}),
-          ...(agent.url?.trim() && {url: agent.url.trim()}),
-          ...(agent.identity_type?.trim() && {
-            identity: {
-              type: agent.identity_type.trim(),
-              identifiers: agent.identity_identifiers?.trim() ? JSON.parse(agent.identity_identifiers) : {}
-            }
-          })
-        }));
-
-      const mcpServersPayload = (values.mcp_servers || [])
-        .filter((server) => server.name?.trim())
-        .map((server) => ({
-          name: server.name!.trim(),
-          ...(server.description?.trim() && {description: server.description.trim()}),
-          ...(server.transport?.trim() && {transport: server.transport.trim()}),
-          tools: (server.tools || [])
-            .filter((tool) => tool.name?.trim())
-            .map((tool) => ({
-              name: tool.name!.trim(),
-              ...(tool.description?.trim() && {description: tool.description.trim()}),
-              ...(tool.parameters?.trim() && {parameters: JSON.parse(tool.parameters)})
-            }))
-        }));
-
-      const configPayload = parseJsonField(values.config) || {};
-      const payload: MultiAgenticSystemUpdate = {
-        name: values.name,
-        description: values.description,
-        agents: agentsPayload,
-        mcp_servers: mcpServersPayload,
-        ...(Object.keys(configPayload).length > 0 && {config: configPayload})
-      };
-
-      await masApi.update(workspaceId as string, masId as string, payload);
+      request = draft.read();
+      payload = supportedRequest(request, 'update');
+    } catch (cause) {
+      draft.reportError(cause);
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const updated = await masApi.update(workspaceId as string, masId as string, payload);
+      draft.clearLegacyRecovery(masId!);
       toast.success('Multi-Agentic System updated successfully');
-      await mutate();
+      await mutate(updated, {revalidate: false});
       await globalMutate(swrKeys.mas(workspaceId!));
+      resetDraft(updated);
       setIsEditMode(false);
       router.replace(routes.mas.details(masId!));
     } catch (err) {
-      toast.error(parseError(err));
-      throw err;
+      const message = parseError(err);
+      setSaveError(message);
+      setWriteFailed(true);
+      draft.reportError(err);
+      toast.error(message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -274,7 +232,9 @@ export default function MASDetailsPage() {
 
   const handleCancelEdit = () => {
     setIsEditMode(false);
-    form.reset(buildFormValues(mas));
+    resetDraft(mas);
+    setSaveError(null);
+    setWriteFailed(false);
     router.replace(routes.mas.details(masId!));
   };
 
@@ -289,6 +249,7 @@ export default function MASDetailsPage() {
           mas ? (
             <IdHoverCard
               value={mas.id}
+              truncate={false}
               items={[
                 {label: 'MAS ID', value: mas.id},
                 {label: 'Workspace', value: mas.workspace_id}
@@ -297,21 +258,21 @@ export default function MASDetailsPage() {
           ) : undefined
         }
         customInfo={
-          <DetailTabs
-            activeTab={activeTab}
-            onTabChange={(id) => {
-              if (id === 'cognition-engines' && isEditMode) {
-                handleCancelEdit();
-              }
-              setActiveTab(id as typeof activeTab);
-            }}
-            tabs={[
-              {id: 'overview', label: 'Overview'},
-              {id: 'agents', label: 'Agents', count: agentFields.length || undefined},
-              {id: 'mcp-servers', label: 'MCP Servers', count: mcpServerFields.length || undefined},
-              {id: 'cognition-engines', label: 'Cognition Engines', count: ces.length || undefined}
-            ]}
-          />
+          !(isEditMode && draft.mode === 'json') && (
+            <DetailTabs
+              activeTab={activeTab}
+              onTabChange={(id) => {
+                setActiveTab(id as typeof activeTab);
+              }}
+              tabs={[
+                {id: 'overview', label: 'Overview'},
+                {id: 'agents', label: 'Agents', count: agentFields.length || undefined},
+                {id: 'mcp-servers', label: 'MCP Servers', count: mcpServerFields.length || undefined},
+                {id: 'cognition-engines', label: 'Cognition Engines', count: ces.length || undefined},
+                {id: 'topology', label: 'Topology'}
+              ]}
+            />
+          )
         }
         useBreadcrumbs
         breadcrumbs={crumbs}
@@ -319,16 +280,22 @@ export default function MASDetailsPage() {
           mas && (
             <div className="flex items-center gap-0.5">
               <MASAuditLog masId={masId!} workspaceId={workspaceId!} masName={mas.name} agents={mas.agents || undefined} />
-              {activeTab !== 'cognition-engines' && (
+              {(activeTab !== 'cognition-engines' || isEditMode) && (
                 <>
                   <div className="w-px h-5 bg-border mx-1 shrink-0" />
+                  {isEditMode && <MASInputMode mode={draft.mode} onChange={(mode) => draft.switchMode(mode, mas)} disabled={isSaving} />}
                   <DetailsPageActions
                     onDelete={() => deleteDialog.open({id: mas.id, name: mas.name})}
-                    onEdit={() => setIsEditMode(true)}
+                    onEdit={() => {
+                      resetDraft(mas);
+                      setSaveError(null);
+                      setWriteFailed(false);
+                      setIsEditMode(true);
+                    }}
                     isEditMode={isEditMode}
-                    onSave={form.handleSubmit(handleSave)}
+                    onSave={() => void handleSave()}
                     onCancelEdit={handleCancelEdit}
-                    isSaving={form.formState.isSubmitting}
+                    isSaving={isSaving}
                   />
                 </>
               )}
@@ -336,307 +303,344 @@ export default function MASDetailsPage() {
           )
         }
       >
+        {isEditMode && <MASRequestError message={draft.error || saveError} inspectHref={routes.mas.details(masId!)} writeFailed={writeFailed} />}
+        {error && mas && (
+          <div role="status" className="flex flex-wrap items-center justify-between gap-2 rounded border border-border bg-card p-3 text-sm">
+            <p>Could not refresh MAS details. Showing the last loaded data; unsaved edits are preserved.</p>
+            <Button type="button" variant="outline" size="sm" onClick={() => void mutate()}>
+              Retry
+            </Button>
+          </div>
+        )}
         <ConditionalSWRRenderer
           data={mas}
-          error={error}
+          error={mas ? undefined : error}
           itemName="MAS details"
-          customIsLoading={isLoading}
+          customIsLoading={isLoading && !mas}
           errorListStateProps={{title: 'Failed to load MAS details'}}
           emptyListStateProps={{title: 'No MAS details found'}}
         >
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSave)} className="space-y-4">
-              {activeTab === 'overview' && (
-                <div className="space-y-4">
-                  <InfoPanel>
-                    <InfoRow label="Name">
-                      {isEditMode ? (
-                        <FormField
-                          control={form.control}
-                          name="name"
-                          render={({field}) => (
-                            <FormItem className="flex-1 space-y-1">
-                              <FormControl>
-                                <Input {...field} className="h-8 text-sm" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void handleSave();
+              }}
+              className="space-y-4"
+            >
+              <fieldset disabled={isSaving} className="contents">
+                {isEditMode && draft.mode === 'json' ? (
+                  <MASJsonEditor value={draft.json} onChange={draft.setJson} disabled={isSaving} />
+                ) : (
+                  <>
+                    {activeTab === 'overview' && (
+                      <div className="space-y-4">
+                        <InfoPanel>
+                          <InfoRow label="Name">
+                            {isEditMode ? (
+                              <FormField
+                                control={form.control}
+                                name="name"
+                                render={({field}) => (
+                                  <FormItem className="flex-1 space-y-1">
+                                    <FormControl>
+                                      <Input {...field} className="h-8 text-sm" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            ) : (
+                              <span className="text-sm text-foreground">{mas?.name || '-'}</span>
+                            )}
+                          </InfoRow>
+                          <InfoRow label="Description">
+                            {isEditMode ? (
+                              <FormField
+                                control={form.control}
+                                name="description"
+                                render={({field}) => (
+                                  <FormItem className="flex-1 space-y-1">
+                                    <FormControl>
+                                      <Input {...field} className="h-8 text-sm" />
+                                    </FormControl>
+                                    <FormMessage />
+                                  </FormItem>
+                                )}
+                              />
+                            ) : (
+                              <span className="text-sm text-foreground">{mas?.description || '-'}</span>
+                            )}
+                          </InfoRow>
+                        </InfoPanel>
+
+                        {isEditMode ? (
+                          <FormField
+                            control={form.control}
+                            name="config"
+                            render={({field}) => (
+                              <CollapsibleJsonField
+                                label="Config"
+                                value={field.value ?? ''}
+                                isEditMode={true}
+                                disabled={isSaving}
+                                field={field}
+                                placeholder={`{\n  "key": "value"\n}`}
+                              />
+                            )}
+                          />
+                        ) : (
+                          <CollapsibleJsonField
+                            label="Config"
+                            value={mas?.config && Object.keys(mas.config).length > 0 ? JSON.stringify(mas.config, null, 2) : ''}
+                            isEditMode={false}
+                          />
+                        )}
+
+                        <div className="grid grid-cols-2 gap-3">
+                          {mas?.created_at && (
+                            <MetaCard label="Created" mono>
+                              {new Date(mas.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                            </MetaCard>
                           )}
-                        />
-                      ) : (
-                        <span className="text-sm text-foreground">{mas?.name || '-'}</span>
-                      )}
-                    </InfoRow>
-                    <InfoRow label="Description">
-                      {isEditMode ? (
-                        <FormField
-                          control={form.control}
-                          name="description"
-                          render={({field}) => (
-                            <FormItem className="flex-1 space-y-1">
-                              <FormControl>
-                                <Input {...field} className="h-8 text-sm" />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
+                          {mas?.updated_at && (
+                            <MetaCard label="Last Modified" mono>
+                              {new Date(mas.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                            </MetaCard>
                           )}
-                        />
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === 'agents' && (
+                      <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                        <div className={dtPanelHeader}>
+                          <div className="flex items-center gap-0.5">
+                            <Bot size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                            <span className={dtSectionHeader}>Agents</span>
+                            {agentFields.length > 0 && (
+                              <Badge variant="accent" className="rounded px-1.5">
+                                {agentFields.length}
+                              </Badge>
+                            )}
+                          </div>
+                          {isEditMode && (
+                            <Button
+                              type="button"
+                              variant="sidebar"
+                              size="sm"
+                              className="gap-2"
+                              onClick={() =>
+                                appendAgent({agent_id: '', name: '', description: '', url: '', identity_type: '', identity_identifiers: ''})
+                              }
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add Agent
+                            </Button>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <AgentsList
+                            agents={agentFields}
+                            control={form.control}
+                            watch={form.watch}
+                            isEditMode={isEditMode}
+                            disabled={isSaving}
+                            agentExpandedState={agentExpandedState}
+                            onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
+                            onAddAgent={
+                              isEditMode
+                                ? () =>
+                                    appendAgent({
+                                      agent_id: '',
+                                      name: '',
+                                      description: '',
+                                      url: '',
+                                      identity_type: '',
+                                      identity_identifiers: ''
+                                    })
+                                : undefined
+                            }
+                            onRemoveAgent={isEditMode ? removeAgent : undefined}
+                            masAgentsData={mas?.agents || undefined}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === 'mcp-servers' && (
+                      <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                        <div className={dtPanelHeader}>
+                          <div className="flex items-center gap-0.5">
+                            <Server size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                            <span className={dtSectionHeader}>MCP Servers</span>
+                            {mcpServerFields.length > 0 && (
+                              <Badge variant="accent" className="rounded px-1.5">
+                                {mcpServerFields.length}
+                              </Badge>
+                            )}
+                          </div>
+                          {isEditMode && (
+                            <Button
+                              type="button"
+                              variant="sidebar"
+                              size="sm"
+                              className="gap-2"
+                              onClick={() => appendMcpServer({name: '', description: '', transport: '', tools: []})}
+                            >
+                              <Plus className="w-4 h-4" />
+                              Add MCP Server
+                            </Button>
+                          )}
+                        </div>
+                        <div className="p-4">
+                          <MCPServersList
+                            servers={mcpServerFields}
+                            control={form.control}
+                            watch={form.watch}
+                            isEditMode={isEditMode}
+                            disabled={isSaving}
+                            serverExpandedState={mcpServerExpandedState}
+                            onToggleExpand={(id) => setMcpServerExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
+                            onAddServer={isEditMode ? () => appendMcpServer({name: '', description: '', transport: '', tools: []}) : undefined}
+                            onRemoveServer={isEditMode ? removeMcpServer : undefined}
+                            masServersData={!isEditMode && mas?.mcp_servers ? mas.mcp_servers : undefined}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {activeTab === 'topology' &&
+                      (isEditMode ? (
+                        <TopologyJSON value={draft.topologyJSON} onChange={draft.changeTopology} disabled={isSaving} error={draft.topologyError} />
                       ) : (
-                        <span className="text-sm text-foreground">{mas?.description || '-'}</span>
-                      )}
-                    </InfoRow>
-                  </InfoPanel>
+                        mas && <MASTopology key={`${workspaceId}:${mas.id}`} mas={mas} />
+                      ))}
 
-                  {isEditMode ? (
-                    <FormField
-                      control={form.control}
-                      name="config"
-                      render={({field}) => (
-                        <CollapsibleJsonField
-                          label="Config"
-                          value={field.value ?? ''}
-                          isEditMode={true}
-                          field={field}
-                          placeholder={`{\n  "key": "value"\n}`}
-                        />
-                      )}
-                    />
-                  ) : (
-                    <CollapsibleJsonField
-                      label="Config"
-                      value={mas?.config && Object.keys(mas.config).length > 0 ? JSON.stringify(mas.config, null, 2) : ''}
-                      isEditMode={false}
-                    />
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3">
-                    {mas?.created_at && (
-                      <MetaCard label="Created" mono>
-                        {new Date(mas.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
-                      </MetaCard>
+                    {activeTab === 'cognition-engines' && (
+                      <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
+                        <div className={dtPanelHeader}>
+                          <div className="flex items-center gap-0.5">
+                            <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
+                            <span className={dtSectionHeader}>Associated Cognition Engines</span>
+                            {ces.length > 0 && (
+                              <Badge variant="accent" className="rounded px-1.5">
+                                {ces.length}
+                              </Badge>
+                            )}
+                            {ces.length > 0 && ces.length - enabledCEs > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                {enabledCEs} enabled, {ces.length - enabledCEs} disabled
+                              </span>
+                            )}
+                          </div>
+                          {availableCEs.length > 0 && (
+                            <Button type="button" variant="sidebar" size="sm" onClick={() => setAssociateModalOpen(true)}>
+                              + Associate
+                            </Button>
+                          )}
+                        </div>
+                        {ces.length > 0 ? (
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Version</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Enabled</TableHead>
+                                <TableHead />
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {ces.map((ce) => (
+                                <TableRow key={ce.ce_id} className="group">
+                                  <TableCell className="font-medium align-top py-3 font-mono">{ce.name}</TableCell>
+                                  <TableCell className="align-top py-3 font-mono">{ce.version}</TableCell>
+                                  <TableCell>
+                                    <Badge variant={ce.status === 'online' ? 'success' : 'inactive'}>
+                                      {ce.status === 'online' ? 'Online' : 'Offline'}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                    <StatusDot variant="state" active={ce.enabled} />
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          className="gap-1.5 h-7 text-xs"
+                                          onClick={() => {
+                                            setEditConfigCE({ce_id: ce.ce_id, name: ce.name, mas_config: ce.mas_config ?? null});
+                                            setEditConfigValue(
+                                              ce.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''
+                                            );
+                                          }}
+                                        >
+                                          <Settings2 className="w-3 h-3" />
+                                          Edit Config
+                                        </Button>
+                                        <Button
+                                          type="button"
+                                          variant="outline"
+                                          size="sm"
+                                          className="gap-1.5 h-7 text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950"
+                                          disabled={disassociatingId === ce.ce_id}
+                                          onClick={() => handleDisassociateCE(ce.ce_id, ce.name)}
+                                        >
+                                          <Unlink className="w-3 h-3" />
+                                          {disassociatingId === ce.ce_id ? 'Removing...' : 'Disassociate'}
+                                        </Button>
+                                      </div>
+                                      <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                          <button
+                                            type="button"
+                                            className="p-1 rounded hover:bg-muted transition-colors"
+                                            disabled={disassociatingId === ce.ce_id}
+                                          >
+                                            <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
+                                          </button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end">
+                                          <DropdownMenuItem
+                                            className="gap-2"
+                                            onClick={() => {
+                                              setEditConfigCE({ce_id: ce.ce_id, name: ce.name, mas_config: ce.mas_config ?? null});
+                                              setEditConfigValue(
+                                                ce.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''
+                                              );
+                                            }}
+                                          >
+                                            <Settings2 className="w-4 h-4" />
+                                            Edit Config
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem
+                                            className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950 gap-2"
+                                            onClick={() => handleDisassociateCE(ce.ce_id, ce.name)}
+                                            disabled={disassociatingId === ce.ce_id}
+                                          >
+                                            <Unlink className="w-4 h-4" />
+                                            {disassociatingId === ce.ce_id ? 'Removing...' : 'Disassociate'}
+                                          </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                      </DropdownMenu>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        ) : (
+                          <p className="px-4 py-4 text-sm text-muted-foreground">No Cognition Engines associated yet.</p>
+                        )}
+                      </div>
                     )}
-                    {mas?.updated_at && (
-                      <MetaCard label="Last Modified" mono>
-                        {new Date(mas.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
-                      </MetaCard>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'agents' && (
-                <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
-                  <div className={dtPanelHeader}>
-                    <div className="flex items-center gap-0.5">
-                      <Bot size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
-                      <span className={dtSectionHeader}>Agents</span>
-                      {agentFields.length > 0 && (
-                        <Badge variant="accent" className="rounded px-1.5">
-                          {agentFields.length}
-                        </Badge>
-                      )}
-                    </div>
-                    {isEditMode && (
-                      <Button
-                        type="button"
-                        variant="sidebar"
-                        size="sm"
-                        className="gap-2"
-                        onClick={() => appendAgent({agent_id: '', name: '', description: '', url: '', identity_type: '', identity_identifiers: ''})}
-                      >
-                        <Plus className="w-4 h-4" />
-                        Add Agent
-                      </Button>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <AgentsList
-                      agents={agentFields}
-                      control={form.control}
-                      watch={form.watch}
-                      isEditMode={isEditMode}
-                      agentExpandedState={agentExpandedState}
-                      onToggleExpand={(id) => setAgentExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
-                      onAddAgent={
-                        isEditMode
-                          ? () =>
-                              appendAgent({
-                                agent_id: '',
-                                name: '',
-                                description: '',
-                                url: '',
-                                identity_type: '',
-                                identity_identifiers: ''
-                              })
-                          : undefined
-                      }
-                      onRemoveAgent={isEditMode ? removeAgent : undefined}
-                      masAgentsData={!isEditMode && mas?.agents ? mas.agents : undefined}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'mcp-servers' && (
-                <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
-                  <div className={dtPanelHeader}>
-                    <div className="flex items-center gap-0.5">
-                      <Server size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
-                      <span className={dtSectionHeader}>MCP Servers</span>
-                      {mcpServerFields.length > 0 && (
-                        <Badge variant="accent" className="rounded px-1.5">
-                          {mcpServerFields.length}
-                        </Badge>
-                      )}
-                    </div>
-                    {isEditMode && (
-                      <Button
-                        type="button"
-                        variant="sidebar"
-                        size="sm"
-                        className="gap-2"
-                        onClick={() => appendMcpServer({name: '', description: '', transport: '', tools: []})}
-                      >
-                        <Plus className="w-4 h-4" />
-                        Add MCP Server
-                      </Button>
-                    )}
-                  </div>
-                  <div className="p-4">
-                    <MCPServersList
-                      servers={mcpServerFields}
-                      control={form.control}
-                      watch={form.watch}
-                      isEditMode={isEditMode}
-                      serverExpandedState={mcpServerExpandedState}
-                      onToggleExpand={(id) => setMcpServerExpandedState((prev) => ({...prev, [id]: !(prev[id] ?? true)}))}
-                      onAddServer={isEditMode ? () => appendMcpServer({name: '', description: '', transport: '', tools: []}) : undefined}
-                      onRemoveServer={isEditMode ? removeMcpServer : undefined}
-                      masServersData={!isEditMode && mas?.mcp_servers ? mas.mcp_servers : undefined}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {activeTab === 'cognition-engines' && (
-                <div className="bg-card border border-border rounded shadow-sm overflow-hidden">
-                  <div className={dtPanelHeader}>
-                    <div className="flex items-center gap-0.5">
-                      <BrainCircuit size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
-                      <span className={dtSectionHeader}>Associated Cognition Engines</span>
-                      {ces.length > 0 && (
-                        <Badge variant="accent" className="rounded px-1.5">
-                          {ces.length}
-                        </Badge>
-                      )}
-                      {ces.length > 0 && ces.length - enabledCEs > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          {enabledCEs} enabled, {ces.length - enabledCEs} disabled
-                        </span>
-                      )}
-                    </div>
-                    {availableCEs.length > 0 && (
-                      <Button type="button" variant="sidebar" size="sm" onClick={() => setAssociateModalOpen(true)}>
-                        + Associate
-                      </Button>
-                    )}
-                  </div>
-                  {ces.length > 0 ? (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Version</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Enabled</TableHead>
-                          <TableHead />
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {ces.map((ce) => (
-                          <TableRow key={ce.ce_id} className="group">
-                            <TableCell className="font-medium align-top py-3 font-mono">{ce.name}</TableCell>
-                            <TableCell className="align-top py-3 font-mono">{ce.version}</TableCell>
-                            <TableCell>
-                              <Badge variant={ce.status === 'online' ? 'success' : 'inactive'}>{ce.status === 'online' ? 'Online' : 'Offline'}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <StatusDot variant="state" active={ce.enabled} />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-1.5 h-7 text-xs"
-                                    onClick={() => {
-                                      setEditConfigCE({ce_id: ce.ce_id, name: ce.name, mas_config: ce.mas_config ?? null});
-                                      setEditConfigValue(
-                                        ce.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''
-                                      );
-                                    }}
-                                  >
-                                    <Settings2 className="w-3 h-3" />
-                                    Edit Config
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-1.5 h-7 text-xs text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950"
-                                    disabled={disassociatingId === ce.ce_id}
-                                    onClick={() => handleDisassociateCE(ce.ce_id, ce.name)}
-                                  >
-                                    <Unlink className="w-3 h-3" />
-                                    {disassociatingId === ce.ce_id ? 'Removing...' : 'Disassociate'}
-                                  </Button>
-                                </div>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <button
-                                      type="button"
-                                      className="p-1 rounded hover:bg-muted transition-colors"
-                                      disabled={disassociatingId === ce.ce_id}
-                                    >
-                                      <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-                                    </button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      className="gap-2"
-                                      onClick={() => {
-                                        setEditConfigCE({ce_id: ce.ce_id, name: ce.name, mas_config: ce.mas_config ?? null});
-                                        setEditConfigValue(
-                                          ce.mas_config && Object.keys(ce.mas_config).length > 0 ? JSON.stringify(ce.mas_config, null, 2) : ''
-                                        );
-                                      }}
-                                    >
-                                      <Settings2 className="w-4 h-4" />
-                                      Edit Config
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem
-                                      className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950 gap-2"
-                                      onClick={() => handleDisassociateCE(ce.ce_id, ce.name)}
-                                      disabled={disassociatingId === ce.ce_id}
-                                    >
-                                      <Unlink className="w-4 h-4" />
-                                      {disassociatingId === ce.ce_id ? 'Removing...' : 'Disassociate'}
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  ) : (
-                    <p className="px-4 py-4 text-sm text-muted-foreground">No Cognition Engines associated yet.</p>
-                  )}
-                </div>
-              )}
+                  </>
+                )}
+              </fieldset>
             </form>
           </Form>
         </ConditionalSWRRenderer>
@@ -668,12 +672,14 @@ export default function MASDetailsPage() {
                 </span>
               )}
             </div>
-            <Textarea
+            <JsonEditor
+              id="ce-mas-config"
+              label="CE MAS Config"
               value={editConfigValue}
-              onChange={(e) => setEditConfigValue(e.target.value)}
+              onChange={setEditConfigValue}
               onBlur={() => setEditConfigValue(formatJson(editConfigValue) || editConfigValue)}
               placeholder={'{\n  "key": "value"\n}'}
-              className="font-mono text-sm min-h-[180px] resize-y"
+              disabled={isSavingConfig}
             />
           </div>
           <DialogFooter>

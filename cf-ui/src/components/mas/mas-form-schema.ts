@@ -2,118 +2,40 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import {z} from 'zod';
+// Form values are a projection of the request draft. Submission validation
+// lives in mas-request-draft so JSON and Form use the same API contract.
+type AgentFormValues = {
+  _request?: Record<string, unknown>;
+  cf_agent_id?: string;
+  agent_id?: string;
+  config?: Record<string, unknown> | null;
+  name?: string;
+  description?: string;
+  url?: string;
+  identity_type?: string;
+  identity_identifiers?: string;
+};
 
-const AgentFormSchema = z.object({
-  agent_id: z.string().optional(),
-  name: z.string().optional(),
-  description: z.string().optional(),
-  url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
-  identity_type: z.string().optional(),
-  identity_identifiers: z
-    .string()
-    .optional()
-    .refine(
-      (val) => {
-        if (!val || val.trim() === '') {
-          return true;
-        }
-        try {
-          JSON.parse(val);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      {message: 'Must be valid JSON'}
-    )
-});
+type MCPToolFormValues = {
+  _request?: Record<string, unknown>;
+  name: string;
+  description?: string;
+  parameters?: string;
+};
 
-const MCPToolFormSchema = z.object({
-  name: z.string().min(1, 'Tool name is required'),
-  description: z.string().optional(),
-  parameters: z
-    .string()
-    .optional()
-    .refine(
-      (val) => {
-        if (!val || val.trim() === '') {
-          return true;
-        }
-        try {
-          JSON.parse(val);
-          return true;
-        } catch {
-          return false;
-        }
-      },
-      {message: 'Must be valid JSON'}
-    )
-});
+type MCPServerFormValues = {
+  _request?: Record<string, unknown>;
+  name: string;
+  description?: string;
+  transport?: string;
+  tools: MCPToolFormValues[];
+};
 
-const MCPServerFormSchema = z.object({
-  name: z.string().min(1, 'Server name is required'),
-  description: z.string().optional(),
-  transport: z.string().optional(),
-  tools: z.array(MCPToolFormSchema).optional().default([])
-});
-
-export const UpdateMASFormSchema = z
-  .object({
-    name: z.string().min(1, 'Name is required').min(3, 'Name must be at least 3 characters'),
-    description: z.string().optional(),
-    agents: z.array(AgentFormSchema).optional().default([]),
-    mcp_servers: z.array(MCPServerFormSchema).optional().default([]),
-    config: z
-      .string()
-      .optional()
-      .refine(
-        (val) => {
-          if (!val || val.trim() === '') {
-            return true;
-          }
-          try {
-            JSON.parse(val);
-            return true;
-          } catch {
-            return false;
-          }
-        },
-        {message: 'Must be valid JSON'}
-      )
-  })
-  .superRefine((data, ctx) => {
-    // Validate unique agent names
-    const agentNames: string[] = [];
-    (data.agents || []).forEach((agent, index) => {
-      const trimmed = agent.name?.trim();
-      if (trimmed) {
-        if (agentNames.includes(trimmed)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `Agent name "${trimmed}" already exists in this system`,
-            path: ['agents', index, 'name']
-          });
-        }
-        agentNames.push(trimmed);
-      }
-    });
-
-    // Validate unique MCP server names
-    const serverNames: string[] = [];
-    (data.mcp_servers || []).forEach((server, index) => {
-      const trimmed = server.name?.trim();
-      if (trimmed) {
-        if (serverNames.includes(trimmed)) {
-          ctx.addIssue({
-            code: z.ZodIssueCode.custom,
-            message: `MCP server name "${trimmed}" already exists in this system`,
-            path: ['mcp_servers', index, 'name']
-          });
-        }
-        serverNames.push(trimmed);
-      }
-    });
-  });
-
-export type FormValues = z.infer<typeof UpdateMASFormSchema>;
+export type FormValues = {
+  name: string;
+  description?: string;
+  cognition_engine_ids: string[];
+  agents: AgentFormValues[];
+  mcp_servers: MCPServerFormValues[];
+  config?: string;
+};

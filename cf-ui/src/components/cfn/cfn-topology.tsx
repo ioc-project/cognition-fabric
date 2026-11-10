@@ -10,6 +10,7 @@ import {X, ArrowUpRight, Copy, Check, Plus, Minus, Maximize2, Network} from 'luc
 import Link from 'next/link';
 import type {CognitionFabricNodeTopology} from '@/api/endpoints/cfn';
 import {routes} from '@/constants/routes';
+import {topologyColors as C} from '@/components/ui/topology-colors';
 
 const W = 1200;
 const H = 700;
@@ -17,18 +18,6 @@ const NODE_R = 76;
 const HUB_R = 20;
 const HUB_X = W / 2;
 const HUB_Y = H / 2;
-
-const C = {
-  bg: '#0a0c10',
-  surface: '#111620',
-  border: '#1a2030',
-  cfnOnline: '#22c55e',
-  cfnOffline: '#ef4444',
-  engine: '#38bdf8',
-  text: '#e2e8f0',
-  textSub: '#64748b',
-  textDim: '#334155'
-};
 
 type Selected = {id: string} | null;
 

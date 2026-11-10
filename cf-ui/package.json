@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 9001",
+    "test": "node --test tests/*.test.mjs",
     "test:audit": "node --test tests/audit-presentation.test.mjs",
     "build": "next build --webpack",
     "build:clean": "rm -rf .next && npm run build",
@@ -48,8 +49,11 @@
     "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/language": "^6.12.1",
     "@eslint/eslintrc": "^3.3.3",
     "@hookform/resolvers": "^3.9.0",
+    "@lezer/highlight": "^1.2.3",
     "@segment/analytics-next": "^1.84.0",
     "@server-sent-stream/web": "^1.0.3",
     "@svgr/webpack": "^8.1.0",

@@ -11,6 +11,7 @@ import type {Control, UseFormWatch} from 'react-hook-form';
 import type {AgentDetail} from '@/api/endpoints/mas';
 
 interface Agent {
+  cf_agent_id?: string;
   agent_id?: string;
   name?: string;
   description?: string;
@@ -24,6 +25,7 @@ interface AgentsListProps {
   control: Control<any>;
   watch: UseFormWatch<any>;
   isEditMode: boolean;
+  disabled?: boolean;
   agentExpandedState: Record<string, boolean>;
   onToggleExpand: (id: string) => void;
   onAddAgent?: () => void;
@@ -36,6 +38,7 @@ export function AgentsList({
   control,
   watch,
   isEditMode,
+  disabled,
   agentExpandedState,
   onToggleExpand,
   onAddAgent,
@@ -44,6 +47,7 @@ export function AgentsList({
 }: AgentsListProps) {
   const viewModeAgents = masAgentsData
     ? masAgentsData.map((agent) => ({
+        cf_agent_id: agent.cf_agent_id,
         agent_id: agent.agent_id,
         name: agent.name || '',
         description: agent.description || '',
@@ -77,15 +81,20 @@ export function AgentsList({
             agents.map((agent, index) => {
               const isExpanded = agentExpandedState[agent.id] ?? true;
               const agentName = watch(`agents.${index}.name`);
+              const runtimeAgentId = watch(`agents.${index}.agent_id`);
 
               return (
                 <AgentCard
                   key={agent.id}
                   index={index}
                   agentId={agent.id}
+                  cfAgentId={agent.cf_agent_id}
                   agentName={agentName}
+                  agentIdValue={runtimeAgentId}
                   isExpanded={isExpanded}
                   isEditMode={isEditMode}
+                  disabled={disabled}
+                  isNewAgent={!agent.cf_agent_id}
                   control={control}
                   onToggleExpand={() => onToggleExpand(agent.id)}
                   onRemove={onRemoveAgent ? () => onRemoveAgent(index) : undefined}
@@ -102,6 +111,7 @@ export function AgentsList({
                 key={agent.agent_id}
                 index={index}
                 agentId={agent.agent_id}
+                cfAgentId={agent.cf_agent_id}
                 agentName={agent.name}
                 agentDescription={agent.description}
                 agentIdValue={agent.agent_id}

@@ -735,9 +735,15 @@ export interface components {
          * @description Schema for individual agent configuration in MAS (input)
          */
         AgentConfig: {
+            /** Agent Descriptions */
+            agent_descriptions?: components["schemas"]["AgentDescription"][];
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Agent Id
-             * @description Unique identifier for the agent (server-generated, ignored on input)
+             * @description Runtime agent identifier, unique within the MAS; generated if omitted
              */
             agent_id?: string | null;
             /**
@@ -765,14 +771,90 @@ export interface components {
                 [key: string]: unknown;
             } | null;
         };
+        /** AgentDescription */
+        AgentDescription: {
+            /** Content */
+            content?: unknown;
+            /** Source Url */
+            source_url?: string | null;
+            /** Source */
+            source?: {
+                [key: string]: unknown;
+            } | null;
+            /** Media Type */
+            media_type?: string | null;
+            /** Provenance */
+            provenance?: {
+                [key: string]: unknown;
+            } | null;
+            /** Format */
+            format: string;
+            /** Spec Version */
+            spec_version?: string | null;
+            /** Schema Version */
+            schema_version?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** AgentDescriptionRead */
+        AgentDescriptionRead: {
+            /** Content */
+            content?: unknown;
+            /** Source Url */
+            source_url?: string | null;
+            /** Source */
+            source?: {
+                [key: string]: unknown;
+            } | null;
+            /** Media Type */
+            media_type?: string | null;
+            /** Provenance */
+            provenance?: {
+                [key: string]: unknown;
+            } | null;
+            /** Collected At */
+            collected_at: string;
+            /** Content Hash */
+            content_hash?: string | null;
+            /**
+             * Resolution State
+             * @enum {string}
+             */
+            resolution_state: "inline" | "unresolved";
+            /** Format */
+            format: string;
+            /** Spec Version */
+            spec_version?: string | null;
+            /** Schema Version */
+            schema_version?: string | null;
+            /**
+             * Support State
+             * @enum {string}
+             */
+            support_state: "supported" | "unsupported";
+        } & {
+            [key: string]: unknown;
+        };
         /**
          * AgentDetail
          * @description Schema for agent details (output)
          */
         AgentDetail: {
+            /** Agent Descriptions */
+            agent_descriptions?: components["schemas"]["AgentDescriptionRead"][] | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Cf Agent Id
+             * Format: uuid
+             * @description Immutable CF-generated storage identifier for this agent
+             */
+            readonly cf_agent_id: string;
             /**
              * Agent Id
-             * @description Unique identifier for the agent
+             * @description Runtime agent identifier, unique within the MAS
              */
             agent_id: string;
             /**
@@ -1618,6 +1700,53 @@ export interface components {
                 [key: string]: unknown;
             };
         };
+        /** DocumentRead */
+        DocumentRead: {
+            /** Content */
+            content?: unknown;
+            /** Source Url */
+            source_url?: string | null;
+            /** Source */
+            source?: {
+                [key: string]: unknown;
+            } | null;
+            /** Media Type */
+            media_type?: string | null;
+            /** Provenance */
+            provenance?: {
+                [key: string]: unknown;
+            } | null;
+            /** Collected At */
+            collected_at: string;
+            /** Content Hash */
+            content_hash?: string | null;
+            /**
+             * Resolution State
+             * @enum {string}
+             */
+            resolution_state: "inline" | "unresolved";
+        } & {
+            [key: string]: unknown;
+        };
+        /** DocumentSnapshot */
+        DocumentSnapshot: {
+            /** Content */
+            content?: unknown;
+            /** Source Url */
+            source_url?: string | null;
+            /** Source */
+            source?: {
+                [key: string]: unknown;
+            } | null;
+            /** Media Type */
+            media_type?: string | null;
+            /** Provenance */
+            provenance?: {
+                [key: string]: unknown;
+            } | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1717,6 +1846,16 @@ export interface components {
          * @description Schema for MCP tool configuration (input)
          */
         MCPToolConfig: {
+            /** Definition */
+            definition?: {
+                [key: string]: unknown;
+            } | null;
+            /** Protocol Version */
+            protocol_version?: string | null;
+            /** Provenance */
+            provenance?: {
+                [key: string]: unknown;
+            } | null;
             /**
              * Name
              * @description Tool name
@@ -1740,6 +1879,20 @@ export interface components {
          * @description Schema for MCP tool details (output)
          */
         MCPToolDetail: {
+            /** Definition */
+            definition?: {
+                [key: string]: unknown;
+            } | null;
+            /** Source Snapshot */
+            source_snapshot?: {
+                [key: string]: unknown;
+            } | null;
+            /** Provenance */
+            provenance?: {
+                [key: string]: unknown;
+            } | null;
+            /** Protocol Version */
+            protocol_version?: string | null;
             /**
              * Id
              * @description Unique identifier for the tool
@@ -1862,6 +2015,23 @@ export interface components {
          *     }
          */
         MultiAgenticSystem: {
+            /** Metadata Schema Version */
+            metadata_schema_version?: string | null;
+            /** Tag */
+            tag?: string | null;
+            /** Version */
+            version?: string | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** Documentation */
+            documentation?: components["schemas"]["DocumentRead"][] | null;
+            /** Tools */
+            tools?: components["schemas"]["RuntimeToolRead"][] | null;
+            /** Topologies */
+            topologies?: components["schemas"]["TopologyRead"][] | null;
+            topology_sources: components["schemas"]["TopologySources"];
             /** Id */
             id: string;
             /** Workspace Id */
@@ -1903,6 +2073,22 @@ export interface components {
          * @description Schema for creating a new Multi-Agentic System
          */
         MultiAgenticSystemRequest: {
+            /** Metadata Schema Version */
+            metadata_schema_version?: string | null;
+            /** Tag */
+            tag?: string | null;
+            /** Version */
+            version?: string | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** Documentation */
+            documentation?: components["schemas"]["DocumentSnapshot"][];
+            /** Tools */
+            tools?: components["schemas"]["RuntimeTool"][];
+            /** Topologies */
+            topologies?: components["schemas"]["ProvidedTopology"][];
             /**
              * Name
              * @description Unique name within the workspace for the multi-agentic system
@@ -1961,6 +2147,22 @@ export interface components {
          * @description Schema for updating a Multi-Agentic System
          */
         MultiAgenticSystemUpdate: {
+            /** Metadata Schema Version */
+            metadata_schema_version?: string | null;
+            /** Tag */
+            tag?: string | null;
+            /** Version */
+            version?: string | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** Documentation */
+            documentation?: components["schemas"]["DocumentSnapshot"][];
+            /** Tools */
+            tools?: components["schemas"]["RuntimeTool"][];
+            /** Topologies */
+            topologies?: components["schemas"]["ProvidedTopology"][];
             /**
              * Name
              * @description Updated name for the multi-agentic system
@@ -2011,6 +2213,132 @@ export interface components {
              * @description List of multi-agentic systems in the workspace
              */
             systems: components["schemas"]["MultiAgenticSystem"][];
+        };
+        /** ProvidedTopology */
+        ProvidedTopology: {
+            /**
+             * Source
+             * @constant
+             */
+            source: "provided";
+            /**
+             * Completeness
+             * @enum {string}
+             */
+            completeness: "complete" | "partial";
+            /** Nodes */
+            nodes: components["schemas"]["TopologyNode"][];
+            /** Edges */
+            edges: components["schemas"]["TopologyEdge"][];
+        };
+        /** RuntimeTool */
+        RuntimeTool: {
+            /** Definition */
+            definition?: {
+                [key: string]: unknown;
+            } | null;
+            /** Protocol Version */
+            protocol_version?: string | null;
+            /** Provenance */
+            provenance?: {
+                [key: string]: unknown;
+            } | null;
+            /** Tool Id */
+            tool_id: string;
+            provider?: components["schemas"]["ToolProvider"] | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** RuntimeToolRead */
+        RuntimeToolRead: {
+            /** Definition */
+            definition?: {
+                [key: string]: unknown;
+            } | null;
+            /** Protocol Version */
+            protocol_version?: string | null;
+            /** Provenance */
+            provenance?: {
+                [key: string]: unknown;
+            } | null;
+            /** Tool Id */
+            tool_id: string;
+            provider?: components["schemas"]["ToolProvider"] | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+            /** Source Snapshot */
+            source_snapshot?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** SourceAvailability */
+        SourceAvailability: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "available" | "absent" | "disabled" | "unavailable";
+        };
+        /** ToolProvider */
+        ToolProvider: {
+            /** Mcp Server Name */
+            mcp_server_name: string;
+            /** Native Tool Name */
+            native_tool_name: string;
+        };
+        /** TopologyEdge */
+        TopologyEdge: {
+            /** Source */
+            source: string;
+            /** Target */
+            target: string;
+            /** Interaction Type */
+            interaction_type?: string | null;
+            /** Conditional */
+            conditional?: boolean | null;
+            /** Data */
+            data?: unknown;
+        };
+        /** TopologyNode */
+        TopologyNode: {
+            /** Id */
+            id: string;
+            /**
+             * Type
+             * @default agent
+             * @enum {string}
+             */
+            type: "agent" | "start" | "end";
+            /** Tool Ids */
+            tool_ids?: string[];
+        };
+        /** TopologyRead */
+        TopologyRead: {
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "provided" | "observed";
+            /**
+             * Completeness
+             * @enum {string}
+             */
+            completeness: "complete" | "partial";
+            /** Nodes */
+            nodes: components["schemas"]["TopologyNode"][];
+            /** Edges */
+            edges: components["schemas"]["TopologyEdge"][];
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** TopologySources */
+        TopologySources: {
+            provided: components["schemas"]["SourceAvailability"];
+            observed: components["schemas"]["SourceAvailability"];
         };
         /** ValidationError */
         ValidationError: {

@@ -1,0 +1,267 @@
+/* Copyright 2026 Cisco Systems, Inc. and its affiliates
+ * SPDX-License-Identifier: Apache-2.0 */
+
+.sourceHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sourceHeading {
+  min-width: 0;
+  flex: 1 1 240px;
+}
+
+.sourceTimeSlot {
+  flex: 0 1 34ch;
+  width: 34ch;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 16px;
+  font: 12px/16px monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.canvas {
+  position: relative;
+  height: 800px;
+  background: #0a0c10;
+}
+
+.canvas :global(.react-flow__controls-button) {
+  color: #94a3b8;
+  fill: currentColor;
+  background: #111620;
+  border-color: #1a2030;
+}
+
+.canvas :global(.react-flow__controls-button:hover) {
+  color: #e2e8f0;
+  background: #1a2030;
+}
+
+.node {
+  position: relative;
+  width: 152px;
+  background: #0d1520;
+  border: 1.5px solid;
+  color: #e2e8f0;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.agentNode {
+  height: 152px;
+  border-radius: 50%;
+}
+.markerNode {
+  min-height: 80px;
+  border-radius: 32px;
+}
+
+.node::after {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  border: 1px dashed;
+  border-color: inherit;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.node:hover::after,
+.node:has(.nodeButton:focus-visible)::after,
+.node[data-selected='true']::after {
+  opacity: 0.5;
+}
+.node[data-selected='true']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid;
+  border-color: inherit;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.nodeButton {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  padding: 14px;
+  border-radius: inherit;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.nodeButton:focus-visible {
+  outline: none;
+}
+.nodeName {
+  font-size: 11px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.nodeSummary {
+  margin-top: 5px;
+  padding-top: 8px;
+  border-top: 1px solid #2e4060;
+  font-size: 9px;
+  color: #94a3b8;
+}
+
+.panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 340px;
+  max-width: 100%;
+  border-left: 1px solid #1a2030;
+  background: #0e1420;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 20;
+  color: #e2e8f0;
+  --syntax-key: #7dd3fc;
+  --syntax-string: #86efac;
+  --syntax-number: #fbbf24;
+  --syntax-keyword: #c4b5fd;
+  --syntax-punctuation: #94a3b8;
+  --syntax-error: #f87171;
+}
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid #1a2030;
+  font: 10px monospace;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+.panelHeader button {
+  display: flex;
+  padding: 4px;
+  cursor: pointer;
+}
+.panelHeader button:focus-visible {
+  outline: 2px solid #38bdf8;
+}
+.panelBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+}
+
+.panelBody:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: -2px;
+}
+.panelKind {
+  font: 9px monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #22c55e;
+  margin-bottom: 12px;
+}
+.panelTitle {
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.detailRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 0;
+  border-bottom: 1px solid #1a2030;
+  font: 11px monospace;
+}
+.detailRow > :first-child {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+.detailRow > :last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+.sectionLabel {
+  margin: 16px 0 8px;
+  font: 9px monospace;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+.description {
+  font-size: 12px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 8px 0;
+}
+.detailNote {
+  font-size: 11px;
+  color: #94a3b8;
+  overflow-wrap: anywhere;
+  margin: 6px 0;
+}
+.detailJSON {
+  border: 1px solid #1a2030;
+  border-radius: 4px;
+  margin: 10px 0;
+  font-size: 11px;
+  overflow: hidden;
+}
+.detailJSON summary {
+  padding: 10px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.detailJSON :global(pre) {
+  font-size: 11px;
+  color: #e2e8f0;
+  padding: 12px;
+  border-top: 1px solid #1a2030;
+}
+.toolList,
+.relationshipList {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.toolList > li {
+  padding: 10px 0;
+  border-bottom: 1px solid #1a2030;
+}
+.relationshipList > li {
+  margin-bottom: 8px;
+}
+
+.handle {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  .canvas {
+    height: 480px;
+  }
+}

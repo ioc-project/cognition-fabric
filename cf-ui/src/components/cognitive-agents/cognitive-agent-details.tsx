@@ -178,12 +178,17 @@ export default function CognitiveAgentDetailsPage() {
         title={ce?.name || 'Cognition Engine'}
         customDescription={
           ce ? (
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-xs text-muted-foreground font-mono">v{ce.version}</span>
-              <span className="text-muted-foreground/30 text-xs select-none">·</span>
-              <StatusDot variant="health" active={ce.status === 'online'} />
-              <span className="text-muted-foreground/30 text-xs select-none">·</span>
-              <IdHoverCard value={ce.id} items={[{label: 'CE ID', value: ce.id}, ...(ce.cfn_id ? [{label: 'CFN', value: ce.cfn_id}] : [])]} />
+            <div className="flex flex-col items-start gap-2 min-w-0 max-w-full">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="text-xs text-muted-foreground font-mono">v{ce.version}</span>
+                <span className="text-muted-foreground/30 text-xs select-none">·</span>
+                <StatusDot variant="health" active={ce.status === 'online'} />
+              </div>
+              <IdHoverCard
+                value={ce.id}
+                truncate={false}
+                items={[{label: 'CE ID', value: ce.id}, ...(ce.cfn_id ? [{label: 'CFN', value: ce.cfn_id}] : [])]}
+              />
             </div>
           ) : undefined
         }

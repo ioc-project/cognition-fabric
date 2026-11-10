@@ -4,10 +4,10 @@
 
 'use client';
 
-import React, {useState} from 'react';
+import React, {useId, useState} from 'react';
 import {ChevronDown, ChevronUp} from 'lucide-react';
 import {FormControl, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
-import {Textarea} from '@/components/ui/textarea';
+import {JsonEditor} from '@/components/ui/json-editor';
 import {validateJSON, formatJson, cn} from '@/lib/utils';
 import {SyntaxJson} from '@/components/ui/syntax-json';
 import {dtPanelHeaderInteractive, dtSectionHeader} from '@/lib/detail-typography';
@@ -22,6 +22,7 @@ interface CollapsibleJsonFieldProps {
   onChange?: (value: string) => void;
   placeholder?: string;
   isEditMode: boolean;
+  disabled?: boolean;
   field?: any;
 }
 
@@ -35,8 +36,10 @@ export function CollapsibleJsonField({
   onChange: _onChange,
   placeholder,
   isEditMode,
+  disabled,
   field
 }: CollapsibleJsonFieldProps) {
+  const contentId = useId();
   const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
   const isControlled = controlledExpanded !== undefined;
   const isExpanded = isControlled ? controlledExpanded! : internalExpanded;
@@ -54,7 +57,13 @@ export function CollapsibleJsonField({
 
     return (
       <div className="rounded-lg border border-border bg-card shadow-sm">
-        <button type="button" className={cn('w-full rounded-lg', dtPanelHeaderInteractive)} onClick={handleToggle}>
+        <button
+          type="button"
+          className={cn('w-full rounded-lg', dtPanelHeaderInteractive)}
+          onClick={handleToggle}
+          aria-expanded={isExpanded}
+          aria-controls={contentId}
+        >
           <span className="flex items-center gap-1.5">
             <span className={dtSectionHeader}>{label}</span>
             {labelSuffix}
@@ -62,7 +71,7 @@ export function CollapsibleJsonField({
           <ChevronDown size={14} className={cn('text-muted-foreground transition-transform', !isExpanded && '-rotate-90')} />
         </button>
         {isExpanded && (
-          <div className="border-t border-border bg-muted rounded-b-lg">
+          <div id={contentId} role="region" aria-label={label} className="border-t border-border bg-muted rounded-b-lg">
             <SyntaxJson code={formatted || '{\n  "key": "value"\n}'} />
           </div>
         )}
@@ -86,11 +95,16 @@ export function CollapsibleJsonField({
       </div>
       {isExpanded && (
         <FormControl>
-          <Textarea
+          <JsonEditor
+            label={label}
             placeholder={placeholder}
-            className="font-mono text-sm min-h-[150px] resize-y"
             {...field}
-            onBlur={() => field?.onChange(formatJson(field.value || ''))}
+            value={field?.value ?? value}
+            disabled={disabled || field?.disabled}
+            onBlur={() => {
+              field?.onChange(formatJson(field.value || ''));
+              field?.onBlur();
+            }}
           />
         </FormControl>
       )}

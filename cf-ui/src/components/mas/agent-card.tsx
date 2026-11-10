@@ -4,11 +4,13 @@
 
 'use client';
 
-import {ChevronDown, ChevronUp, X, Bot} from 'lucide-react';
+import {ChevronDown, ChevronUp, X, Bot, Hash} from 'lucide-react';
 import {InlineId} from '@/components/ui/inline-id';
-import {FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
+import {FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
 import {Input} from '@/components/ui/input';
 import {Textarea} from '@/components/ui/textarea';
+import {JsonEditor} from '@/components/ui/json-editor';
+import {SyntaxJson} from '@/components/ui/syntax-json';
 import {validateJSON, formatJson} from '@/lib/utils';
 import {dtLabel, dtValue, dtRow} from '@/lib/detail-typography';
 import type {Control} from 'react-hook-form';
@@ -16,6 +18,7 @@ import type {Control} from 'react-hook-form';
 interface AgentCardProps {
   index: number;
   agentId: string;
+  cfAgentId?: string;
   agentName?: string;
   agentDescription?: string;
   agentIdValue?: string;
@@ -24,6 +27,8 @@ interface AgentCardProps {
   identityIdentifiers?: Record<string, string>;
   isExpanded: boolean;
   isEditMode: boolean;
+  disabled?: boolean;
+  isNewAgent?: boolean;
   control: Control<any>;
   onToggleExpand: () => void;
   onRemove?: () => void;
@@ -32,6 +37,7 @@ interface AgentCardProps {
 export function AgentCard({
   index,
   agentId: _agentId,
+  cfAgentId,
   agentName,
   agentDescription,
   agentIdValue,
@@ -40,11 +46,13 @@ export function AgentCard({
   identityIdentifiers,
   isExpanded,
   isEditMode,
+  disabled,
+  isNewAgent = false,
   control,
   onToggleExpand,
   onRemove
 }: AgentCardProps) {
-  const headerLabel = agentName || agentIdValue || `Agent ${index + 1}`;
+  const headerLabel = agentName || `Agent ${index + 1}`;
 
   return (
     <div className="bg-card border border-border rounded overflow-hidden">
@@ -55,17 +63,22 @@ export function AgentCard({
         onClick={onToggleExpand}
         onKeyDown={(e) => e.key === 'Enter' && onToggleExpand()}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded bg-[hsl(var(--sidebar-icon-active)/0.1)] flex items-center justify-center">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-7 h-7 rounded bg-[hsl(var(--sidebar-icon-active)/0.1)] flex items-center justify-center shrink-0">
             <Bot size={13} className="text-[hsl(var(--sidebar-icon-active))]" />
           </div>
-          <div className="text-left">
-            <div className="text-sm text-foreground font-medium">{headerLabel}</div>
-            {agentIdValue && <InlineId label="ID" value={agentIdValue} />}
+          <div className="text-left min-w-0">
+            <div className="text-sm text-foreground font-medium break-words">{headerLabel}</div>
+            {agentIdValue && (
+              <div className="flex items-center gap-1.5 min-w-0 max-w-full">
+                <Hash className="w-3 h-3 text-muted-foreground shrink-0" aria-hidden="true" />
+                <InlineId value={agentIdValue} truncate={false} alwaysShowCopyIcon className="min-w-0 max-w-full" />
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0 ml-3">
           {isEditMode && onRemove && (
             <button
               type="button"
@@ -84,8 +97,16 @@ export function AgentCard({
 
       {isExpanded && (
         <div className="px-4 pb-4 border-t border-border bg-card">
+          <div className={dtRow}>
+            <span className={dtLabel}>Internal ID</span>
+            {cfAgentId ? (
+              <InlineId value={cfAgentId} truncate={false} alwaysShowCopyIcon className="min-w-0 max-w-full" />
+            ) : (
+              <span className={dtValue}>Assigned after saving</span>
+            )}
+          </div>
           {isEditMode ? (
-            <EditModeFields index={index} control={control} />
+            <EditModeFields index={index} control={control} isNewAgent={isNewAgent} disabled={disabled} />
           ) : (
             <ViewModeFields
               agentName={agentName}
@@ -101,9 +122,25 @@ export function AgentCard({
   );
 }
 
-function EditModeFields({index, control}: {index: number; control: Control<any>}) {
+function EditModeFields({index, control, isNewAgent, disabled}: {index: number; control: Control<any>; isNewAgent: boolean; disabled?: boolean}) {
   return (
     <div className="space-y-4 pt-4">
+      {isNewAgent && (
+        <FormField
+          control={control}
+          name={`agents.${index}.agent_id`}
+          render={({field}) => (
+            <FormItem>
+              <FormLabel>Agent ID</FormLabel>
+              <FormControl>
+                <Input placeholder="e.g. moderator" maxLength={255} {...field} value={field.value ?? ''} />
+              </FormControl>
+              <FormDescription>Use the agent ID from your MAS. Leave blank to generate an ID.</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
       <FormField
         control={control}
         name={`agents.${index}.name`}
@@ -180,11 +217,16 @@ function EditModeFields({index, control}: {index: number; control: Control<any>}
               )}
             </div>
             <FormControl>
-              <Textarea
+              <JsonEditor
+                label="Identity Identifiers"
                 placeholder={'{\n  "url": "main::agents::retrieval-agent-1"\n}'}
-                className="font-mono text-sm min-h-[80px] resize-y"
                 {...field}
-                onBlur={() => field.onChange(formatJson(field.value || ''))}
+                value={field.value ?? ''}
+                disabled={disabled || field.disabled}
+                onBlur={() => {
+                  field.onChange(formatJson(field.value || ''));
+                  field.onBlur();
+                }}
               />
             </FormControl>
             <FormMessage />
@@ -236,11 +278,15 @@ function ViewModeFields({
 
       <div className={rowClass}>
         <span className={labelClass}>Identifiers</span>
-        <pre className="font-mono text-sm text-muted-foreground bg-muted border border-border rounded px-3 py-2 whitespace-pre-wrap leading-relaxed">
-          {identityIdentifiers && Object.keys(identityIdentifiers).length > 0
-            ? JSON.stringify(identityIdentifiers, null, 2)
-            : '{\n  "url": "main::agents::retrieval-agent-1"\n}'}
-        </pre>
+        <div className="min-w-0 rounded border border-border bg-muted">
+          <SyntaxJson
+            code={
+              identityIdentifiers && Object.keys(identityIdentifiers).length > 0
+                ? JSON.stringify(identityIdentifiers, null, 2)
+                : '{\n  "url": "main::agents::retrieval-agent-1"\n}'
+            }
+          />
+        </div>
       </div>
     </div>
   );
