@@ -199,11 +199,44 @@ Tags default to `latest`. Set them in the CFN `.env`, or override one start:
 CFN_SVC_TAG=2026-11-02-abcdef0 task run:cfn:image
 ```
 
-Use an actual tag published by that service's CI. PR validation alone does not
-publish images. `CF_REGISTRY` defaults to `ghcr.io/cisco-eti`. The image tasks
-pull their selected tag every time, recreate only the selected service, stream
-its logs, and stop it on Ctrl+C. They never build from local source or start
-dependencies. Before management starts, a read-only preflight checks the current
+Use an actual tag published by that service's CI or release workflow. PR
+validation alone does not publish images. `CF_REGISTRY` defaults to
+`ghcr.io/cisco-eti`. The image tasks pull their selected tag every time,
+recreate only the selected service, stream its logs, and stop it on Ctrl+C.
+They never build from local source or start dependencies.
+
+#### Publish a Git tag image
+
+A Git tag names a commit, not a branch. Pushing the tag ref is what publishes;
+an ordinary branch push does not. CFN and Demo CE run
+`.github/workflows/release.yaml` on that tag push. Management and UI already
+publish from tags in their own Docker workflows. The tagged commit must contain
+the release workflow, so merge or rebase onto the branch before tagging.
+
+Supported tag names match semantic versioning: `v1.2.3` or a prerelease such as
+`v1.2.3-rc.1` or `v1.2.3-alpha.1`. Other tag names fail the release workflow and
+do not publish. Treat tags as immutable; replacing a Git tag overwrites the
+GHCR tag.
+
+```bash
+git tag v1.2.3-rc.1 <commit>
+git push origin v1.2.3-rc.1
+```
+
+Do not use `git push --tags` (it pushes every local tag). Who may push tags is
+still the SRE process in `.github/CONTRIBUTING.md`.
+
+The resulting image uses the Git tag as its Docker tag, for example
+`ghcr.io/cisco-eti/ioc-scale-cfn-svc:v1.2.3-rc.1` and
+`ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:v1.2.3-rc.1`. Tag builds do not
+move `latest`. Select them with the overrides above:
+
+```bash
+CFN_SVC_TAG=v1.2.3-rc.1 task run:cfn:image
+CF_DEMO_CE_TAG=v1.2.3-rc.1 task run:demo-ce:image
+```
+
+Before management starts, a read-only preflight checks the current
 database revision against that version's Alembic graph. Image management is
 checked after pulling, using Python and migrations from the selected image with
 its normal entrypoint bypassed. The subsequent start does not pull again.
