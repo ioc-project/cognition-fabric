@@ -13,6 +13,7 @@ Open questions and discussions that have not yet been resolved into ADRs or fina
 | [D3](0003-mas-lifecycle-notifications.md) | MAS Lifecycle Notifications | Implemented | CF Team, CE Teams | 2026-10-12 |
 | [D4](0004-ce-lifecycle-pull-vs-push.md) | CE lifecycle, pull vs push model | Open | CF + CE teams | 2026-10-13 |
 | [D5](0005-enforcement-proxy-audit-api.md) | Enforcement Proxy Audit API | Draft | CF + Enforcement Proxy T3 | 2026-10-29 |
+| [D6](0006-mas-onboarding-metadata.md) | MAS onboarding metadata for CEs | Open — draft proposal | CF + CE teams + OXP | 2026-10-21 |
 
 
 

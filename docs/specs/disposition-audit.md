@@ -38,8 +38,14 @@ CFN-only enum. No Proxy ingestion endpoint or Proxy event writer is included.
 | `returned_action`, `returned_modify` | Actual response values; omitted on a gRPC error. False `returned_modify` is retained. |
 | `failure_category` | Stable category below; absent on a completed response. |
 | `eligibility_counts` | On failed selection, counts of `disabled`, `offline` and `no_enforcing_endpoint`, using each CE's first exclusion reason. |
-| `ce_details` | Optional allowlisted response details. |
+| `ce_response` | Optional allowlisted response details. |
 | `truncated_fields` | Field paths shortened or omitted by capture limits. |
+
+New records use `ce_response` regardless of whether the CE sends the legacy
+response fields or the optional new `details` object. Historical records retain
+`ce_details` and their original omission paths. Both are keys in the existing
+`audit_information` JSONB column. Reads and UI JSON presentation preserve either
+shape; no database schema migration or historical rewrite is performed.
 
 There is no new `action_id`, request validation, JSON `ce_id`, or CE metadata RPC.
 The CE ID retains its existing top-level resource field. CE name/version are historical
@@ -79,22 +85,35 @@ Constants live in `pkg/audit/disposition.go`; no environment settings are added.
 | Main policy or operational `reason` | 8 KiB (8192 UTF-8 bytes) |
 | Checks | First 50 |
 | Each `check_id` | 128 UTF-8 bytes |
-| Optional `ce_details` object | 16 KiB of encoded JSON |
+| Optional `ce_response` object | 16 KiB of encoded JSON |
 
 Text truncation preserves UTF-8 boundaries and marks the affected field path. The
 main reason and request identifiers are bounded before encoding new records.
 Reads return stored values without another truncation step. Historical values are
 not shortened and no SQL length constraint is added to JSONB.
 
-`ce_details` captures populated `denial_reason`, `missing_context_cause`,
+`ce_response` captures supplied legacy `denial_reason`, `missing_context_cause`,
 `context_sufficiency`, CE `timestamp`, echoed `trace_id`, and checks' `check_id` and
-`passed`. Encoded JSON size includes escaping. If necessary, omit timestamp, then
-echoed trace ID, then trailing checks until the object fits, marking each affected path.
+`passed`. Explicitly present UNSPECIFIED enums are retained; absent default values
+from older bindings are not invented. It can also contain optional CE-owned JSON
+under `ce_response.details`, as described in the [CE response contract](ce-evaluation-response.md).
+Encoded JSON size includes escaping. If necessary, omit the new details object
+first, then timestamp, echoed trace ID, and trailing checks until the envelope
+fits, marking each affected path. Empty check lists are never sliced.
 
-Do not capture arbitrary request `extra`, raw conversation/tool content,
-`modified_action` values or per-check free-text reasons. The main reason remains
-free text protected by the existing audit access boundary; truncation is not redaction.
-The UI renders reasons as text.
+New details are snapshotted and checked for protojson and PostgreSQL jsonb
+compatibility before attachment. Invalid JSON values (NaN/Inf) or actual U+0000
+in any decoded string/key cause omission of the whole new object, an omission
+marker and a logged warning; the core record and handler result survive. Literal
+backslash-u0000 text is valid. Serialization errors are handled explicitly.
+An exhausted trimming fallback omits the optional envelope instead of panicking.
+
+The legacy capture path does not copy arbitrary request `extra`, raw conversation/tool
+content, `modified_action` values or legacy per-check free-text reasons. The opt-in
+CE-owned `details` object is captured as a bounded object and can contain the CE's
+own explanations, including the Demo CE's check reasons. Its contents and the main
+reason are protected by the existing audit access boundary; truncation is not
+redaction. The UI renders reasons and JSON as text.
 
 ## Example: evaluated CASA denial
 
@@ -123,7 +142,7 @@ This excerpt omits unchanged row IDs, actors and timestamps:
     "grpc_status": "OK",
     "returned_action": "ACTION_BLOCK",
     "returned_modify": false,
-    "ce_details": {
+    "ce_response": {
       "denial_reason": "DENIAL_REASON_DEVIATES_FROM_INTENT",
       "checks_run": [{"check_id": "TOOL_ALLOWED", "passed": false}]
     }

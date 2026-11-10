@@ -14,6 +14,8 @@ or observed code, surface the conflict instead of silently following the note.
 
 ## Active guidance
 
+- [CE evaluation response](ce-evaluation-response.md) — legacy binary compatibility,
+  independent fixtures and bounded CE-specific audit JSON.
 - [CFN disposition audit semantics](disposition-audit.md) — producer identity,
   resource associations, event types and processing success for issue #34.
 - [Shared Proxy audit contract](proxy-audit.md) — minimal schema, contract ownership,
