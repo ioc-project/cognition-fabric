@@ -9,6 +9,16 @@ export type AuditEvent = components['schemas']['AuditCfnEventResponse'];
 export type AuditPageInfo = components['schemas']['AuditCfnPageInfo'];
 export type AuditEventListResponse = components['schemas']['AuditCfnEventListResponse'];
 
+export interface AuditCEResponse {
+  denial_reason?: string;
+  missing_context_cause?: string;
+  context_sufficiency?: string;
+  timestamp?: string;
+  trace_id?: string;
+  checks_run?: Array<{check_id: string; passed: boolean}>;
+  details?: Record<string, unknown>;
+}
+
 export interface CFNDispositionInformation {
   action?: 'get_disposition';
   mas_id?: string;
@@ -26,14 +36,9 @@ export interface CFNDispositionInformation {
   returned_modify?: boolean;
   failure_category?: string;
   eligibility_counts?: {disabled: number; offline: number; no_enforcing_endpoint: number};
-  ce_details?: {
-    denial_reason?: string;
-    missing_context_cause?: string;
-    context_sufficiency?: string;
-    timestamp?: string;
-    trace_id?: string;
-    checks_run?: Array<{check_id: string; passed: boolean}>;
-  };
+  ce_response?: AuditCEResponse;
+  // Historical records retain their original JSON key.
+  ce_details?: AuditCEResponse;
   truncated_fields?: string[];
 }
 
