@@ -3,12 +3,14 @@ import asyncio
 import socket
 import sys
 from pathlib import Path
+from unittest.mock import AsyncMock
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 import health
+import notification_server
 import registration
 import service
 
@@ -57,6 +59,10 @@ class _Recorder:
         monkeypatch.setattr(registration, "register_template_ce", fake_register)
         monkeypatch.setattr(registration, "shutdown_lifecycle_client", fake_shutdown_lifecycle)
         monkeypatch.setattr(service, "shutdown_cognition_store_client", fake_shutdown_store)
+        # Startup-order tests must not compete with a running CE for port 8080.
+        monkeypatch.setattr(
+            notification_server, "start_notification_server", AsyncMock(return_value=None)
+        )
 
 
 @pytest.mark.asyncio

@@ -99,6 +99,24 @@ advertised registration URL, not the listener. Concurrent instances need separat
 
 See the [documentation site source](../docs/README.md) for setup and extension guidance.
 
+## MAS lifecycle summaries
+
+When CFN sends a MAS lifecycle notification to `POST /notification`, the template
+fetches `/api/multi-agentic-systems/{mas_id}?metadata=true`. It emits one readable
+INFO summary containing the MAS ID, name, workspace and description; each agent's
+runtime ID, name and description; topology source availability, nodes, directed
+edges and agent tool assignments; and runtime tool IDs, names, short descriptions
+and optional MCP bindings. Tool descriptions use their first nonempty line.
+
+Missing or null optional fields are shown as `not supplied`. Explicit empty lists
+are shown as `none`; an explicitly empty graph remains a declared graph. Start/end
+markers and either topology source are supported when present. Configuration,
+schemas, raw document snapshots and provenance are excluded from this summary.
+
+The fetch runs once per notification with the existing five-second timeout. A
+failed fetch logs a warning. Restart the template after code changes, then edit a
+MAS to trigger a notification and inspect its summary.
+
 ## Architecture
 
 ```
