@@ -24,6 +24,14 @@ class MultiAgenticSystem(Base):
     config = Column(JSONB, nullable=True)
 
     # Timestamp fields - auto-generated in database
+    metadata_schema_version = Column(Text, nullable=True)
+    tag = Column(Text, nullable=True)
+    version = Column(Text, nullable=True)
+    mas_metadata = Column(JSONB, nullable=True)
+    documentation = Column(JSONB, nullable=True)
+    runtime_tools = Column(JSONB, nullable=True)
+    topologies = Column(JSONB, nullable=True)
+
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
     updated_at = Column(
         DateTime, nullable=True, server_default=text("CURRENT_TIMESTAMP"), onupdate=text("CURRENT_TIMESTAMP")

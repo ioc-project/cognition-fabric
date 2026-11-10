@@ -75,6 +75,12 @@ After applying migration `0007`, restart the intended CE if multiple enabled reg
 an endpoint. See [CFN's CE lifecycle contract](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/docs/CE-LIFECYCLE.md#endpoint-ownership)
 for ownership, reconnect, and version compatibility details.
 
+Migration `agent_identity_0008` changes the agent storage key. Stop older Management writers for
+the target database before applying it; this is an application/key
+cutover, not a mixed-version rolling upgrade. Existing runtime agent IDs remain
+unchanged, and Management reads add a read-only `cf_agent_id` UUID. See the
+[agent identity migration and manual checks](docs/DATABASE_MIGRATIONS.md#agent-storage-identity-agent_identity_0008).
+
 ### Encryption Keys
 
 Memory provider credentials are encrypted using a Fernet key. The key is automatically generated on first run and stored in `.secrets/encryption.key` (gitignored). Each developer gets a unique key.
@@ -118,6 +124,11 @@ poetry run python -m server.main
 - Multi-Agentic Systems: `GET|POST|DELETE /api/workspaces/{workspace_id}/multi-agentic-systems`
 - Cognitive Fabric Nodes: `GET|POST|PUT|DELETE /api/workspaces/{workspace_id}/cognitive-fabric-node`
 
+MCP server names must be unique within a MAS; tool names must be unique within
+their MCP server. Empty names are allowed individually and follow the same
+uniqueness rule. Create and update reject duplicates with HTTP 422, including
+direct API calls. The same native tool name may occur on different servers.
+
 **CFN Audit Events** (from `cfn_cp` database):
 - List all events: `GET /api/audit-events`
 - Filter events: `GET /api/audit-events?resource_type=COGNITION_ENGINE&audit_type=CE_INVOKED`
@@ -155,3 +166,8 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE.md](LIC
 ## Third-Party Notices
 
 This project uses third-party open source components. See [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES) for copyright and license information.
+
+## MAS onboarding metadata
+
+See [MAS metadata](docs/MAS_METADATA.md) for the optional Stage 3 contract,
+snapshot semantics, atomic reference validation and additive migration.

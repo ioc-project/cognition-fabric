@@ -18,6 +18,11 @@ class MCPTool(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     parameters = Column(JSONB, nullable=True)  # JSON Schema for tool parameters
+    definition = Column(JSONB, nullable=True)
+    source_snapshot = Column(JSONB, nullable=True)
+    provenance = Column(JSONB, nullable=True)
+    protocol_version = Column(Text, nullable=True)
+
     created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
     updated_at = Column(DateTime, nullable=True, server_default=text("CURRENT_TIMESTAMP"))
 
