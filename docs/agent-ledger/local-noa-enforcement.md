@@ -44,6 +44,14 @@ The local application is based on upstream `noa-trip-planner/`; the separate
 changes by application, retain the CFN/proxy integration, and update the local
 lockfile when adopting a shared Observe SDK update.
 
+For coalition experiments against the local CF stack, prefer the copied HTTP
+runner with the running source NOA (`http://localhost:8125` by default). Its
+`available_agents` selection changes the graph's specialists, while selected
+agents retain the direct/proxy gates. The upstream in-process runner bypasses
+the CF launcher's environment setup and proxy-process supervision. Keep the
+application's checkpoint message history in `/ask` responses so the experiment
+runner can count the actual messages.
+
 Use `dns_lookup_family: V4_ONLY` for the generated `noa_tools` Envoy cluster.
 Docker Desktop can resolve `host.docker.internal` to an IPv6 address without
 a usable IPv6 route; Envoy's default DNS policy prefers that address. This can

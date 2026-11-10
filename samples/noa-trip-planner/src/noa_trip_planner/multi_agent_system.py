@@ -458,7 +458,7 @@ def ask_question(
     try:
         final_state = app.get_state(config)
         finalized_state = finalize_answer_traced(final_state.values)
-        all_messages = finalized_state.get("messages", [])
+        all_messages = final_state.values.get("messages", [])
         final_answer = finalized_state.get("final_answer", "")
 
     except Exception as e:
