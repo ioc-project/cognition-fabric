@@ -173,4 +173,3 @@ message AuditRecord {
 message AppendAuditRecordRequest { AuditRecord record = 1; }
 
 message AppendAuditRecordResponse { string audit_record_id = 1; }
-

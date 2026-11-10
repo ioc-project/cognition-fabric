@@ -20,6 +20,7 @@ package cev1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -188,7 +189,7 @@ func (Direction) EnumDescriptor() ([]byte, []int) {
 	return file_api_proto_ce_v1_ce_proto_rawDescGZIP(), []int{2}
 }
 
-// Reason for DENIAL - every DENY must carry one
+// Legacy CASA denial diagnostics. Other CEs may omit these.
 type DenialReason int32
 
 const (
@@ -767,18 +768,29 @@ type EvaluateResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Decision
 	Outcome Decision `protobuf:"varint,1,opt,name=outcome,proto3,enum=ioc.ce.v1.Decision" json:"outcome,omitempty"` // Authorization decision
-	// Denial details (required when outcome is DENY)
-	DenialReason        DenialReason        `protobuf:"varint,2,opt,name=denial_reason,json=denialReason,proto3,enum=ioc.ce.v1.DenialReason" json:"denial_reason,omitempty"`                               // Reason for denial
-	MissingContextCause MissingContextCause `protobuf:"varint,3,opt,name=missing_context_cause,json=missingContextCause,proto3,enum=ioc.ce.v1.MissingContextCause" json:"missing_context_cause,omitempty"` // GAP or RACE cause
-	Reason              string              `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"`                                                                                            // Human-readable explanation
+	// Legacy CASA diagnostics, retained for unchanged CE binaries and bindings.
+	// Presence is optional; CFN also accepts older bindings' omitted defaults.
+	//
+	// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
+	DenialReason *DenialReason `protobuf:"varint,2,opt,name=denial_reason,json=denialReason,proto3,enum=ioc.ce.v1.DenialReason,oneof" json:"denial_reason,omitempty"`
+	// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
+	MissingContextCause *MissingContextCause `protobuf:"varint,3,opt,name=missing_context_cause,json=missingContextCause,proto3,enum=ioc.ce.v1.MissingContextCause,oneof" json:"missing_context_cause,omitempty"`
+	Reason              string               `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"` // Human-readable explanation
 	// Check results
-	ChecksRun          []*CheckResult     `protobuf:"bytes,5,rep,name=checks_run,json=checksRun,proto3" json:"checks_run,omitempty"`                                                               // Results of checks that ran
-	ContextSufficiency ContextSufficiency `protobuf:"varint,6,opt,name=context_sufficiency,json=contextSufficiency,proto3,enum=ioc.ce.v1.ContextSufficiency" json:"context_sufficiency,omitempty"` // Whether MAS-level context was complete
+	//
+	// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
+	ChecksRun []*CheckResult `protobuf:"bytes,5,rep,name=checks_run,json=checksRun,proto3" json:"checks_run,omitempty"` // Empty means no check details
+	// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
+	ContextSufficiency *ContextSufficiency `protobuf:"varint,6,opt,name=context_sufficiency,json=contextSufficiency,proto3,enum=ioc.ce.v1.ContextSufficiency,oneof" json:"context_sufficiency,omitempty"`
 	// Modification (for MODIFY outcomes)
 	ModifiedAction map[string]string `protobuf:"bytes,7,rep,name=modified_action,json=modifiedAction,proto3" json:"modified_action,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // The amended action
 	// Metadata
-	Timestamp     string `protobuf:"bytes,8,opt,name=timestamp,proto3" json:"timestamp,omitempty"`            // When the decision was made (ISO 8601)
-	TraceId       string `protobuf:"bytes,9,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"` // Echo of request trace_id
+	Timestamp string `protobuf:"bytes,8,opt,name=timestamp,proto3" json:"timestamp,omitempty"`            // When the decision was made (ISO 8601)
+	TraceId   string `protobuf:"bytes,9,opt,name=trace_id,json=traceId,proto3" json:"trace_id,omitempty"` // Echo of request trace_id
+	// Optional diagnostics for this selected CE; adoption is independent per CE.
+	// Values may be nested objects, arrays, strings, numbers, booleans or null.
+	// Keep the CE identity/schema alongside details when carrying them separately.
+	Details       *structpb.Struct `protobuf:"bytes,10,opt,name=details,proto3" json:"details,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -820,16 +832,18 @@ func (x *EvaluateResponse) GetOutcome() Decision {
 	return Decision_DECISION_UNSPECIFIED
 }
 
+// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
 func (x *EvaluateResponse) GetDenialReason() DenialReason {
-	if x != nil {
-		return x.DenialReason
+	if x != nil && x.DenialReason != nil {
+		return *x.DenialReason
 	}
 	return DenialReason_DENIAL_REASON_UNSPECIFIED
 }
 
+// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
 func (x *EvaluateResponse) GetMissingContextCause() MissingContextCause {
-	if x != nil {
-		return x.MissingContextCause
+	if x != nil && x.MissingContextCause != nil {
+		return *x.MissingContextCause
 	}
 	return MissingContextCause_MISSING_CONTEXT_CAUSE_UNSPECIFIED
 }
@@ -841,6 +855,7 @@ func (x *EvaluateResponse) GetReason() string {
 	return ""
 }
 
+// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
 func (x *EvaluateResponse) GetChecksRun() []*CheckResult {
 	if x != nil {
 		return x.ChecksRun
@@ -848,9 +863,10 @@ func (x *EvaluateResponse) GetChecksRun() []*CheckResult {
 	return nil
 }
 
+// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
 func (x *EvaluateResponse) GetContextSufficiency() ContextSufficiency {
-	if x != nil {
-		return x.ContextSufficiency
+	if x != nil && x.ContextSufficiency != nil {
+		return *x.ContextSufficiency
 	}
 	return ContextSufficiency_CONTEXT_SUFFICIENCY_UNSPECIFIED
 }
@@ -874,6 +890,13 @@ func (x *EvaluateResponse) GetTraceId() string {
 		return x.TraceId
 	}
 	return ""
+}
+
+func (x *EvaluateResponse) GetDetails() *structpb.Struct {
+	if x != nil {
+		return x.Details
+	}
+	return nil
 }
 
 // Request for the GetInfo RPC
@@ -986,7 +1009,7 @@ var File_api_proto_ce_v1_ce_proto protoreflect.FileDescriptor
 
 const file_api_proto_ce_v1_ce_proto_rawDesc = "" +
 	"\n" +
-	"\x18api/proto/ce/v1/ce.proto\x12\tioc.ce.v1\"\x85\x02\n" +
+	"\x18api/proto/ce/v1/ce.proto\x12\tioc.ce.v1\x1a\x1cgoogle/protobuf/struct.proto\"\x85\x02\n" +
 	"\x0fToolCallDetails\x12\x1b\n" +
 	"\ttool_name\x18\x01 \x01(\tR\btoolName\x12c\n" +
 	"\x13args_classification\x18\x02 \x03(\v22.ioc.ce.v1.ToolCallDetails.ArgsClassificationEntryR\x12argsClassification\x12)\n" +
@@ -1030,21 +1053,26 @@ const file_api_proto_ce_v1_ce_proto_rawDesc = "" +
 	"\n" +
 	"ExtraEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc8\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xde\x05\n" +
 	"\x10EvaluateResponse\x12-\n" +
-	"\aoutcome\x18\x01 \x01(\x0e2\x13.ioc.ce.v1.DecisionR\aoutcome\x12<\n" +
-	"\rdenial_reason\x18\x02 \x01(\x0e2\x17.ioc.ce.v1.DenialReasonR\fdenialReason\x12R\n" +
-	"\x15missing_context_cause\x18\x03 \x01(\x0e2\x1e.ioc.ce.v1.MissingContextCauseR\x13missingContextCause\x12\x16\n" +
-	"\x06reason\x18\x04 \x01(\tR\x06reason\x125\n" +
+	"\aoutcome\x18\x01 \x01(\x0e2\x13.ioc.ce.v1.DecisionR\aoutcome\x12E\n" +
+	"\rdenial_reason\x18\x02 \x01(\x0e2\x17.ioc.ce.v1.DenialReasonB\x02\x18\x01H\x00R\fdenialReason\x88\x01\x01\x12[\n" +
+	"\x15missing_context_cause\x18\x03 \x01(\x0e2\x1e.ioc.ce.v1.MissingContextCauseB\x02\x18\x01H\x01R\x13missingContextCause\x88\x01\x01\x12\x16\n" +
+	"\x06reason\x18\x04 \x01(\tR\x06reason\x129\n" +
 	"\n" +
-	"checks_run\x18\x05 \x03(\v2\x16.ioc.ce.v1.CheckResultR\tchecksRun\x12N\n" +
-	"\x13context_sufficiency\x18\x06 \x01(\x0e2\x1d.ioc.ce.v1.ContextSufficiencyR\x12contextSufficiency\x12X\n" +
+	"checks_run\x18\x05 \x03(\v2\x16.ioc.ce.v1.CheckResultB\x02\x18\x01R\tchecksRun\x12W\n" +
+	"\x13context_sufficiency\x18\x06 \x01(\x0e2\x1d.ioc.ce.v1.ContextSufficiencyB\x02\x18\x01H\x02R\x12contextSufficiency\x88\x01\x01\x12X\n" +
 	"\x0fmodified_action\x18\a \x03(\v2/.ioc.ce.v1.EvaluateResponse.ModifiedActionEntryR\x0emodifiedAction\x12\x1c\n" +
 	"\ttimestamp\x18\b \x01(\tR\ttimestamp\x12\x19\n" +
-	"\btrace_id\x18\t \x01(\tR\atraceId\x1aA\n" +
+	"\btrace_id\x18\t \x01(\tR\atraceId\x121\n" +
+	"\adetails\x18\n" +
+	" \x01(\v2\x17.google.protobuf.StructR\adetails\x1aA\n" +
 	"\x13ModifiedActionEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x10\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x10\n" +
+	"\x0e_denial_reasonB\x18\n" +
+	"\x16_missing_context_causeB\x16\n" +
+	"\x14_context_sufficiency\"\x10\n" +
 	"\x0eGetInfoRequest\"\x96\x01\n" +
 	"\x0fGetInfoResponse\x12\x17\n" +
 	"\ace_type\x18\x01 \x01(\tR\x06ceType\x12\x18\n" +
@@ -1113,6 +1141,7 @@ var file_api_proto_ce_v1_ce_proto_goTypes = []any{
 	nil,                          // 14: ioc.ce.v1.ToolCallDetails.ArgsClassificationEntry
 	nil,                          // 15: ioc.ce.v1.EvaluateRequest.ExtraEntry
 	nil,                          // 16: ioc.ce.v1.EvaluateResponse.ModifiedActionEntry
+	(*structpb.Struct)(nil),      // 17: google.protobuf.Struct
 }
 var file_api_proto_ce_v1_ce_proto_depIdxs = []int32{
 	14, // 0: ioc.ce.v1.ToolCallDetails.args_classification:type_name -> ioc.ce.v1.ToolCallDetails.ArgsClassificationEntry
@@ -1128,15 +1157,16 @@ var file_api_proto_ce_v1_ce_proto_depIdxs = []int32{
 	9,  // 10: ioc.ce.v1.EvaluateResponse.checks_run:type_name -> ioc.ce.v1.CheckResult
 	5,  // 11: ioc.ce.v1.EvaluateResponse.context_sufficiency:type_name -> ioc.ce.v1.ContextSufficiency
 	16, // 12: ioc.ce.v1.EvaluateResponse.modified_action:type_name -> ioc.ce.v1.EvaluateResponse.ModifiedActionEntry
-	10, // 13: ioc.ce.v1.CognitionEngine.Evaluate:input_type -> ioc.ce.v1.EvaluateRequest
-	12, // 14: ioc.ce.v1.CognitionEngine.GetInfo:input_type -> ioc.ce.v1.GetInfoRequest
-	11, // 15: ioc.ce.v1.CognitionEngine.Evaluate:output_type -> ioc.ce.v1.EvaluateResponse
-	13, // 16: ioc.ce.v1.CognitionEngine.GetInfo:output_type -> ioc.ce.v1.GetInfoResponse
-	15, // [15:17] is the sub-list for method output_type
-	13, // [13:15] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	17, // 13: ioc.ce.v1.EvaluateResponse.details:type_name -> google.protobuf.Struct
+	10, // 14: ioc.ce.v1.CognitionEngine.Evaluate:input_type -> ioc.ce.v1.EvaluateRequest
+	12, // 15: ioc.ce.v1.CognitionEngine.GetInfo:input_type -> ioc.ce.v1.GetInfoRequest
+	11, // 16: ioc.ce.v1.CognitionEngine.Evaluate:output_type -> ioc.ce.v1.EvaluateResponse
+	13, // 17: ioc.ce.v1.CognitionEngine.GetInfo:output_type -> ioc.ce.v1.GetInfoResponse
+	16, // [16:18] is the sub-list for method output_type
+	14, // [14:16] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_api_proto_ce_v1_ce_proto_init() }
@@ -1144,6 +1174,7 @@ func file_api_proto_ce_v1_ce_proto_init() {
 	if File_api_proto_ce_v1_ce_proto != nil {
 		return
 	}
+	file_api_proto_ce_v1_ce_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

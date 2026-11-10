@@ -6,9 +6,14 @@ package audit
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
 	"unicode/utf8"
 
 	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 const (
@@ -17,7 +22,7 @@ const (
 	MaxReasonBytes     = 8 * 1024
 	MaxChecks          = 50
 	MaxCheckIDBytes    = 128
-	MaxCEDetailsBytes  = 16 * 1024
+	MaxCEResponseBytes = 16 * 1024
 
 	FailureInvalidRequest        = "INVALID_REQUEST"
 	FailureConfiguration         = "CFN_CONFIGURATION_ERROR"
@@ -50,7 +55,7 @@ type DispositionInformation struct {
 	ReturnedModify     *bool              `json:"returned_modify,omitempty"`
 	FailureCategory    string             `json:"failure_category,omitempty"`
 	EligibilityCounts  *EligibilityCounts `json:"eligibility_counts,omitempty"`
-	CEDetails          *CEDetails         `json:"ce_details,omitempty"`
+	CEResponse         *CEResponse        `json:"ce_response,omitempty"`
 	TruncatedFields    []string           `json:"truncated_fields,omitempty"`
 }
 
@@ -66,65 +71,134 @@ type CECheck struct {
 	Passed  bool   `json:"passed"`
 }
 
-// CEDetails deliberately excludes modified_action and per-check reasons.
-type CEDetails struct {
+// CEResponse captures selected legacy fields, metadata and arbitrary CE-owned
+// details. Legacy per-check reasons and modified_action are excluded.
+type CEResponse struct {
 	DenialReason        string    `json:"denial_reason,omitempty"`
 	MissingContextCause string    `json:"missing_context_cause,omitempty"`
 	ContextSufficiency  string    `json:"context_sufficiency,omitempty"`
 	Timestamp           string    `json:"timestamp,omitempty"`
 	TraceID             string    `json:"trace_id,omitempty"`
 	ChecksRun           []CECheck `json:"checks_run,omitempty"`
+	// A validated JSON snapshot; never retain the mutable CE response object.
+	Details json.RawMessage `json:"details,omitempty"`
 }
 
-// CaptureResponse copies only allowlisted existing response fields.
-func (d *DispositionInformation) CaptureResponse(response *cev1.EvaluateResponse) {
+// CaptureResponse copies selected legacy fields and snapshots CE-owned data.
+// An error reports omitted optional
+// details; callers must still persist the core event and preserve the disposition.
+func (d *DispositionInformation) CaptureResponse(response *cev1.EvaluateResponse) error {
 	d.Outcome = response.GetOutcome().String()
 	d.Reason = response.GetReason()
-	details := &CEDetails{}
-	if response.GetDenialReason() != cev1.DenialReason_DENIAL_REASON_UNSPECIFIED {
+	details := &CEResponse{}
+	if response != nil && response.DenialReason != nil {
 		details.DenialReason = response.GetDenialReason().String()
 	}
-	if response.GetMissingContextCause() != cev1.MissingContextCause_MISSING_CONTEXT_CAUSE_UNSPECIFIED {
+	if response != nil && response.MissingContextCause != nil {
 		details.MissingContextCause = response.GetMissingContextCause().String()
 	}
-	if response.GetContextSufficiency() != cev1.ContextSufficiency_CONTEXT_SUFFICIENCY_UNSPECIFIED {
+	if response != nil && response.ContextSufficiency != nil {
 		details.ContextSufficiency = response.GetContextSufficiency().String()
 	}
-	details.Timestamp = d.bounded("ce_details.timestamp", response.GetTimestamp(), MaxCEDetailsBytes)
-	details.TraceID = d.bounded("ce_details.trace_id", response.GetTraceId(), MaxIdentifierBytes)
+	details.Timestamp = d.bounded("ce_response.timestamp", response.GetTimestamp(), MaxCEResponseBytes)
+	details.TraceID = d.bounded("ce_response.trace_id", response.GetTraceId(), MaxIdentifierBytes)
 	checks := response.GetChecksRun()
 	if len(checks) > MaxChecks {
-		d.markTruncated("ce_details.checks_run")
+		d.markTruncated("ce_response.checks_run")
 		checks = checks[:MaxChecks]
 	}
 	for _, check := range checks {
 		details.ChecksRun = append(details.ChecksRun, CECheck{
-			CheckID: d.bounded("ce_details.checks_run.check_id", check.GetCheckId(), MaxCheckIDBytes),
+			CheckID: d.bounded("ce_response.checks_run.check_id", check.GetCheckId(), MaxCheckIDBytes),
 			Passed:  check.GetPassed(),
 		})
 	}
-	// Measure encoded JSON: escaping can use more bytes than the original text.
+	var omissionErr error
+	if specific := response.GetDetails(); specific != nil {
+		encoded, err := protojson.Marshal(specific)
+		if err == nil && containsNUL(specific) {
+			err = errors.New("U+0000 in a details key or string is not supported by PostgreSQL jsonb")
+		}
+		if err != nil {
+			d.markTruncated("ce_response.details")
+			omissionErr = fmt.Errorf("ce_response.details omitted: %w", err)
+		} else {
+			details.Details = encoded
+		}
+	}
+	bounded, err := d.boundCEResponse(details)
+	d.CEResponse = bounded
+	return errors.Join(omissionErr, err)
+}
+
+// Measure the enclosing JSON, including escaping and legacy diagnostics.
+func (d *DispositionInformation) boundCEResponse(details *CEResponse) (*CEResponse, error) {
+	var omissionErr error
 	for {
-		encoded, _ := json.Marshal(details)
-		if len(encoded) <= MaxCEDetailsBytes {
+		encoded, err := json.Marshal(details)
+		if err != nil {
+			omissionErr = fmt.Errorf("CE audit response encoding failed: %w", err)
+			if len(details.Details) > 0 {
+				details.Details = nil
+				d.markTruncated("ce_response.details")
+				continue
+			}
+			d.markTruncated("ce_response")
+			return nil, omissionErr
+		}
+		if len(encoded) <= MaxCEResponseBytes {
 			break
 		}
 		switch {
+		case len(details.Details) > 0:
+			details.Details = nil
+			d.markTruncated("ce_response.details")
+			omissionErr = errors.New("ce_response.details omitted: combined audit details exceed 16 KiB")
 		case details.Timestamp != "":
 			details.Timestamp = ""
-			d.markTruncated("ce_details.timestamp")
+			d.markTruncated("ce_response.timestamp")
 		case details.TraceID != "":
 			details.TraceID = ""
-			d.markTruncated("ce_details.trace_id")
-		default:
+			d.markTruncated("ce_response.trace_id")
+		case len(details.ChecksRun) > 0:
 			details.ChecksRun = details.ChecksRun[:len(details.ChecksRun)-1]
-			d.markTruncated("ce_details.checks_run")
+			d.markTruncated("ce_response.checks_run")
+		default:
+			d.markTruncated("ce_response")
+			return nil, errors.New("ce_response omitted: audit budget exhausted with no removable fields")
 		}
 	}
 	if details.DenialReason != "" || details.MissingContextCause != "" || details.ContextSufficiency != "" ||
-		details.Timestamp != "" || details.TraceID != "" || len(details.ChecksRun) > 0 {
-		d.CEDetails = details
+		details.Timestamp != "" || details.TraceID != "" || len(details.ChecksRun) > 0 || len(details.Details) > 0 {
+		return details, omissionErr
 	}
+	return nil, omissionErr
+}
+
+// Inspect decoded strings, not JSON escape text: literal backslash-u0000 is valid.
+func containsNUL(object *structpb.Struct) bool {
+	for key, value := range object.GetFields() {
+		if strings.ContainsRune(key, 0) || valueContainsNUL(value) {
+			return true
+		}
+	}
+	return false
+}
+
+func valueContainsNUL(value *structpb.Value) bool {
+	switch kind := value.GetKind().(type) {
+	case *structpb.Value_StringValue:
+		return strings.ContainsRune(kind.StringValue, 0)
+	case *structpb.Value_StructValue:
+		return containsNUL(kind.StructValue)
+	case *structpb.Value_ListValue:
+		for _, entry := range kind.ListValue.GetValues() {
+			if valueContainsNUL(entry) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Encode bounds newly captured text once, before persistence; reads keep stored data.

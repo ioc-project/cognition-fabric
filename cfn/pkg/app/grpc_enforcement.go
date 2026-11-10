@@ -208,7 +208,9 @@ func (s *enforcementServer) GetDisposition(ctx context.Context, req *enforcement
 	}
 
 	log.Infof("CASA CE response: ce_id=%s outcome=%s reason=%s", casaCE.CEID, casaResp.Outcome, casaResp.Reason)
-	info.CaptureResponse(casaResp)
+	if err := info.CaptureResponse(casaResp); err != nil {
+		log.Warnf("omitted optional CE audit details: ce_id=%s error=%v", casaCE.CEID, err)
+	}
 	info.FailureCategory = ""
 
 	// Map CASA CE decision to enforcement action
