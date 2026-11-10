@@ -41,7 +41,7 @@ func TestGetMASHandler_MissingMASID(t *testing.T) {
 	}
 }
 
-func TestGetMASHandler_WorkspaceNotConfigured(t *testing.T) {
+func TestGetMASHandler_SnapshotUnavailable(t *testing.T) {
 	restore := restoreRoutingGlobals()
 	defer restore()
 
@@ -66,8 +66,40 @@ func TestGetMASHandler_WorkspaceNotConfigured(t *testing.T) {
 		t.Fatalf("failed to unmarshal response: %v", err)
 	}
 
-	if resp["error"] != "workspace not configured" {
-		t.Errorf("expected error 'workspace not configured', got '%s'", resp["error"])
+	if resp["error"] != "config snapshot unavailable" {
+		t.Errorf("expected error 'config snapshot unavailable', got '%s'", resp["error"])
+	}
+}
+
+func TestGetMASHandler_MASNotAssigned(t *testing.T) {
+	restore := restoreRoutingGlobals()
+	defer restore()
+
+	applyParsedConfig(&CfnConfigPayload{
+		ConfigVersion: 1,
+		Workspaces:    []WorkspaceCfg{{WorkspaceID: "ws-1", MASList: []MASCfg{{ID: "mas-1"}}}},
+	})
+	MgmtURL = "http://localhost:9000"
+
+	a := &App{}
+	rtr := easyhttp.NewRouter()
+	rtr.Get("/api/multi-agentic-systems/{masId}", a.getMASHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/multi-agentic-systems/missing-mas", nil)
+	w := httptest.NewRecorder()
+
+	rtr.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected status %d, got %d body=%s", http.StatusNotFound, w.Code, w.Body.String())
+	}
+
+	var resp map[string]string
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("failed to unmarshal response: %v", err)
+	}
+	if resp["error"] != "MAS not found: missing-mas" {
+		t.Errorf("error = %q, want MAS not found: missing-mas", resp["error"])
 	}
 }
 

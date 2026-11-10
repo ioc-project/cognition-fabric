@@ -220,10 +220,11 @@ var _ = Describe("HTTP routes", Serial, func() {
 			Expect(mustString(body, "name")).To(Equal(fixtureMASName))
 		})
 
-		It("returns 503 for a MAS that is not in the snapshot", func() {
-			code, body, _ := cfnDo(http.MethodGet, "/api/multi-agentic-systems/"+uuid.NewString(), nil)
-			Expect(code).To(Equal(http.StatusServiceUnavailable), "%v", body)
-			Expect(mustString(body, "error")).To(Equal("workspace not configured"))
+		It("returns 404 for a MAS that is not in the snapshot", func() {
+			unknown := uuid.NewString()
+			code, body, _ := cfnDo(http.MethodGet, "/api/multi-agentic-systems/"+unknown, nil)
+			Expect(code).To(Equal(http.StatusNotFound), "%v", body)
+			Expect(mustString(body, "error")).To(Equal("MAS not found: " + unknown))
 		})
 
 		It("returns 404 when the snapshot has the MAS but GetMAS is 404", func() {

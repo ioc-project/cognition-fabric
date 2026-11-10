@@ -431,6 +431,12 @@ paths:
           description: MAS details
           schema:
             $ref: '#/definitions/mgmt.MASResponse'
+        "400":
+          description: mas_id is required
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "404":
           description: MAS not found
           schema:
@@ -443,8 +449,14 @@ paths:
             additionalProperties:
               type: string
             type: object
+        "502":
+          description: Failed to fetch MAS from management plane
+          schema:
+            additionalProperties:
+              type: string
+            type: object
         "503":
-          description: Management plane unavailable
+          description: Config snapshot or management plane unavailable
           schema:
             additionalProperties:
               type: string
