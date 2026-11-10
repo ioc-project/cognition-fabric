@@ -58,5 +58,7 @@ uv run pytest -v
 ```
 
 Install the test extra as shown above before running the suite.
-The template has its own Dockerfile, but is not published by the root CI workflow.
+The template has its own Dockerfile. CI publishes
+`ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/template-ce:latest` from `main`; a Git tag
+publishes the same name with that tag and does not move `latest`.
 Its listener configuration needs the same care when run in a container.
