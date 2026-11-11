@@ -25,23 +25,26 @@ class CognitionFabricNode(Base):
 
     # Status tracking
     status = Column(String(50), nullable=False, server_default=text("'online'"))
-    last_seen = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+    last_seen = Column(DateTime(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
     enabled = Column(Boolean, nullable=False, server_default="true")
 
     # Config change tracking — monotonic counter incremented on every config regeneration
     config_version = Column(Integer, nullable=False, server_default=text("0"))
 
     # Timestamp fields
-    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
     updated_at = Column(
-        DateTime, nullable=True, server_default=text("CURRENT_TIMESTAMP"), onupdate=text("CURRENT_TIMESTAMP")
+        DateTime(timezone=True),
+        nullable=True,
+        server_default=text("CURRENT_TIMESTAMP"),
+        onupdate=text("CURRENT_TIMESTAMP"),
     )
 
     created_by = Column(String(255), nullable=True)
     updated_by = Column(String(255), nullable=True)
 
     # Soft delete field
-    deleted_at = Column(DateTime, nullable=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     # Indexes
     __table_args__ = (
@@ -79,7 +82,7 @@ class CfnWorkspace(Base):
         primary_key=True,
         nullable=False,
     )
-    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
     created_by = Column(String(255), nullable=True)
 
     __table_args__ = (

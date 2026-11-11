@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from datetime import datetime
+from server.utils.timestamps import UtcDateTime
 from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -38,8 +38,8 @@ class User(BaseModel):
     username: str
     domain: str
     role: str
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    created_at: UtcDateTime
+    updated_at: Optional[UtcDateTime] = None
 
 
 class Users(BaseModel):

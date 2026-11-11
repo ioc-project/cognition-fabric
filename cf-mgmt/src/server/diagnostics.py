@@ -4,7 +4,6 @@
 
 """Diagnostic API endpoints for IoC Management Backend standard diagnostics."""
 
-import datetime
 import os
 
 from fastapi import APIRouter, Response, status
@@ -15,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field
 from app_logging import get_loggers_info, update_log_level
 from server.common import service_name
 from server.health_check import HealthState, check_self
+from server.utils.timestamps import format_utc, utc_now
 
 router = APIRouter()
 
@@ -38,7 +38,7 @@ async def ioc_health():
         JSONResponse with health status and 200/500 status code
     """
     service_state = check_self()
-    timestamp = datetime.datetime.now().isoformat()
+    timestamp = format_utc(utc_now())
 
     status_str = "UP" if service_state in [HealthState.UP, HealthState.DEGRADED] else "DOWN"
     response_body = {

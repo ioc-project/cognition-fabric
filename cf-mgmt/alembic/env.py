@@ -13,6 +13,7 @@ from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 from alembic import context
+from server.database.relational_db.utc import configure_utc
 
 # ---------------------------------------------------------------------------
 # Model metadata (needed for --autogenerate)
@@ -88,6 +89,7 @@ def run_migrations_online() -> None:
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
+    configure_utc(connectable)
     with connectable.connect() as connection:
         context.configure(connection=connection, target_metadata=target_metadata)
         with context.begin_transaction():

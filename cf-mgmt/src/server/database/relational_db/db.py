@@ -10,6 +10,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import QueuePool
 
+from server.database.relational_db.utc import configure_utc
+
 # Used when environment variables are not configured
 POSTGRES_DB_DEFAULT = "cfn_mgmt"
 POSTGRES_USER_DEFAULT = "postgresUser"
@@ -82,6 +84,8 @@ class RelationalDB:
                     max_overflow=10,
                     pool_timeout=30,
                 )
+
+                configure_utc(self._engine)
 
                 # Verify database connectivity
                 self.verify_connectivity()

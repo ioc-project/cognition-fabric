@@ -5,6 +5,8 @@
 
 from typing import Any, Literal
 
+from server.utils.timestamps import UtcDateTime
+
 from pydantic import BaseModel, ConfigDict, Field, model_validator, model_serializer, field_validator
 
 
@@ -128,7 +130,7 @@ class MetadataWrite(BaseModel):
 
 
 class DocumentRead(DocumentSnapshot, PresenceModel):
-    collected_at: str
+    collected_at: UtcDateTime
     content_hash: str | None = None
     resolution_state: Literal["inline", "unresolved"]
 
@@ -137,7 +139,15 @@ class AgentDescriptionRead(AgentDescription, DocumentRead):
     support_state: Literal["supported", "unsupported"]
 
 
+class SnapshotProvenanceRead(PresenceModel):
+    """Only CF's receipt stamp is typed; caller claims remain opaque."""
+
+    model_config = ConfigDict(extra="allow")
+    collected_at: UtcDateTime | None = None
+
+
 class RuntimeToolRead(RuntimeTool, PresenceModel):
+    provenance: SnapshotProvenanceRead | None = None
     source_snapshot: dict[str, Any] | None = None
 
 
@@ -146,7 +156,7 @@ class TopologyRead(PresenceModel):
     completeness: Literal["complete", "partial"]
     nodes: list[TopologyNode]
     edges: list[TopologyEdge]
-    updated_at: str | None = None
+    updated_at: UtcDateTime | None = None
 
 
 class SourceAvailability(BaseModel):
