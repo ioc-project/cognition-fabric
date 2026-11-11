@@ -29,6 +29,8 @@ or observed code, surface the conflict instead of silently following the note.
   metadata retrieval compatibility.
 - [CFN process-level integration tests](cfn-process-integration-tests.md) —
   Taskfile/CI Postgres split, `go run` SUT, and network-edge mocks.
+- [UTC timestamp ownership](utc-timestamps.md) — migration-only legacy timezone,
+  opaque CE evidence, checked config regeneration and UTC audit output.
 
 ## Maintaining the ledger
 

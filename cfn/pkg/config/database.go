@@ -25,7 +25,7 @@ type Database struct {
 // Every value is quoted so a space/quote/backslash in a password or user
 // doesn't break libpq's keyword/value parsing.
 func (d Database) DSN() string {
-	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s TimeZone=UTC",
 		quoteConnInfoValue(d.Host), quoteConnInfoValue(d.Port), quoteConnInfoValue(d.User),
 		quoteConnInfoValue(d.Password), quoteConnInfoValue(d.Name), quoteConnInfoValue(d.SSLMode))
 }

@@ -19,7 +19,7 @@ func TestDatabase_DSN(t *testing.T) {
 		SSLMode:  "disable",
 	}
 
-	want := "host='localhost' port='5432' user='postgres' password='secret' dbname='cfn_audit' sslmode='disable'"
+	want := "host='localhost' port='5432' user='postgres' password='secret' dbname='cfn_audit' sslmode='disable' TimeZone=UTC"
 	if got := d.DSN(); got != want {
 		t.Errorf("DSN() = %q, want %q", got, want)
 	}
@@ -35,7 +35,7 @@ func TestDatabase_DSN_EscapesSpecialCharacters(t *testing.T) {
 		SSLMode:  "disable",
 	}
 
-	want := `host='localhost' port='5432' user='postgres' password='p\'a\\ss word' dbname='cfn_audit' sslmode='disable'`
+	want := `host='localhost' port='5432' user='postgres' password='p\'a\\ss word' dbname='cfn_audit' sslmode='disable' TimeZone=UTC`
 	if got := d.DSN(); got != want {
 		t.Errorf("DSN() = %q, want %q", got, want)
 	}

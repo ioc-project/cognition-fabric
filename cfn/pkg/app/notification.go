@@ -57,7 +57,7 @@ func detectMASChanges(oldConfig, newConfig *CfnConfigPayload) []MASChange {
 				MASID:           id,
 				AssociatedCEIDs: ceIDs,
 			})
-		} else if oldM.LastUpdatedOn != newM.LastUpdatedOn {
+		} else if !sameMASUpdateTime(oldM.LastUpdatedOn, newM.LastUpdatedOn) {
 			// MAS updated (timestamp changed)
 			changes = append(changes, MASChange{
 				EventType:       "mas.updated",
@@ -80,6 +80,18 @@ func detectMASChanges(oldConfig, newConfig *CfnConfigPayload) []MASChange {
 	}
 
 	return changes
+}
+
+// sameMASUpdateTime ignores representational differences for explicit instants.
+// Legacy naive or malformed values retain string comparison; CFN never guesses
+// a source timezone. Restarting CFN establishes the post-migration baseline.
+func sameMASUpdateTime(before, after string) bool {
+	if before == after {
+		return true
+	}
+	oldTime, oldErr := time.Parse(time.RFC3339Nano, before)
+	newTime, newErr := time.Parse(time.RFC3339Nano, after)
+	return oldErr == nil && newErr == nil && oldTime.Equal(newTime)
 }
 
 // extractCEIDs extracts CE IDs from a MAS configuration.

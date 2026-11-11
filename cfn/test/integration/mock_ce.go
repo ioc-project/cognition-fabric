@@ -34,6 +34,7 @@ type mockCE struct {
 	evalErr      error
 	lastEval     *cev1.EvaluateRequest
 	lastNotify   map[string]any
+	notifyCount  int
 	notifyStatus int
 }
 
@@ -58,6 +59,7 @@ func startMockCE() (*mockCE, error) {
 		_ = json.Unmarshal(body, &payload)
 		ce.mu.Lock()
 		ce.lastNotify = payload
+		ce.notifyCount++
 		code := ce.notifyStatus
 		ce.mu.Unlock()
 		w.WriteHeader(code)
@@ -94,10 +96,21 @@ func (c *mockCE) Reset() {
 	c.evalErr = nil
 	c.lastEval = nil
 	c.lastNotify = nil
+	c.notifyCount = 0
 	c.notifyStatus = http.StatusOK
 }
 
 func (c *mockCE) GRPCAddr() string { return c.grpcLis.Addr().String() }
+
+func (c *mockCE) Notifications() (int, map[string]any) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	last := make(map[string]any, len(c.lastNotify))
+	for key, value := range c.lastNotify {
+		last[key] = value
+	}
+	return c.notifyCount, last
+}
 
 func (c *mockCE) HTTPURL() string { return c.httpSrv.URL }
 

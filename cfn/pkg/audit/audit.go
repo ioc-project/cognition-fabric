@@ -9,6 +9,7 @@ package audit
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -194,6 +195,16 @@ type Audit struct {
 	LastModifiedOn time.Time `gorm:"not null" json:"last_modified_on"`
 }
 
+// MarshalJSON normalizes CF-owned timestamps regardless of the database driver's
+// scan location. Producer-owned evidence in AuditInformation is left unchanged.
+func (a Audit) MarshalJSON() ([]byte, error) {
+	type wireAudit Audit
+	wire := wireAudit(a)
+	wire.CreatedOn = a.CreatedOn.UTC()
+	wire.LastModifiedOn = a.LastModifiedOn.UTC()
+	return json.Marshal(wire)
+}
+
 // Keep this key stable across CFN versions so startup migrations cooperate.
 const auditMigrationLockKey int64 = 0x43464e5f41554449 // "CFN_AUDI"
 
@@ -259,7 +270,7 @@ func CreateAuditEvent(ctx context.Context, db *gorm.DB, a *Audit) error {
 	}
 	a.ID = uuid.New()
 	PopulateCFNOutcome(a)
-	now := time.Now()
+	now := time.Now().UTC()
 	a.CreatedOn = now
 	a.LastModifiedOn = now
 	return db.WithContext(ctx).Create(a).Error
