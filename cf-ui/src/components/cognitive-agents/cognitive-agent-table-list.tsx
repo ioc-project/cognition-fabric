@@ -8,7 +8,7 @@ import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {ResourceTable} from '@/components/ui/resource-table';
-import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
+import {formatTimestamp} from '@/lib/utils';
 import {MoreVertical, Eye, Edit, Unplug, Trash2, ArrowUpDown, ArrowUp, ArrowDown} from 'lucide-react';
 import type {CognitionEngineListItem} from '@/api/endpoints/cognition-engine';
 
@@ -80,7 +80,7 @@ export function CognitiveAgentTableList({
         {
           content: <Badge variant={r.enabled ? 'info' : 'inactive'}>{r.enabled ? 'Enabled' : 'Disabled'}</Badge>
         },
-        {content: r.created_at ? new Date(r.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'},
+        {content: r.created_at ? formatTimestamp(r.created_at) : 'Unknown'},
         {
           content: (
             <DropdownMenu>

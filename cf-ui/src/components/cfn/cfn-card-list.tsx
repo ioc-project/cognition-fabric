@@ -11,6 +11,7 @@ import {Card} from '@/components/ui/card';
 import {Button} from '@/components/ui/button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {routes} from '@/constants/routes';
+import {formatTimestamp} from '@/lib/utils';
 import type {CognitionFabricNodeTopology} from '@/api/endpoints/cfn';
 
 export interface CfnCardListProps {
@@ -33,7 +34,7 @@ function CfnCard({node, onOpenEdit}: {node: CognitionFabricNodeTopology; onOpenE
   const online = node.status === 'online';
   const engines = node.cognition_engines ?? [];
   const lastSeen = node.last_seen
-    ? new Date(node.last_seen).toLocaleString('en-US', {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false})
+    ? formatTimestamp(node.last_seen, {month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false}, '')
     : null;
 
   return (

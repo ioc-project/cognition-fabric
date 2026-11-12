@@ -14,7 +14,7 @@ import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {ListShell} from '@/components/ui/list-shell';
 import {BasePage} from '@/components/ui/base-page';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
-import {parseError} from '@/lib/utils';
+import {parseError, compareTimestamps} from '@/lib/utils';
 import {toast} from 'sonner';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {routes} from '@/constants/routes';
@@ -58,9 +58,7 @@ export function MASList({workspaceId}: MASListProps) {
         if (key === 'name') {
           cmp = a.name.localeCompare(b.name);
         } else {
-          const av = a[key as 'created_at' | 'updated_at'] ? new Date(a[key as 'created_at' | 'updated_at'] as string).getTime() : 0;
-          const bv = b[key as 'created_at' | 'updated_at'] ? new Date(b[key as 'created_at' | 'updated_at'] as string).getTime() : 0;
-          cmp = av - bv;
+          cmp = compareTimestamps(a[key as 'created_at' | 'updated_at'], b[key as 'created_at' | 'updated_at']);
         }
         return dir === 'asc' ? cmp : -cmp;
       });

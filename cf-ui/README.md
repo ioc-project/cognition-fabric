@@ -53,6 +53,15 @@ npm run dev
 
 Open [http://localhost:9001](http://localhost:9001)
 
+### Timestamp display
+
+CF API timestamps identify UTC instants. The UI accepts RFC 3339 timestamps with
+an explicit `Z` or numeric offset and displays absolute dates in UTC, labelled
+with the timezone. Shared formatters also accept an explicit display timezone;
+relative times and sorting use the same instant in every browser timezone.
+Missing, malformed or timezone-less API values show the existing placeholders.
+Raw metadata and audit JSON remain unchanged.
+
 ### Audit panel refresh
 
 The Group by Trace ID switch beside the panel description resets to off every

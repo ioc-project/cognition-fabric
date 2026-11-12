@@ -19,7 +19,7 @@ import {CreateWorkspaceDialog} from './create-workspace-dialog';
 import {EditWorkspaceDialog} from './edit-workspace-dialog';
 import {workspaceApi} from '@/api/endpoints';
 import {useRouter, useSearchParams} from 'next/navigation';
-import {parseError} from '@/lib/utils';
+import {parseError, formatTimestamp} from '@/lib/utils';
 import {useWorkspaces} from '@/hooks/useWorkspaces';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import type {Workspace} from '@/api/types';
@@ -112,7 +112,7 @@ export function WorkspacesList() {
                       {workspace.created_by_username && <p className="text-xs text-muted-foreground">Created by {workspace.created_by_username}</p>}
                       {workspace.created_at && (
                         <p className="text-xs text-muted-foreground">
-                          {new Date(workspace.created_at).toLocaleDateString('en-US', {
+                          {formatTimestamp(workspace.created_at, {
                             year: 'numeric',
                             month: 'short',
                             day: 'numeric'

@@ -11,6 +11,7 @@ import Link from 'next/link';
 import type {CognitionFabricNodeTopology} from '@/api/endpoints/cfn';
 import {routes} from '@/constants/routes';
 import {topologyColors as C} from '@/components/ui/topology-colors';
+import {formatRelativeTimestamp, formatTimestamp} from '@/lib/utils';
 
 const W = 1200;
 const H = 700;
@@ -20,17 +21,6 @@ const HUB_X = W / 2;
 const HUB_Y = H / 2;
 
 type Selected = {id: string} | null;
-
-function ago(iso: string) {
-  const m = Math.floor((Date.now() - +new Date(iso)) / 60000);
-  if (m < 60) {
-    return `${m}m ago`;
-  }
-  if (m < 1440) {
-    return `${Math.floor(m / 60)}h ago`;
-  }
-  return `${Math.floor(m / 1440)}d ago`;
-}
 
 function splitName(name: string, maxLen: number): [string, string] {
   if (name.length <= maxLen) {
@@ -172,8 +162,8 @@ function DetailPanel({sel, nodes, onClose}: {sel: NonNullable<Selected>; nodes: 
         </div>
         <DetailRow label="ip : port" value={node.ip_address ? `${node.ip_address.replace(/^"|"$/g, '')}:${node.port ?? '-'}` : '-'} />
         <DetailRow label="enabled" value={String(node.enabled)} />
-        <DetailRow label="last seen" value={node.last_seen ? ago(node.last_seen) : '-'} />
-        <DetailRow label="created" value={new Date(node.created_at).toLocaleDateString()} />
+        <DetailRow label="last seen" value={formatRelativeTimestamp(node.last_seen, Date.now(), '-')} />
+        <DetailRow label="created" value={formatTimestamp(node.created_at, {year: 'numeric', month: 'numeric', day: 'numeric'})} />
         {(node.workspace_ids ?? []).length > 0 && (
           <>
             <SectionLabel>Workspaces ({node.workspace_ids?.length})</SectionLabel>

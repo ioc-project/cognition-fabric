@@ -10,6 +10,7 @@ import {Background, BaseEdge, Controls, Handle, MarkerType, Position, ReactFlow,
 import type {Edge, EdgeProps, Node, NodeChange, NodeProps} from '@xyflow/react';
 import {CircleStop, Play} from 'lucide-react';
 import {topologyColors as C} from '@/components/ui/topology-colors';
+import {formatTimestamp} from '@/lib/utils';
 import {TopologyJSON} from './mas-json-editor';
 import {MASTopologyDetails} from './mas-topology-details';
 import {topologyNodes, topologySourceView, toolAssignmentSummary} from './mas-topology-model';
@@ -350,7 +351,7 @@ export function MASTopology({mas}: {mas: TopologyMAS}) {
           <div className={`${styles.sourceTimeSlot} text-muted-foreground`} aria-hidden={!updatedAt}>
             {updatedAt && (
               <time dateTime={updatedAt} title={updatedAt}>
-                Updated {updatedAt}
+                Updated {formatTimestamp(updatedAt)}
               </time>
             )}
           </div>

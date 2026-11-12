@@ -18,7 +18,7 @@ import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/
 import {Badge} from '@/components/ui/badge';
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {routes} from '@/constants/routes';
-import {parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
+import {parseError, formatTimestamp} from '@/lib/utils';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
@@ -400,12 +400,12 @@ export default function MASDetailsPage() {
                         <div className="grid grid-cols-2 gap-3">
                           {mas?.created_at && (
                             <MetaCard label="Created" mono>
-                              {new Date(mas.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                              {formatTimestamp(mas.created_at)}
                             </MetaCard>
                           )}
                           {mas?.updated_at && (
                             <MetaCard label="Last Modified" mono>
-                              {new Date(mas.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                              {formatTimestamp(mas.updated_at)}
                             </MetaCard>
                           )}
                         </div>

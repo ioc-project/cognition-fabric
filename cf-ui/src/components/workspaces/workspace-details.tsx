@@ -22,7 +22,7 @@ import {DropdownMenuItem} from '@/components/ui/dropdown-menu';
 import {ConfirmDialog} from '@/components/ui/confirm-dialog';
 import {useConfirmDialog} from '@/hooks/useConfirmDialog';
 import {workspaceApi} from '@/api/endpoints';
-import {parseError} from '@/lib/utils';
+import {parseError, formatTimestamp, sortByCreatedAtDesc} from '@/lib/utils';
 import {toast} from 'sonner';
 import {EditWorkspaceDialog} from './edit-workspace-dialog';
 
@@ -56,22 +56,7 @@ export function WorkspaceDetails() {
     });
   };
 
-  const latestMas = useMemo(() => {
-    return [...masList]
-      .sort((a, b) => {
-        if (!a.created_at && !b.created_at) {
-          return 0;
-        }
-        if (!a.created_at) {
-          return 1;
-        }
-        if (!b.created_at) {
-          return -1;
-        }
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      })
-      .slice(0, 4);
-  }, [masList]);
+  const latestMas = useMemo(() => sortByCreatedAtDesc(masList).slice(0, 4), [masList]);
 
   // Get the CFN associated with this workspace
   const workspaceCfn = useMemo(() => {
@@ -180,7 +165,7 @@ export function WorkspaceDetails() {
                           <h3 className="text-sm font-medium text-foreground mb-2">{mas.name}</h3>
                         </div>
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{mas.created_at ? new Date(mas.created_at).toLocaleDateString() : 'Unknown date'}</span>
+                          <span>{formatTimestamp(mas.created_at, {year: 'numeric', month: 'numeric', day: 'numeric'}, 'Unknown date')}</span>
                           {mas.agents && Object.keys(mas.agents).length > 0 && (
                             <span>
                               {Object.keys(mas.agents).length} agent
@@ -221,7 +206,7 @@ export function WorkspaceDetails() {
                               <h3 className="text-sm font-medium text-foreground mb-2">{cfn.name}</h3>
                             </div>
                             <div className="flex items-center justify-between text-xs text-muted-foreground">
-                              <span>{cfn.created_at ? new Date(cfn.created_at).toLocaleDateString() : 'Unknown date'}</span>
+                              <span>{formatTimestamp(cfn.created_at, {year: 'numeric', month: 'numeric', day: 'numeric'}, 'Unknown date')}</span>
                             </div>
                           </div>
                         </div>

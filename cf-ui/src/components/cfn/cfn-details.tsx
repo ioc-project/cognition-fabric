@@ -20,7 +20,7 @@ import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow} from '@/components/ui/table';
 import {routes, breadcrumbs} from '@/constants/routes';
-import {DATE_TIME_FORMAT_OPTIONS, parseError} from '@/lib/utils';
+import {formatTimestamp, parseError} from '@/lib/utils';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {toast} from 'sonner';
 import {StatusDot} from '@/components/ui/status-dot';
@@ -298,17 +298,17 @@ export default function CfnDetailsPage() {
                   <div className="grid grid-cols-3 gap-3">
                     {cfn?.created_at && (
                       <MetaCard label="Created" mono>
-                        {new Date(cfn.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                        {formatTimestamp(cfn.created_at)}
                       </MetaCard>
                     )}
                     {cfn?.last_seen && (
                       <MetaCard label="Last Seen" mono>
-                        {new Date(cfn.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                        {formatTimestamp(cfn.last_seen)}
                       </MetaCard>
                     )}
                     {cfn?.updated_at && (
                       <MetaCard label="Last Modified" mono>
-                        {new Date(cfn.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                        {formatTimestamp(cfn.updated_at)}
                       </MetaCard>
                     )}
                   </div>

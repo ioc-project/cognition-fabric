@@ -10,7 +10,7 @@ import Link from 'next/link';
 import {Button} from '@/components/ui/button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {SearchInput} from '@/components/ui/search-input';
-import {cn} from '@/lib/utils';
+import {cn, formatTimestamp} from '@/lib/utils';
 import {routes} from '@/constants/routes';
 import type {CognitionFabricNodeTopology} from '@/api/endpoints/cfn';
 
@@ -87,13 +87,17 @@ export function CfnTableList({nodes, onRowClick, onOpenEdit}: CfnTableListProps)
               const onlineEngines = engines.filter((e) => e.status === 'online').length;
               const offlineEngines = engines.length - onlineEngines;
               const lastSeen = node.last_seen
-                ? new Date(node.last_seen).toLocaleString('en-US', {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                  })
+                ? formatTimestamp(
+                    node.last_seen,
+                    {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: false
+                    },
+                    ''
+                  )
                 : null;
 
               return (

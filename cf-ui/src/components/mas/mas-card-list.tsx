@@ -8,7 +8,7 @@ import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {routes} from '@/constants/routes';
-import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
+import {formatTimestamp} from '@/lib/utils';
 import Link from 'next/link';
 import {MoreVertical, Trash2, Eye, Edit} from 'lucide-react';
 import type {MultiAgenticSystem} from '@/api/endpoints/mas';
@@ -87,15 +87,11 @@ export function MASCardList({masList, workspaceId, selectedId, onCardClick, onOp
           <div className="space-y-3 mb-8">
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium text-muted-foreground">Created</span>
-              <span className="text-sm text-foreground">
-                {mas.created_at ? new Date(mas.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'}
-              </span>
+              <span className="text-sm text-foreground">{mas.created_at ? formatTimestamp(mas.created_at) : 'Unknown'}</span>
             </div>
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium text-muted-foreground">Last Updated</span>
-              <span className="text-sm text-foreground">
-                {mas.updated_at ? new Date(mas.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'}
-              </span>
+              <span className="text-sm text-foreground">{mas.updated_at ? formatTimestamp(mas.updated_at) : 'Unknown'}</span>
             </div>
           </div>
 

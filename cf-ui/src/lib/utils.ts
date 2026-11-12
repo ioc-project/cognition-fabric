@@ -89,19 +89,86 @@ export const DATE_TIME_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
   timeZone: 'UTC'
 } as const;
 
+type ApiTimestamp = string | null | undefined;
+
+// API timestamps must identify an instant. Never infer a zone from the browser.
+export function parseTimestamp(value: ApiTimestamp): Date | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const parts = /^(\d{4})-(\d{2})-(\d{2})[Tt](\d{2}):(\d{2}):(\d{2})(?:\.\d+)?([Zz]|[+-](\d{2}):(\d{2}))$/.exec(value);
+  if (!parts) {
+    return null;
+  }
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, , offsetHourText, offsetMinuteText] = parts;
+  const [year, month, day, hour, minute, second] = [yearText, monthText, dayText, hourText, minuteText, secondText].map(Number);
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1];
+  if (
+    !daysInMonth ||
+    day < 1 ||
+    day > daysInMonth ||
+    hour > 23 ||
+    minute > 59 ||
+    second > 59 ||
+    Number(offsetHourText || 0) > 23 ||
+    Number(offsetMinuteText || 0) > 59
+  ) {
+    return null;
+  }
+  const timestamp = new Date(value);
+  return Number.isNaN(timestamp.getTime()) ? null : timestamp;
+}
+
+export function formatTimestamp(
+  value: ApiTimestamp,
+  options: Intl.DateTimeFormatOptions = DATE_TIME_FORMAT_OPTIONS,
+  placeholder = 'Unknown',
+  timeZone = 'UTC'
+): string {
+  const timestamp = parseTimestamp(value);
+  return timestamp ? new Intl.DateTimeFormat('en-US', {...options, timeZone, timeZoneName: 'short'}).format(timestamp) : placeholder;
+}
+
+export function formatRelativeTimestamp(value: ApiTimestamp, now = Date.now(), placeholder = 'Never'): string {
+  const timestamp = parseTimestamp(value);
+  if (!timestamp) {
+    return placeholder;
+  }
+  const minutes = Math.floor((now - timestamp.getTime()) / 60000);
+  if (minutes < 60) {
+    return `${minutes}m ago`;
+  }
+  if (minutes < 1440) {
+    return `${Math.floor(minutes / 60)}h ago`;
+  }
+  return `${Math.floor(minutes / 1440)}d ago`;
+}
+
+// Missing/invalid values retain their place after valid timestamps in descending lists.
+export function compareTimestamps(a: ApiTimestamp, b: ApiTimestamp): number {
+  const left = parseTimestamp(a)?.getTime();
+  const right = parseTimestamp(b)?.getTime();
+  if (left === undefined) {
+    return right === undefined ? 0 : -1;
+  }
+  return right === undefined ? 1 : left - right;
+}
+
+export function formatAuditTimestamp(value: ApiTimestamp, shortYear = false): string {
+  const timestamp = parseTimestamp(value);
+  if (!timestamp) {
+    return 'N/A';
+  }
+  const pad = (part: number, length = 2) => String(part).padStart(length, '0');
+  const year = pad(timestamp.getUTCFullYear(), 4);
+  const date = `${pad(timestamp.getUTCMonth() + 1)}/${pad(timestamp.getUTCDate())}/${shortYear ? year.slice(-2) : year}`;
+  const time = `${pad(timestamp.getUTCHours())}:${pad(timestamp.getUTCMinutes())}:${pad(timestamp.getUTCSeconds())}`;
+  return `${date} ${time}`;
+}
+
 export function sortByCreatedAtDesc<T extends {created_at?: string | null}>(items: T[]): T[] {
-  return [...items].sort((a, b) => {
-    if (!a.created_at && !b.created_at) {
-      return 0;
-    }
-    if (!a.created_at) {
-      return 1;
-    }
-    if (!b.created_at) {
-      return -1;
-    }
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
+  return [...items].sort((a, b) => compareTimestamps(b.created_at, a.created_at));
 }
 
 export function formatJson(value: string): string {

@@ -812,7 +812,10 @@ export interface components {
             provenance?: {
                 [key: string]: unknown;
             } | null;
-            /** Collected At */
+            /**
+             * Collected At
+             * Format: date-time
+             */
             collected_at: string;
             /** Content Hash */
             content_hash?: string | null;
@@ -1641,13 +1644,19 @@ export interface components {
             status: string;
             /** Enabled */
             enabled: boolean;
-            /** Last Seen */
+            /**
+             * Last Seen
+             * Format: date-time
+             */
             last_seen: string;
             /** Ip Address */
             ip_address?: string | null;
             /** Port */
             port?: number | null;
-            /** Created At */
+            /**
+             * Created At
+             * Format: date-time
+             */
             created_at: string;
             /** Cognition Engines */
             cognition_engines?: components["schemas"]["CognitionEngineListItem"][];
@@ -1716,7 +1725,10 @@ export interface components {
             provenance?: {
                 [key: string]: unknown;
             } | null;
-            /** Collected At */
+            /**
+             * Collected At
+             * Format: date-time
+             */
             collected_at: string;
             /** Content Hash */
             content_hash?: string | null;
@@ -1887,10 +1899,7 @@ export interface components {
             source_snapshot?: {
                 [key: string]: unknown;
             } | null;
-            /** Provenance */
-            provenance?: {
-                [key: string]: unknown;
-            } | null;
+            provenance?: components["schemas"]["SnapshotProvenanceRead"] | null;
             /** Protocol Version */
             protocol_version?: string | null;
             /**
@@ -2259,10 +2268,7 @@ export interface components {
             } | null;
             /** Protocol Version */
             protocol_version?: string | null;
-            /** Provenance */
-            provenance?: {
-                [key: string]: unknown;
-            } | null;
+            provenance?: components["schemas"]["SnapshotProvenanceRead"] | null;
             /** Tool Id */
             tool_id: string;
             provider?: components["schemas"]["ToolProvider"] | null;
@@ -2274,6 +2280,16 @@ export interface components {
             source_snapshot?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /**
+         * SnapshotProvenanceRead
+         * @description Only CF's receipt stamp is typed; caller claims remain opaque.
+         */
+        SnapshotProvenanceRead: {
+            /** Collected At */
+            collected_at?: string | null;
+        } & {
+            [key: string]: unknown;
         };
         /** SourceAvailability */
         SourceAvailability: {

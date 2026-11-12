@@ -36,7 +36,7 @@ import {CollapsibleJsonField} from '@/components/mas/collapsible-json-field';
 import {SyntaxJson} from '@/components/ui/syntax-json';
 import {getApiConfig} from '@/api/config';
 import type {AuditOutcomeFilter, AuditEvent, AuditInformation} from '@/api/endpoints/audit';
-import {cn} from '@/lib/utils';
+import {cn, compareTimestamps, formatAuditTimestamp} from '@/lib/utils';
 import {
   auditEventMatchesMas,
   auditOutcomeLabels,
@@ -74,18 +74,6 @@ interface AuditTraceGroup {
   key: string;
   traceId: string | null;
   events: ParsedAuditEvent[];
-}
-
-function formatAuditTimestamp(value: string, shortYear = false): string {
-  const timestamp = new Date(value);
-  if (Number.isNaN(timestamp.getTime())) {
-    return 'N/A';
-  }
-  const pad = (part: number, length = 2) => String(part).padStart(length, '0');
-  const year = pad(timestamp.getUTCFullYear(), 4);
-  const date = `${pad(timestamp.getUTCMonth() + 1)}/${pad(timestamp.getUTCDate())}/${shortYear ? year.slice(-2) : year}`;
-  const time = `${pad(timestamp.getUTCHours())}:${pad(timestamp.getUTCMinutes())}:${pad(timestamp.getUTCSeconds())}`;
-  return `${date} ${time}`;
 }
 
 function AuditOutcome({outcome, label, count, title}: {outcome: AuditOutcomeType; label?: string; count?: number; title?: string}) {
@@ -780,7 +768,7 @@ export function MASAuditLog({masId, workspaceId: _workspaceId, masName, agents}:
 
     const combined = auditEvents.filter((event) => auditEventMatchesMas(event, masId, agentIds, selectedAgent));
 
-    const sorted = [...combined].sort((a, b) => new Date(b.created_on).getTime() - new Date(a.created_on).getTime());
+    const sorted = [...combined].sort((a, b) => compareTimestamps(b.created_on, a.created_on));
 
     const parsedSorted: ParsedAuditEvent[] = sorted.map((event) => ({
       ...event,

@@ -8,7 +8,7 @@ import {Badge} from '@/components/ui/badge';
 import {Button} from '@/components/ui/button';
 import {Card} from '@/components/ui/card';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
-import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
+import {formatTimestamp} from '@/lib/utils';
 import {MoreVertical, Eye, Edit, Unplug, Trash2} from 'lucide-react';
 import type {CognitionEngineListItem} from '@/api/endpoints/cognition-engine';
 
@@ -117,9 +117,7 @@ export function CognitiveAgentCardList({
           <div className="mb-8">
             <div className="flex flex-col gap-1">
               <span className="text-xs font-medium text-muted-foreground">Created</span>
-              <span className="text-sm text-foreground">
-                {r.created_at ? new Date(r.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'}
-              </span>
+              <span className="text-sm text-foreground">{r.created_at ? formatTimestamp(r.created_at) : 'Unknown'}</span>
             </div>
           </div>
         </Card>

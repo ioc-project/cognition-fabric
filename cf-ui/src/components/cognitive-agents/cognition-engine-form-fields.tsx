@@ -13,7 +13,7 @@ import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/
 import {CopyableInput} from '@/components/ui/copyable-input';
 import {ReadOnlyField} from '@/components/ui/read-only-field';
 import {CollapsibleJsonField} from '@/components/mas/collapsible-json-field';
-import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
+import {formatTimestamp} from '@/lib/utils';
 import type {CognitionEngineDetail} from '@/api/endpoints/cognition-engine';
 import {dtCompactLabel} from '@/lib/detail-typography';
 
@@ -294,7 +294,7 @@ export function CognitionEngineFormFields({ce, form, isEditMode, onSubmit}: Cogn
           {ce?.last_seen && (
             <div className={`space-y-2 transition-opacity${isEditMode ? ' opacity-50' : ''}`}>
               <Label className={dtCompactLabel}>Last Seen</Label>
-              <ReadOnlyField value={new Date(ce.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)} />
+              <ReadOnlyField value={formatTimestamp(ce.last_seen)} />
             </div>
           )}
         </div>
@@ -312,12 +312,12 @@ export function CognitionEngineFormFields({ce, form, isEditMode, onSubmit}: Cogn
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-6">
           <div className="space-y-2">
             <Label className={dtCompactLabel}>Created At</Label>
-            <Input value={ce?.created_at ? new Date(ce.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'} disabled readOnly />
+            <Input value={ce?.created_at ? formatTimestamp(ce.created_at) : 'Unknown'} disabled readOnly />
           </div>
           {ce?.updated_at && (
             <div className="space-y-2">
               <Label className={dtCompactLabel}>Updated At</Label>
-              <Input value={new Date(ce.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)} disabled readOnly />
+              <Input value={formatTimestamp(ce.updated_at)} disabled readOnly />
             </div>
           )}
         </div>

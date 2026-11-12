@@ -14,7 +14,7 @@ import {Form, FormControl, FormField, FormItem, FormMessage} from '@/components/
 import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {DetailsPageActions} from '@/components/ui/details-page-actions';
 import {routes} from '@/constants/routes';
-import {parseError, DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
+import {parseError, formatTimestamp} from '@/lib/utils';
 import {useCognitionEngine} from '@/hooks/useCognitionEngines';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
 import {useCEToggleFlow} from '@/hooks/useCEToggleFlow';
@@ -388,17 +388,17 @@ export default function CognitiveAgentDetailsPage() {
                   <div className="grid grid-cols-3 gap-3">
                     {ce?.created_at && (
                       <MetaCard label="Created" mono>
-                        {new Date(ce.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                        {formatTimestamp(ce.created_at)}
                       </MetaCard>
                     )}
                     {ce?.updated_at && (
                       <MetaCard label="Last Modified" mono>
-                        {new Date(ce.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                        {formatTimestamp(ce.updated_at)}
                       </MetaCard>
                     )}
                     {ce?.last_seen && (
                       <MetaCard label="Last Seen" mono>
-                        {new Date(ce.last_seen).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS)}
+                        {formatTimestamp(ce.last_seen)}
                       </MetaCard>
                     )}
                   </div>

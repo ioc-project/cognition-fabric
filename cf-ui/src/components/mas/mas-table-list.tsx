@@ -8,7 +8,7 @@ import {Button} from '@/components/ui/button';
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from '@/components/ui/dropdown-menu';
 import {ResourceTable} from '@/components/ui/resource-table';
 import {TruncatedText} from '@/components/ui/truncated-text';
-import {DATE_TIME_FORMAT_OPTIONS} from '@/lib/utils';
+import {formatTimestamp} from '@/lib/utils';
 import {MoreVertical, Trash2, Eye, Edit, ArrowUpDown, ArrowUp, ArrowDown} from 'lucide-react';
 import type {MultiAgenticSystem} from '@/api/endpoints/mas';
 
@@ -72,8 +72,8 @@ export function MASTableList({
           content: mas.description ? <TruncatedText text={mas.description} maxLength={50} className="text-muted-foreground" /> : '-',
           className: 'text-muted-foreground'
         },
-        {content: mas.created_at ? new Date(mas.created_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'},
-        {content: mas.updated_at ? new Date(mas.updated_at).toLocaleString('en-US', DATE_TIME_FORMAT_OPTIONS) : 'Unknown'},
+        {content: mas.created_at ? formatTimestamp(mas.created_at) : 'Unknown'},
+        {content: mas.updated_at ? formatTimestamp(mas.updated_at) : 'Unknown'},
         {
           content: (
             <DropdownMenu>

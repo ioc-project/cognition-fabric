@@ -14,7 +14,7 @@ import ConditionalSWRRenderer from '@/components/ui/conditional-swr-renderer';
 import {ListShell} from '@/components/ui/list-shell';
 import {BasePage} from '@/components/ui/base-page';
 import {routes} from '@/constants/routes';
-import {parseError} from '@/lib/utils';
+import {parseError, compareTimestamps} from '@/lib/utils';
 import {toast} from 'sonner';
 import {useCognitionEngines} from '@/hooks/useCognitionEngines';
 import {useDefaultWorkspace} from '@/hooks/useDefaultWorkspace';
@@ -62,9 +62,7 @@ export function CognitiveAgentList() {
         if (key === 'name' || key === 'version' || key === 'ce_type' || key === 'status') {
           cmp = ((a[key as keyof CognitionEngineListItem] as string) ?? '').localeCompare((b[key as keyof CognitionEngineListItem] as string) ?? '');
         } else {
-          const av = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const bv = b.created_at ? new Date(b.created_at).getTime() : 0;
-          cmp = av - bv;
+          cmp = compareTimestamps(a.created_at, b.created_at);
         }
         return dir === 'asc' ? cmp : -cmp;
       });
