@@ -57,6 +57,12 @@ CF provides:
 | [`deploy/README.md`](deploy/README.md) | Local CF source workflow and cross-repository checks |
 | [`docs/specs/`](docs/specs/) | Behavioral specifications |
 
+CF-owned timestamps are stored as UTC instants and returned as RFC 3339 strings
+with `Z`; the UI applies display formatting. CE-supplied timestamp strings and
+opaque evidence retain their existing meaning and capture rules. See the
+[timestamp contract](docs/specs/utc-timestamps.md) and the
+[local UTC cutover](deploy/README.md#utc-timestamp-cutover).
+
 ## Development
 
 ### Prerequisites

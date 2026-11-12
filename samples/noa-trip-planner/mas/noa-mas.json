@@ -128,7 +128,7 @@
       },
       "metadata": {
         "source": "NOA Python tool declaration",
-        "transport": "http"
+        "transport": "in_process"
       }
     },
     {
@@ -145,7 +145,7 @@
       },
       "metadata": {
         "source": "NOA Python tool declaration",
-        "transport": "http"
+        "transport": "in_process"
       }
     },
     {
@@ -162,7 +162,7 @@
       },
       "metadata": {
         "source": "NOA Python tool declaration",
-        "transport": "http"
+        "transport": "in_process"
       }
     },
     {
@@ -185,7 +185,7 @@
       },
       "metadata": {
         "source": "NOA Python tool declaration",
-        "transport": "http"
+        "transport": "in_process"
       }
     }
   ]

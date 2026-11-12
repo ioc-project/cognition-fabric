@@ -11,7 +11,7 @@ import unittest
 
 LOCAL = Path(__file__).resolve().parents[1]
 SOURCE = LOCAL / "noa-trip-planner/src/noa_trip_planner/multi_agent_system.py"
-DECLARATION = LOCAL / "mas-onboarding/noa-mas.json"
+DECLARATION = LOCAL / "mas-onboarding/noa-mas-local.json"
 
 
 def string(node):

@@ -225,7 +225,7 @@ and Observed remain independent, and an unavailable source never substitutes the
 other graph or its JSON. Stage 4 uses only the stored Management response;
 optional observed-source requests remain stage 5.
 
-The standalone [NOA declaration](../../deploy/local/mas-onboarding/noa-mas.json)
+The standalone [NOA declaration](../../deploy/local/mas-onboarding/noa-mas-local.json)
 contains runtime agents, actual tools/assignments and a partial source projection.
 NOA's Python/HTTP tools are not MCP, so the declaration contains no invented MCP
 provider. No application code, instrumentation or runtime configuration changes

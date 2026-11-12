@@ -6,9 +6,28 @@ from sibling source checkouts. The
 Compose project supplies Postgres, OXP, and their supporting services as
 published containers. You do not need OXP source code. Run the commands below
 from `ioc-scale-cfn-svc` unless a command changes directory explicitly. For an
-all-container deployment, use the deployment repository's README. To keep this
-workflow's integrated source NOA and Envoy while testing published CF services,
-use the [`:image` tasks](#run-cf-services-from-published-images) below.
+all-container deployment, use the deployment repository's README and the
+[NOA onboarding steps](#onboard-noa-with-the-standalone-image-deployment) below.
+To keep this workflow's integrated source NOA and Envoy while testing published
+CF services, use the [`:image` tasks](#run-cf-services-from-published-images) below.
+
+## Onboard NOA with the standalone image deployment
+
+Start the published-image stack using the
+[Deployment quick start](https://github.com/cisco-eti/ioc-scale-cf-deployment#quick-start).
+[noa-mas.json](noa-mas.json), copied from OXP sample apps, declares the NOA Trip
+Planner's agents, in-process Python tools, and partial topology.
+
+1. Open the deployed CF web UI (default <http://localhost:9001>) and sign in as
+   `admin` using `ADMIN_USER_PASSWORD` from the **Deployment** `.env`.
+2. Open **Create MAS** (`/mas/create`), which uses the **Default Workspace**.
+   Switch to **JSON** and paste the contents of [noa-mas.json](noa-mas.json).
+3. Switch to **Form** to select the registered, online Demo CE, then save.
+   Copy the generated MAS ID from its details page. Use that ID when configuring
+   the [Demo CE policy](https://github.com/cisco-eti/ioc-scale-cf-deployment#demo-ce).
+
+This registers the declaration. Start the published NOA app with Deployment's
+`full-mas` profile; onboarding does not add CF enforcement to its in-process tools.
 
 ## Clone the workspace
 
@@ -179,6 +198,59 @@ virtual environment. CFN probes the health endpoint; the CE does not send heartb
 
 For the policy-driven Go CE instead of the Python template CE, use
 `task run:demo-ce` in step 4 after configuring its policy as described below.
+
+### UTC timestamp cutover
+
+CF-owned storage and API timestamps use UTC; see the
+[timestamp contract](../docs/specs/utc-timestamps.md). For an existing local
+Management database, stop its Management writers and CFNs before applying the
+compatible Management migration. PostgreSQL can remain running. Record the old
+database session timezone and back up any development data you want to restore
+exactly.
+
+Set `LEGACY_TIMESTAMP_TZ` in the CFN `.env` only if the old timezone-less values
+need an interpretation other than the default `UTC`, for example
+`LEGACY_TIMESTAMP_TZ=Europe/Budapest`. This describes the old database session
+timezone, which may differ from the laptop timezone. Both source Management tasks
+and the CFN-owned `:image` Compose configuration pass this migration-only setting;
+new writes and APIs stay UTC regardless of its value.
+
+1. Start compatible Management with `task run:cfn-mgmt` or
+   `task run:cfn-mgmt:image`; its normal entrypoint migrates only the 19 columns.
+2. Separately run the checked one-off config regeneration documented in the
+   [Management migration guide](../../ioc-scale-cf-mgmt-svc/docs/DATABASE_MIGRATIONS.md).
+   Use the same selected database, including `LOCAL_CF_MGMT_DB` (default
+   `cfn_mgmt_local`). Do not rely on a bare Python command falling back to an
+   unrelated default database. Require its result checks to pass for all
+   non-deleted CFNs, disabled ones included: the existing generator swallows
+   exceptions, so a normal return alone does not prove success. This is a one-off
+   maintenance command, not a startup hook or another generator.
+3. Restart CFN with the updated code/image. Registration rebuilds and installs its
+   canonical baseline without lifecycle notifications. The one-off regeneration
+   can run before or after restart: a later version-only refresh has the same MAS
+   timestamps and sends no notification. An old running naive baseline still
+   needs restart.
+4. Reload the UI and verify UTC API timestamps, then make a genuine MAS change to
+   check that normal lifecycle notifications continue.
+
+Keep the migration-lineage preflight enabled when selecting images. For the
+standalone Deployment stack, supply `LEGACY_TIMESTAMP_TZ` explicitly to the
+Management container using a local Compose override if needed; adding it only to
+an unforwarded `.env` is insufficient. For example, add this service environment
+mapping to the override passed to your normal Compose invocation:
+
+```yaml
+services:
+  ioc-scale-cf-mgmt-svc:
+    environment:
+      LEGACY_TIMESTAMP_TZ: Europe/Budapest
+```
+
+No Deployment checkout edit is required. After upgrade the variable has no
+runtime effect. Downgrade validates the same zone and reverses only the 19 columns;
+it leaves cached UTC strings unchanged and loses timezone information. Use the
+backup for exact restoration rather than expecting a lossless named-zone
+downgrade/re-upgrade.
 
 ### Run CF services from published images
 

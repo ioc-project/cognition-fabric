@@ -45,7 +45,7 @@ func (m *MockDatabase) CreateAuditEvent(ctx context.Context, a *audit.Audit) err
 	defer m.mu.Unlock()
 	a.ID = uuid.New()
 	audit.PopulateCFNOutcome(a)
-	now := time.Now()
+	now := time.Now().UTC()
 	a.CreatedOn = now
 	a.LastModifiedOn = now
 	m.events[a.ID] = a
