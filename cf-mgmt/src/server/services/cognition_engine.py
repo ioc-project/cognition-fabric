@@ -7,9 +7,11 @@
 import copy
 import logging
 from dataclasses import dataclass
-from server.services.mas_metadata import lock_mas, utc_now
+from server.services.mas_metadata import lock_mas
 
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
+
+from server.utils.timestamps import format_utc, utc_now
 from typing import List, Optional
 
 from fastapi import HTTPException, status
@@ -394,9 +396,9 @@ class CognitionEngineService:
                     )
 
                 cfn_id = engine.cfn_id
-                engine.deleted_at = datetime.now(timezone.utc)
+                engine.deleted_at = utc_now()
                 engine.updated_by = user_id
-                engine.updated_at = datetime.now(timezone.utc)
+                engine.updated_at = utc_now()
 
                 session.commit()
 
@@ -495,7 +497,7 @@ class CognitionEngineService:
                     cfn_visible_change = True
 
                 engine.updated_by = user_id
-                engine.updated_at = datetime.now(timezone.utc)
+                engine.updated_at = utc_now()
 
                 cfn_id = engine.cfn_id
                 session.commit()
@@ -643,7 +645,7 @@ class CognitionEngineService:
                         **ce_connection(e),
                         "enabled": e.enabled,
                         "status": e.status,
-                        "last_seen": e.last_seen.isoformat() if e.last_seen else None,
+                        "last_seen": format_utc(e.last_seen) if e.last_seen else None,
                         "mas_config": e.mas_config or {},
                         "mas_auto_associate": e.mas_auto_associate,
                     }
@@ -720,7 +722,7 @@ class CognitionEngineService:
                 if not engine or registration_token is None:
                     return None
 
-                now = now or datetime.now(timezone.utc)
+                now = now or utc_now()
                 previous_status = engine.status
                 cfn_id = engine.cfn_id
 

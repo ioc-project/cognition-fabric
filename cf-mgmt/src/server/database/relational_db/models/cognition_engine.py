@@ -4,7 +4,7 @@
 
 """Cognition Engine database model"""
 
-from datetime import datetime, timezone
+from server.utils.timestamps import utc_now
 
 from sqlalchemy import TIMESTAMP, Boolean, Column, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import JSONB
@@ -56,7 +56,7 @@ class CognitionEngine(Base):
     mas_config = Column(JSONB, nullable=True, default=dict)
 
     # Audit fields
-    created_at = Column(TIMESTAMP(timezone=True), nullable=False, default=lambda: datetime.now(timezone.utc))
+    created_at = Column(TIMESTAMP(timezone=True), nullable=False, default=utc_now)
     updated_at = Column(TIMESTAMP(timezone=True), nullable=True, onupdate=func.now())
     deleted_at = Column(TIMESTAMP(timezone=True), nullable=True)
     created_by = Column(String(36), nullable=True)

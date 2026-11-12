@@ -6,7 +6,9 @@
 
 import logging
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
+
+from server.utils.timestamps import format_utc, utc_now
 from typing import List, Optional
 
 from fastapi import HTTPException, status
@@ -213,7 +215,7 @@ class CognitionFabricNodeService:
                 cfn_id = generate_uuid()
 
                 # Create new CFN record with offline status
-                now = datetime.now(timezone.utc)
+                now = utc_now()
 
                 # Generate config (no workspaces initially)
                 initial_version = 1
@@ -264,7 +266,7 @@ class CognitionFabricNodeService:
 
                     # Associate workspace with default CFN
                     default_workspace.cfn_id = cfn_id
-                    default_workspace.updated_at = datetime.now(timezone.utc)
+                    default_workspace.updated_at = utc_now()
 
                     # Regenerate CFN config with the workspace
                     workspace_ids_list = [default_workspace.id]
@@ -368,7 +370,7 @@ class CognitionFabricNodeService:
                 )
 
         # Re-activate the CFN with offline status
-        now = datetime.now(timezone.utc)
+        now = utc_now()
         cfn.name = cfn_data.name
         cfn.cfn_config = cfn_data.cfn_config
         cfn.status = CognitionFabricNodeStatus.OFFLINE.value
@@ -425,7 +427,7 @@ class CognitionFabricNodeService:
         """
         # Update CFN config and refresh (keep existing workspace associations and status)
         # Name is already validated (cfn was found by this name)
-        now = datetime.now(timezone.utc)
+        now = utc_now()
         cfn.cfn_config = cfn_data.cfn_config
         # Update ip_address and port if provided
         if cfn_data.ip_address is not None:
@@ -534,7 +536,7 @@ class CognitionFabricNodeService:
                 workspace_ids = self._get_workspace_ids(session, cfn_id)
 
                 # Update metadata
-                now = datetime.now(timezone.utc)
+                now = utc_now()
                 cfn.updated_at = now
                 cfn.updated_by = user_id
 
@@ -645,7 +647,7 @@ class CognitionFabricNodeService:
 
                 # Disable the CFN (soft disable, no deleted_at)
                 cfn.enabled = False
-                cfn.updated_at = datetime.now(timezone.utc)
+                cfn.updated_at = utc_now()
                 cfn.updated_by = user_id
 
                 session.commit()
@@ -736,8 +738,8 @@ class CognitionFabricNodeService:
                     )
 
                 # Mark as deleted (hard delete marker - ID can be reused)
-                cfn.deleted_at = datetime.now(timezone.utc)
-                cfn.updated_at = datetime.now(timezone.utc)
+                cfn.deleted_at = utc_now()
+                cfn.updated_at = utc_now()
                 cfn.updated_by = user_id
 
                 # Note: Workspaces referencing this CFN will have their cfn_id set to this value
@@ -807,7 +809,7 @@ class CognitionFabricNodeService:
                 cfn.enabled = True
                 cfn.deleted_at = None
                 cfn.status = CognitionFabricNodeStatus.OFFLINE.value
-                cfn.updated_at = datetime.now(timezone.utc)
+                cfn.updated_at = utc_now()
                 cfn.updated_by = user_id
 
                 session.commit()
@@ -899,7 +901,7 @@ class CognitionFabricNodeService:
                     )
 
                 # Update last_seen
-                cfn.last_seen = datetime.now(timezone.utc)
+                cfn.last_seen = utc_now()
 
                 # If currently offline, mark as online
                 if cfn.status == CognitionFabricNodeStatus.OFFLINE.value:
@@ -908,16 +910,9 @@ class CognitionFabricNodeService:
                 session.commit()
                 session.refresh(cfn)
 
-                # Ensure timestamps have timezone info for consistent ISO format serialization
-                last_seen = (
-                    cfn.last_seen.replace(tzinfo=timezone.utc)
-                    if cfn.last_seen and cfn.last_seen.tzinfo is None
-                    else cfn.last_seen
-                )
-
                 return CognitionFabricNodeHeartbeatResponse(
                     status=CognitionFabricNodeStatus(cfn.status),
-                    last_seen=last_seen,
+                    last_seen=cfn.last_seen,
                     config_version=cfn.config_version or 0,
                 )
 
@@ -1170,7 +1165,7 @@ class CognitionFabricNodeService:
                         system_data = system.model_dump(mode="json", exclude_none=False)
 
                         # Add last_updated_on for change detection
-                        system_data["last_updated_on"] = system.updated_at.isoformat() if system.updated_at else None
+                        system_data["last_updated_on"] = format_utc(system.updated_at) if system.updated_at else None
 
                         # Embed minimal CE info per MAS: id, ce_type, enabled, status, and effective
                         # mas_config (junction override if set, otherwise CE factory default)
@@ -1221,7 +1216,7 @@ class CognitionFabricNodeService:
             session = db.get_session()
 
             try:
-                threshold_time = datetime.now(timezone.utc) - timedelta(minutes=threshold_minutes)
+                threshold_time = utc_now() - timedelta(minutes=threshold_minutes)
 
                 # Find nodes that are online but haven't sent heartbeat
                 stale_nodes = (

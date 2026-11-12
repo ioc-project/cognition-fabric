@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from datetime import datetime
+from server.utils.timestamps import UtcDateTime
 from enum import Enum
 from typing import Any, Dict, List, Optional
 
@@ -103,10 +103,10 @@ class CognitionFabricNodeResponse(BaseModel):
                     "workspaces": [],
                 },
                 "status": "offline",
-                "last_seen": "2026-02-19T19:46:49.185773",
+                "last_seen": "2026-02-19T19:46:49.185773Z",
                 "enabled": True,
-                "created_at": "2026-02-19T19:46:49.102012",
-                "updated_at": "2026-02-19T19:46:49.102012",
+                "created_at": "2026-02-19T19:46:49.102012Z",
+                "updated_at": "2026-02-19T19:46:49.102012Z",
                 "created_by": "00000000-0000-0000-0000-000000000000",
                 "updated_by": None,
             }
@@ -118,12 +118,12 @@ class CognitionFabricNodeResponse(BaseModel):
     name: str = Field(..., description="Cognition Fabric Node name")
     config: Optional[Dict[str, Any]] = Field(None, description="Aggregated configuration including cfn_config")
     status: CognitionFabricNodeStatus = Field(..., description="Current node status")
-    last_seen: datetime = Field(..., description="Last heartbeat timestamp")
+    last_seen: UtcDateTime = Field(..., description="Last heartbeat timestamp")
     enabled: bool = Field(..., description="Whether node is enabled")
     ip_address: Optional[str] = Field(None, description="IP address of the CFN node")
     port: Optional[int] = Field(None, description="Port number of the CFN node")
-    created_at: datetime = Field(..., description="Creation timestamp")
-    updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
+    created_at: UtcDateTime = Field(..., description="Creation timestamp")
+    updated_at: Optional[UtcDateTime] = Field(None, description="Last update timestamp")
     created_by: Optional[str] = Field(None, description="Creator user ID")
     updated_by: Optional[str] = Field(None, description="Last updater user ID")
 
@@ -149,11 +149,11 @@ class CognitionFabricNodeListItem(BaseModel):
     workspace_ids: List[str] = Field(default_factory=list, description="Associated workspace identifiers")
     name: str = Field(..., description="Cognition Fabric Node name")
     status: CognitionFabricNodeStatus = Field(..., description="Current node status")
-    last_seen: datetime = Field(..., description="Last heartbeat timestamp")
+    last_seen: UtcDateTime = Field(..., description="Last heartbeat timestamp")
     enabled: bool = Field(..., description="Whether node is enabled")
     ip_address: Optional[str] = Field(None, description="Node IP address")
     port: Optional[int] = Field(None, description="Node port")
-    created_at: datetime = Field(..., description="Creation timestamp")
+    created_at: UtcDateTime = Field(..., description="Creation timestamp")
 
 
 class CognitionFabricNodeList(BaseModel):
@@ -196,5 +196,5 @@ class CognitionFabricNodeHeartbeatResponse(BaseModel):
     )
 
     status: CognitionFabricNodeStatus = Field(..., description="Current node status")
-    last_seen: datetime = Field(..., description="Last heartbeat timestamp")
+    last_seen: UtcDateTime = Field(..., description="Last heartbeat timestamp")
     config_version: int = Field(..., description="Monotonic config version for change detection")

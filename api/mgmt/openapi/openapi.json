@@ -2094,6 +2094,7 @@
           },
           "collected_at": {
             "type": "string",
+            "format": "date-time",
             "title": "Collected At"
           },
           "content_hash": {
@@ -3698,14 +3699,14 @@
           "config": {
             "workspaces": []
           },
-          "created_at": "2026-02-19T19:46:49.102012",
+          "created_at": "2026-02-19T19:46:49.102012Z",
           "created_by": "00000000-0000-0000-0000-000000000000",
           "enabled": true,
           "id": "cfn-persistent-id-123",
-          "last_seen": "2026-02-19T19:46:49.185773",
+          "last_seen": "2026-02-19T19:46:49.185773Z",
           "name": "cfn-node-prod-1",
           "status": "offline",
-          "updated_at": "2026-02-19T19:46:49.102012",
+          "updated_at": "2026-02-19T19:46:49.102012Z",
           "workspace_ids": []
         }
       },
@@ -3745,6 +3746,7 @@
           },
           "last_seen": {
             "type": "string",
+            "format": "date-time",
             "title": "Last Seen"
           },
           "ip_address": {
@@ -3771,6 +3773,7 @@
           },
           "created_at": {
             "type": "string",
+            "format": "date-time",
             "title": "Created At"
           },
           "cognition_engines": {
@@ -3938,6 +3941,7 @@
           },
           "collected_at": {
             "type": "string",
+            "format": "date-time",
             "title": "Collected At"
           },
           "content_hash": {
@@ -4316,14 +4320,12 @@
           "provenance": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/SnapshotProvenanceRead"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Provenance"
+            ]
           },
           "protocol_version": {
             "anyOf": [
@@ -5304,14 +5306,12 @@
           "provenance": {
             "anyOf": [
               {
-                "additionalProperties": true,
-                "type": "object"
+                "$ref": "#/components/schemas/SnapshotProvenanceRead"
               },
               {
                 "type": "null"
               }
-            ],
-            "title": "Provenance"
+            ]
           },
           "tool_id": {
             "type": "string",
@@ -5359,6 +5359,26 @@
           "tool_id"
         ],
         "title": "RuntimeToolRead"
+      },
+      "SnapshotProvenanceRead": {
+        "properties": {
+          "collected_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collected At"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "SnapshotProvenanceRead",
+        "description": "Only CF's receipt stamp is typed; caller claims remain opaque."
       },
       "SourceAvailability": {
         "properties": {
@@ -5509,7 +5529,8 @@
           "updated_at": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "format": "date-time"
               },
               {
                 "type": "null"

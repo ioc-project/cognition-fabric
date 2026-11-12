@@ -4,7 +4,7 @@
 
 """Cognition Engine schemas"""
 
-from datetime import datetime
+from server.utils.timestamps import UtcDateTime
 from enum import Enum
 from typing import List, Literal, Optional
 
@@ -162,9 +162,9 @@ class CognitionEngineListItem(CEConnection):
     enabled: bool
     mas_auto_associate: bool
     status: str
-    last_seen: Optional[datetime]
+    last_seen: Optional[UtcDateTime]
     mas_config: Optional[dict]
-    created_at: datetime
+    created_at: UtcDateTime
 
 
 class CognitionEngineList(BaseModel):
@@ -185,10 +185,10 @@ class CognitionEngineDetail(CEConnection):
     enabled: bool
     mas_auto_associate: bool
     status: str
-    last_seen: Optional[datetime]
+    last_seen: Optional[UtcDateTime]
     mas_config: Optional[dict]
-    created_at: datetime
-    updated_at: Optional[datetime]
+    created_at: UtcDateTime
+    updated_at: Optional[UtcDateTime]
 
 
 class CognitionEnginePatchRequest(BaseModel):
@@ -235,7 +235,7 @@ class CognitionEngineAssociateResponse(BaseModel):
 
     ce_id: str
     mas_id: str
-    created_at: datetime
+    created_at: UtcDateTime
 
 
 class CognitionEngineConflictError(BaseModel):

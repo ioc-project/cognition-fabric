@@ -5,7 +5,7 @@
 """Workspace service - Business logic for workspace operations"""
 
 import logging
-from datetime import datetime, timezone
+from server.utils.timestamps import utc_now
 
 from fastapi import HTTPException, status
 from sqlalchemy import and_, exists
@@ -380,7 +380,7 @@ class WorkspaceService:
 
                     workspace.cfn_id = workspace_data.cfn_id  # type: ignore[assignment]
 
-                workspace.updated_at = datetime.now(timezone.utc)  # type: ignore[assignment]
+                workspace.updated_at = utc_now()  # type: ignore[assignment]
 
                 session.commit()
                 session.refresh(workspace)
@@ -535,7 +535,7 @@ class WorkspaceService:
                         ),
                     )
 
-                workspace.deleted_at = datetime.now(timezone.utc)  # type: ignore[assignment]
+                workspace.deleted_at = utc_now()  # type: ignore[assignment]
                 message = "Workspace deleted successfully"
 
                 # Track CFN ID before deletion

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pydantic import BaseModel, Field, ConfigDict, model_validator
-from datetime import datetime
+from server.utils.timestamps import UtcDateTime
 
 from server.schemas.cognition_engine import CEConnection
 from server.schemas.mas_metadata import (
@@ -12,6 +12,7 @@ from server.schemas.mas_metadata import (
     MetadataRead,
     MetadataWrite,
     ToolSnapshot,
+    SnapshotProvenanceRead,
 )
 from typing import Optional, Dict, Any, List
 
@@ -39,7 +40,7 @@ class MCPToolDetail(BaseModel):
 
     definition: Optional[Dict[str, Any]] = Field(None, exclude_if=lambda v: v is None)
     source_snapshot: Optional[Dict[str, Any]] = Field(None, exclude_if=lambda v: v is None)
-    provenance: Optional[Dict[str, Any]] = Field(None, exclude_if=lambda v: v is None)
+    provenance: Optional[SnapshotProvenanceRead] = Field(None, exclude_if=lambda v: v is None)
     protocol_version: Optional[str] = Field(None, exclude_if=lambda v: v is None)
 
     id: str = Field(..., description="Unique identifier for the tool")
@@ -235,8 +236,8 @@ class MultiAgenticSystem(MetadataRead):
     mcp_servers: Optional[List[MCPServerDetail]] = Field(None, description="List of MCP servers in the system")
     config: Optional[Dict[str, Any]] = None
     cognition_engines: Optional[List[MasCognitionEngineItem]] = None
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    created_at: UtcDateTime
+    updated_at: Optional[UtcDateTime] = None
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
 

@@ -23,8 +23,8 @@ class MCPTool(Base):
     provenance = Column(JSONB, nullable=True)
     protocol_version = Column(Text, nullable=True)
 
-    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
-    updated_at = Column(DateTime, nullable=True, server_default=text("CURRENT_TIMESTAMP"))
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+    updated_at = Column(DateTime(timezone=True), nullable=True, server_default=text("CURRENT_TIMESTAMP"))
 
     __table_args__ = (
         Index("idx_mcp_tool_server_id", "mcp_server_id"),

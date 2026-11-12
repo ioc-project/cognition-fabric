@@ -40,10 +40,10 @@ def get_cognition_fabric_topology(auth_user: dict = Depends(get_auth_user)):
             workspace_ids=node.workspace_ids,
             status=node.status,
             enabled=node.enabled,
-            last_seen=str(node.last_seen),
+            last_seen=node.last_seen,
             ip_address=getattr(node, "ip_address", None),
             port=getattr(node, "port", None),
-            created_at=str(node.created_at),
+            created_at=node.created_at,
             cognition_engines=ce_by_cfn.get(node.id, []),
         )
         for node in cfn_list.nodes

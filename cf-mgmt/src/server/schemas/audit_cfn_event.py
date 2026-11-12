@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Optional, Dict, Any, List
-from datetime import datetime
+from server.utils.timestamps import UtcDateTime
 from uuid import UUID
 from pydantic import BaseModel, Field, ConfigDict
 
@@ -53,9 +53,9 @@ class AuditCfnEventResponse(BaseModel):
     audit_information: Optional[Dict[str, Any]] = Field(default=None, description="JSONB audit event details")
     audit_extra_information: Optional[str] = Field(default=None, description="Additional information as text")
     created_by: UUID = Field(..., description="UUID of the user who created the event")
-    created_on: datetime = Field(..., description="Timestamp when the event was created")
+    created_on: UtcDateTime = Field(..., description="Timestamp when the event was created")
     last_modified_by: UUID = Field(..., description="UUID of the user who last modified the event")
-    last_modified_on: datetime = Field(..., description="Timestamp when the event was last modified")
+    last_modified_on: UtcDateTime = Field(..., description="Timestamp when the event was last modified")
 
 
 class AuditCfnPageInfo(BaseModel):

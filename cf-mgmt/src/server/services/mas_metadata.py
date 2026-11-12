@@ -8,7 +8,7 @@ import hashlib
 import json
 import logging
 from collections import defaultdict, deque
-from datetime import datetime, timezone
+from server.utils.timestamps import format_utc, utc_now
 
 from fastapi import HTTPException
 
@@ -20,12 +20,8 @@ from server.database.relational_db.models.multi_agentic_system import MultiAgent
 logger = logging.getLogger(__name__)
 
 
-def utc_now():
-    return datetime.now(timezone.utc)
-
-
 def stamp():
-    return utc_now().isoformat().replace("+00:00", "Z")
+    return format_utc(utc_now())
 
 
 def digest(content):
