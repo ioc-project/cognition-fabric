@@ -42,6 +42,7 @@ type mockMgmt struct {
 	server        *httptest.Server
 	cfnID         string
 	configVersion int64
+	masUpdatedOn  string
 	ids           fixtureIDs
 	engines       map[string]*mockEngine
 	byNameVer     map[string]string
@@ -55,6 +56,7 @@ func startMockMgmt(ids fixtureIDs) *mockMgmt {
 	m := &mockMgmt{
 		cfnID:         uuid.NewString(),
 		configVersion: 1,
+		masUpdatedOn:  time.Now().UTC().Format(time.RFC3339Nano),
 		ids:           ids,
 		engines:       map[string]*mockEngine{},
 		byNameVer:     map[string]string{},
@@ -72,6 +74,7 @@ func (m *mockMgmt) Reset(ids fixtureIDs) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.ids = ids
+	m.masUpdatedOn = time.Now().UTC().Format(time.RFC3339Nano)
 	m.engines = map[string]*mockEngine{}
 	m.byNameVer = map[string]string{}
 	m.masGetStatus = http.StatusOK
@@ -84,6 +87,13 @@ func (m *mockMgmt) Reset(ids fixtureIDs) {
 func (m *mockMgmt) BumpConfigVersion() {
 	m.mu.Lock()
 	defer m.mu.Unlock()
+	m.configVersion++
+}
+
+func (m *mockMgmt) SetMASUpdatedOn(stamp string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.masUpdatedOn = stamp
 	m.configVersion++
 }
 
@@ -227,7 +237,7 @@ func (m *mockMgmt) snapshot() map[string]any {
 			"multi_agentic_systems": []map[string]any{{
 				"id":                m.ids.masID,
 				"name":              fixtureMASName,
-				"last_updated_on":   time.Now().UTC().Format(time.RFC3339),
+				"last_updated_on":   m.masUpdatedOn,
 				"cognition_engines": masEngines,
 			}},
 		}},

@@ -8,6 +8,39 @@ import (
 	"testing"
 )
 
+func TestDetectMASChanges_TimestampRepresentations(t *testing.T) {
+	cases := []struct {
+		name, before, after string
+		changed             bool
+	}{
+		{"same instant with offset", "2026-11-11T12:00:00Z", "2026-11-11T14:00:00+02:00", false},
+		{"fractional spelling", "2026-11-11T12:00:00.123456Z", "2026-11-11T12:00:00.123456000+00:00", false},
+		{"whole second spelling", "2026-11-11T12:00:00Z", "2026-11-11T12:00:00.000000Z", false},
+		{"different instant", "2026-11-11T12:00:00.123456Z", "2026-11-11T12:00:00.123457Z", true},
+		{"same empty", "", "", false},
+		{"same legacy naive", "2026-11-11T12:00:00", "2026-11-11T12:00:00", false},
+		{"legacy zone must not be guessed", "2026-11-11T12:00:00", "2026-11-11T12:00:00Z", true},
+		{"changed malformed", "unknown", "invalid", true},
+	}
+	config := func(stamp string) *CfnConfigPayload {
+		return &CfnConfigPayload{Workspaces: []WorkspaceCfg{{MASList: []MASCfg{{ID: "mas-1", LastUpdatedOn: stamp}}}}}
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			changes := detectMASChanges(config(tc.before), config(tc.after))
+			if (len(changes) != 0) != tc.changed {
+				t.Fatalf("changes = %+v, changed = %v", changes, tc.changed)
+			}
+			if tc.changed && (len(changes) != 1 || changes[0].EventType != "mas.updated") {
+				t.Fatalf("unexpected changes: %+v", changes)
+			}
+		})
+	}
+	if changes := detectMASChanges(nil, config("2026-11-11T12:00:00Z")); len(changes) != 0 {
+		t.Fatalf("initial registration must establish a baseline without notifications: %+v", changes)
+	}
+}
+
 func TestDetectMASChanges_NoChanges(t *testing.T) {
 	oldConfig := &CfnConfigPayload{
 		Workspaces: []WorkspaceCfg{
