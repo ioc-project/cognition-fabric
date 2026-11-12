@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """per-purpose url/endpoint/protocol on cognition_engine
 
 Revision ID: 0005

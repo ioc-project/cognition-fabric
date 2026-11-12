@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Add optional MAS onboarding snapshots without backfilling existing records."""
 
 from alembic import op
