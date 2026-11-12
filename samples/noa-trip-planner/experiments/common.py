@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Helpers shared by the in-process and HTTP experiment runners (no app imports)."""
 
 import json

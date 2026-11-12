@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Render CFN-owned Envoy configuration without changing the deployment checkout."""
 
 import argparse

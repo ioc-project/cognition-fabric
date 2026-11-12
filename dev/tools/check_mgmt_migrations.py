@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Read-only Alembic compatibility check, run with the selected management Python.
 
 Run from management's working directory, before its migration entrypoint. Image

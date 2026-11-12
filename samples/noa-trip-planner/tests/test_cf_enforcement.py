@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Exercise CF additions using the real locked SDK, tools and wire messages."""
 
 from concurrent.futures import ThreadPoolExecutor

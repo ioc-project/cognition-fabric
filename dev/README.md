@@ -223,8 +223,7 @@ git tag v1.2.3-rc.1 <commit>
 git push origin v1.2.3-rc.1
 ```
 
-Do not use `git push --tags` (it pushes every local tag). Who may push tags is
-still the SRE process in `.github/CONTRIBUTING.md`.
+Do not use `git push --tags` (it pushes every local tag).
 
 The resulting image uses the Git tag as its Docker tag, for example
 `ghcr.io/cisco-eti/ioc-scale-cfn-svc:v1.2.3-rc.1` and
