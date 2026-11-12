@@ -12,6 +12,7 @@ title: Extend Template CE
 | `template-ce/src/generated` | Generated protobuf and gRPC code |
 | `template-ce/src/service.py` | `Evaluate`, `GetInfo` and server lifecycle |
 | `template-ce/src/registration.py` | Startup registration and conflict recovery |
+| `template-ce/src/mas_sync.py` | Associated-MAS pull and notification apply |
 | `template-ce/src/cognition_store.py` | Findings read/write client |
 | `template-ce/src/health.py` | Independent health listener |
 | `template-ce/src/notification_server.py` | MAS lifecycle notifications |

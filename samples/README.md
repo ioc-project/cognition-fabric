@@ -53,7 +53,7 @@ docker compose down
 ### Template CE Cognition Engine
 
 **Location:** `template-ce/`\
-**Port:** 50051 (gRPC), 8080 (HTTP health)  
+**Port:** 50051 (gRPC), 8080 (notifications), 8081 (HTTP health; 8082 on the CF source stack)  
 **Protocol:** gRPC (`ioc.ce.v1.CognitionEngine`)
 
 Template CE Cognition Engine Service implementing the `ioc.ce.v1.CognitionEngine` gRPC contract.
@@ -64,6 +64,7 @@ It is maintained as an implementation template and is not included in the Compos
 - `Evaluate` RPC - Authorization decision for in-scope MAS actions
 - `GetInfo` RPC - Returns CE capabilities and enabled checks
 - CFN registration on startup (idempotent)
+- Pull of associated MAS after register/PATCH, then notification-driven updates
 - `GET /healthz` endpoint that CFN probes to track "online" status
 - Cognition Store integration for MAS-level context
 
@@ -72,7 +73,7 @@ See [template-ce/README.md](template-ce/README.md) for details.
 ### Demo CE
 
 **Location:** `demo-ce/`\
-**Port:** 18001 (gRPC, `ioc.ce.v1.CognitionEngine`)
+**Port:** 18001 (gRPC, `ioc.ce.v1.CognitionEngine`), 18000 (HTTP health, notifications, events)
 
 Demonstration CE that loads identity and content rules for one or several MAS from `config.json`.
 Go service derived from the NOA demo's Fake CE. See [demo-ce/README.md](demo-ce/README.md).
@@ -84,7 +85,7 @@ Go service derived from the NOA demo's Fake CE. See [demo-ce/README.md](demo-ce/
 ```bash
 cd template-ce
 uv sync --extra test
-HEALTH_PORT=8081 uv run python -m src
+uv run python -m src
 ```
 
 ### Run Tests
@@ -106,7 +107,7 @@ the required status job.
 | CE | Jobs | Notes |
 |---|---|---|
 | `demo-ce` (Go) | `demo-ce-unit-tests`, `demo-ce-docker-build-push` | Needs a short-lived token for the private `cisco-eti/ioc-scale-cfn-svc` module, issued through Vault by `.github/actions/cfn-token` (vars `KEEPER_URL`, `VAULT_NAMESPACE`, `VAULT_SECRET_PATH`; secrets `VAULT_APPROLE_ROLE_ID`, `VAULT_APPROLE_SECRET_ID`); `ci.yaml` publishes from `main` only |
-| `template-ce` (Python) | `template-ce-unit-tests`, `template-ce-docker-build-push` | No private CFN module; `ci.yaml` publishes from `main` only |
+| `template-ce` (Python) | `template-ce-unit-tests`, `template-ce-docker-build-push`, `template-ce-image-smoke` | No private CFN module; `ci.yaml` publishes from `main` only; smoke loads an amd64 image and probes `/healthz` plus `GetInfo` |
 
 CI (`ci.yaml`) automatically runs on:
 - **Pull Requests** - Unit tests + Docker build validation (no push)

@@ -7,8 +7,10 @@ The JSON config supplies the demo rules.
 CFN calls the CE over gRPC (`:18001`, `ce.v1`, the contract comes from the `ioc-scale-cfn-svc` Go module).
 The CE registers itself with CFN over REST (`POST /api/cognition-engine`, conflict recovery by `PATCH`),
 attempting registration immediately and retrying once per second until it succeeds. It declares a
-`health_url` (its `GET /healthz`) and CFN probes it every couple of seconds to decide whether the CE is online,
-so the CE sends no heartbeats.
+`health_url` (its `GET /healthz`) and a `notification_url` on the same HTTP listener (`POST /notification`).
+After register or PATCH it pulls currently associated MAS IDs from CFN, then stays current from
+lifecycle notifications. CFN probes health every couple of seconds to decide whether the CE is online,
+so the CE sends no heartbeats. Associated MAS state is for lifecycle logging only; it is not a policy source.
 
 See the [documentation site source](../docs/README.md) for the full Demo CE guide.
 

@@ -20,12 +20,12 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_HEALTH_PORT = 8080
+DEFAULT_HEALTH_PORT = 8081
 HEALTH_PATH = "/healthz"
 
 
 def get_health_port() -> int:
-    """Return the HTTP health port from HEALTH_PORT (default 8080).
+    """Return the HTTP health port from HEALTH_PORT (default 8081).
 
     Raises ValueError for a value that is not an integer in 1..65535. Binding some other port
     would silently break the health_url this CE declares to CFN, so an invalid value fails startup.

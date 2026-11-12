@@ -85,7 +85,7 @@ wait for explicit definitions; an absent list is not the same as a known empty l
 | `CFN_URL` | `http://ioc-scale-cfn-svc:9002` | Registration API |
 | `OXP_API_URL` | Empty | OXP context and Cognition Store API |
 | `GRPC_LISTEN_ADDRESS` | `:18001` | gRPC listener |
-| `HTTP_LISTEN_ADDRESS` | `:18000` | Health, info and Observe events listener |
+| `HTTP_LISTEN_ADDRESS` | `:18000` | Health, info, Observe events and MAS notification listener |
 | `ADVERTISED_GRPC_ADDRESS` | `demo-ce:18001` | gRPC address reachable from CFN |
 | `ADVERTISED_HEALTH_URL` | Derived from advertised host and HTTP port | CFN health probe URL |
 | `CE_EVENT_SERVICE` | Empty | Optional `service_name` filter for the inbox |

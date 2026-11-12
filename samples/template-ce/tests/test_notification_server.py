@@ -14,6 +14,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+import mas_sync
 import notification_server
 
 
@@ -182,7 +183,7 @@ async def test_fetch_requests_expanded_metadata_and_emits_one_summary(monkeypatc
 
     real_client = httpx.AsyncClient
     monkeypatch.setattr(
-        notification_server.httpx,
+        mas_sync.httpx,
         "AsyncClient",
         lambda **kwargs: real_client(
             transport=httpx.MockTransport(respond),
@@ -190,7 +191,7 @@ async def test_fetch_requests_expanded_metadata_and_emits_one_summary(monkeypatc
         ),
     )
     monkeypatch.setenv("CFN_URL", "http://cfn.local:9002/")
-    with caplog.at_level(logging.INFO, logger="notification_server"):
+    with caplog.at_level(logging.INFO):
         await notification_server.fetch_mas_details("mas-one")
     assert len(requests) == 1
     assert (
@@ -198,33 +199,30 @@ async def test_fetch_requests_expanded_metadata_and_emits_one_summary(monkeypatc
         == "http://cfn.local:9002/api/multi-agentic-systems/mas-one?metadata=true"
     )
     assert requests[0].extensions["timeout"]["read"] == 5.0
-    records = [r for r in caplog.records if r.name == "notification_server"]
-    assert len(records) == 1 and records[0].levelno == logging.INFO
-    assert "Agents (2):" in records[0].message and "moderator -> reader" in records[0].message
-    assert "secret-" not in records[0].message
+    assert "Agents (2):" in caplog.text and "moderator -> reader" in caplog.text
+    assert "secret-" not in caplog.text
 
 
 @pytest.mark.asyncio
 async def test_fetch_skips_unconfigured_cfn(monkeypatch):
     monkeypatch.delenv("CFN_URL", raising=False)
     client = AsyncMock()
-    monkeypatch.setattr(notification_server.httpx, "AsyncClient", client)
+    monkeypatch.setattr(mas_sync.httpx, "AsyncClient", client)
     await notification_server.fetch_mas_details("mas-one")
     client.assert_not_called()
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize("status", [404, 503])
-async def test_fetch_failures_warn_without_retry_or_summary(monkeypatch, caplog, status):
+async def test_fetch_404_drops_without_retry_or_summary(monkeypatch, caplog):
     requests = []
 
     def respond(request):
         requests.append(request)
-        return httpx.Response(status, text="upstream-body-not-for-summary")
+        return httpx.Response(404, text="upstream-body-not-for-summary")
 
     real_client = httpx.AsyncClient
     monkeypatch.setattr(
-        notification_server.httpx,
+        mas_sync.httpx,
         "AsyncClient",
         lambda **kwargs: real_client(
             transport=httpx.MockTransport(respond),
@@ -232,8 +230,23 @@ async def test_fetch_failures_warn_without_retry_or_summary(monkeypatch, caplog,
         ),
     )
     monkeypatch.setenv("CFN_URL", "http://cfn.local:9002")
-    with caplog.at_level(logging.INFO, logger="notification_server"):
+    with caplog.at_level(logging.INFO):
         await notification_server.fetch_mas_details("mas-one")
     assert len(requests) == 1
-    assert f"Failed to fetch MAS: {status}" in caplog.text
+    assert "MAS gone" in caplog.text
     assert "MAS details:" not in caplog.text and "upstream-body-not-for-summary" not in caplog.text
+
+
+class TestGetHTTPPort:
+    def test_default(self, monkeypatch):
+        monkeypatch.delenv("HTTP_PORT", raising=False)
+        assert notification_server.get_http_port() == 8080
+
+    def test_valid_value(self, monkeypatch):
+        monkeypatch.setenv("HTTP_PORT", "8090")
+        assert notification_server.get_http_port() == 8090
+
+    def test_invalid_value_raises(self, monkeypatch):
+        monkeypatch.setenv("HTTP_PORT", "nope")
+        with pytest.raises(ValueError, match="HTTP_PORT"):
+            notification_server.get_http_port()

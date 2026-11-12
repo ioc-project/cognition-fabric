@@ -21,10 +21,12 @@ policy judgment. Restart the template CE after changing the setting.
 ```bash
 cd template-ce
 uv sync --extra test
-HEALTH_PORT=8081 uv run python -m src
+uv run python -m src
 ```
 
-Server runs on `localhost:50051` (gRPC)
+Server runs on `localhost:50051` (gRPC), notifications on `8080`, health on `8081`.
+The published image uses those same ports. `task run:template-ce` on the CF source
+stack sets `HEALTH_PORT=8082` because OXP already occupies 8081.
 
 ### With integrations
 
@@ -87,35 +89,38 @@ Returns CE metadata.
 | `GRPC_PORT` | gRPC server port | `50051` |
 | `CFN_URL` | CFN service URL for registration | (disabled) |
 | `COGNITION_ENGINE_HOST` | Advertised host for this CE | `localhost` |
-| `HEALTH_PORT` | HTTP port serving `GET /healthz` (CFN probes it). An invalid value fails startup | `8080` |
+| `HEALTH_PORT` | HTTP port serving `GET /healthz` (CFN probes it). An invalid value fails startup | `8081` |
+| `HTTP_PORT` | HTTP port for `POST /notification` (advertised and bound) | `8080` |
 | `COGNITION_STORE_URL` | Cognition Store API URL | (disabled) |
 
 ### Listener ports
 
-Use `HEALTH_PORT=8081` for local development. The notification server binds port `8080`,
-which also happens to be the default health port. Separate them to start successfully.
-The notification listener is currently fixed at `8080`; changing `HTTP_PORT` affects the
-advertised registration URL, not the listener. Concurrent instances need separate network namespaces.
+Defaults are gRPC `50051`, notifications `8080`, health `8081`. `HTTP_PORT` binds the
+notification listener and is advertised as `notification_url`. On the CF source stack,
+`task run:template-ce` keeps health on `8082`. Concurrent instances need separate
+network namespaces or distinct port triples.
 
 See the [documentation site source](../docs/README.md) for setup and extension guidance.
 
 ## MAS lifecycle summaries
 
-When CFN sends a MAS lifecycle notification to `POST /notification`, the template
-fetches `/api/multi-agentic-systems/{mas_id}?metadata=true`. It emits one readable
-INFO summary containing the MAS ID, name, workspace and description; each agent's
-runtime ID, name and description; topology source availability, nodes, directed
-edges and agent tool assignments; and runtime tool IDs, names, short descriptions
-and optional MCP bindings. Tool descriptions use their first nonempty line.
+After a successful register or PATCH the template pulls
+`GET /api/cognition-engine/{ceId}/multi-agentic-systems` until CFN returns 200
+(retry 404/503/network; an empty `mas_ids` list is terminal). It then GETs each
+MAS. Notifications are acked immediately (`2xx`); `mas.created` / `mas.updated`
+fetch asynchronously, `mas.deleted` drops local state without a GET. A GET-by-id
+404 means that MAS is gone — it is not retried like discovery 404.
+
+When a MAS is fetched, the template emits one readable INFO summary containing
+the MAS ID, name, workspace and description; each agent's runtime ID, name and
+description; topology source availability, nodes, directed edges and agent tool
+assignments; and runtime tool IDs, names, short descriptions and optional MCP
+bindings. Tool descriptions use their first nonempty line.
 
 Missing or null optional fields are shown as `not supplied`. Explicit empty lists
 are shown as `none`; an explicitly empty graph remains a declared graph. Start/end
 markers and either topology source are supported when present. Configuration,
 schemas, raw document snapshots and provenance are excluded from this summary.
-
-The fetch runs once per notification with the existing five-second timeout. A
-failed fetch logs a warning. Restart the template after code changes, then edit a
-MAS to trigger a notification and inspect its summary.
 
 ## Architecture
 
@@ -135,6 +140,7 @@ template-ce/
 │   ├── generated/           # Generated gRPC stubs
 │   ├── service.py           # gRPC server
 │   ├── registration.py      # CFN registration
+│   ├── mas_sync.py          # Associated-MAS pull and notification apply
 │   └── cognition_store.py   # Cognition Store client
 ├── tests/
 ├── pyproject.toml
