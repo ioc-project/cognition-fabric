@@ -1,4 +1,9 @@
 # syntax=docker/dockerfile:1.7
+
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Build context: this directory. Needs a GitHub token for the private ioc-scale-cfn-svc module:
 #   docker build --secret id=github_token,env=GITHUB_TOKEN -t demo-ce:dev .
 FROM golang:1.25-alpine AS build

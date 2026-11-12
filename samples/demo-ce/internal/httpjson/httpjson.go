@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // Package httpjson is the small JSON-over-HTTP exchange the CFN and OXP clients share.
 package httpjson
 

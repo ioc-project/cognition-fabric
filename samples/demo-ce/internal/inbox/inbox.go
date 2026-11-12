@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // Package inbox keeps the Observe events pushed to the CE, found again by the exact trace and span of a submit.
 package inbox
 

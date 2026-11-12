@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Minimal HTTP health endpoint for Template CE.
 
 CFN probes `GET /healthz` on the `health_url` the CE declares at registration.

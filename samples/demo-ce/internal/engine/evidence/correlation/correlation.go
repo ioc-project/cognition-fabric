@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // Package correlation joins Observe pre-call inputs with causal OXP context.
 package correlation
 

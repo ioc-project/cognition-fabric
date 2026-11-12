@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // Package engine is the CognitionEngine served to CFN: the identity config of a MAS first, then the content
 // of the request, joining exact pre-call events with causal span history in OXP.
 package engine

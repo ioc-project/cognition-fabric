@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Tests for CE registration module."""
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch

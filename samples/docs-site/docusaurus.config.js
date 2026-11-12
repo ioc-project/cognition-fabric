@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 const repository = 'https://github.com/cisco-eti/ioc-scale-cf-demo-ce';
 const pagesUrl = new URL(process.env.PAGES_URL || 'https://refactored-carnival-2m9k3yw.pages.github.io/');
 

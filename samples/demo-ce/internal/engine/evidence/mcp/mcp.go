@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // Package mcp judges mcp_tool_input evidence: the application publishes an MCP tools/call (tool name and
 // arguments) as an Observe tool.started event before it sends it, and the CE finds it in the inbox by the
 // exact trace and span of the submit, like llm_input. Only tools/call carries content: the proxy marks it
