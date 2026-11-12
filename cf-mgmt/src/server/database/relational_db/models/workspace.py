@@ -29,16 +29,19 @@ class Workspace(Base):
     config = Column(JSONB, nullable=True)
 
     # Timestamp fields - auto-generated in database
-    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
     updated_at = Column(
-        DateTime, nullable=True, server_default=text("CURRENT_TIMESTAMP"), onupdate=text("CURRENT_TIMESTAMP")
+        DateTime(timezone=True),
+        nullable=True,
+        server_default=text("CURRENT_TIMESTAMP"),
+        onupdate=text("CURRENT_TIMESTAMP"),
     )
 
     created_by = Column(String(255), nullable=True)
     updated_by = Column(String(255), nullable=True)
 
     # Soft delete field
-    deleted_at = Column(DateTime, nullable=True)
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
 
     # Indexes
     __table_args__ = (

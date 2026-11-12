@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pydantic import BaseModel, Field, ConfigDict
-from datetime import datetime
+from server.utils.timestamps import UtcDateTime
 from typing import List, Optional, Dict, Any
 
 
@@ -73,8 +73,8 @@ class WorkspaceDetail(BaseModel):
     id: str
     name: str
     cfn_id: Optional[str] = Field(None, description="CFN identifier that manages this workspace")
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    created_at: UtcDateTime
+    updated_at: Optional[UtcDateTime] = None
     created_by: Optional[str] = None
     created_by_username: Optional[str] = Field(None, description="Username of the workspace creator")
     updated_by: Optional[str] = None

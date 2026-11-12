@@ -6,6 +6,8 @@
 
 from typing import List
 
+from server.utils.timestamps import UtcDateTime
+
 from pydantic import BaseModel, Field
 
 from server.schemas.cognition_engine import CognitionEngineListItem
@@ -19,10 +21,10 @@ class CognitionFabricNodeTopology(BaseModel):
     workspace_ids: List[str] = Field(default_factory=list)
     status: str
     enabled: bool
-    last_seen: str
+    last_seen: UtcDateTime
     ip_address: str | None = None
     port: int | None = None
-    created_at: str
+    created_at: UtcDateTime
     cognition_engines: List[CognitionEngineListItem] = Field(default_factory=list)
 
 

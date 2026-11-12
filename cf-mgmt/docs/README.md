@@ -17,7 +17,8 @@ docs/
   semantics, atomic mutations and the `mas_metadata_0009` migration.
 
 - [Database migrations](DATABASE_MIGRATIONS.md), including the `agent_identity_0008` agent
-  storage-key cutover, rollback boundary and manual verification steps.
+  storage-key cutover and `utc_timestamps_0010` UTC cutover, checked one-off
+  config regeneration, rollback boundaries and manual verification steps.
 
 ### OpenAPI Specification (`openapi/`)
 

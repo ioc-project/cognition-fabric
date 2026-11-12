@@ -4,7 +4,7 @@
 
 """MAS ↔ CE junction table model"""
 
-from datetime import datetime, timezone
+from server.utils.timestamps import utc_now
 
 from sqlalchemy import TIMESTAMP, Column, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import JSONB
@@ -33,7 +33,7 @@ class MasCognitionEngine(Base):
     created_at = Column(
         TIMESTAMP(timezone=True),
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=utc_now,
     )
     created_by = Column(String(255), nullable=True)
 

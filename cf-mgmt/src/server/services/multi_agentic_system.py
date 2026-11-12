@@ -4,7 +4,7 @@
 
 """Multi-Agentic System (MAS) service - Business logic for MAS operations"""
 
-from datetime import datetime, timezone
+from server.utils.timestamps import utc_now
 
 from fastapi import HTTPException, status
 from sqlalchemy.exc import IntegrityError
@@ -171,7 +171,7 @@ class MultiAgenticSystemService:
 
     def _sync_agents(self, session, mas_id: str, incoming_agents) -> None:
         """Sync agents by runtime ID, deleting removed rows before reusing their names."""
-        now = datetime.now(timezone.utc)
+        now = utc_now()
 
         # Assign server-generated UUIDs where agent_id is not provided
         for agent_cfg in incoming_agents:
@@ -302,7 +302,7 @@ class MultiAgenticSystemService:
 
     def _sync_mcp_servers(self, session, mas_id: str, incoming_servers) -> None:
         """Diff-based MCP server sync: insert new, update existing, delete removed. Preserves server IDs and config."""
-        now = datetime.now(timezone.utc)
+        now = utc_now()
 
         self._validate_mcp_server_names(incoming_servers)
 
@@ -358,7 +358,7 @@ class MultiAgenticSystemService:
 
     def _sync_mcp_tools(self, session, server_id: str, incoming_tools) -> None:
         """Diff-based MCP tool sync within a server: insert new, update existing, delete removed."""
-        now = datetime.now(timezone.utc)
+        now = utc_now()
 
         existing_tools = session.query(MCPToolModel).filter(MCPToolModel.mcp_server_id == server_id).all()
         existing_map = {tool.name: tool for tool in existing_tools}
@@ -743,7 +743,7 @@ class MultiAgenticSystemService:
                 validate_final_state(session, mas)
                 self._sync_ce_membership(session, mas, mas_data, user_id)
 
-                mas.updated_at = datetime.now(timezone.utc)
+                mas.updated_at = utc_now()
 
                 session.commit()
                 session.refresh(mas)
@@ -933,7 +933,7 @@ class MultiAgenticSystemService:
             try:
                 mas = lock_mas(session, mas_id, workspace_id)
 
-                now = datetime.now(timezone.utc)
+                now = utc_now()
 
                 if _purge:
                     # CASCADE on FK handles agent row deletion

@@ -19,8 +19,8 @@ class MCPServer(Base):
     transport = Column(String(50), nullable=True)  # e.g., "stdio", "sse"
     description = Column(Text, nullable=True)
     config = Column(JSONB, nullable=True)
-    created_at = Column(DateTime, nullable=False, server_default=text("CURRENT_TIMESTAMP"))
-    updated_at = Column(DateTime, nullable=True, server_default=text("CURRENT_TIMESTAMP"))
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=text("CURRENT_TIMESTAMP"))
+    updated_at = Column(DateTime(timezone=True), nullable=True, server_default=text("CURRENT_TIMESTAMP"))
 
     __table_args__ = (
         Index("idx_mcp_server_mas_id", "mas_id"),
