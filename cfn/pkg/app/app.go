@@ -444,6 +444,7 @@ func (a *App) initializeRoutes() http.Handler {
 
 	// CE registration endpoints
 	rtr.Post("/api/cognition-engine", a.registerCognitionEngineHandler)
+	rtr.Get("/api/cognition-engine/{ceId}/multi-agentic-systems", a.listAssociatedMASHandler)
 	rtr.Patch("/api/cognition-engine/{ceId}", a.patchCognitionEngineHandler)
 	rtr.Delete("/api/cognition-engine/{ceId}", a.deleteCognitionEngineHandler)
 

@@ -1,0 +1,7 @@
+# CE MAS association sync
+
+**Scope:** CE-facing CFN routes used by sample and production CEs to learn which MAS they are associated with.
+**Guidance:** After register or PATCH, CEs pull `GET /api/cognition-engine/{ceId}/multi-agentic-systems` until **200**. Empty `mas_ids` is a real none — stop. Discovery **404** means the CE is not in the snapshot yet (retry). `GET /api/multi-agentic-systems/{masId}` **404** means that MAS is gone (drop, do not retry). Do not replay MAS lifecycle notifications on register, and do not treat the integration mock's auto-associate-onto-the-fixture-MAS behavior as management's. The published Template CE image listens for health on **8081**; the CF source stack already uses **8082** because OXP occupies 8081 — do not change deploy ports to match the image.
+**Why:** CFN only pings on a config diff, and the first snapshot emits nothing. GET-by-id requires a `mas_id` the restarted CE does not have. Management does not attach `mas_auto_associate` CEs to MAS that already existed at register time.
+**Evidence:** Issue 69 plan; `detectMASChanges` (nil `oldConfig`); `associatedMASIds` / `listAssociatedMASHandler`; mgmt `test_register_mas_auto_associate_does_not_attach_to_existing_mas`; `deploy/local/cf-local.sh` `HEALTH_PORT=8082`.
+**Revisit when:** CFN starts replaying MAS events, management backfills auto-associate onto existing MAS, or the local OXP/health port map changes.

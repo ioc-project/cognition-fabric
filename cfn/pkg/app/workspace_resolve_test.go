@@ -85,6 +85,68 @@ func TestLookupMASWorkspace_EmptyWorkspacesUnavailable(t *testing.T) {
 	}
 }
 
+func TestAssociatedMASIds_SnapshotUnavailable(t *testing.T) {
+	restore := restoreRoutingGlobals()
+	defer restore()
+	applyParsedConfig(nil)
+
+	_, err := associatedMASIds("550e8400-e29b-41d4-a716-446655440000")
+	if err != errSnapshotUnavailable {
+		t.Fatalf("nil snapshot = %v, want errSnapshotUnavailable", err)
+	}
+}
+
+func TestAssociatedMASIds_CENotInSnapshot(t *testing.T) {
+	restore := restoreRoutingGlobals()
+	defer restore()
+	applyParsedConfig(&CfnConfigPayload{
+		ConfigVersion:    1,
+		CognitionEngines: []EngineCfg{{ID: "other-ce"}},
+		Workspaces:       []WorkspaceCfg{{WorkspaceID: "ws-1"}},
+	})
+
+	_, err := associatedMASIds("550e8400-e29b-41d4-a716-446655440000")
+	if err != errCENotInSnapshot {
+		t.Fatalf("unknown CE = %v, want errCENotInSnapshot", err)
+	}
+}
+
+func TestAssociatedMASIds_EmptyAndSorted(t *testing.T) {
+	restore := restoreRoutingGlobals()
+	defer restore()
+	ceID := "550e8400-e29b-41d4-a716-446655440000"
+	applyParsedConfig(&CfnConfigPayload{
+		ConfigVersion:    1,
+		CognitionEngines: []EngineCfg{{ID: ceID}},
+		Workspaces: []WorkspaceCfg{
+			{WorkspaceID: "ws-b", MASList: []MASCfg{{ID: "mas-z", CognitionEngines: []MASEngineCfg{{ID: ceID}}}}},
+			{WorkspaceID: "ws-a", MASList: []MASCfg{{ID: "mas-a", CognitionEngines: []MASEngineCfg{{ID: ceID}}}}},
+		},
+	})
+
+	got, err := associatedMASIds(ceID)
+	if err != nil {
+		t.Fatalf("associated: %v", err)
+	}
+	if len(got) != 2 || got[0] != "mas-a" || got[1] != "mas-z" {
+		t.Fatalf("associated=%v want [mas-a mas-z]", got)
+	}
+
+	lonely := "550e8400-e29b-41d4-a716-446655440001"
+	applyParsedConfig(&CfnConfigPayload{
+		ConfigVersion:    2,
+		CognitionEngines: []EngineCfg{{ID: lonely}},
+		Workspaces:       []WorkspaceCfg{{WorkspaceID: "ws-1", MASList: []MASCfg{{ID: "mas-a"}}}},
+	})
+	got, err = associatedMASIds(lonely)
+	if err != nil {
+		t.Fatalf("empty associated: %v", err)
+	}
+	if got == nil || len(got) != 0 {
+		t.Fatalf("empty associated=%v want empty slice", got)
+	}
+}
+
 func TestLookupMASWorkspace_NilSnapshot(t *testing.T) {
 	restore := restoreRoutingGlobals()
 	defer restore()

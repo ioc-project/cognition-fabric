@@ -1,5 +1,15 @@
 basePath: /
 definitions:
+  cognitionengine.AssociatedMASResponse:
+    description: Snapshot-backed list of MAS IDs associated with the given CE. Empty
+      when the CE is present and has no associations.
+    properties:
+      mas_ids:
+        description: Sorted MAS IDs associated with this CE on this CFN
+        items:
+          type: string
+        type: array
+    type: object
   cognitionengine.ErrorResponse:
     description: Error response payload.
     properties:
@@ -375,6 +385,40 @@ paths:
           schema:
             $ref: '#/definitions/cognitionengine.ErrorResponse'
       summary: Update a Cognition Engine
+      tags:
+      - cognition-engines
+  /api/cognition-engine/{ceId}/multi-agentic-systems:
+    get:
+      description: Returns sorted mas_ids for the CE from the loaded config snapshot.
+        This is the initial-sync pull; it does not replay MAS lifecycle notifications.
+        404 means the CE is not in the snapshot yet (retry). An empty list means the
+        CE is present and has no associations.
+      parameters:
+      - description: Cognition Engine ID (UUID)
+        in: path
+        name: ceId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Associated MAS IDs
+          schema:
+            $ref: '#/definitions/cognitionengine.AssociatedMASResponse'
+        "400":
+          description: Invalid CE ID
+          schema:
+            $ref: '#/definitions/cognitionengine.ErrorResponse'
+        "404":
+          description: CE not yet in CFN config
+          schema:
+            $ref: '#/definitions/cognitionengine.ErrorResponse'
+        "503":
+          description: Config snapshot unavailable
+          schema:
+            $ref: '#/definitions/cognitionengine.ErrorResponse'
+      summary: List MAS IDs associated with a Cognition Engine
       tags:
       - cognition-engines
   /api/internal/mgmt/cognition-engine/probe:

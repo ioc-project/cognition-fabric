@@ -186,6 +186,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/cognition-engine/{ceId}/multi-agentic-systems": {
+            "get": {
+                "description": "Returns sorted mas_ids for the CE from the loaded config snapshot. This is the initial-sync pull; it does not replay MAS lifecycle notifications. 404 means the CE is not in the snapshot yet (retry). An empty list means the CE is present and has no associations.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "cognition-engines"
+                ],
+                "summary": "List MAS IDs associated with a Cognition Engine",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Cognition Engine ID (UUID)",
+                        "name": "ceId",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Associated MAS IDs",
+                        "schema": {
+                            "$ref": "#/definitions/cognitionengine.AssociatedMASResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid CE ID",
+                        "schema": {
+                            "$ref": "#/definitions/cognitionengine.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "CE not yet in CFN config",
+                        "schema": {
+                            "$ref": "#/definitions/cognitionengine.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Config snapshot unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/cognitionengine.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/api/internal/mgmt/cognition-engine/probe": {
             "post": {
                 "description": "Internal. Looks up the CE's registered health_url and performs an unauthenticated HTTP GET against it. A 200 within the probe timeout is healthy, anything else is unhealthy.",
@@ -314,6 +361,19 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "cognitionengine.AssociatedMASResponse": {
+            "description": "Snapshot-backed list of MAS IDs associated with the given CE. Empty when the CE is present and has no associations.",
+            "type": "object",
+            "properties": {
+                "mas_ids": {
+                    "description": "Sorted MAS IDs associated with this CE on this CFN",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "cognitionengine.ErrorResponse": {
             "description": "Error response payload.",
             "type": "object",

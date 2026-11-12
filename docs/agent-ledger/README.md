@@ -31,6 +31,8 @@ or observed code, surface the conflict instead of silently following the note.
   Taskfile/CI Postgres split, `go run` SUT, and network-edge mocks.
 - [UTC timestamp ownership](utc-timestamps.md) — migration-only legacy timezone,
   opaque CE evidence, checked config regeneration and UTC audit output.
+- [CE MAS association sync](ce-mas-association-sync.md) — discovery pull vs
+  GET-by-id 404, no notification replay, image health 8081 vs local stack 8082.
 
 ## Maintaining the ledger
 
