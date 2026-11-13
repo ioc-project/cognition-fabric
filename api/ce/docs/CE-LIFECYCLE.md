@@ -227,7 +227,7 @@ The body is `{ "mas_ids": ["…"] }` (sorted). Interpret the status as follows:
 | Status | Meaning |
 |--------|---------|
 | 200 | The CE is in the loaded snapshot. An empty list is a real “none”; stop retrying. Then `GET /api/multi-agentic-systems/{masId}?metadata=true` for each ID. |
-| 404 | The snapshot is loaded but this CE is not in it yet (config refresh after register). Retry. |
+| 404 | The snapshot is loaded but this CE is not in it. Retry while waiting for the post-register config refresh. A 404 that persists means the registration is gone (deleted in Management, or this CE registered through a different CFN). Sample CEs retry with backoff capped at 30s. |
 | 503 | No usable snapshot. Retry. |
 | 400 | `ceId` is not a UUID. Do not retry. |
 

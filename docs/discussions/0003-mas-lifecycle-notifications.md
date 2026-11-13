@@ -73,7 +73,9 @@ GET /api/cognition-engine/{ceId}/multi-agentic-systems
 
 **200** `{ "mas_ids": [...] }` means the CE is in the snapshot. An empty list is
 terminal (the CE is present and has no associations). **404** means the CE is not in
-the snapshot yet; retry. **503** means the snapshot is unavailable; retry.
+the snapshot; retry while waiting for the post-register refresh. A 404 that persists
+means the registration is gone (deleted in Management, or this CE registered through
+a different CFN). **503** means the snapshot is unavailable; retry.
 
 Then pull each MAS with `GET /api/multi-agentic-systems/{mas_id}?metadata=true`. A 404 on that
 GET means the MAS is gone — drop it; do not treat it like the discovery 404.
