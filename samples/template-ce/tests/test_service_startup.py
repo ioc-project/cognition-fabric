@@ -122,3 +122,15 @@ async def test_invalid_health_port_fails_before_starting_anything(monkeypatch):
         await service.serve_async(50052)
 
     assert rec.events == []
+
+
+@pytest.mark.asyncio
+async def test_invalid_http_port_fails_before_starting_anything(monkeypatch):
+    monkeypatch.setenv("HEALTH_PORT", "8081")
+    monkeypatch.setenv("HTTP_PORT", "not-a-port")
+    rec = _Recorder(monkeypatch)
+
+    with pytest.raises(ValueError, match="HTTP_PORT"):
+        await service.serve_async(50052)
+
+    assert rec.events == []

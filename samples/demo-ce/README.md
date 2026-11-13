@@ -7,8 +7,10 @@ The JSON config supplies the demo rules.
 CFN calls the CE over gRPC (`:18001`, `ce.v1`, the contract comes from the `ioc-scale-cfn-svc` Go module).
 The CE registers itself with CFN over REST (`POST /api/cognition-engine`, conflict recovery by `PATCH`),
 attempting registration immediately and retrying once per second until it succeeds. It declares a
-`health_url` (its `GET /healthz`) and CFN probes it every couple of seconds to decide whether the CE is online,
-so the CE sends no heartbeats.
+`health_url` (its `GET /healthz`) and a `notification_url` on the same HTTP listener (`POST /notification`).
+After register or PATCH it pulls currently associated MAS IDs from CFN, then stays current from
+lifecycle notifications. CFN probes health every couple of seconds to decide whether the CE is online,
+so the CE sends no heartbeats. Associated MAS state is for lifecycle logging only; it is not a policy source.
 
 See the [documentation site source](../docs/README.md) for the full Demo CE guide.
 
@@ -270,7 +272,8 @@ shows the migrated seven-rule config without changing its rule patterns.
 | `CFN_URL` | `http://ioc-scale-cfn-svc:9002` | CFN base URL (REST, registration) |
 | `OXP_API_URL` | empty | OXP base URL (session spans and Cognition Store); optional for pre-call input decisions |
 | `ADVERTISED_GRPC_ADDRESS` | `demo-ce:18001` | address CFN uses to call this CE |
-| `ADVERTISED_HEALTH_URL` | `http://<host of ADVERTISED_GRPC_ADDRESS>:<port of HTTP_LISTEN_ADDRESS>/healthz` | URL CFN probes with a GET to check the CE is alive (`health_url` at registration). Set it when CFN reaches the HTTP port under another host or port |
+| `ADVERTISED_HEALTH_URL` | `http://<host of ADVERTISED_GRPC_ADDRESS>:<port of HTTP_LISTEN_ADDRESS>` | Base URL CFN probes (`health_url` at registration; CFN appends `/healthz`). Set it when CFN reaches the HTTP port under another host or port. Do not include the path |
+| `ADVERTISED_NOTIFICATION_URL` | Same as `ADVERTISED_HEALTH_URL` when that is set, otherwise the derived health base URL | Base URL for `notification_url` at registration (CFN appends `/notification`). Defaults to the health override so CFN can reach both callbacks in the same NAT/port-map setup. Do not include the path |
 | `GRPC_LISTEN_ADDRESS` / `HTTP_LISTEN_ADDRESS` | `:18001` / `:18000` | |
 | `CE_NAME` / `CE_VERSION` | `demo-ce` / `1.0.0` | registration metadata |
 | `CE_CONFIG_FILE` / `CE_MAS_FILE` | see above | |

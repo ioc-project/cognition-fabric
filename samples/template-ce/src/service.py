@@ -169,11 +169,13 @@ async def serve_async(port: int = DEFAULT_PORT):
     """Start health endpoint, gRPC server, notification server, and register with CFN."""
     from health import get_health_port, start_health_server
     from registration import register_template_ce, shutdown_lifecycle_client
-    from notification_server import start_notification_server, shutdown_notification_server
+    from notification_server import get_http_port, start_notification_server, shutdown_notification_server
 
-    # The health endpoint must be up before registration so the first CFN probe succeeds. An invalid
-    # HEALTH_PORT or a port that cannot be bound stops startup here, before anything else is started.
-    health_server = start_health_server(get_health_port())
+    # Validate both HTTP ports before binding anything. An invalid HEALTH_PORT or HTTP_PORT
+    # stops startup here, before gRPC or registration.
+    health_port = get_health_port()
+    http_port = get_http_port()
+    health_server = start_health_server(health_port)
     server = None
     notification_runner = None
 
@@ -182,7 +184,7 @@ async def serve_async(port: int = DEFAULT_PORT):
         server = serve(port)
 
         # Start notification HTTP server
-        notification_runner = await start_notification_server()
+        notification_runner = await start_notification_server(http_port)
 
         # Register with CFN
         await register_template_ce()

@@ -19,6 +19,7 @@ from enum import Enum
 import httpx
 
 from health import HEALTH_PATH, get_health_port
+from notification_server import get_http_port
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,7 @@ class CERegistrationRequest:
     health_endpoint: str = HEALTH_PATH  # HTTP path appended to health_url (e.g., "/healthz")
     notification_url: Optional[str] = None  # HTTP base URL for notifications (e.g., "http://template-ce:8080")
     notification_endpoint: Optional[str] = None  # HTTP path for notifications (e.g., "/notification")
+    notification_protocol: Optional[str] = None  # Only "http" is spoken today
 
 
 @dataclass
@@ -117,8 +119,8 @@ class CELifecycleClient:
 
         If CE with same (name, version) already exists:
         - Gets 409 with existing_ce_id
-        - Calls PATCH to update enforcing_url/enforcing_endpoint/health_url (address may have changed
-          after restart, e.g., new IP, different port, different hostname)
+        - Calls PATCH to refresh enforcing, health and notification endpoints
+          (addresses may have changed after restart)
         - Returns the updated CE record
 
         If CE is new, creates and returns new ce_id.
@@ -137,11 +139,7 @@ class CELifecycleClient:
             "health_endpoint": request.health_endpoint,
         }
 
-        # Add notification fields if provided
-        if request.notification_url:
-            payload["notification_url"] = request.notification_url
-        if request.notification_endpoint:
-            payload["notification_endpoint"] = request.notification_endpoint
+        payload.update(_notification_fields(request))
 
         try:
             client = await self._get_client()
@@ -166,7 +164,7 @@ class CELifecycleClient:
 
             elif response.status_code == 409:
                 # CE with same (name, version) already exists - this happens on CE restart/reconnect.
-                # We PATCH to update enforcing_url/enforcing_endpoint/health_url because the CE's address may have changed:
+                # Refresh all advertised endpoints because the CE's address may have changed:
                 # - Container got a new IP after restart
                 # - Running on a different port
                 # - Different hostname in a new deployment
@@ -208,6 +206,7 @@ class CELifecycleClient:
             "health_url": request.health_url,
             "health_endpoint": request.health_endpoint,
         }
+        payload.update(_notification_fields(request, patch=True))
 
         try:
             client = await self._get_client()
@@ -264,6 +263,21 @@ class CELifecycleClient:
         self.ce_type = result.ce_type
 
 
+def _notification_fields(request: CERegistrationRequest, *, patch: bool = False) -> dict:
+    if request.notification_url and request.notification_endpoint:
+        return {
+            "notification_url": request.notification_url,
+            "notification_endpoint": request.notification_endpoint,
+            "notification_protocol": request.notification_protocol or "http",
+        }
+    if patch:
+        return {
+            "notification_url": None,
+            "notification_endpoint": None,
+        }
+    return {}
+
+
 # Global lifecycle client
 _lifecycle_client: Optional[CELifecycleClient] = None
 
@@ -283,7 +297,7 @@ async def register_template_ce() -> None:
         COGNITION_ENGINE_HOST: Advertised host for this service (default: "localhost")
         GRPC_PORT: Advertised gRPC port for this service (default: "50051")
         MAS_AUTO_ASSOCIATE: Auto-associate with all MAS (default: "false")
-        HEALTH_PORT: Port of the HTTP health endpoint (default: "8080")
+        HEALTH_PORT: Port of the HTTP health endpoint (default: "8081")
     """
     global _lifecycle_client
 
@@ -292,7 +306,7 @@ async def register_template_ce() -> None:
     ce_host = os.getenv("COGNITION_ENGINE_HOST", "localhost")
     grpc_port = os.getenv("GRPC_PORT", DEFAULT_GRPC_PORT)
     health_port = get_health_port()
-    http_port = os.getenv("HTTP_PORT", "8080")  # Notification server port
+    http_port = get_http_port()
     enable_notifications = os.getenv("ENABLE_NOTIFICATIONS", "true").lower() == "true"
 
     if not cfn_url:
@@ -311,6 +325,7 @@ async def register_template_ce() -> None:
     # Notification URL for MAS lifecycle events (HTTP endpoint)
     notification_url = f"http://{ce_host}:{http_port}" if enable_notifications else None
     notification_endpoint = "/notification" if enable_notifications else None
+    notification_protocol = "http" if enable_notifications else None
 
     logger.info(
         f"Starting Template CE registration with cfn_url={cfn_url}, enforcing_url={enforcing_url}, "
@@ -334,6 +349,7 @@ async def register_template_ce() -> None:
         health_url=health_url,
         notification_url=notification_url,
         notification_endpoint=notification_endpoint,
+        notification_protocol=notification_protocol,
     )
 
     # Attempt registration
@@ -341,6 +357,9 @@ async def register_template_ce() -> None:
 
     if response:
         logger.info(f"Template CE registration complete: ce_id={response.ce_id}")
+        from mas_sync import start_mas_sync
+
+        start_mas_sync(response.ce_id, cfn_url=cfn_url)
     else:
         logger.warning(
             "Template CE registration failed - CE will operate without CFN visibility"
@@ -359,6 +378,9 @@ async def shutdown_lifecycle_client() -> None:
     """
     global _lifecycle_client
 
+    from mas_sync import shutdown_mas_sync
+
+    await shutdown_mas_sync()
     if _lifecycle_client:
         logger.info("Shutting down Template CE lifecycle client...")
         await _lifecycle_client.close()

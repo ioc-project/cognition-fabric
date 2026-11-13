@@ -85,9 +85,10 @@ wait for explicit definitions; an absent list is not the same as a known empty l
 | `CFN_URL` | `http://ioc-scale-cfn-svc:9002` | Registration API |
 | `OXP_API_URL` | Empty | OXP context and Cognition Store API |
 | `GRPC_LISTEN_ADDRESS` | `:18001` | gRPC listener |
-| `HTTP_LISTEN_ADDRESS` | `:18000` | Health, info and Observe events listener |
+| `HTTP_LISTEN_ADDRESS` | `:18000` | Health, info, Observe events and MAS notification listener |
 | `ADVERTISED_GRPC_ADDRESS` | `demo-ce:18001` | gRPC address reachable from CFN |
-| `ADVERTISED_HEALTH_URL` | Derived from advertised host and HTTP port | CFN health probe URL |
+| `ADVERTISED_HEALTH_URL` | Derived from advertised host and HTTP port | Base URL CFN probes (`health_url`; CFN appends `/healthz`). Do not include the path |
+| `ADVERTISED_NOTIFICATION_URL` | `ADVERTISED_HEALTH_URL` if set, otherwise the derived health URL | Base URL for MAS notifications (`notification_url`; CFN appends `/notification`). Do not include the path |
 | `CE_EVENT_SERVICE` | Empty | Optional `service_name` filter for the inbox |
 | `CE_CONTEXT_WAIT` | `1s` | Shared context wait budget, positive and at most `25s` |
 | `CE_CONTEXT_ATTEMPTS` | `5` | Maximum attempts, including the first |

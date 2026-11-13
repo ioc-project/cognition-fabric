@@ -4,8 +4,8 @@
 
 FROM python:3.11-slim
 
-# Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+# Pin the uv binary. Dependency versions are locked in uv.lock and installed with --frozen.
+COPY --from=ghcr.io/astral-sh/uv:0.13.7 /uv /usr/local/bin/uv
 
 # Add user app
 RUN useradd -u 1001 app
@@ -30,8 +30,12 @@ COPY --chown=app:app src/ ./src/
 # Copy proto files and generated code
 COPY --chown=app:app proto/ ./proto/
 
-# Expose gRPC port and HTTP health port
-EXPOSE 50051 8080
+ENV GRPC_PORT=50051
+ENV HTTP_PORT=8080
+ENV HEALTH_PORT=8081
 
-# Command to run gRPC server on container start
-CMD ["uv", "run", "python", "-m", "src"]
+# gRPC, MAS notifications, health probe
+EXPOSE 50051 8080 8081
+
+# Locked venv; do not resolve or sync at startup
+CMD [".venv/bin/python", "-m", "src"]

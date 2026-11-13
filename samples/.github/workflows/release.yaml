@@ -137,16 +137,61 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.11"
+          version: "0.13.7"
 
       - name: Run Unit Tests
         run: |
           cd template-ce
           uv sync --frozen --extra test
-          uv run pytest
+          uv run --frozen python scripts/generate_proto.py --check
+          uv run --frozen pytest
+
+  template-ce-image-smoke:
+    name: template-ce Image Smoke
+    needs: [validate-semver, template-ce-unit-tests]
+    runs-on:
+      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build smoke image
+        uses: docker/build-push-action@v6
+        with:
+          context: template-ce
+          file: template-ce/Dockerfile
+          push: false
+          load: true
+          platforms: linux/amd64
+          tags: template-ce:smoke
+          cache-from: type=gha,scope=template-ce
+          provenance: false
+
+      - name: Probe healthz and GetInfo
+        run: |
+          docker run -d --name template-ce-smoke template-ce:smoke
+          cleanup() { docker rm -f template-ce-smoke >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          for i in $(seq 1 30); do
+            if docker exec template-ce-smoke /home/app/.venv/bin/python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/healthz')"; then
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              docker logs template-ce-smoke
+              exit 1
+            fi
+            sleep 1
+          done
+          docker cp template-ce/scripts/smoke_image.py template-ce-smoke:/tmp/smoke_image.py
+          docker exec -e PYTHONPATH=/home/app/src -w /tmp template-ce-smoke /home/app/.venv/bin/python /tmp/smoke_image.py
 
   template-ce-docker-push:
     name: Push tagged template-ce Docker image
-    needs: [validate-semver, template-ce-unit-tests]
+    needs: [validate-semver, template-ce-unit-tests, template-ce-image-smoke]
     runs-on:
       group: ${{ vars.DEFAULT_ARC_RUNNERS }}
 

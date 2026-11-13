@@ -16,6 +16,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
 	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/httpjson"
@@ -24,8 +25,13 @@ import (
 // Lifecycle registers this CE with CFN. CFN is reached over REST. HealthURL is the base URL CFN probes with a GET on /healthz
 // to check the CE is alive.
 type Lifecycle struct {
-	Base, Address, HealthURL, Name, Version, Type string
-	Client                                        *http.Client
+	Base, Address, HealthURL, NotificationURL, Name, Version, Type string
+	Client                                                         *http.Client
+	Work                                                           context.Context
+
+	mu  sync.Mutex
+	mas map[string]map[string]any
+	gen map[string]uint64 // bumped on drop so an in-flight GET cannot revive the MAS
 }
 
 // HealthURL builds the URL CFN probes from the gRPC address, whose host CFN already uses to
@@ -42,6 +48,31 @@ func HealthURL(advertisedGRPCAddress, httpListenAddress string) (string, error) 
 	return "http://" + net.JoinHostPort(host, port), nil
 }
 
+// AdvertisedURLs is the health_url and notification_url this CE registers.
+// healthOverride and notifyOverride are ADVERTISED_HEALTH_URL and ADVERTISED_NOTIFICATION_URL.
+// An empty notify override follows the health override when that is set, otherwise the derived URL.
+func AdvertisedURLs(advertisedGRPCAddress, httpListenAddress, healthOverride, notifyOverride string) (healthURL, notificationURL string, err error) {
+	derived, derivedErr := HealthURL(advertisedGRPCAddress, httpListenAddress)
+	healthURL = healthOverride
+	if healthURL == "" {
+		if derivedErr != nil {
+			return "", "", derivedErr
+		}
+		healthURL = derived
+	}
+	notificationURL = notifyOverride
+	if notificationURL == "" {
+		if healthOverride != "" {
+			notificationURL = healthURL
+		} else if derivedErr != nil {
+			return "", "", derivedErr
+		} else {
+			notificationURL = derived
+		}
+	}
+	return healthURL, notificationURL, nil
+}
+
 func (l *Lifecycle) Register(ctx context.Context) (string, error) {
 	version := l.Version
 	if version == "" {
@@ -51,7 +82,7 @@ func (l *Lifecycle) Register(ctx context.Context) (string, error) {
 	if ceType == "" {
 		ceType = "CASA"
 	}
-	body := map[string]any{"name": l.Name, "version": version, "ce_type": ceType, "enforcing_url": l.Address, "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "health_url": l.HealthURL, "health_endpoint": "/healthz", "mas_auto_associate": true}
+	body := map[string]any{"name": l.Name, "version": version, "ce_type": ceType, "enforcing_url": l.Address, "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "health_url": l.HealthURL, "health_endpoint": "/healthz", "notification_url": l.notifyURL(), "notification_endpoint": "/notification", "notification_protocol": "http", "mas_auto_associate": true}
 	raw, _ := json.Marshal(body)
 	r, err := http.NewRequestWithContext(ctx, "POST", l.Base+"/api/cognition-engine", bytes.NewReader(raw))
 	if err != nil {
@@ -84,7 +115,7 @@ func (l *Lifecycle) Register(ctx context.Context) (string, error) {
 		if id == "" {
 			return "", fmt.Errorf("conflict without CE id")
 		}
-		err := httpjson.Exchange(ctx, l.Client, "PATCH", l.Base+"/api/cognition-engine/"+url.PathEscape(id), map[string]string{"enforcing_url": l.Address, "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "health_url": l.HealthURL, "health_endpoint": "/healthz"}, nil)
+		err := httpjson.Exchange(ctx, l.Client, "PATCH", l.Base+"/api/cognition-engine/"+url.PathEscape(id), map[string]string{"enforcing_url": l.Address, "enforcing_endpoint": "ioc.ce.v1.CognitionEngine", "health_url": l.HealthURL, "health_endpoint": "/healthz", "notification_url": l.notifyURL(), "notification_endpoint": "/notification", "notification_protocol": "http"}, nil)
 		return id, err
 	}
 	if result.ID == "" {
@@ -104,6 +135,7 @@ func (l *Lifecycle) Run(ctx context.Context, setReady func(bool)) {
 		if err == nil {
 			slog.InfoContext(ctx, "Demo CE registered; CFN will probe its health endpoint", "event", "cfn.registered", "stage", "CFN", "ce_id", id, "ce_name", l.Name)
 			setReady(true)
+			l.SyncAssociated(ctx, id)
 			<-ctx.Done()
 			setReady(false)
 			return

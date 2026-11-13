@@ -11,7 +11,7 @@ Install Python 3.11 or newer and `uv`. Run these commands from the repository ro
 ```bash
 cd template-ce
 uv sync --extra test
-HEALTH_PORT=8081 uv run python -m src
+uv run python -m src
 ```
 
 The selected ports are:
@@ -19,13 +19,13 @@ The selected ports are:
 | Listener | Port | Purpose |
 |---|---|---|
 | gRPC | `50051` | `Evaluate`, `GetInfo` and reflection |
-| Health | `8081` in this command | `GET /healthz` |
+| Health | `8081` | `GET /healthz` |
 | Notifications | `8080` | `POST /notification` and `GET /health` |
 
-:::info Keep the health and notification listeners separate
-The implementation defaults both to `8080`. Set `HEALTH_PORT=8081` for a native run to avoid the port
-collision. The notification listener is currently fixed at `8080`; `HTTP_PORT` changes the advertised
-registration URL but does not change the bound notification port.
+:::info Image vs CF source stack
+The published image and a native `uv run` default health to **8081**.
+`task run:template-ce` on the CF source stack sets `HEALTH_PORT=8082` because OXP already uses 8081.
+Do not change CFN deploy ports to match the image.
 :::
 
 Check the health listener:
@@ -44,7 +44,6 @@ finding reads and writes. The evaluator still returns the stub decision.
 CFN_URL=http://localhost:9002 \
   COGNITION_STORE_URL=http://localhost:8000 \
   COGNITION_ENGINE_HOST=localhost \
-  HEALTH_PORT=8081 \
   uv run python -m src
 ```
 
@@ -61,4 +60,5 @@ Install the test extra as shown above before running the suite.
 The template has its own Dockerfile. CI publishes
 `ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/template-ce:latest` from `main`; a Git tag
 publishes the same name with that tag and does not move `latest`.
-Its listener configuration needs the same care when run in a container.
+The image exposes 50051, 8080 and 8081. Override `HEALTH_PORT` only when those
+host ports are already taken, such as the CF local stack.

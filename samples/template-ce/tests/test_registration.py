@@ -4,13 +4,26 @@
 
 """Tests for CE registration module."""
 import pytest
+import httpx
 from unittest.mock import AsyncMock, MagicMock, patch
 from pathlib import Path
 import sys
 import os
+import json
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+
+@pytest.fixture(autouse=True)
+def start_mas_sync_spy(monkeypatch):
+    calls = []
+
+    def spy(*args, **kwargs):
+        calls.append((args, kwargs))
+
+    monkeypatch.setattr("mas_sync.start_mas_sync", spy)
+    return calls
+
 
 from registration import (
     CERegistrationRequest,
@@ -153,6 +166,84 @@ class TestHealthURLInPayloads:
         await client.register(self._request())
 
         assert http.patch.call_args[1]["json"]["health_url"] == "http://template-ce:8080"
+        assert http.patch.call_args[1]["json"]["notification_url"] is None
+        assert http.patch.call_args[1]["json"]["notification_endpoint"] is None
+
+    async def test_patch_after_409_includes_notification_trio(self):
+        request = self._request()
+        request.notification_url = "http://template-ce:8080"
+        request.notification_endpoint = "/notification"
+        request.notification_protocol = "http"
+        client = CELifecycleClient("http://cfn:9002")
+        http = AsyncMock()
+        http.post.return_value = MagicMock(
+            status_code=409, json=lambda: {"detail": {"existing_ce_id": "ce-123"}}
+        )
+        http.patch.return_value = MagicMock(status_code=200, json=lambda: self._ce_json("id"))
+        client._client = http
+
+        await client.register(request)
+
+        body = http.patch.call_args[1]["json"]
+        assert body["notification_url"] == "http://template-ce:8080"
+        assert body["notification_endpoint"] == "/notification"
+        assert body["notification_protocol"] == "http"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("notifications_enabled", [True, False], ids=["enabled", "disabled"])
+@pytest.mark.parametrize(
+    ("host", "previous_host"),
+    [("localhost", "host.docker.internal"), ("host.docker.internal", "localhost")],
+    ids=["source-cfn", "image-cfn"],
+)
+async def test_reregistration_replaces_stale_notification_callback(
+    monkeypatch, host, previous_host, notifications_enabled
+):
+    import registration
+
+    monkeypatch.setattr(registration, "_lifecycle_client", None)
+    stored = {
+        "id": "ce-123", "cfn_id": "cfn-1", "name": CE_NAME, "version": CE_VERSION,
+        "ce_type": CE_TYPE, "enforcing_url": f"{previous_host}:50051",
+        "enforcing_endpoint": CE_ENDPOINT, "health_url": f"http://{previous_host}:8082",
+        "health_endpoint": "/healthz", "notification_url": f"http://{previous_host}:8080",
+        "notification_endpoint": "/old-notification", "notification_protocol": "http",
+        "enabled": True, "status": "online",
+    }
+    calls = []
+
+    def handle(request):
+        calls.append((request.method, request.url.path))
+        if request.method == "POST":
+            return httpx.Response(409, json={"detail": {"existing_ce_id": stored["id"]}})
+        assert request.method == "PATCH"
+        assert request.url.path == "/api/cognition-engine/ce-123"
+        stored.update(json.loads(request.content))
+        return httpx.Response(200, json=stored)
+
+    client = CELifecycleClient("http://cfn:9002")
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as http:
+        client._client = http
+        with (
+            patch.dict(os.environ, {
+                "CFN_URL": "http://cfn:9002", "COGNITION_ENGINE_HOST": host,
+                "GRPC_PORT": "50051", "HEALTH_PORT": "8082", "HTTP_PORT": "8080",
+                "ENABLE_NOTIFICATIONS": str(notifications_enabled).lower(),
+            }, clear=True),
+            patch("registration.CELifecycleClient", return_value=client),
+            patch("mas_sync.start_mas_sync"),
+        ):
+            await register_template_ce()
+
+    assert calls == [("POST", "/api/cognition-engine"), ("PATCH", "/api/cognition-engine/ce-123")]
+    assert client.ce_id == stored["id"] == "ce-123"
+    assert stored["enforcing_url"] == f"{host}:50051"
+    assert stored["health_url"] == f"http://{host}:8082"
+    assert stored["notification_url"] == (f"http://{host}:8080" if notifications_enabled else None)
+    assert stored["notification_endpoint"] == ("/notification" if notifications_enabled else None)
+    assert stored["notification_protocol"] == "http"
+    assert stored["enabled"] is True
 
 
 @pytest.mark.asyncio
@@ -167,7 +258,7 @@ class TestRegisterTemplateCE:
 
     @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"}, clear=True)
     @patch('registration.CELifecycleClient')
-    async def test_successful_registration(self, mock_client_class):
+    async def test_successful_registration(self, mock_client_class, start_mas_sync_spy):
         """Test successful CE registration."""
         # Mock the lifecycle client
         mock_client = AsyncMock()
@@ -197,7 +288,11 @@ class TestRegisterTemplateCE:
 
         # Verify health_url is sent in the registration request
         register_call = mock_client.register.call_args[0][0]
-        assert register_call.health_url == "http://localhost:8080"
+        assert register_call.health_url == "http://localhost:8081"
+        assert register_call.notification_url == "http://localhost:8080"
+        assert register_call.notification_endpoint == "/notification"
+        assert register_call.notification_protocol == "http"
+        assert start_mas_sync_spy == [(("ce-123",), {"cfn_url": "http://localhost:9002"})]
 
     @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002","COGNITION_ENGINE_HOST": "example.com", "COGNITION_ENGINE_PORT": "9999"}, clear=True)
     @patch('registration.CELifecycleClient')
@@ -227,7 +322,7 @@ class TestRegisterTemplateCE:
 
     @patch.dict(os.environ, {"CFN_URL": "http://localhost:9002"}, clear=True)
     @patch('registration.CELifecycleClient')
-    async def test_registration_failure(self, mock_client_class, caplog):
+    async def test_registration_failure(self, mock_client_class, caplog, start_mas_sync_spy):
         """Test handling of registration failure."""
         mock_client = AsyncMock()
         mock_client.register = AsyncMock(return_value=None)  # Registration failed
@@ -237,6 +332,7 @@ class TestRegisterTemplateCE:
 
         # Verify warning logged
         assert "registration failed" in caplog.text
+        assert start_mas_sync_spy == []
 
 
 class TestHealthUrlConfiguration:

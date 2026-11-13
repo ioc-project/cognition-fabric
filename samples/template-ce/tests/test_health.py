@@ -71,11 +71,11 @@ def test_bind_failure_raises_oserror():
 class TestGetHealthPort:
     def test_default(self, monkeypatch):
         monkeypatch.delenv("HEALTH_PORT", raising=False)
-        assert get_health_port() == 8080
+        assert get_health_port() == 8081
 
     def test_empty_uses_default(self, monkeypatch):
         monkeypatch.setenv("HEALTH_PORT", "")
-        assert get_health_port() == 8080
+        assert get_health_port() == 8081
 
     def test_valid_value(self, monkeypatch):
         monkeypatch.setenv("HEALTH_PORT", "8081")

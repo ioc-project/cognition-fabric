@@ -9,12 +9,28 @@ import os
 from datetime import datetime
 
 from aiohttp import web
-import httpx
+
+from mas_sync import apply_notification, schedule
 
 logger = logging.getLogger(__name__)
 
-NOTIFICATION_PORT = 8080
+DEFAULT_HTTP_PORT = 8080
+NOTIFICATION_PORT = DEFAULT_HTTP_PORT
 NOTIFICATION_PATH = "/notification"
+
+
+def get_http_port() -> int:
+    """Return the notification listener port from HTTP_PORT (default 8080)."""
+    raw = os.getenv("HTTP_PORT")
+    if raw is None or raw.strip() == "":
+        return DEFAULT_HTTP_PORT
+    try:
+        port = int(raw)
+    except ValueError:
+        port = 0
+    if not 1 <= port <= 65535:
+        raise ValueError(f"HTTP_PORT must be an integer between 1 and 65535, got {raw!r}")
+    return port
 
 
 def _text(value, *, first_line=False):
@@ -116,25 +132,14 @@ def format_mas_summary(mas):
 
 
 async def fetch_mas_details(mas_id: str):
-    """Fetch MAS details from CFN (ping + pull pattern)."""
-    cfn_url = os.getenv("CFN_URL", "").rstrip("/")
-    if not cfn_url:
-        return
+    """Fetch MAS details from CFN (ping + pull). Retries transient failures."""
+    from mas_sync import fetch_mas_details as _fetch
 
-    try:
-        endpoint = f"{cfn_url}/api/multi-agentic-systems/{mas_id}"
-        async with httpx.AsyncClient(timeout=5.0) as client:
-            response = await client.get(endpoint, params={"metadata": "true"})
-            if response.status_code == 200:
-                logger.info("%s", format_mas_summary(response.json()))
-            else:
-                logger.warning(f"[Notification] Failed to fetch MAS: {response.status_code}")
-    except Exception as e:
-        logger.warning(f"[Notification] Error fetching MAS: {e}")
+    return await _fetch(mas_id)
 
 
 async def handle_notification(request: web.Request) -> web.Response:
-    """Handle POST /notification - MAS lifecycle notification endpoint."""
+    """Ack POST /notification immediately; apply the event asynchronously."""
     try:
         payload = await request.json()
         event_type = payload.get("event_type")
@@ -146,9 +151,7 @@ async def handle_notification(request: web.Request) -> web.Response:
             f"timestamp={timestamp} received_at={datetime.utcnow().isoformat()}Z"
         )
 
-        # Ping + pull: fetch full MAS details from CFN
-        await fetch_mas_details(mas_id)
-
+        schedule(apply_notification(event_type, mas_id))
         return web.json_response({"status": "received"}, status=200)
 
     except Exception as e:

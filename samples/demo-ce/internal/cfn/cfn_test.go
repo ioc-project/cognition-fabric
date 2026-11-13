@@ -35,6 +35,9 @@ func TestRegistrationSendsHealthURL(t *testing.T) {
 	if posted["health_endpoint"] != "/healthz" || posted["health_url"] != "http://poc-ce:18000" || posted["enforcing_url"] != "poc-ce:18001" {
 		t.Fatalf("registration body %v", posted)
 	}
+	if posted["notification_url"] != "http://poc-ce:18000" || posted["notification_endpoint"] != "/notification" || posted["notification_protocol"] != "http" {
+		t.Fatalf("registration notification body %v", posted)
+	}
 }
 
 func TestRegistrationConflictUpdatesEndpointAndHealthURL(t *testing.T) {
@@ -60,6 +63,35 @@ func TestRegistrationConflictUpdatesEndpointAndHealthURL(t *testing.T) {
 	}
 	if patched["enforcing_url"] != "poc-ce:18001" || patched["health_url"] != "http://poc-ce:18000" {
 		t.Fatalf("patch body %v", patched)
+	}
+	if patched["notification_url"] != "http://poc-ce:18000" || patched["notification_endpoint"] != "/notification" || patched["notification_protocol"] != "http" {
+		t.Fatalf("patch notification body %v", patched)
+	}
+}
+
+func TestAdvertisedURLs(t *testing.T) {
+	health, notify, err := AdvertisedURLs("demo-ce:18001", ":18000", "", "")
+	if err != nil || health != "http://demo-ce:18000" || notify != health {
+		t.Fatalf("derived health=%q notify=%q err=%v", health, notify, err)
+	}
+	health, notify, err = AdvertisedURLs("demo-ce:18001", ":18000", "http://override:9", "")
+	if err != nil || health != "http://override:9" || notify != "http://override:9" {
+		t.Fatalf("health override health=%q notify=%q err=%v", health, notify, err)
+	}
+	health, notify, err = AdvertisedURLs("demo-ce:18001", ":18000", "http://override:9", "http://notify:8")
+	if err != nil || health != "http://override:9" || notify != "http://notify:8" {
+		t.Fatalf("both overrides health=%q notify=%q err=%v", health, notify, err)
+	}
+	health, notify, err = AdvertisedURLs("demo-ce:18001", ":18000", "", "http://notify:8")
+	if err != nil || health != "http://demo-ce:18000" || notify != "http://notify:8" {
+		t.Fatalf("notify override health=%q notify=%q err=%v", health, notify, err)
+	}
+	health, notify, err = AdvertisedURLs("bad", ":18000", "http://override:9", "")
+	if err != nil || health != "http://override:9" || notify != "http://override:9" {
+		t.Fatalf("override without derived health=%q notify=%q err=%v", health, notify, err)
+	}
+	if _, _, err = AdvertisedURLs("bad", ":18000", "", ""); err == nil {
+		t.Fatal("want error when neither override nor derived URL is available")
 	}
 }
 
@@ -87,7 +119,7 @@ func TestHealthURL(t *testing.T) {
 	}
 }
 
-// After it has registered the CE sends CFN nothing more: CFN probes health_url, there is no heartbeat.
+// After it has registered the CE pulls associated MAS once, then sends CFN nothing more: CFN probes health_url, there is no heartbeat.
 func TestRunRegistersOnceAndThenSendsNothing(t *testing.T) {
 	var registrations, others atomic.Int32
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -96,6 +128,8 @@ func TestRunRegistersOnceAndThenSendsNothing(t *testing.T) {
 			registrations.Add(1)
 			w.WriteHeader(201)
 			w.Write([]byte(`{"ce_id":"ce-1"}`))
+		case "GET /api/cognition-engine/ce-1/multi-agentic-systems":
+			w.Write([]byte(`{"mas_ids":[]}`))
 		default:
 			others.Add(1)
 			w.WriteHeader(404)
@@ -145,6 +179,8 @@ func TestRunRetriesRegistrationUntilAccepted(t *testing.T) {
 			}
 			w.WriteHeader(201)
 			w.Write([]byte(`{"ce_id":"ce-1"}`))
+		case "GET /api/cognition-engine/ce-1/multi-agentic-systems":
+			w.Write([]byte(`{"mas_ids":[]}`))
 		default:
 			others.Add(1)
 			w.WriteHeader(404)
