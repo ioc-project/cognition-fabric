@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // Package identity decides the route and MAS scope. The outer engine owns
 // Cognition Store I/O and content evaluation before persisting a final decision.
 package identity

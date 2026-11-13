@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // Package a2a judges a2a_message_input evidence: the application publishes an A2A message (its text) as an
 // Observe tool.started event before it sends it, with the message's messageId as the tool call id, and the
 // CE finds it in the inbox by the exact trace and span of the submit, like llm_input and mcp_tool_input. The

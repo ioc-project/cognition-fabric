@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // demo-ce is a demonstration Cognition Engine: it loads identity and content rules per MAS from a JSON
 // file and answers CFN's ioc.ce.v1.CognitionEngine calls from them. See the README.
 package main

@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // Package evidence is what a content rule is judged against. A Judge reads one kind of evidence (the
 // "evidence" of a rule in the config file) and decides whether the request passes the rules that use it.
 // The kinds use the correlation resolver, with llm, mcp and a2a parsers for events the

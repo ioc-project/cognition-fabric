@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 // Package cfn is the lifecycle of a CE in CFN: registration and conflict recovery by PATCH. CFN checks that
 // the CE is alive by probing the health_url it declares.
 package cfn
