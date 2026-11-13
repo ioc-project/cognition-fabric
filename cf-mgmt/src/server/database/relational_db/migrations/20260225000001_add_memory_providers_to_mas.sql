@@ -1,3 +1,7 @@
+-- Copyright 2026 Cisco Systems, Inc. and its affiliates
+--
+-- SPDX-License-Identifier: Apache-2.0
+
 -- Migration: Add memory providers to Multi-Agentic System
 -- Description: Add shared_memory_provider_id to MAS table to support shared memory across agents
 -- The agents JSONB field will store per-agent memory provider configuration

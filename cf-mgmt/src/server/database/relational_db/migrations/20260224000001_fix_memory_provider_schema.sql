@@ -1,3 +1,7 @@
+-- Copyright 2026 Cisco Systems, Inc. and its affiliates
+--
+-- SPDX-License-Identifier: Apache-2.0
+
 -- Migration: Fix memory_provider schema
 -- Date: 2026-02-24
 -- Description: Remove provider_type and provider columns, add unique constraint on memory_provider_name

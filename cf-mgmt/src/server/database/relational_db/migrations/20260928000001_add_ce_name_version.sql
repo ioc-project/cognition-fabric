@@ -1,3 +1,7 @@
+-- Copyright 2026 Cisco Systems, Inc. and its affiliates
+--
+-- SPDX-License-Identifier: Apache-2.0
+
 -- Add name and version columns to cognition_engine for version-based registration
 -- This enables the upgrade flow where same (cfn_id, name, version) returns 409,
 -- but same name with different version creates a new CE record.

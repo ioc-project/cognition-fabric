@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """drop workspace_member, workspace_invitation, api_key, and policy tables
 
 Revision ID: 0002

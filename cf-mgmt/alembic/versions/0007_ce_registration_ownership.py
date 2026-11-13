@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Track CE endpoint ownership and fence probe results across reconnects.
 
 Revision ID: 0007

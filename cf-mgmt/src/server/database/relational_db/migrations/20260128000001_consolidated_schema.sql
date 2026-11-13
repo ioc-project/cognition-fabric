@@ -1,3 +1,7 @@
+-- Copyright 2026 Cisco Systems, Inc. and its affiliates
+--
+-- SPDX-License-Identifier: Apache-2.0
+
 -- Consolidated Database Schema
 -- Version: 2026-02-19
 -- Description: Complete database schema with all migrations consolidated

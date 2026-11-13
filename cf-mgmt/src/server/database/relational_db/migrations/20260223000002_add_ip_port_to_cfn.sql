@@ -1,3 +1,7 @@
+-- Copyright 2026 Cisco Systems, Inc. and its affiliates
+--
+-- SPDX-License-Identifier: Apache-2.0
+
 -- Add ip_address and port columns to cognition_fabric_node table
 -- Migration: 20260223000002_add_ip_port_to_cfn.sql
 

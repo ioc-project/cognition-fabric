@@ -1,3 +1,7 @@
+-- Copyright 2026 Cisco Systems, Inc. and its affiliates
+--
+-- SPDX-License-Identifier: Apache-2.0
+
 -- Make cfn_id nullable in workspace table to support default workspace without CFN
 -- Migration: 20260224000002_make_workspace_cfn_id_nullable.sql
 
