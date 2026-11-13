@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Check local TCP listeners without reserving ports or confusing TIME_WAIT."""
 
 import errno

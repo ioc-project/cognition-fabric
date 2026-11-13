@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Supervise NOA and its tool service together for the source proxy workflow."""
 
 import fcntl

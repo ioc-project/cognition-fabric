@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """Exercise launcher decisions without starting containers or source services.
 
 Run: python3 -m unittest discover -s deploy/local/tests -v
