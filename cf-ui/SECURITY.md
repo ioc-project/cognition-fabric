@@ -1,7 +1,7 @@
 # Security Policies and Procedures
 
 This document outlines security procedures and general policies for the
-`ioc-cfn-mgmt-ui-svc` project.
+`ioc-scale-cf-ui` project.
 
 - [Disclosing a security issue](#disclosing-a-security-issue)
 - [Vulnerability management](#vulnerability-management)
@@ -9,12 +9,12 @@ This document outlines security procedures and general policies for the
 
 ## Disclosing a security issue
 
-The Internet of Cognition (IOC) Cognition Fabric Node (CFN) Management UI (`ioc-cfn-mgmt-ui-svc`) maintainers take all security issues in the project
-seriously. Thank you for improving the security of the IOC CFN Management UI. We
+The Internet of Cognition (IOC) Cognition Fabric Management UI (`ioc-scale-cf-ui`) maintainers take all security issues in the project
+seriously. Thank you for improving the security of the IOC Cognition Fabric Management UI. We
 appreciate your dedication to responsible disclosure and will make every effort
 to acknowledge your contributions.
 
-The IOC CFN Management UI leverages GitHub's private vulnerability reporting.
+The IOC Cognition Fabric Management UI leverages GitHub's private vulnerability reporting.
 
 To learn more about this feature and how to submit a vulnerability report,
 review [GitHub's documentation on private reporting](https://docs.github.com/code-security/security-advisories/guidance-on-reporting-and-writing-information-about-vulnerabilities/privately-reporting-a-security-vulnerability).
