@@ -7,6 +7,7 @@ package app
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -550,6 +551,51 @@ func (a *App) deleteCognitionEngineHandler(w http.ResponseWriter, r *http.Reques
 	}
 	log.Errorf("cognition engine delete failed: status=%d, body=%v", resp.StatusCode, errorResp)
 	return eh.RespondWithJSON(w, resp.StatusCode, errorResp)
+}
+
+// listAssociatedMASHandler lists MAS IDs associated with a CE in the current config snapshot.
+//
+// @Summary      List MAS IDs associated with a Cognition Engine
+// @Description  Returns sorted mas_ids for the CE from the loaded config snapshot. This is the initial-sync pull; it does not replay MAS lifecycle notifications. 404 means the CE is not in the snapshot yet (retry). An empty list means the CE is present and has no associations.
+// @Tags         cognition-engines
+// @Produce      json
+// @Param        ceId path string true "Cognition Engine ID (UUID)"
+// @Success      200 {object} cognitionengine.AssociatedMASResponse "Associated MAS IDs"
+// @Failure      400 {object} cognitionengine.ErrorResponse "Invalid CE ID"
+// @Failure      404 {object} cognitionengine.ErrorResponse "CE not yet in CFN config"
+// @Failure      503 {object} cognitionengine.ErrorResponse "Config snapshot unavailable"
+// @Router       /api/cognition-engine/{ceId}/multi-agentic-systems [get]
+func (a *App) listAssociatedMASHandler(w http.ResponseWriter, r *http.Request) (int, error) {
+	ceID := eh.PathParam(r, "ceId")
+	if ceID == "" {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "ce_id is required",
+		})
+	}
+	if _, err := uuid.Parse(ceID); err != nil {
+		return eh.RespondWithJSON(w, http.StatusBadRequest, map[string]string{
+			"error": "invalid ce_id format: must be a valid UUID",
+		})
+	}
+
+	ids, err := associatedMASIds(ceID)
+	if err != nil {
+		switch {
+		case errors.Is(err, errSnapshotUnavailable):
+			return eh.RespondWithJSON(w, http.StatusServiceUnavailable, map[string]string{
+				"error": "config snapshot unavailable",
+			})
+		case errors.Is(err, errCENotInSnapshot):
+			return eh.RespondWithJSON(w, http.StatusNotFound, map[string]string{
+				"error": "CE not yet in CFN config",
+			})
+		default:
+			return eh.RespondWithJSON(w, http.StatusInternalServerError, map[string]string{
+				"error": "failed to list associated MAS",
+			})
+		}
+	}
+	return eh.RespondWithJSON(w, http.StatusOK, cognitionengine.AssociatedMASResponse{MASIDs: ids})
 }
 
 // validateHealthURL checks that a CE health URL is an absolute http or https URL with a hostname

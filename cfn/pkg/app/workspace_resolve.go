@@ -7,6 +7,7 @@ package app
 import (
 	"context"
 	"errors"
+	"sort"
 	"time"
 
 	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/mgmt"
@@ -17,6 +18,7 @@ var (
 	errMASNotAssigned       = errors.New("MAS not assigned to this CFN")
 	errMASNotFound          = errors.New("MAS not found")
 	errMgmtURLNotConfigured = errors.New("management plane URL not configured")
+	errCENotInSnapshot      = errors.New("CE not yet in CFN config")
 )
 
 func configVersion(cfg *CfnConfigPayload) int64 {
@@ -94,6 +96,42 @@ func lookupMASWorkspace(masID string) (workspaceID string, found bool, snapshotL
 		return "", false, true
 	}
 	return first, true, true
+}
+
+func associatedMASIds(ceID string) ([]string, error) {
+	cfg := currentConfig()
+	if cfg == nil {
+		return nil, errSnapshotUnavailable
+	}
+	found := false
+	for _, ce := range cfg.CognitionEngines {
+		if ce.ID == ceID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return nil, errCENotInSnapshot
+	}
+	seen := make(map[string]struct{})
+	ids := make([]string, 0)
+	for _, ws := range cfg.Workspaces {
+		for _, mas := range ws.MASList {
+			for _, ce := range mas.CognitionEngines {
+				if ce.ID != ceID {
+					continue
+				}
+				if _, ok := seen[mas.ID]; ok {
+					break
+				}
+				seen[mas.ID] = struct{}{}
+				ids = append(ids, mas.ID)
+				break
+			}
+		}
+	}
+	sort.Strings(ids)
+	return ids, nil
 }
 
 func resolveMASWorkspace(masID string) (string, error) {

@@ -61,6 +61,28 @@ GET /api/multi-agentic-systems/{mas_id}
 
 Returns full MAS details by proxying to Management Plane.
 
+### Initial association pull
+
+Notifications fire only on a **config diff**. The first snapshot after CFN starts sends
+nothing, and register/PATCH do not replay `mas.created`. A CE that restarts therefore
+pulls its current associations instead of waiting for a ping:
+
+```
+GET /api/cognition-engine/{ceId}/multi-agentic-systems
+```
+
+**200** `{ "mas_ids": [...] }` means the CE is in the snapshot. An empty list is
+terminal (the CE is present and has no associations). **404** means the CE is not in
+the snapshot; retry while waiting for the post-register refresh. A 404 that persists
+means the registration is gone (deleted in Management, or this CE registered through
+a different CFN). **503** means the snapshot is unavailable; retry.
+
+Then pull each MAS with `GET /api/multi-agentic-systems/{mas_id}?metadata=true`. A 404 on that
+GET means the MAS is gone — drop it; do not treat it like the discovery 404.
+
+This list is snapshot-backed and CE-scoped. It is not a dump of every MAS on the node
+and it is not added to the register response (the snapshot may still lag the 201).
+
 ## Design Rationale
 
 **Minimal payload**: Reduces coordination on schema changes, avoids sending sensitive data over notifications. CE fetches only what it needs.

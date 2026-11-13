@@ -211,6 +211,45 @@ var _ = Describe("HTTP routes", Serial, func() {
 		})
 	})
 
+	Describe("GET /api/cognition-engine/{ceId}/multi-agentic-systems", func() {
+		It("returns associated MAS IDs after the CE is in the snapshot", func() {
+			ceID := registerAndWaitCASA()
+			code, body, _ := cfnDo(http.MethodGet, "/api/cognition-engine/"+ceID+"/multi-agentic-systems", nil)
+			Expect(code).To(Equal(http.StatusOK), "%v", body)
+			raw, ok := body["mas_ids"].([]any)
+			Expect(ok).To(BeTrue())
+			Expect(raw).To(ContainElement(ids.masID))
+		})
+
+		It("returns an empty list when the CE is present and not associated", func() {
+			payload := casaRegisterBody()
+			payload["name"] = "no-auto-associate-ce"
+			payload["mas_auto_associate"] = false
+			code, body, _ := cfnDo(http.MethodPost, "/api/cognition-engine", payload)
+			Expect(code).To(Equal(http.StatusCreated), "%v", body)
+			ceID := mustString(body, "ce_id")
+			waitUntilCEInSnapshot(ceID)
+
+			code, body, _ = cfnDo(http.MethodGet, "/api/cognition-engine/"+ceID+"/multi-agentic-systems", nil)
+			Expect(code).To(Equal(http.StatusOK), "%v", body)
+			raw, ok := body["mas_ids"].([]any)
+			Expect(ok).To(BeTrue())
+			Expect(raw).To(BeEmpty())
+		})
+
+		It("returns 404 for a UUID that is not in the snapshot", func() {
+			code, body, _ := cfnDo(http.MethodGet, "/api/cognition-engine/"+uuid.NewString()+"/multi-agentic-systems", nil)
+			Expect(code).To(Equal(http.StatusNotFound), "%v", body)
+			Expect(mustString(body, "error")).To(Equal("CE not yet in CFN config"))
+		})
+
+		It("returns 400 for a non-UUID ceId", func() {
+			code, body, _ := cfnDo(http.MethodGet, "/api/cognition-engine/not-a-uuid/multi-agentic-systems", nil)
+			Expect(code).To(Equal(http.StatusBadRequest))
+			Expect(mustString(body, "error")).To(ContainSubstring("invalid ce_id"))
+		})
+	})
+
 	Describe("GET /api/multi-agentic-systems/{masId}", func() {
 		It("returns the MAS from the management plane", func() {
 			code, body, _ := cfnDo(http.MethodGet, "/api/multi-agentic-systems/"+ids.masID, nil)

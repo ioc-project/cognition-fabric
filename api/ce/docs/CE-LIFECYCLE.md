@@ -214,6 +214,27 @@ sequenceDiagram
 
 This handles CE restarts where the address may have changed (new IP, different port).
 
+MAS lifecycle notifications are not replayed on register or PATCH. The first config
+snapshot after CFN starts also emits no pings. After a successful register or conflict
+recovery, a CE pulls the MAS IDs already associated with it:
+
+```
+GET /api/cognition-engine/{ceId}/multi-agentic-systems
+```
+
+The body is `{ "mas_ids": ["…"] }` (sorted). Interpret the status as follows:
+
+| Status | Meaning |
+|--------|---------|
+| 200 | The CE is in the loaded snapshot. An empty list is a real “none”; stop retrying. Then `GET /api/multi-agentic-systems/{masId}?metadata=true` for each ID. |
+| 404 | The snapshot is loaded but this CE is not in it. Retry while waiting for the post-register config refresh. A 404 that persists means the registration is gone (deleted in Management, or this CE registered through a different CFN). Sample CEs retry with backoff capped at 30s. |
+| 503 | No usable snapshot. Retry. |
+| 400 | `ceId` is not a UUID. Do not retry. |
+
+A 404 on `GET /api/multi-agentic-systems/{masId}` means that MAS is gone. That is not the same as discovery 404; drop local state for that ID instead of retrying.
+
+See [D3 — MAS Lifecycle Notifications](discussions/0003-mas-lifecycle-notifications.md).
+
 ### CFN CE Selection
 
 When CFN receives an enforcement request (`GetDisposition`, `mas_id` only):

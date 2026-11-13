@@ -109,6 +109,13 @@ type ConflictResponse struct {
 	ExistingCEID string `json:"existing_ce_id" example:"550e8400-e29b-41d4-a716-446655440000"`
 }
 
+// AssociatedMASResponse lists MAS IDs associated with a CE in the current config snapshot.
+// @Description Snapshot-backed list of MAS IDs associated with the given CE. Empty when the CE is present and has no associations.
+type AssociatedMASResponse struct {
+	// Sorted MAS IDs associated with this CE on this CFN
+	MASIDs []string `json:"mas_ids"`
+}
+
 // MASLifecycleNotification represents the payload sent to CE notification endpoints for MAS lifecycle events.
 // @Description Notification payload for MAS lifecycle events (create, update, delete).
 type MASLifecycleNotification struct {
