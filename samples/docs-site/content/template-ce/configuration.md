@@ -16,7 +16,9 @@ title: Configure Template CE
 | `HTTP_PORT` | `8080` | Notification listener and advertised `notification_url` port |
 | `ENABLE_NOTIFICATIONS` | `true` | Controls notification metadata included in registration |
 
-`ENABLE_NOTIFICATIONS` does not stop the notification HTTP server from starting.
+`ENABLE_NOTIFICATIONS=false` omits notification metadata on a new registration and
+clears the stored notification URL/endpoint on reconnect. It does not stop the
+notification HTTP server from starting.
 Do not use it to resolve a listener port collision. Invalid or unavailable health or
 notification ports stop startup before gRPC and registration.
 

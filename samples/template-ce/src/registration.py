@@ -119,8 +119,8 @@ class CELifecycleClient:
 
         If CE with same (name, version) already exists:
         - Gets 409 with existing_ce_id
-        - Calls PATCH to update enforcing_url/enforcing_endpoint/health_url (address may have changed
-          after restart, e.g., new IP, different port, different hostname)
+        - Calls PATCH to refresh enforcing, health and notification endpoints
+          (addresses may have changed after restart)
         - Returns the updated CE record
 
         If CE is new, creates and returns new ce_id.
@@ -164,7 +164,7 @@ class CELifecycleClient:
 
             elif response.status_code == 409:
                 # CE with same (name, version) already exists - this happens on CE restart/reconnect.
-                # We PATCH to update enforcing_url/enforcing_endpoint/health_url because the CE's address may have changed:
+                # Refresh all advertised endpoints because the CE's address may have changed:
                 # - Container got a new IP after restart
                 # - Running on a different port
                 # - Different hostname in a new deployment
@@ -205,6 +205,9 @@ class CELifecycleClient:
             "enforcing_endpoint": request.enforcing_endpoint,
             "health_url": request.health_url,
             "health_endpoint": request.health_endpoint,
+            # Explicit nulls clear an old callback when notifications are disabled.
+            "notification_url": request.notification_url,
+            "notification_endpoint": request.notification_endpoint,
         }
         payload.update(_notification_fields(request))
 
