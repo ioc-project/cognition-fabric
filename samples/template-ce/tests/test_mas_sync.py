@@ -21,6 +21,7 @@ def _transport(handler):
 @pytest.fixture(autouse=True)
 def reset_mas_state(monkeypatch):
     mas_sync._mas.clear()
+    mas_sync._gen.clear()
 
     async def immediate(_delay):
         return
@@ -28,6 +29,7 @@ def reset_mas_state(monkeypatch):
     monkeypatch.setattr(mas_sync.asyncio, "sleep", immediate)
     yield
     mas_sync._mas.clear()
+    mas_sync._gen.clear()
 
 
 @pytest.mark.asyncio
@@ -93,6 +95,41 @@ async def test_fetch_retries_503_then_upserts(monkeypatch, caplog):
     assert result["name"] == "Trip planner"
     assert mas_sync.known_mas_ids() == ["mas-one"]
     assert "Trip planner" in caplog.text
+
+
+@pytest.mark.asyncio
+async def test_in_flight_fetch_does_not_revive_deleted_mas(monkeypatch):
+    started = asyncio.Event()
+    release = asyncio.Event()
+
+    class SlowClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def get(self, url, **kwargs):
+            started.set()
+            await release.wait()
+
+            class Resp:
+                status_code = 200
+
+                def json(self):
+                    return {"id": "mas-one", "name": "stale"}
+
+            return Resp()
+
+        async def aclose(self):
+            pass
+
+    monkeypatch.setattr(mas_sync.httpx, "AsyncClient", SlowClient)
+    await mas_sync.upsert_mas("mas-one", {"id": "mas-one", "name": "live"})
+    task = asyncio.create_task(mas_sync.fetch_mas_details("mas-one", cfn_url="http://cfn.local"))
+    await asyncio.wait_for(started.wait(), timeout=1)
+    await mas_sync.apply_notification("mas.deleted", "mas-one")
+    assert mas_sync.known_mas_ids() == []
+    release.set()
+    assert await task is None
+    assert mas_sync.known_mas_ids() == []
 
 
 @pytest.mark.asyncio

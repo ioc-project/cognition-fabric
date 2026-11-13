@@ -29,6 +29,16 @@ func (l *Lifecycle) ensureStore() {
 	if l.mas == nil {
 		l.mas = map[string]map[string]any{}
 	}
+	if l.gen == nil {
+		l.gen = map[string]uint64{}
+	}
+}
+
+func (l *Lifecycle) generation(masID string) uint64 {
+	l.ensureStore()
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	return l.gen[masID]
 }
 
 func (l *Lifecycle) KnownMAS() []string {
@@ -45,6 +55,7 @@ func (l *Lifecycle) KnownMAS() []string {
 func (l *Lifecycle) dropMAS(masID string) {
 	l.ensureStore()
 	l.mu.Lock()
+	l.gen[masID]++
 	_, ok := l.mas[masID]
 	delete(l.mas, masID)
 	l.mu.Unlock()
@@ -54,8 +65,16 @@ func (l *Lifecycle) dropMAS(masID string) {
 }
 
 func (l *Lifecycle) upsertMAS(masID string, details map[string]any) {
+	l.upsertMASIf(masID, details, 0, false)
+}
+
+func (l *Lifecycle) upsertMASIf(masID string, details map[string]any, gen uint64, check bool) {
 	l.ensureStore()
 	l.mu.Lock()
+	if check && l.gen[masID] != gen {
+		l.mu.Unlock()
+		return
+	}
 	l.mas[masID] = details
 	l.mu.Unlock()
 	name, _ := details["name"].(string)
@@ -74,7 +93,7 @@ func (l *Lifecycle) NotificationHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"status":"received"}`))
-	ctx := l.work
+	ctx := l.Work
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -151,6 +170,7 @@ func (l *Lifecycle) listAssociated(ctx context.Context, ceID string) ([]string, 
 }
 
 func (l *Lifecycle) fetchMAS(ctx context.Context, masID string) {
+	gen := l.generation(masID)
 	delay := initialDelay
 	path := l.Base + "/api/multi-agentic-systems/" + url.PathEscape(masID) + "?metadata=true"
 	for {
@@ -161,7 +181,7 @@ func (l *Lifecycle) fetchMAS(ctx context.Context, masID string) {
 				slog.Warn("MAS details were not JSON", "event", "mas.fetch_failed", "stage", "CFN", "mas_id", masID)
 				return
 			}
-			l.upsertMAS(masID, details)
+			l.upsertMASIf(masID, details, gen, true)
 			return
 		}
 		if err == nil && status == http.StatusNotFound {

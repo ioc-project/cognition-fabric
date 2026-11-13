@@ -2,6 +2,7 @@
 
 Discovery: GET /api/cognition-engine/{ceId}/multi-agentic-systems until 200.
 Empty mas_ids is terminal. 404/503/network retry. GET-by-id 404 drops that MAS.
+A per-MAS generation is bumped on drop so an in-flight GET cannot revive it.
 """
 from __future__ import annotations
 
@@ -18,6 +19,7 @@ MAS_RETRY = {502, 503}
 MAX_DELAY = 30.0
 
 _mas: dict[str, dict[str, Any]] = {}
+_gen: dict[str, int] = {}
 _lock = asyncio.Lock()
 _sync_task: Optional[asyncio.Task] = None
 _stop: Optional[asyncio.Event] = None
@@ -30,17 +32,28 @@ def known_mas_ids() -> list[str]:
 
 async def drop_mas(mas_id: str) -> None:
     async with _lock:
+        _gen[mas_id] = _gen.get(mas_id, 0) + 1
         removed = _mas.pop(mas_id, None)
     if removed is not None:
         logger.info("[MAS] dropped mas_id=%s", mas_id)
 
 
-async def upsert_mas(mas_id: str, details: dict[str, Any]) -> None:
+async def upsert_mas(
+    mas_id: str, details: dict[str, Any], *, generation: Optional[int] = None
+) -> bool:
     async with _lock:
+        if generation is not None and _gen.get(mas_id, 0) != generation:
+            return False
         _mas[mas_id] = details
     from notification_server import format_mas_summary
 
     logger.info("%s", format_mas_summary(details))
+    return True
+
+
+async def _generation(mas_id: str) -> int:
+    async with _lock:
+        return _gen.get(mas_id, 0)
 
 
 def _track(task: asyncio.Task) -> None:
@@ -70,6 +83,7 @@ async def fetch_mas_details(
     if owns_client:
         client = httpx.AsyncClient(timeout=5.0)
     delay = 0.5
+    gen = await _generation(mas_id)
     try:
         while stop is None or not stop.is_set():
             try:
@@ -82,8 +96,9 @@ async def fetch_mas_details(
             else:
                 if response.status_code == 200:
                     details = response.json()
-                    await upsert_mas(mas_id, details)
-                    return details
+                    if await upsert_mas(mas_id, details, generation=gen):
+                        return details
+                    return None
                 if response.status_code == 404:
                     logger.info("[MAS] MAS gone, dropping mas_id=%s", mas_id)
                     await drop_mas(mas_id)

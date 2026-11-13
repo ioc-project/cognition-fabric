@@ -69,6 +69,32 @@ func TestRegistrationConflictUpdatesEndpointAndHealthURL(t *testing.T) {
 	}
 }
 
+func TestAdvertisedURLs(t *testing.T) {
+	health, notify, err := AdvertisedURLs("demo-ce:18001", ":18000", "", "")
+	if err != nil || health != "http://demo-ce:18000" || notify != health {
+		t.Fatalf("derived health=%q notify=%q err=%v", health, notify, err)
+	}
+	health, notify, err = AdvertisedURLs("demo-ce:18001", ":18000", "http://override:9", "")
+	if err != nil || health != "http://override:9" || notify != "http://override:9" {
+		t.Fatalf("health override health=%q notify=%q err=%v", health, notify, err)
+	}
+	health, notify, err = AdvertisedURLs("demo-ce:18001", ":18000", "http://override:9", "http://notify:8")
+	if err != nil || health != "http://override:9" || notify != "http://notify:8" {
+		t.Fatalf("both overrides health=%q notify=%q err=%v", health, notify, err)
+	}
+	health, notify, err = AdvertisedURLs("demo-ce:18001", ":18000", "", "http://notify:8")
+	if err != nil || health != "http://demo-ce:18000" || notify != "http://notify:8" {
+		t.Fatalf("notify override health=%q notify=%q err=%v", health, notify, err)
+	}
+	health, notify, err = AdvertisedURLs("bad", ":18000", "http://override:9", "")
+	if err != nil || health != "http://override:9" || notify != "http://override:9" {
+		t.Fatalf("override without derived health=%q notify=%q err=%v", health, notify, err)
+	}
+	if _, _, err = AdvertisedURLs("bad", ":18000", "", ""); err == nil {
+		t.Fatal("want error when neither override nor derived URL is available")
+	}
+}
+
 func TestHealthURL(t *testing.T) {
 	for _, c := range []struct{ grpc, listen, want string }{
 		{"demo-ce:18001", ":18000", "http://demo-ce:18000"},

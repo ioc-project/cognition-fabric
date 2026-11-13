@@ -137,6 +137,7 @@ async def _wait_until(predicate, timeout=8.0):
 @pytest.mark.asyncio
 async def test_register_discovery_get_and_notifications(monkeypatch):
     mas_sync._mas.clear()
+    mas_sync._gen.clear()
     cfn = MockCFN(("127.0.0.1", 0))
     thread = threading.Thread(target=cfn.serve_forever, daemon=True)
     thread.start()
@@ -220,3 +221,4 @@ async def test_register_discovery_get_and_notifications(monkeypatch):
             pass
         cfn.shutdown()
         mas_sync._mas.clear()
+        mas_sync._gen.clear()

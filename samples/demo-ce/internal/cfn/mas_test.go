@@ -89,6 +89,38 @@ func TestFetchMAS404Drops(t *testing.T) {
 	}
 }
 
+func TestInFlightFetchDoesNotReviveDeletedMAS(t *testing.T) {
+	started := make(chan struct{})
+	release := make(chan struct{})
+	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		close(started)
+		<-release
+		json.NewEncoder(w).Encode(map[string]any{"id": "mas-1", "name": "stale"})
+	}))
+	defer api.Close()
+	l := Lifecycle{Base: api.URL, Client: api.Client()}
+	l.upsertMAS("mas-1", map[string]any{"id": "mas-1", "name": "live"})
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		l.fetchMAS(context.Background(), "mas-1")
+	}()
+	select {
+	case <-started:
+	case <-time.After(time.Second):
+		t.Fatal("fetch did not start")
+	}
+	l.ApplyNotification(context.Background(), "mas.deleted", "mas-1")
+	if len(l.KnownMAS()) != 0 {
+		t.Fatalf("after delete known=%v", l.KnownMAS())
+	}
+	close(release)
+	<-done
+	if len(l.KnownMAS()) != 0 {
+		t.Fatalf("in-flight GET revived known=%v", l.KnownMAS())
+	}
+}
+
 func TestDeletedNotificationDoesNotGet(t *testing.T) {
 	var gets atomic.Int32
 	api := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -116,7 +148,7 @@ func TestNotificationHandlerReturnsBeforeFetch(t *testing.T) {
 		json.NewEncoder(w).Encode(map[string]any{"id": "mas-1", "name": "slow"})
 	}))
 	defer api.Close()
-	l := Lifecycle{Base: api.URL, Client: api.Client(), work: context.Background()}
+	l := Lifecycle{Base: api.URL, Client: api.Client(), Work: context.Background()}
 	req := httptest.NewRequest(http.MethodPost, "/notification", strings.NewReader(`{"event_type":"mas.created","mas_id":"mas-1"}`))
 	w := httptest.NewRecorder()
 	l.NotificationHandler(w, req)
@@ -176,9 +208,9 @@ func TestWorkflowRegisterDiscoverNotify(t *testing.T) {
 	}))
 	defer api.Close()
 
-	l := Lifecycle{Base: api.URL, Address: "poc-ce:18001", HealthURL: "http://poc-ce:18000", Client: api.Client()}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	l := Lifecycle{Base: api.URL, Address: "poc-ce:18001", HealthURL: "http://poc-ce:18000", Client: api.Client(), Work: ctx}
 	var ready atomic.Bool
 	done := make(chan struct{})
 	go func() { defer close(done); l.Run(ctx, ready.Store) }()

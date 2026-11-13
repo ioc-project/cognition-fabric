@@ -205,11 +205,8 @@ class CELifecycleClient:
             "enforcing_endpoint": request.enforcing_endpoint,
             "health_url": request.health_url,
             "health_endpoint": request.health_endpoint,
-            # Explicit nulls clear an old callback when notifications are disabled.
-            "notification_url": request.notification_url,
-            "notification_endpoint": request.notification_endpoint,
         }
-        payload.update(_notification_fields(request))
+        payload.update(_notification_fields(request, patch=True))
 
         try:
             client = await self._get_client()
@@ -266,14 +263,19 @@ class CELifecycleClient:
         self.ce_type = result.ce_type
 
 
-def _notification_fields(request: CERegistrationRequest) -> dict:
-    if not request.notification_url or not request.notification_endpoint:
-        return {}
-    return {
-        "notification_url": request.notification_url,
-        "notification_endpoint": request.notification_endpoint,
-        "notification_protocol": request.notification_protocol or "http",
-    }
+def _notification_fields(request: CERegistrationRequest, *, patch: bool = False) -> dict:
+    if request.notification_url and request.notification_endpoint:
+        return {
+            "notification_url": request.notification_url,
+            "notification_endpoint": request.notification_endpoint,
+            "notification_protocol": request.notification_protocol or "http",
+        }
+    if patch:
+        return {
+            "notification_url": None,
+            "notification_endpoint": None,
+        }
+    return {}
 
 
 # Global lifecycle client

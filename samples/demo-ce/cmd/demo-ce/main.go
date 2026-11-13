@@ -96,17 +96,11 @@ func run() error {
 	httpListen := env("HTTP_LISTEN_ADDRESS", ":18000")
 	// CFN probes this URL to check the CE is alive. It defaults to the advertised gRPC host and the HTTP port.
 	advertisedGRPC := env("ADVERTISED_GRPC_ADDRESS", "demo-ce:18001")
-	healthURL := os.Getenv("ADVERTISED_HEALTH_URL")
-	if healthURL == "" {
-		if healthURL, err = cfn.HealthURL(advertisedGRPC, httpListen); err != nil {
-			return err
-		}
-	}
-	notifyURL, err := cfn.HealthURL(advertisedGRPC, httpListen)
+	healthURL, notifyURL, err := cfn.AdvertisedURLs(advertisedGRPC, httpListen, os.Getenv("ADVERTISED_HEALTH_URL"), os.Getenv("ADVERTISED_NOTIFICATION_URL"))
 	if err != nil {
 		return err
 	}
-	lifecycle := cfn.Lifecycle{Base: strings.TrimRight(env("CFN_URL", "http://ioc-scale-cfn-svc:9002"), "/"), Address: advertisedGRPC, HealthURL: healthURL, NotificationURL: notifyURL, Name: env("CE_NAME", "demo-ce"), Version: ceVersion, Type: ceType, Client: client}
+	lifecycle := cfn.Lifecycle{Base: strings.TrimRight(env("CFN_URL", "http://ioc-scale-cfn-svc:9002"), "/"), Address: advertisedGRPC, HealthURL: healthURL, NotificationURL: notifyURL, Name: env("CE_NAME", "demo-ce"), Version: ceVersion, Type: ceType, Client: client, Work: ctx}
 	mux.HandleFunc("POST /notification", lifecycle.NotificationHandler)
 	httpServer := &http.Server{Addr: httpListen, Handler: mux, ReadHeaderTimeout: 2 * time.Second, ReadTimeout: 3 * time.Second, WriteTimeout: 3 * time.Second, IdleTimeout: 30 * time.Second}
 	listener, err := net.Listen("tcp", env("GRPC_LISTEN_ADDRESS", ":18001"))

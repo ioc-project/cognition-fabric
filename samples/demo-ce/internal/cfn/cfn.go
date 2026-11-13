@@ -27,10 +27,11 @@ import (
 type Lifecycle struct {
 	Base, Address, HealthURL, NotificationURL, Name, Version, Type string
 	Client                                                         *http.Client
+	Work                                                           context.Context
 
-	mu   sync.Mutex
-	mas  map[string]map[string]any
-	work context.Context
+	mu  sync.Mutex
+	mas map[string]map[string]any
+	gen map[string]uint64 // bumped on drop so an in-flight GET cannot revive the MAS
 }
 
 // HealthURL builds the URL CFN probes from the gRPC address, whose host CFN already uses to
@@ -45,6 +46,31 @@ func HealthURL(advertisedGRPCAddress, httpListenAddress string) (string, error) 
 		return "", fmt.Errorf("HTTP listen address %q must be host:port or :port", httpListenAddress)
 	}
 	return "http://" + net.JoinHostPort(host, port), nil
+}
+
+// AdvertisedURLs is the health_url and notification_url this CE registers.
+// healthOverride and notifyOverride are ADVERTISED_HEALTH_URL and ADVERTISED_NOTIFICATION_URL.
+// An empty notify override follows the health override when that is set, otherwise the derived URL.
+func AdvertisedURLs(advertisedGRPCAddress, httpListenAddress, healthOverride, notifyOverride string) (healthURL, notificationURL string, err error) {
+	derived, derivedErr := HealthURL(advertisedGRPCAddress, httpListenAddress)
+	healthURL = healthOverride
+	if healthURL == "" {
+		if derivedErr != nil {
+			return "", "", derivedErr
+		}
+		healthURL = derived
+	}
+	notificationURL = notifyOverride
+	if notificationURL == "" {
+		if healthOverride != "" {
+			notificationURL = healthURL
+		} else if derivedErr != nil {
+			return "", "", derivedErr
+		} else {
+			notificationURL = derived
+		}
+	}
+	return healthURL, notificationURL, nil
 }
 
 func (l *Lifecycle) Register(ctx context.Context) (string, error) {
@@ -108,7 +134,6 @@ func (l *Lifecycle) Run(ctx context.Context, setReady func(bool)) {
 		id, err := l.Register(ctx)
 		if err == nil {
 			slog.InfoContext(ctx, "Demo CE registered; CFN will probe its health endpoint", "event", "cfn.registered", "stage", "CFN", "ce_id", id, "ce_name", l.Name)
-			l.work = ctx
 			setReady(true)
 			l.SyncAssociated(ctx, id)
 			<-ctx.Done()
