@@ -15,7 +15,7 @@ COPY api/ /src/api/
 COPY cfn/ /src/cfn/
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /cfn ./cmd/cfn
 
-FROM alpine:3.20
+FROM alpine:3.24
 WORKDIR /app
 RUN apk add --no-cache ca-certificates tzdata && adduser -D -g '' appuser
 COPY --from=builder /cfn /app/cfn
