@@ -99,7 +99,7 @@
     "zustand": "^4.5.5"
   },
   "optionalDependencies": {
-    "lightningcss-linux-x64-gnu": "1.30.2",
+    "lightningcss-linux-x64-gnu": "1.33.0",
     "lightningcss-linux-x64-musl": "1.30.2",
     "lightningcss-linux-arm64-gnu": "1.30.2",
     "lightningcss-linux-arm64-musl": "1.30.2",
