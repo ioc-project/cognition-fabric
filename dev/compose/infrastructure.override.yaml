@@ -1,0 +1,21 @@
+# The monorepo root .env configures both Compose interpolation and containers.
+# Replace Deployment's env_file lists so its private .env is never required/read.
+x-root-env: &root-env
+  env_file: !override
+    - ${CF_LOCAL_ENV_FILE:?Run through the monorepo local tasks}
+
+services:
+  oxp-api:
+    <<: *root-env
+    environment:
+      # IOC_SCALE_DB_PORT is the published host port, not the Docker service port.
+      POSTGRES_PORT: "5432"
+  norm: *root-env
+  embedding: *root-env
+  mce: *root-env
+  grouping: *root-env
+  analysis: *root-env
+  hierarchical-grouping: *root-env
+  decision-block: *root-env
+  stateful-eval: *root-env
+  noa-trip-planner: *root-env

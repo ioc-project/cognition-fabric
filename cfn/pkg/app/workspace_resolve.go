@@ -10,7 +10,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/mgmt"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/client/mgmt"
 )
 
 var (

@@ -1,18 +1,20 @@
 # CF agent ledger
 
 This is shared working memory for agents planning, implementing, and reviewing changes
-across the CF repositories. It records settled, non-obvious guidance that would prevent
+within Cognition Fabric. It records settled, non-obvious guidance that would prevent
 a repeated mistake or a review concern that has already been considered and rejected.
 It is not an architecture decision record or a substitute for a current contract.
 
-Read the [CF architecture](../architecture.md) and [local workflow](../../deploy/README.md), then
+Read the [CF architecture](../architecture.md) and [local workflow](../../dev/README.md), then
 consult this index and only notes relevant to the task. Use TOME and the local
-agent notes for project-level architecture context. The curated CFN service
-[ADRs](https://github.com/cisco-eti/ioc-scale-cfn-svc/tree/main/docs/decisions)
-remain separate. If a note conflicts with current architecture, an applicable ADR,
+agent notes for project-level architecture context. The curated
+[ADRs](../decisions) record architecture decisions separately from these notes.
+If a note conflicts with current architecture, an applicable ADR,
 or observed code, surface the conflict instead of silently following the note.
 
 ## Active guidance
+
+- [Source and Pages checks](source-and-pages-checks.md) — tracked source coverage and Pages path normalization.
 
 - [CE evaluation response](ce-evaluation-response.md) — legacy binary compatibility,
   independent fixtures and bounded CE-specific audit JSON.
@@ -29,8 +31,8 @@ or observed code, surface the conflict instead of silently following the note.
   metadata retrieval compatibility.
 - [CFN process-level integration tests](cfn-process-integration-tests.md) —
   Taskfile/CI Postgres split, `go run` SUT, and network-edge mocks.
-- [UTC timestamp ownership](utc-timestamps.md) — migration-only legacy timezone,
-  opaque CE evidence, checked config regeneration and UTC audit output.
+- [UTC timestamp ownership](utc-timestamps.md) — UTC storage/output, opaque CE
+  evidence and config timestamp comparisons.
 - [CE MAS association sync](ce-mas-association-sync.md) — discovery pull vs
   GET-by-id 404, no notification replay, image health 8081 vs local stack 8082.
 
@@ -45,8 +47,8 @@ or observed code, surface the conflict instead of silently following the note.
 - Index only guidance that still applies. Revise or remove stale guidance from the
   active index when the system changes; Git history retains earlier versions.
   Review ledger changes in the normal PR for the work that motivated them.
-- Curated architecture decisions continue through the ADR process in the CFN
-  service repository. An agent-ledger note neither creates nor supersedes an ADR.
+- Curated architecture decisions use the ADR process under `docs/decisions/`.
+  An agent-ledger note neither creates nor supersedes an ADR.
 
 A focused note can use this shape:
 

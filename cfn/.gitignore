@@ -36,12 +36,8 @@ vendor
 *.tgz
 
 helloworld.bin
-cfn
+/cfn
 
-# Environment files (keep .env.sample)
+# Local environment files
 .env
 .env.local
-
-# Local scratch files and runtime configuration
-/tmp/
-/.agents

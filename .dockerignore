@@ -1,0 +1,24 @@
+# Never send local state or planning material as Docker build context.
+.git
+**/.git
+.agents
+.claude
+/.vscode/
+/.local/
+**/.env
+**/.env.*
+!/.env.example
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.next
+**/.docusaurus
+**/.cache
+**/build
+**/dist
+**/*.log
+**/coverage.out
+**/coverage.html
+*.code-workspace
+.DS_Store

@@ -1,637 +1,313 @@
-# Run Cognition Fabric locally from source or published images
+# Run Cognition Fabric locally
 
-This workflow runs the CF management service, CFN, management UI, and template CE
-from sibling source checkouts. The
+Run these commands from the `cognition-fabric` repository root. The local tasks
+run CF components from this checkout and use the
 [`ioc-scale-cf-deployment`](https://github.com/cisco-eti/ioc-scale-cf-deployment)
-Compose project supplies Postgres, OXP, and their supporting services as
-published containers. You do not need OXP source code. Run the commands below
-from `ioc-scale-cfn-svc` unless a command changes directory explicitly. For an
-all-container deployment, use the deployment repository's README and the
-[NOA onboarding steps](#onboard-noa-with-the-standalone-image-deployment) below.
-To keep this workflow's integrated source NOA and Envoy while testing published
-CF services, use the [`:image` tasks](#run-cf-services-from-published-images) below.
+checkout configured by `CF_DEPLOYMENT_DIR` in root `.env` to start Postgres, OXP
+and Enforcement Proxy infrastructure.
+Deployment and OXP remain separate repositories; the tasks do not modify them.
 
-## Onboard NOA with the standalone image deployment
+## Fresh checkout
 
-Start the published-image stack using the
-[Deployment quick start](https://github.com/cisco-eti/ioc-scale-cf-deployment#quick-start).
-[noa-mas.json](noa-mas.json), copied from OXP sample apps, declares the NOA Trip
-Planner's agents, in-process Python tools, and partial topology.
-
-1. Open the deployed CF web UI (default <http://localhost:9001>) and sign in as
-   `admin` using `ADMIN_USER_PASSWORD` from the **Deployment** `.env`.
-2. Open **Create MAS** (`/mas/create`), which uses the **Default Workspace**.
-   Switch to **JSON** and paste the contents of [noa-mas.json](noa-mas.json).
-3. Switch to **Form** to select the registered, online Demo CE, then save.
-   Copy the generated MAS ID from its details page. Use that ID when configuring
-   the [Demo CE policy](https://github.com/cisco-eti/ioc-scale-cf-deployment#demo-ce).
-
-This registers the declaration. Start the published NOA app with Deployment's
-`full-mas` profile; onboarding does not add CF enforcement to its in-process tools.
-
-## Clone the workspace
-
-Clone these five repositories into the same parent directory. You can name and
-place that parent directory as you like; the sibling directory names matter.
+For the sibling-directory layout shown in `.env.example`, clone both repositories
+into the same parent directory, then work from the monorepo root:
 
 ```bash
-mkdir ioc-cfn
-cd ioc-cfn
-git clone git@github.com:cisco-eti/ioc-scale-cfn-svc.git
-git clone git@github.com:cisco-eti/ioc-scale-cf-deployment.git
-git clone git@github.com:cisco-eti/ioc-scale-cf-mgmt-svc.git
-git clone git@github.com:cisco-eti/ioc-scale-cf-ui.git
-git clone git@github.com:cisco-eti/ioc-scale-cf-demo-ce.git
-cd ioc-scale-cfn-svc
+git clone https://github.com/cisco-eti/cognition-fabric.git
+git clone https://github.com/cisco-eti/ioc-scale-cf-deployment.git
+cd cognition-fabric
 ```
 
-Open `ioc-scale-cfn-svc/ioc-cfn.code-workspace` in VS Code or Cursor. The
-workspace uses relative paths to the sibling checkouts. If you already cloned
-CFN, clone the other four repositories beside it. The workspace's `.agents`
-and reference OXP folders are optional for running the stack; they may appear
-as missing folders until you add them. The sample MAS source used below is
-already in `deploy/local/noa-trip-planner/`.
+The Deployment checkout can be elsewhere; set its location in root `.env` as
+described below.
 
-## Prerequisites and configuration
+Install dependencies and create `.env` as described below. First startup
+initializes the local databases and registers the CF services.
 
-Install Docker with Compose v2, [Task](https://taskfile.dev/), Go 1.25+, Python
-3.10+, Poetry, [uv](https://docs.astral.sh/uv/), Node.js 20 (at least
-20.9), and npm. The template CE needs Python 3.11+. The management service
-and template CE use their own Python environments.
-The optional Go demo CE requires Go 1.25.9+ (or automatic Go toolchain downloads).
+## Layout and prerequisites
 
-Start Docker, then authenticate to the private `cisco-eti` images in GHCR.
-Set `GITHUB_USERNAME` and `GITHUB_TOKEN` to an account and token with package
-read access:
+| Directory | Purpose |
+|---|---|
+| `api/` | Shared Go module, canonical protobufs and API contracts |
+| `cfn/` | CFN Go service |
+| `cf-mgmt/` | Python Management service |
+| `cf-ui/` | Next.js Management UI |
+| `samples/demo-ce/` | Go policy-driven CE |
+| `samples/template-ce/` | Python CE with MAS notifications |
+| `samples/noa-trip-planner/` | Source NOA, local tools, experiments and MAS declarations |
+| `dev/` | Launcher, Compose overrides, helper tools and regression tests |
+
+Install Docker with Compose v2.24.4+, Task, Go 1.25.9+, Python 3.11+, Poetry, uv,
+Node.js 20 (at least 20.9) and npm. The Go modules use the shared API module
+within this repository through `go.work` and relative module replacements.
+Pulling private published container images requires GHCR access, including OXP or
+Proxy images used by the infrastructure dependency. Authenticate Docker before
+starting infrastructure if those images require it.
+
+Prepare dependencies once, with compatible Python/Node versions selected:
 
 ```bash
-echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_USERNAME" --password-stdin
+(cd cf-mgmt && poetry install)
+go -C api mod download
+go -C cfn mod download
+go -C samples/demo-ce mod download
+npm --prefix cf-ui ci
+(cd samples/template-ce && uv sync --frozen --extra test)
+(cd samples/noa-trip-planner && uv sync --frozen --group dev)
 ```
 
-Create the CFN repository's `.env` and set the two gateway keys. They may use
-the same credential when it can access both the chat and embedding models.
-Set the gateway URLs and model aliases to those available to your credential:
+Install the pinned proto tools described in [API development](../api/README.md)
+when regenerating or checking bindings. Root `task proto` generates bindings;
+`task proto:check` checks temporary output without rewriting tracked files.
+
+## Configuration
+
+The repository has one [`.env.example`](../.env.example), with commented sections
+for shared infrastructure and each component. Copy it to root `.env`, then
+configure the gateway URLs, model aliases and credentials. Root tasks load this
+file and supply component-specific connection settings. Do not add a
+`cf-mgmt/.env`: Management loads that file with override enabled, so the launcher
+rejects it to protect the selected database.
 
 ```bash
 cp .env.example .env
 ```
 
-```dotenv
-OPENAI_API_KEY=<gateway-key>
-AI_GATEWAY_API_KEY=<gateway-key>
-AI_GATEWAY_BASE_URL=https://<gateway-host>/v1
-LLM_BASE_MODEL_URL_MCE=https://<gateway-host>/v1
-NOA_LLM_MODEL=<chat-model-alias>
-LLM_MODEL_NAME=<chat-model-alias>
-EMBEDDING_MODEL=<embedding-model-alias>
-```
-
-Use the base URL ending in `/v1`, without `/chat/completions`. The example
-passwords in `.env.example` are populated for a local run. If the gateway and
-models remain mismatched, OXP workers or the sample MAS can fail even while the
-other services start. `.env.sample` only covers CFN alone and is insufficient
-for this workflow.
-
-The tasks load the CFN `.env` and pass it explicitly to Compose. They do not
-create or modify files in the deployment checkout. An existing deployment
-`.env` symlink can remain, but is not required by these tasks.
-
-Select both the NOA implementation and its enforcement mode in the CFN `.env`:
+Set `CF_DEPLOYMENT_DIR` to your Deployment checkout. The example uses a sibling
+directory:
 
 ```dotenv
-NOA_MODE=source
-NOA_ENFORCEMENT_MODE=direct
+CF_DEPLOYMENT_DIR=../ioc-scale-cf-deployment
 ```
 
-`NOA_MODE` accepts `source` (the default) or `published`.
-`NOA_ENFORCEMENT_MODE` accepts `direct` (the default) or `proxy`. Proxy mode
-requires source NOA. Both `infra:up` and `run:full-mas` read these settings;
-no inline environment assignments are needed. The published image is independent
-and does not gain the source adapter's direct enforcement behavior.
+Absolute paths are also supported, for example
+`CF_DEPLOYMENT_DIR=/path/to/ioc-scale-cf-deployment`. Relative paths resolve from
+the monorepo root, regardless of the directory where you invoke Task. Quote a
+path containing spaces. The configured directory must contain
+`docker-compose.yml`; the launcher reports a missing setting or checkout before
+issuing Docker commands. Infrastructure, proxy and service tasks use this same
+setting.
 
-On Apple Silicon, the template runs OXP infrastructure as arm64 while the
-published OXP workers and database image use amd64. On an Intel/AMD host, set
-`OXP_INFRA_PLATFORM=linux/amd64` in `.env`. See `.env.example` for the other
-platform settings.
+Supply your own gateway/model credentials and `NEXTAUTH_SECRET`. Set
+`ENFORCEMENT_PLATFORM` for your host (`linux/arm64` or `linux/amd64`). OXP
+infrastructure defaults to `linux/arm64`; on an Intel/AMD host, add
+`OXP_INFRA_PLATFORM=linux/amd64` to root `.env` so those containers run natively.
+OXP workers default to `linux/amd64`. Optional OXP and infrastructure tuning
+variables are listed in the Deployment checkout's `.env.example`; add them to
+root `.env` when overriding a default. The root template keeps CF settings,
+required external configuration and deliberate overrides such as the ClickHouse
+database shared with the OTel collector. Root tasks
+load `.env` automatically, so mode settings do not need inline overrides.
+The monorepo Compose override also uses this file for OXP and published NOA
+container environments; no `.env` is needed in the Deployment checkout. Compose
+2.24.4+ is required for replacing the inherited environment-file list with
+[`!override`](https://docs.docker.com/reference/compose-file/merge/#replace-value).
 
-For management on macOS, select a compatible Python before installing its
-dependencies:
+The launchers write generated runtime files under gitignored `.local/`.
+`CE_CONFIG_FILE` and `CE_MAS_FILE` accept absolute paths or paths relative to the
+repository root. To prepare a Go Demo CE policy:
 
 ```bash
-uv python install 3.13
-uv tool install poetry
-(cd ../ioc-scale-cf-mgmt-svc && poetry env use "$(uv python find 3.13)")
+mkdir -p .local/ce
+cp samples/demo-ce/config/config.json .local/ce/config.json
 ```
 
-Make sure `~/.local/bin` is on your `PATH`. The UI repository has a `.nvmrc`
-for Node 20. If you use nvm, run `nvm use 20` before `npm ci` and in the UI
-terminal before `task run:cf-ui`.
-
-Install source dependencies once:
-
-```bash
-(cd ../ioc-scale-cf-mgmt-svc && poetry install)
-go mod download
-(cd ../ioc-scale-cf-ui && npm ci)
-(cd ../ioc-scale-cf-demo-ce/template-ce && uv sync --frozen)
-(cd deploy/local/noa-trip-planner && uv sync --frozen) # only for source MAS
-```
-
-## Start the shared infrastructure and CF services
-
-If the standalone published deployment is running, stop it first. This
-preserves its database volumes and avoids mixing its CF databases and proxy
-configuration with the local workflow. A fresh checkout does not need this step:
-
-```bash
-(cd ../ioc-scale-cf-deployment && make down)
-```
-
-From the CFN checkout, start Postgres and OXP through the deployment Compose
-project:
-
-```bash
-task infra:up
-```
-
-In proxy mode, `infra:up` also starts Envoy, its plugin installer jobs, and
-the mediation service used for proxy audit records. It does not start published
-CF containers or require the source CFN or NOA to be running. The source NOA
-task applies the MAS-specific proxy routes when the MAS ID is available.
-
-`infra:up` creates `cfn_mgmt_local` and `cfn_audit_local` in the shared Postgres
-server. They are separate from the published CF databases. Both modes use the
-same OXP services and data stores. The `:image` tasks also use these local CF
-databases, so switching a service between source and image retains local MAS
-records, CE associations, and audits when their migration histories are compatible.
-Local tasks reject running CF containers
-from the standalone deployment, which use different CF databases. Stop that
-stack before switching workflows. Each service task checks its container and
-ports to prevent starting a second instance. Source tasks check required
-sibling checkouts and report their clone URLs if any are missing.
-
-Run each of these **foreground** tasks in a separate CFN checkout terminal.
-Start them in order, waiting for each service to become ready:
-
-1. `task run:cfn-mgmt` — management API on port 9000; applies local database migrations.
-2. `task run:cfn` — CFN HTTP on 9002 and gRPC on 9003.
-3. `task run:cf-ui` — management UI on 9001.
-4. `task run:template-ce` — template CE gRPC on 50051, health on 8082, notifications on 8080.
-
-The open audit panel refreshes automatically every 30 seconds while the browser
-tab is visible and online. Configure `CFN_UI_AUDIT_REFRESH_INTERVAL_SECONDS` in
-the CFN `.env`; `0` disables auto-refresh. Restart `task run:cf-ui` and reload the
-browser page after changing this setting.
-
-`CFN_UI_AUDIT_FLASH_DURATION_SECONDS=60` controls how long a trace header pulses
-after auto-refresh finds a new audit item (`0` disables flashing). Set it in the
-same CFN `.env`, restart `task run:cf-ui` and reload the browser. Each trace has its
-own duration, restarted by another incoming item; multiple headers can flash
-together, including collapsed groups. Initial loads and Load more stay quiet.
-
-The template CE runs separate health and notification HTTP servers. The local task
-sets `HEALTH_PORT=8082` and `HTTP_PORT=8080` to keep their listeners and advertised
-registration addresses aligned; both servers otherwise default to port 8080.
-It synchronizes runtime dependencies from the template CE's lockfile on startup,
-preserving installed extras, so pulling new dependencies does not leave a stale
-virtual environment. CFN probes the health endpoint; the CE does not send heartbeats.
-
-For the policy-driven Go CE instead of the Python template CE, use
-`task run:demo-ce` in step 4 after configuring its policy as described below.
-
-### UTC timestamp cutover
-
-CF-owned storage and API timestamps use UTC; see the
-[timestamp contract](../docs/specs/utc-timestamps.md). For an existing local
-Management database, stop its Management writers and CFNs before applying the
-compatible Management migration. PostgreSQL can remain running. Record the old
-database session timezone and back up any development data you want to restore
-exactly.
-
-Set `LEGACY_TIMESTAMP_TZ` in the CFN `.env` only if the old timezone-less values
-need an interpretation other than the default `UTC`, for example
-`LEGACY_TIMESTAMP_TZ=Europe/Budapest`. This describes the old database session
-timezone, which may differ from the laptop timezone. Both source Management tasks
-and the CFN-owned `:image` Compose configuration pass this migration-only setting;
-new writes and APIs stay UTC regardless of its value.
-
-1. Start compatible Management with `task run:cfn-mgmt` or
-   `task run:cfn-mgmt:image`; its normal entrypoint migrates only the 19 columns.
-2. Separately run the checked one-off config regeneration documented in the
-   [Management migration guide](../../ioc-scale-cf-mgmt-svc/docs/DATABASE_MIGRATIONS.md).
-   Use the same selected database, including `LOCAL_CF_MGMT_DB` (default
-   `cfn_mgmt_local`). Do not rely on a bare Python command falling back to an
-   unrelated default database. Require its result checks to pass for all
-   non-deleted CFNs, disabled ones included: the existing generator swallows
-   exceptions, so a normal return alone does not prove success. This is a one-off
-   maintenance command, not a startup hook or another generator.
-3. Restart CFN with the updated code/image. Registration rebuilds and installs its
-   canonical baseline without lifecycle notifications. The one-off regeneration
-   can run before or after restart: a later version-only refresh has the same MAS
-   timestamps and sends no notification. An old running naive baseline still
-   needs restart.
-4. Reload the UI and verify UTC API timestamps, then make a genuine MAS change to
-   check that normal lifecycle notifications continue.
-
-Keep the migration-lineage preflight enabled when selecting images. For the
-standalone Deployment stack, supply `LEGACY_TIMESTAMP_TZ` explicitly to the
-Management container using a local Compose override if needed; adding it only to
-an unforwarded `.env` is insufficient. For example, add this service environment
-mapping to the override passed to your normal Compose invocation:
-
-```yaml
-services:
-  ioc-scale-cf-mgmt-svc:
-    environment:
-      LEGACY_TIMESTAMP_TZ: Europe/Budapest
-```
-
-No Deployment checkout edit is required. After upgrade the variable has no
-runtime effect. Downgrade validates the same zone and reverses only the 19 columns;
-it leaves cached UTC strings unchanged and loses timezone information. Use the
-backup for exact restoration rather than expecting a lossless named-zone
-downgrade/re-upgrade.
-
-### Run CF services from published images
-
-Each CF service can run from source or from a published image independently.
-Run `task infra:up` first, then choose one task per row, in the same order as
-the source workflow. Each task runs in its own foreground terminal.
-
-| Service | Source task | Published image task | Tag override |
-| --- | --- | --- | --- |
-| Management | `task run:cfn-mgmt` | `task run:cfn-mgmt:image` | `CF_MGMT_SVC_TAG` |
-| CFN | `task run:cfn` | `task run:cfn:image` | `CFN_SVC_TAG` |
-| UI | `task run:cf-ui` | `task run:cf-ui:image` | `CF_UI_TAG` |
-| Go Demo CE | `task run:demo-ce` | `task run:demo-ce:image` | `CF_DEMO_CE_TAG` |
-
-Tags default to `latest`. Set them in the CFN `.env`, or override one start:
-
-```bash
-CFN_SVC_TAG=2026-11-02-abcdef0 task run:cfn:image
-```
-
-Use an actual tag published by that service's CI or release workflow. PR
-validation alone does not publish images. `CF_REGISTRY` defaults to
-`ghcr.io/cisco-eti`. The image tasks pull their selected tag every time,
-recreate only the selected service, stream its logs, and stop it on Ctrl+C.
-They never build from local source or start dependencies.
-
-#### Publish a Git tag image
-
-A Git tag names a commit, not a branch. Pushing the tag ref is what publishes;
-an ordinary branch push does not. CFN and Demo CE run
-`.github/workflows/release.yaml` on that tag push. Management and UI already
-publish from tags in their own Docker workflows. The tagged commit must contain
-the release workflow, so merge or rebase onto the branch before tagging.
-
-Supported tag names match semantic versioning: `v1.2.3` or a prerelease such as
-`v1.2.3-rc.1` or `v1.2.3-alpha.1`. Other tag names fail the release workflow and
-do not publish. Treat tags as immutable; replacing a Git tag overwrites the
-GHCR tag.
-
-```bash
-git tag v1.2.3-rc.1 <commit>
-git push origin v1.2.3-rc.1
-```
-
-Do not use `git push --tags` (it pushes every local tag).
-
-The resulting image uses the Git tag as its Docker tag, for example
-`ghcr.io/cisco-eti/ioc-scale-cfn-svc:v1.2.3-rc.1` and
-`ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce:v1.2.3-rc.1`. Tag builds do not
-move `latest`. Select them with the overrides above:
-
-```bash
-CFN_SVC_TAG=v1.2.3-rc.1 task run:cfn:image
-CF_DEMO_CE_TAG=v1.2.3-rc.1 task run:demo-ce:image
-```
-
-Before management starts, a read-only preflight checks the current
-database revision against that version's Alembic graph. Image management is
-checked after pulling, using Python and migrations from the selected image with
-its normal entrypoint bypassed. The subsequent start does not pull again.
-Management's normal image entrypoint then runs its own database migrations.
-CF source dependencies are needed only for the services run from source;
-source NOA still needs its `uv` environment.
-
-Source and image management share a database by default, so switching versions
-requires a compatible migration lineage. An empty database or an ancestor of
-the selected version's single head can be upgraded. A revision unknown to the
-selected version is rejected before migrations run; this can happen in either
-direction when a branch or newer image has added migrations. The check does
-not guarantee application compatibility after a schema upgrade or detect edits
-to migrations that reuse the same revision IDs. Pin a compatible tag or use an
-isolated local management database. The launcher never automatically stamps,
-downgrades, resets, or deletes existing data.
-
-For example, stop NOA, the CE, CFN, and management, then create and select an
-isolated image database while preserving the source database:
-
-```bash
-LOCAL_CF_MGMT_DB=cfn_mgmt_image task infra:up
-LOCAL_CF_MGMT_DB=cfn_mgmt_image task run:cfn-mgmt:image
-```
-
-Use the same override on subsequent starts, or set it in `.env`. Restart CFN
-and the CE against that management service so their workspace and registration
-state is refreshed. The new database has its own users, MAS records and CE
-associations; onboard the MAS/CE again and update `NOA_MAS_ID` before restarting
-NOA. CFN audit storage remains separate in
-`cfn_audit_local`. Returning to the original management database uses
-`LOCAL_CF_MGMT_DB=cfn_mgmt_local`. Migration preflight does not modify either
-database.
-
-The image tasks use the [CFN-owned Compose file](local/images/compose.yaml),
-the CFN `.env`, and the existing deployment project's network. They do not edit
-the deployment checkout. Go Demo CE source and image tasks both use
-`CE_CONFIG_FILE` and optional `CE_MAS_FILE`, resolved relative to CFN. Neither
-uses the standalone deployment's sample policy. Configure the policy with your
-actual MAS ID and NOA identities, then associate the CE in the local UI.
-
-Keep `NOA_MODE=source` and your existing `NOA_ENFORCEMENT_MODE=direct` or `proxy`,
-then start `task run:full-mas`. Proxy mode keeps the generated Envoy routes and
-source tool server:
-
-```text
-Source NOA -> Envoy :9010 -> source/image CFN :9003 -> source/image CE
-```
-
-The published NOA image does not provide this integration. The Python template
-CE remains a source-only alternative, `task run:template-ce`.
-
-Stop a service with Ctrl+C before switching its source/image task. After
-switching CFN between source and image, restart the chosen CE task so it
-registers addresses reachable by the new CFN. Source CEs advertise
-`host.docker.internal` to an image CFN; an image CE advertises its container DNS
-name to an image CFN and host loopback to a source CFN.
-
-Mixed operation requires Docker-to-host connectivity. On Docker Desktop this
-uses `host.docker.internal`; the image file also supplies the `host-gateway`
-mapping for native Linux. Source management and the Go Demo CE bind to
-`127.0.0.1` by default; Docker Desktop can reach these listeners through
-`host.docker.internal`. On native Linux, explicitly set
-`LOCAL_CF_BIND_HOST=0.0.0.0` when mixing
-host services and image clients. Management, UI, and CFN images publish
-the same host ports as the shared deployment. Source processes still call local
-HTTP APIs through `localhost`.
-
-Launcher checks can run without starting services or touching databases:
-
-```bash
-python3 -m unittest discover -s deploy/local/tests -v
-```
-
-These checks use command stubs for lifecycle decisions, real temporary IPv4/IPv6
-listeners for port checks, and `docker compose config` for image configuration.
-Migration tests use real Alembic graphs when Alembic is installed; otherwise
-they are reported as skipped. They can also be run with management's Python:
-
-```bash
-(cd ../ioc-scale-cf-mgmt-svc && poetry run python -m unittest discover \
-  -s ../ioc-scale-cfn-svc/deploy/local/tests -v)
-```
-
-They do not establish live enforcement, image compatibility, or Docker-to-host
-connectivity, and do not start services or migrate real databases.
-
-### Choose NOA enforcement and CE independently
-
-For all four combinations, set `NOA_MODE=source` in the CFN `.env`:
-
-| `NOA_ENFORCEMENT_MODE` | CE task (choose one) | Tool authorization path |
-| --- | --- | --- |
-| `direct` | `task run:template-ce` | NOA → CFN → template CE |
-| `direct` | `task run:demo-ce` | NOA → CFN → demo CE |
-| `proxy` | `task run:template-ce` | NOA → Envoy → CFN → template CE |
-| `proxy` | `task run:demo-ce` | NOA → Envoy → CFN → demo CE |
-
-`direct` means the proxy is bypassed; CFN authorization still runs. In proxy
-mode, start Envoy with `task infra:up` before `task run:full-mas`. The latter
-starts the HTTP tool service automatically. Both CE tasks use the same local
-CFN and OXP, regardless of the NOA mode. Template CE uses gRPC 50051, health 8082,
-and notifications 8080; demo CE uses gRPC 18001 and HTTP 18000. These do not
-overlap the default NOA API/tool ports (8125/8126) or Envoy port (9010).
-
-To switch CEs, stop the previous CE task, disable its record in the management
-UI, and start the chosen CE task. Associate it with your MAS and ensure that
-it is enabled and online. Re-enable an existing CE record if it was disabled
-during a previous switch. CFN selects the first eligible CASA CE; merely
-starting a different CE does not change the MAS's associations or select it.
-The demo CE also requires `CE_CONFIG_FILE` and a policy for `NOA_MAS_ID`;
-the template CE uses `TEMPLATE_CE_DECISION=allow` or `deny`.
-
-To switch NOA modes, stop `task run:full-mas`, change the setting, and restart
-it (run `task infra:up` first when selecting proxy). A proxy left running in
-direct mode is unused. The CE task does not need to change when NOA mode changes.
-
-The management task refuses to run if the management checkout has its own
-`.env`, which could override the local database target. Logs from these four
-services appear in their terminals. To save a source service log while it
-runs, use `set -o pipefail; task run:cfn 2>&1 | tee /private/tmp/cfn.log` in
-its terminal. To follow infrastructure logs, run this from the deployment
-checkout in another terminal:
-
-```bash
-docker compose logs -f --tail=100 oxp-api otel-collector ioc-scale-db
-```
-
-## Exercise enforcement with the sample MAS
-
-The CF services can start without a MAS. To route a sample `GetDisposition`
-request to the template CE, register a MAS and associate that CE first.
-
-Open <http://localhost:9001> and sign in as `admin` using
-`ADMIN_USER_PASSWORD` from the CFN `.env`. In the default workspace, create a
-Multi-Agentic System, add its agents, and associate the template CE after it
-registers and appears online. Copy the MAS ID from its details page.
-
-For full-JSON create/edit, use the separate
-[NOA onboarding declaration and instructions](local/mas-onboarding/README.md).
-Its optional provided topology is stored by Management and displayed in the fifth
-Topology tab. Select an agent in the read-only graph to open its details and
-assigned tools in the right-hand Inspect panel, or view/copy the matching
-collapsible JSON. Edit mode uses the topology JSON box
-and the page's Save/Cancel actions. Observed topology remains disabled until the
-optional OXP integration is available.
-
-Stop a previously running published NOA container first, then set
-`NOA_MAS_ID` to the new MAS ID and `NOA_MODE=source` in the CFN `.env`, and
-start the CF-owned source copy in a fifth terminal:
-
-```bash
-(cd ../ioc-scale-cf-deployment && docker compose --profile full-mas stop noa-trip-planner)
-task run:full-mas
-```
-
-The source sample serves `/ask` on `${NOA_API_PORT:-8125}` and emits telemetry
-to the OTel collector on `localhost:4318`. In direct mode, before each proposed
-tool call it sends `GetDisposition` to the local CFN and waits for a response.
-This direct call simulates the enforcement proxy decision path. Proxy mode
-uses an actual HTTP interception boundary, described below. The published sample
-image does not exercise the source adapter's enforcement paths.
-
-```bash
-curl -X POST http://localhost:8125/ask \
-  -H 'Content-Type: application/json' \
-  -d '{"question":"Plan a 1-day trip to Celestia, do not ask follow-up questions"}'
-```
-
-For a more complex prompt that can involve the schedule, itinerary, and fare specialists:
-
-```bash
-curl -X POST http://localhost:8125/ask \
-  -H 'Content-Type: application/json' \
-  -d '{"question":"Plan a one-day trip to Celestia using the available data. Include train schedules and attractions, a feasible route with travel times, and train fares. Don’t ask follow-up questions; make reasonable assumptions and flag missing information."}'
-```
-
-Set `TEMPLATE_CE_DECISION=allow` (default) or `TEMPLATE_CE_DECISION=deny` in the CFN
-`.env` and restart `task run:template-ce` to change the forced verdict. A DENY
-skips the selected tool and returns an error to the sample agent. This template CE
-reads and writes OXP findings, but the forced verdict does not inspect tool
-arguments. If the CE is unavailable, the sample adapter treats the gRPC error
-or timeout as an unavailable tool. See the
-[sample's README](local/noa-trip-planner/README.md) for its enforcement
-behavior.
-
-To inspect stored findings for the MAS, quote the URL so the shell does not
-interpret `?`:
-
-```bash
-curl 'http://localhost:8081/api/v1/cognition-store/findings?mas_id=YOUR_MAS_ID'
-```
-
-An empty `findings` array is normal until a CE evaluation stores a finding.
-`context_complete: true` only describes pagination of this response; it does
-not mean telemetry or decision context is complete.
-
-## Use Envoy with source NOA
-
-Set both modes in the CFN `.env`:
+For the Go Demo CE, edit the private policy with the MAS ID created during your
+own onboarding and its agent/tool identities, then set
+`CE_CONFIG_FILE=.local/ce/config.json`. A single-policy configuration can also use
+`CE_MAS_FILE` to supply the existing MAS ID. Source and image tasks use the same
+private policy. No launcher creates MAS/CE associations for the operator.
+
+Select the NOA implementation and enforcement path in root `.env`:
 
 ```dotenv
 NOA_MODE=source
 NOA_ENFORCEMENT_MODE=proxy
+NOA_MAS_ID=
 ```
 
-Run `task infra:up`, then start the source management service, CFN, UI, and
-your CE as usual. Register the MAS and associate an enabled, online CE. Set
-`NOA_MAS_ID` in `.env`, then run `task run:full-mas`.
+Leave `NOA_MAS_ID` empty until you onboard the MAS through your own Management
+instance, then fill in the returned ID before starting NOA. Template CE can
+start before that onboarding and does not need the Go Demo CE policy file.
 
-The NOA task generates exact routes for that MAS and the existing NOA agent/tool
-identities, reloads Envoy, starts its HTTP tool service, waits for it to become
-ready, and starts NOA. Both source processes share its foreground terminal;
-Ctrl+C stops both. No separate tool-service task is required.
+`NOA_MODE` accepts `source` or `published`; `NOA_ENFORCEMENT_MODE` accepts `direct`
+or `proxy`. Proxy mode requires source NOA. Direct mode still calls CFN before
+tool execution, while proxy mode sends tool HTTP requests through Envoy.
+
+## Start infrastructure and services
+
+These are operator commands; each foreground service needs a separate terminal.
+The infrastructure task preserves existing volumes and creates the local CF
+databases only when absent. It refuses to mix unowned published CF containers
+with local database services.
+
+```bash
+task infra:up
+task run:cfn-mgmt
+task run:cfn
+task run:cf-ui
+task run:template-ce
+```
+
+Wait for each service to be ready before starting the next. To use the Go CE,
+choose `task run:demo-ce` instead of the Template CE task, after preparing its
+policy. Stop the previous CE task before switching; select and enable the desired
+CE association in Management. Running another CE does not select it for a MAS.
+For notification tests, set `ENABLE_NOTIFICATIONS=true` in the root `.env`.
+
+| Component | Host listener |
+|---|---|
+| Management | `9000` |
+| UI | `9001` |
+| CFN HTTP / gRPC | `9002` / `9003` |
+| Template CE gRPC / health / notifications | `50051` / `8082` / `8080` |
+| Go Demo CE HTTP / gRPC | `18000` / `18001` |
+| NOA / source tools | `8125` / `8126` |
+| Envoy | `9010` |
+| OXP API / OTel HTTP collector | `8081` / `4318` |
+
+Source listeners default to host loopback, except the source tool server, which
+must be reachable from Docker. `LOCAL_CF_BIND_HOST=0.0.0.0` is an explicit option
+for native Linux mixed source/image operation. Docker Desktop uses
+`host.docker.internal`; CE registration advertises an address appropriate to
+whether CFN is running from source or an image. The Template task synchronizes
+locked runtime dependencies on startup while preserving installed extras.
+
+### Optional: start services with captured logs
+
+Use `tee` to keep output visible in the terminal and save stdout and stderr
+under gitignored `.local/logs/`. These commands replace the plain foreground
+commands above. Stop an existing instance before starting its logged replacement.
+Run each service in a separate terminal and wait for readiness before starting
+the next. Mode settings continue to load from the root `.env`.
+
+In each terminal, from the monorepo root, prepare log capture:
+
+```bash
+mkdir -p .local/logs
+set -o pipefail
+```
+
+Then run one service command per terminal:
+
+```bash
+task run:cfn-mgmt 2>&1 | tee .local/logs/management.log
+```
+
+```bash
+task run:cfn 2>&1 | tee .local/logs/cfn.log
+```
+
+```bash
+task run:cf-ui 2>&1 | tee .local/logs/ui.log
+```
+
+```bash
+task run:template-ce 2>&1 | tee .local/logs/template-ce.log
+```
+
+```bash
+task run:full-mas 2>&1 | tee .local/logs/noa.log
+```
+
+For the Go Demo CE, replace the Template CE command with:
+
+```bash
+task run:demo-ce 2>&1 | tee .local/logs/demo-ce.log
+```
+
+`tee` overwrites that service's log on each start; use `tee -a` to append instead.
+For integration verification, capture Management, CFN, the selected CE and NOA
+logs so health checks, enforcement and MAS notification receipt can be observed.
+
+## Published CF images with the local databases
+
+The existing image tasks pull the selected tag and run only that service through
+[`compose/images.yaml`](compose/images.yaml). They share the existing Deployment
+network and retain its service/container names and local ownership labels.
+The image file deliberately has no build configuration or infrastructure
+dependencies. Image builds use repository-root contexts separately.
+
+```bash
+task run:cfn-mgmt:image
+task run:cfn:image
+task run:cf-ui:image
+task run:demo-ce:image
+```
+
+Choose source or image independently for each service, stopping its current
+foreground task before switching. Restart the chosen CE task after switching
+CFN source/image mode so its registered addresses match reachability. Tags remain
+`CF_MGMT_SVC_TAG`, `CFN_SVC_TAG`, `CF_UI_TAG`, and `CF_DEMO_CE_TAG` with default
+`latest`; `LOCAL_CF_MGMT_DB` deliberately selects another compatible local
+Management database. Shell overrides take precedence over root Task dotenv.
+
+## NOA onboarding and proxy mode
+
+Register the declaration through Management using
+[the NOA onboarding guide](../samples/noa-trip-planner/mas/README.md), select the
+enabled/online CE started above, and set root `NOA_MAS_ID` to the canonical ID
+returned by your Management instance. On a fresh database, Management creates
+the admin's default workspace and CFN registration assigns the local node to it;
+use that workspace for onboarding. A different workspace needs its own CFN
+assignment. The source runner uses the new MAS ID for telemetry and enforcement.
+The published NOA container must be stopped before the source runner starts.
+
+```bash
+task run:full-mas
+```
+
+In proxy mode, `infra:up` starts Envoy and mediation support. `run:full-mas`
+generates exact MAS/tool routes, reloads Envoy, then supervises NOA and its source
+HTTP tool server in one foreground process. Ctrl+C stops both source processes.
+Generated files live in ignored root `.local/enforcement/`.
 
 ```text
-Source NOA -> Envoy :9010 -> source CFN :9003 -> associated CE
-                |
-                +-- ALLOW -> NOA tools :8126 -> result to NOA
-                +-- blocked/unavailable -> tool error to NOA
+Source NOA -> Envoy :9010 -> CFN :9003 -> associated CE
+                    |
+                    +-- ALLOW -> source tools :8126
+                    +-- BLOCK / unavailable -> tool error to NOA
 ```
 
-Proxy mode sends each tool request once and does not call CFN directly or fall
-back to local tool execution. The same proposed-call trace context is carried
-in the HTTP request. Unknown paths are rejected. A generated local token allows
-the host tool service to accept execution requests forwarded by Envoy; this
-is local development configuration, not production workload authentication.
-
-Envoy reaches the source CFN and tool service through Docker Desktop's
-`host.docker.internal`. The tool listener defaults to `0.0.0.0:8126` so Docker
-can reach it. The generated `noa_tools` cluster uses `dns_lookup_family: V4_ONLY`
-to avoid selecting an IPv6 host address when Docker has no usable IPv6 route.
-Proxy HTTP is exposed on host loopback port 9010. Use
-`NOA_TOOLS_PORT`, `NOA_TOOLS_HOST`, and `ENVOY_HTTP_PORT` to change the local
-ports/binding; `NOA_ENFORCEMENT_PROXY_URL`, when nonempty, overrides the client's
-proxy origin. On Intel/AMD, set `ENFORCEMENT_PLATFORM=linux/amd64`. This workflow
-uses POSIX process supervision and requires Docker-to-host connectivity; native
-Linux may need its own `host.docker.internal` mapping.
-
-Inspect proxy and mediation logs with `task proxy:logs`. The generated routes,
-Envoy configuration, and local tool token live in ignored `tmp/enforcement/`.
-The launcher reuses the deployment repo's published images and Compose overlay,
-with a [CFN-owned override](local/enforcement/compose.override.yaml). It does not
-write to the deployment repo or start the example echo upstream.
-
-The current proxy uses HTTP 403 for both policy blocks and some fail-closed
-availability errors. NOA reports a proxy block without inventing a CE denial
-reason. Other transport failures produce an unavailable-tool error. A timeout
-can happen after an upstream tool started, so failed requests are never retried
-automatically. This mode exercises identity-based allow/block. OXP runtime-event
-delivery and qualification of content rules remain separate integration work.
-
-To switch back, stop NOA, set `NOA_ENFORCEMENT_MODE=direct`, and rerun
-`task run:full-mas`. An already-running proxy can remain idle until
-`task infra:down`. That task also stops the source proxy components even when
-the setting has been changed back to direct, and preserves database volumes.
-
-## Run the demo CE
-
-`task run:demo-ce` runs the Go CE from the sibling
-`ioc-scale-cf-demo-ce/demo-ce` checkout. It evaluates JSON identity and
-content rules rather than returning the Python template CE's forced verdict.
-Start infrastructure, management, and CFN as above, then prepare a local policy:
-
-```bash
-mkdir -p tmp
-cp ../ioc-scale-cf-demo-ce/demo-ce/config/config.json tmp/config.json
-```
-
-Edit this copy: replace the sample `mas-a`/`mas-b` IDs with your actual MAS
-IDs, and set source and destination IDs to those sent in `GetDisposition`.
-Remove sample rules you do not need. Unlisted MAS IDs and unmatched routes
-are denied. See the [demo CE README](../../ioc-scale-cf-demo-ce/demo-ce/README.md)
-for the policy schema and content evidence requirements.
-
-The repository's `tmp/` directory is ignored by Git. Set
-`CE_CONFIG_FILE=tmp/config.json` in the CFN `.env` (as in `.env.example`), then run:
-
-```bash
-task run:demo-ce
-```
-
-Use `CE_CONFIG_FILE` for the Go demo CE configuration. Paths are absolute or
-relative to the CFN checkout; existing config files can keep their filenames.
-For the single-policy JSON form, also set `CE_MAS_FILE` to a file containing the actual MAS ID.
-Restart the task after editing its policy or configuration.
-
-The task builds against the sibling CFN checkout using temporary module files,
-then runs in the foreground. It leaves both checkouts' `go.mod` and `go.sum`
-unchanged. The first build may download the Go toolchain and public dependencies.
-It uses CFN at `localhost:9002`, OXP at `localhost:8081`, gRPC at
-`127.0.0.1:18001`, and HTTP at `127.0.0.1:18000`. CFN probes its `/healthz`;
-registration supplies the base `health_url=http://127.0.0.1:18000` and separate
-`health_endpoint=/healthz`, so the path is appended only once.
-`/readyz` succeeds after registration. The CE supplies its registration defaults:
-`demo-ce`, version `1.0.0`, and type `CASA`. The launcher forwards
-`DEMO_CE_NAME` only when explicitly set. For the Python template CE, the
-optional equivalent is `TEMPLATE_CE_NAME`; its own default is `template-ce`.
-
-Stop `task run:template-ce` and disable its CE record in the management UI when
-switching. Associate the demo CE with the MAS and ensure it is online and
-enabled. CFN currently selects the first eligible CASA CE, so leaving both
-eligible can route requests to the Python CE.
-
-The source NOA sample can exercise identity rules. Its adapter does not publish
-the pre-call events or session context required by some content rules; starting
-this task alone does not provide that evidence. Use the demo CE's documented
-evidence inputs when exercising content checks.
+There is one proxy POST per proposed tool call and no direct/local execution
+fallback or automatic retry. Traceparent and session identity accompany each
+protected call. This protects tools, not every MAS/A2A/LLM interaction, and does
+not establish the separate content-sensitive pre-call evidence pipeline.
+Inspect existing proxy/mediation logs with `task proxy:logs`. After dependency
+changes, stop NOA and rerun its locked `uv sync`; its launcher uses `--no-sync`.
+See the [NOA guide](../samples/noa-trip-planner/README.md) for fake-LLM regression
+checks and experiments.
 
 ## Checks and shutdown
 
-With source dependencies installed and `task infra:up` running:
+With dependencies and local Postgres available:
 
 ```bash
-task test   # management, CFN, and template CE tests
-task check  # Compose configuration, formatting, lint, types, then tests
+task test
+task check
+task test:noa
+task test:dev
 ```
 
-`task test` uses a dedicated `ioc_test` database and can reset its tables. It
-does not use the local management or published management database.
-`task check` does not reformat source files.
+The aggregate covers API, CFN, Management, UI, Go Demo CE, Template CE, NOA and
+development/automation tests. Management's existing fixtures recreate tables only
+in the dedicated `ioc_test` database; the launcher verifies its connection target
+first. `task check` uses nonmutating lint and generation drift checks, then runs
+the aggregate. `test:dev` uses Management's Python environment for real Alembic
+graph checks; its launchers use command stubs and temporary local listeners,
+without starting services or migrating a real database.
 
-Stop foreground source or image tasks with Ctrl+C. `task infra:down` also stops
-any CF images owned by this local workflow, then the local proxy and shared
-infrastructure, without deleting volumes. It refuses to stop CF containers
-owned by the standalone published deployment. For that all-container workflow,
-follow the deployment repository's README.
+`task test:integration` is separate: it starts throwaway Postgres 17 on
+`127.0.0.1:55432` and runs CFN process tests with mocked Management/CE peers. CI
+uses its supplied isolated database with `INTEGRATION_SKIP_DB=true`.
+
+Stop foreground tasks with Ctrl+C. `task infra:down` stops only owned local CF
+images, the local proxy and infrastructure; it keeps volumes. It refuses to stop
+unowned services from the standalone published Deployment workflow.
+
+## Use Envoy with source NOA
+
+The [NOA onboarding and proxy mode](#noa-onboarding-and-proxy-mode) section describes
+root tasks and the required source/proxy settings. The launcher renders local
+routes and enforces ownership of its Envoy bind mount; do not bypass that guard
+when another checkout's proxy container is already present.

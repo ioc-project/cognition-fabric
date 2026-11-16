@@ -14,10 +14,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/oxp"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
-	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
+	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/inbox"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/oxp"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/pkg/config"
 )
 
 // Writing the identity ALLOW before content evaluation must fail this test.

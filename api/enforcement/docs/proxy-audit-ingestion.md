@@ -2,7 +2,7 @@
 
 CFN accepts finalized Proxy evidence through
 `ioc.cf.enforcement.v1.Enforcement/AppendAuditRecord`. CF owns the
-[proto](../../api/proto/enforcement/v1/enforcement.proto) and generated client.
+[proto](../proto/enforcement/v1/enforcement.proto) and generated client.
 The Proxy consumes CF's definitions, following the same dependency direction as
 `GetDisposition`. Its builder/codec can keep the existing field, enum and oneof
 names. Binary compatibility with the Proxy-owned AuditService is not required.
@@ -124,7 +124,7 @@ Authorizations and legacy observations with unspecified application state remain
 JSONB or identifiers/timestamps/success; absent historical outcomes stay null.
 The migration is repeatable. New CFN disposition writes populate the same field.
 
-CFN success semantics stay as defined in the [disposition spec](disposition-audit.md).
+CFN success semantics stay as defined in the [disposition spec](../../../docs/specs/disposition-audit.md).
 Proxy success is null for mediation, authorization and OpenShell middleware
 records. For sender response observations, an observed reply with no error or a
 completed policy block (`error_code=blocked`) is true. Reported transport,
@@ -179,14 +179,14 @@ Production transport must be aligned with the Proxy's TLS policy before delivery
 qualification. No new application-authentication exchange is introduced here.
 
 Run the CFN tests with an isolated `POSTGRES_TEST_DB`, Management audit tests, UI
-`npm run test:audit` and type checks. The five [record fixtures](../../pkg/audit/testdata)
+`npm run test:audit` and type checks. The five [record fixtures](../../../cfn/pkg/audit/testdata)
 cover all variants. Qualify actual Proxy delivery separately, including receipt
 checking, retries, permanent errors and outage recovery; the logging-only client
 cannot satisfy issue #41's complete production-path acceptance.
 
-With the sibling Management virtualenv and UI dependencies installed, set
+With the `cf-mgmt/.venv` and `cf-ui/` dependencies installed, set
 `CF_AUDIT_WORKSPACE_VERIFY=1` and run
-`go test ./pkg/app -run TestProxyRPCPostgresAndReadAPI -count=1 -v` with isolated
-PostgreSQL settings. This checks RPC → PostgreSQL → CFN HTTP → Management → UI
-presentation helpers with live upstream calls. It does not exercise browser
-layout or substitute for actual Proxy-client qualification.
+`go -C cfn test ./pkg/app -run TestProxyRPCPostgresAndReadAPI -count=1 -v` from the
+repository root with isolated PostgreSQL settings. This checks RPC → PostgreSQL →
+CFN HTTP → Management → UI presentation helpers with live upstream calls. It does
+not exercise browser layout or substitute for actual Proxy-client qualification.

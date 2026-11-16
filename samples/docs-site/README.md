@@ -2,14 +2,14 @@
 
 Docusaurus documentation for `demo-ce` and `template-ce`, with Mermaid diagrams and a GitHub Pages workflow.
 
-Site: [Cognition Engine documentation](https://refactored-carnival-2m9k3yw.pages.github.io/) (private GitHub Pages).
+Site: [Cognition Engine documentation](https://cisco-eti.github.io/cognition-fabric/) (private GitHub Pages).
 
 ## Local preview
 
 Requires Node.js 22 or newer. From the repository root:
 
 ```bash
-cd docs
+cd samples/docs-site
 npm ci
 npm start
 ```

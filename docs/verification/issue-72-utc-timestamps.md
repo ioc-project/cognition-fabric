@@ -5,9 +5,7 @@ implementation spans Management, CFN and UI on `fix/utc-timestamps`. The existin
 staged plan was preserved during verification. Manual browser inspection remains
 unverified.
 
-See the [approved plan](../plans/issue-72-utc-timestamps.md),
-[timestamp contract](../specs/utc-timestamps.md) and
-[cutover instructions](../../deploy/README.md#utc-timestamp-cutover).
+See the [timestamp contract](../specs/utc-timestamps.md) for current behavior.
 
 ## Checks performed
 

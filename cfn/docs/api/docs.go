@@ -45,7 +45,13 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "CE registered successfully",
+                        "description": "Existing registration returned by Management",
+                        "schema": {
+                            "$ref": "#/definitions/cognitionengine.RegisterResponse"
+                        }
+                    },
+                    "201": {
+                        "description": "New CE registered successfully",
                         "schema": {
                             "$ref": "#/definitions/cognitionengine.RegisterResponse"
                         }
@@ -54,6 +60,27 @@ const docTemplate = `{
                         "description": "Invalid request",
                         "schema": {
                             "$ref": "#/definitions/cognitionengine.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "CFN not found by Management",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "409": {
+                        "description": "Registration or endpoint conflict; detail can include existing_ce_id",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "422": {
+                        "description": "Management registration validation failed",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "502": {
@@ -104,6 +131,13 @@ const docTemplate = `{
                         "description": "CE not found",
                         "schema": {
                             "$ref": "#/definitions/cognitionengine.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "CE must be disabled and have no active MAS associations",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
                         }
                     },
                     "502": {
@@ -306,9 +340,9 @@ const docTemplate = `{
                 ],
                 "responses": {
                     "200": {
-                        "description": "MAS details",
+                        "description": "Default legacy response; metadata=true returns expanded mgmt.MASResponse, specified in api/ce/openapi/cfn-ce.yaml",
                         "schema": {
-                            "$ref": "#/definitions/mgmt.MASResponse"
+                            "$ref": "#/definitions/cognitionengine.LegacyMASResponse"
                         }
                     },
                     "400": {
@@ -382,6 +416,59 @@ const docTemplate = `{
                     "description": "Error message",
                     "type": "string",
                     "example": "ce_type is required"
+                }
+            }
+        },
+        "cognitionengine.LegacyMASCognitionEngine": {
+            "type": "object",
+            "properties": {
+                "ce_id": {
+                    "type": "string"
+                },
+                "ce_type": {
+                    "type": "string"
+                },
+                "enabled": {
+                    "type": "boolean"
+                },
+                "enforcing_endpoint": {
+                    "type": "string"
+                },
+                "enforcing_protocol": {
+                    "type": "string"
+                },
+                "enforcing_url": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        },
+        "cognitionengine.LegacyMASResponse": {
+            "type": "object",
+            "properties": {
+                "cognition_engines": {
+                    "description": "Null when the source CE collection is null; otherwise an array, including empty.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/cognitionengine.LegacyMASCognitionEngine"
+                    }
+                },
+                "id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "workspace_id": {
+                    "type": "string"
                 }
             }
         },
@@ -589,118 +676,6 @@ const docTemplate = `{
                     "description": "CE version",
                     "type": "string",
                     "example": "1.0.0"
-                }
-            }
-        },
-        "mgmt.MASCognitionEngine": {
-            "type": "object",
-            "properties": {
-                "ce_id": {
-                    "type": "string"
-                },
-                "ce_type": {
-                    "type": "string"
-                },
-                "enabled": {
-                    "type": "boolean"
-                },
-                "enforcing_endpoint": {
-                    "type": "string"
-                },
-                "enforcing_protocol": {
-                    "type": "string"
-                },
-                "enforcing_url": {
-                    "type": "string"
-                },
-                "mas_config": {
-                    "type": "object"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "status": {
-                    "type": "string"
-                },
-                "version": {
-                    "type": "string"
-                }
-            }
-        },
-        "mgmt.MASResponse": {
-            "type": "object",
-            "properties": {
-                "agents": {
-                    "type": "array",
-                    "items": {
-                        "type": "object"
-                    }
-                },
-                "cognition_engines": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/mgmt.MASCognitionEngine"
-                    }
-                },
-                "config": {
-                    "type": "object"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "description": {
-                    "type": "string"
-                },
-                "documentation": {
-                    "type": "array",
-                    "items": {
-                        "type": "object"
-                    }
-                },
-                "id": {
-                    "type": "string"
-                },
-                "mcp_servers": {
-                    "type": "array",
-                    "items": {
-                        "type": "object"
-                    }
-                },
-                "metadata": {
-                    "type": "object"
-                },
-                "metadata_schema_version": {
-                    "type": "string"
-                },
-                "name": {
-                    "type": "string"
-                },
-                "tag": {
-                    "type": "string"
-                },
-                "tools": {
-                    "type": "array",
-                    "items": {
-                        "type": "object"
-                    }
-                },
-                "topologies": {
-                    "type": "array",
-                    "items": {
-                        "type": "object"
-                    }
-                },
-                "topology_sources": {
-                    "type": "object"
-                },
-                "updated_at": {
-                    "type": "string"
-                },
-                "version": {
-                    "type": "string"
-                },
-                "workspace_id": {
-                    "type": "string"
                 }
             }
         }

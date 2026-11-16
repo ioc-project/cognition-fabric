@@ -1544,14 +1544,14 @@ export interface components {
          *       "config": {
          *         "workspaces": []
          *       },
-         *       "created_at": "2026-02-19T19:46:49.102012",
+         *       "created_at": "2026-02-19T19:46:49.102012Z",
          *       "created_by": "00000000-0000-0000-0000-000000000000",
          *       "enabled": true,
          *       "id": "cfn-persistent-id-123",
-         *       "last_seen": "2026-02-19T19:46:49.185773",
+         *       "last_seen": "2026-02-19T19:46:49.185773Z",
          *       "name": "cfn-node-prod-1",
          *       "status": "offline",
-         *       "updated_at": "2026-02-19T19:46:49.102012",
+         *       "updated_at": "2026-02-19T19:46:49.102012Z",
          *       "workspace_ids": []
          *     }
          */

@@ -14,9 +14,9 @@ This script:
 
 import json
 from datetime import datetime
-from pathlib import Path
 
 from experiments.common import (
+    DEFAULT_RESULTS_DIR,
     error_record,
     load_experiment_config,
     load_questions,
@@ -47,8 +47,8 @@ def run_experiment(
     if output_prefix is None:
         output_prefix = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    results_dir = Path(__file__).parent / "results"
-    results_dir.mkdir(exist_ok=True)
+    results_dir = DEFAULT_RESULTS_DIR
+    results_dir.mkdir(parents=True, exist_ok=True)
     results_file = results_dir / f"{output_prefix}_results.jsonl"
 
     coalitions = config["coalitions"]

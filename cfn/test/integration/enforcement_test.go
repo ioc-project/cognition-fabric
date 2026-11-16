@@ -16,8 +16,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
-	enforcementv1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
+	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
+	enforcementv1 "github.com/cisco-eti/cognition-fabric/api/enforcement/v1"
 )
 
 var _ = Describe("GetDisposition", Serial, func() {

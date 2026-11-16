@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	api "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
+	api "github.com/cisco-eti/cognition-fabric/api/enforcement/v1"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

@@ -9,12 +9,12 @@ package events
 import (
 	"context"
 	"encoding/json"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/inbox"
 	"log"
 	"time"
 
-	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
+	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
 )
 
 // Extract reads the session and the judgeable texts out of one inbox event of the submit r; ok is false

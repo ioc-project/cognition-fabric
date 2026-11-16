@@ -5,7 +5,7 @@
 Terms a new teammate on **this** project needs. **One `##` heading per term** — TOME maps each
 heading to its own `glossary/<slug>.md` wiki entry, so the structure matters. Acronyms carry their
 expansion on the first line. Terms still under discussion link to
-[`discussions.md`](discussions.md).
+[`discussions/README.md`](discussions/README.md).
 
 ---
 

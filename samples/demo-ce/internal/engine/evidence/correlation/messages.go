@@ -8,10 +8,10 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence/events"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/oxp"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence/events"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/oxp"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/pkg/config"
 )
 
 // Reject unknown/partial message shapes instead of turning missing content into

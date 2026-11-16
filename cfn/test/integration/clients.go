@@ -16,8 +16,8 @@ import (
 	"path/filepath"
 	"time"
 
-	enforcementv1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/config"
+	enforcementv1 "github.com/cisco-eti/cognition-fabric/api/enforcement/v1"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/config"
 	. "github.com/onsi/gomega"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"

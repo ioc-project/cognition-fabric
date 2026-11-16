@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
-	enforcementv1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/database"
+	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
+	enforcementv1 "github.com/cisco-eti/cognition-fabric/api/enforcement/v1"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/client/database"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 

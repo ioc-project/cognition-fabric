@@ -5,7 +5,7 @@ adds persisted metadata and CE retrieval. Graph visualization is stage 4; option
 OXP observed topology is stage 5 and remains disabled.
 
 This document records the issue #43 contract implemented by Management, CFN and
-the Web UI. The [implementation plan](../plans/issue-43-mas-onboarding-metadata.md)
+the Web UI. The implementation plan (optional local plan)
 contains the agreed scope and staged acceptance checks.
 
 ## Ownership and identity
@@ -225,7 +225,7 @@ and Observed remain independent, and an unavailable source never substitutes the
 other graph or its JSON. Stage 4 uses only the stored Management response;
 optional observed-source requests remain stage 5.
 
-The standalone [NOA declaration](../../deploy/local/mas-onboarding/noa-mas-local.json)
+The standalone [NOA declaration](../../samples/noa-trip-planner/mas/noa-mas-local.json)
 contains runtime agents, actual tools/assignments and a partial source projection.
 NOA's Python/HTTP tools are not MCP, so the declaration contains no invented MCP
 provider. No application code, instrumentation or runtime configuration changes

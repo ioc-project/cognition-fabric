@@ -17,9 +17,9 @@ import (
 	"testing"
 	"time"
 
-	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
-	enforcementv1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/audit"
+	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
+	enforcementv1 "github.com/cisco-eti/cognition-fabric/api/enforcement/v1"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/audit"
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

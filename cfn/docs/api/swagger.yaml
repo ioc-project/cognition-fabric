@@ -18,6 +18,42 @@ definitions:
         example: ce_type is required
         type: string
     type: object
+  cognitionengine.LegacyMASCognitionEngine:
+    properties:
+      ce_id:
+        type: string
+      ce_type:
+        type: string
+      enabled:
+        type: boolean
+      enforcing_endpoint:
+        type: string
+      enforcing_protocol:
+        type: string
+      enforcing_url:
+        type: string
+      name:
+        type: string
+      status:
+        type: string
+      version:
+        type: string
+    type: object
+  cognitionengine.LegacyMASResponse:
+    properties:
+      cognition_engines:
+        description: Null when the source CE collection is null; otherwise an array,
+          including empty.
+        items:
+          $ref: '#/definitions/cognitionengine.LegacyMASCognitionEngine'
+        type: array
+      id:
+        type: string
+      name:
+        type: string
+      workspace_id:
+        type: string
+    type: object
   cognitionengine.ProbeRequest:
     description: Request to probe a CE. CFN looks up the CE's registered health_url.
     properties:
@@ -188,80 +224,6 @@ definitions:
         example: 1.0.0
         type: string
     type: object
-  mgmt.MASCognitionEngine:
-    properties:
-      ce_id:
-        type: string
-      ce_type:
-        type: string
-      enabled:
-        type: boolean
-      enforcing_endpoint:
-        type: string
-      enforcing_protocol:
-        type: string
-      enforcing_url:
-        type: string
-      mas_config:
-        type: object
-      name:
-        type: string
-      status:
-        type: string
-      version:
-        type: string
-    type: object
-  mgmt.MASResponse:
-    properties:
-      agents:
-        items:
-          type: object
-        type: array
-      cognition_engines:
-        items:
-          $ref: '#/definitions/mgmt.MASCognitionEngine'
-        type: array
-      config:
-        type: object
-      created_at:
-        type: string
-      description:
-        type: string
-      documentation:
-        items:
-          type: object
-        type: array
-      id:
-        type: string
-      mcp_servers:
-        items:
-          type: object
-        type: array
-      metadata:
-        type: object
-      metadata_schema_version:
-        type: string
-      name:
-        type: string
-      tag:
-        type: string
-      tools:
-        items:
-          type: object
-        type: array
-      topologies:
-        items:
-          type: object
-        type: array
-      topology_sources:
-        type: object
-      updated_at:
-        type: string
-      version:
-        type: string
-      workspace_id:
-        type: string
-    type: object
 host: localhost:9002
 info:
   contact: {}
@@ -290,13 +252,32 @@ paths:
       - application/json
       responses:
         "200":
-          description: CE registered successfully
+          description: Existing registration returned by Management
+          schema:
+            $ref: '#/definitions/cognitionengine.RegisterResponse'
+        "201":
+          description: New CE registered successfully
           schema:
             $ref: '#/definitions/cognitionengine.RegisterResponse'
         "400":
           description: Invalid request
           schema:
             $ref: '#/definitions/cognitionengine.ErrorResponse'
+        "404":
+          description: CFN not found by Management
+          schema:
+            additionalProperties: true
+            type: object
+        "409":
+          description: Registration or endpoint conflict; detail can include existing_ce_id
+          schema:
+            additionalProperties: true
+            type: object
+        "422":
+          description: Management registration validation failed
+          schema:
+            additionalProperties: true
+            type: object
         "502":
           description: Management plane error
           schema:
@@ -331,6 +312,11 @@ paths:
           description: CE not found
           schema:
             $ref: '#/definitions/cognitionengine.ErrorResponse'
+        "409":
+          description: CE must be disabled and have no active MAS associations
+          schema:
+            additionalProperties: true
+            type: object
         "502":
           description: Management plane error
           schema:
@@ -472,9 +458,10 @@ paths:
       - application/json
       responses:
         "200":
-          description: MAS details
+          description: Default legacy response; metadata=true returns expanded mgmt.MASResponse,
+            specified in api/ce/openapi/cfn-ce.yaml
           schema:
-            $ref: '#/definitions/mgmt.MASResponse'
+            $ref: '#/definitions/cognitionengine.LegacyMASResponse'
         "400":
           description: mas_id is required
           schema:

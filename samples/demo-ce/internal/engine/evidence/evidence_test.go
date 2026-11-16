@@ -7,7 +7,7 @@ package evidence
 import (
 	"testing"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/pkg/config"
 )
 
 func TestRuleJudgesTheRolesItNames(t *testing.T) {

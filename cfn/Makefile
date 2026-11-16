@@ -8,7 +8,7 @@ IMAGE_TAG ?= $(BUILD_VERSION)
 
 .PHONY: build
 build:
-	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
+	docker build -f Dockerfile -t $(IMAGE_NAME):$(IMAGE_TAG) ..
 
 .PHONY: test
 test:
@@ -33,45 +33,19 @@ fmt:
 
 .PHONY: docs
 docs:
-	swag init --parseDependency --parseInternal --dir ./cmd/cfn,./pkg/app,./pkg/app/httpapi/cognitionengine --output ./docs/api
+	$(SWAG) init --parseDependency --parseInternal --dir ./cmd/cfn,./pkg/app,./pkg/app/httpapi/cognitionengine --output ./docs/api
 
-PROTOC ?= protoc
-PROTO_FILES = api/proto/enforcement/v1/enforcement.proto api/proto/ce/v1/ce.proto
-PROTO_MODULE = github.com/cisco-eti/ioc-scale-cfn-svc
-NOA_PROTO_ROOT = deploy/local/noa-trip-planner/src
-NOA_PROTO_FILE = $(NOA_PROTO_ROOT)/noa_trip_planner/generated/enforcement.proto
+SWAG ?= swag
 
-.PHONY: proto
+.PHONY: proto proto-check docs-check
 proto:
-	$(PROTOC) -I . --go_out=. --go_opt=module=$(PROTO_MODULE) \
-		--go-grpc_out=. --go-grpc_opt=module=$(PROTO_MODULE) $(PROTO_FILES)
-	cp api/proto/enforcement/v1/enforcement.proto $(NOA_PROTO_FILE)
-	$(PROTOC) -I $(NOA_PROTO_ROOT) --python_out=$(NOA_PROTO_ROOT) $(NOA_PROTO_FILE)
+	$(MAKE) -C ../api proto
 
-.PHONY: proto-check
 proto-check:
-	@set -e; generated_dir=$$(mktemp -d); trap 'rm -rf "$$generated_dir"' EXIT; \
-	$(PROTOC) -I . --go_out="$$generated_dir" --go_opt=module=$(PROTO_MODULE) \
-		--go-grpc_out="$$generated_dir" --go-grpc_opt=module=$(PROTO_MODULE) $(PROTO_FILES); \
-	find pkg/api -type f -name '*.pb.go' | LC_ALL=C sort > "$$generated_dir/current-files"; \
-	(cd "$$generated_dir" && find pkg/api -type f -name '*.pb.go' | LC_ALL=C sort) > "$$generated_dir/generated-files"; \
-	diff -u "$$generated_dir/current-files" "$$generated_dir/generated-files"; \
-	while IFS= read -r generated_file; do \
-		diff -u "$$generated_file" "$$generated_dir/$$generated_file"; \
-	done < "$$generated_dir/generated-files"; \
-	diff -u api/proto/enforcement/v1/enforcement.proto $(NOA_PROTO_FILE); \
-	mkdir -p "$$generated_dir/noa"; \
-	$(PROTOC) -I $(NOA_PROTO_ROOT) --python_out="$$generated_dir/noa" $(NOA_PROTO_FILE); \
-	diff -u $(NOA_PROTO_ROOT)/noa_trip_planner/generated/enforcement_pb2.py \
-		"$$generated_dir/noa/noa_trip_planner/generated/enforcement_pb2.py"
+	$(MAKE) -C ../api proto-check
 
-.PHONY: docs-check
-docs-check: docs
-	@if [ -n "$$(git diff docs/api)" ]; then \
-		echo "API docs are out of date. Run 'make docs' and commit the changes."; \
-		git diff docs/api; \
-		exit 1; \
-	fi
+docs-check:
+	SWAG="$(SWAG)" python3 scripts/check_docs.py
 
 .PHONY: clean
 clean:

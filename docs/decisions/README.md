@@ -18,6 +18,7 @@ ones they replace rather than editing history.
 | ---- | ---------------------------------------------------------------------------------------- | -------- |
 | 0001 | [Persist application_id as masId on the MAS node in the KG](0001-persist-masid-in-kg.md) | Accepted |
 | 0002 | [Analytics APIs moved from CF to OXP](0002-analytics-apis-moved-to-oxp.md)               | Accepted |
+| 0003 | [Single CF source repository](0003-consolidate-cf-repositories.md) | Accepted |
 
 ## Template
 

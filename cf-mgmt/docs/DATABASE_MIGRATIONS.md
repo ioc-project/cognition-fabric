@@ -199,7 +199,7 @@ existing MAS-details representation is unchanged in this stage.
 4. Keep the source/image lineage preflight enabled when switching implementations.
    An old published Management image may not recognize `agent_identity_0008`; use a compatible
    build or a separate `LOCAL_CF_MGMT_DB`, as described in the
-   [CF local workflow](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/deploy/README.md).
+   [CF local workflow](../../dev/README.md).
    Do not stamp, reset, or automatically downgrade the shared database to bypass
    a preflight rejection.
 
@@ -372,83 +372,12 @@ project root/
 
 ## UTC timestamps (`utc_timestamps_0010`)
 
-This local-development cutover converts the 19 active timezone-less timestamp
-columns in `agent`, `mcp_server`, `mcp_tool`, `multi_agentic_system`, `workspace`,
-`user` and `cognition_fabric_node` to `timestamptz`. Existing CE and MAS–CE
-association instants stay unchanged. New application and migration connections
-use UTC; CF-owned HTTP timestamps use RFC 3339 UTC `Z`, with fractional seconds
-allowed. External CE contracts and CE-supplied timestamps/evidence stay unchanged.
+Management startup applies this revision with the rest of the Alembic history.
+It gives the 19 CF-owned timestamp columns in `agent`, `mcp_server`, `mcp_tool`,
+`multi_agentic_system`, `workspace`, `user` and `cognition_fabric_node` the
+`timestamptz` type. Database sessions use UTC; CF-owned HTTP timestamps use
+RFC 3339 UTC `Z`, with fractional seconds allowed.
 
-`LEGACY_TIMESTAMP_TZ` is read only when this revision upgrades or downgrades.
-Unset or blank means `UTC`; use a PostgreSQL timezone name such as
-`Europe/Budapest` when old naive values represent that **database session**
-timezone. This is not necessarily the developer's OS timezone. PostgreSQL's
-named-zone/DST rules apply; one setting cannot recover mixed historical zones.
-Invalid names fail before DDL. Offline `alembic ... --sql` is unsupported because
-the migration validates the name against the live PostgreSQL catalog; use a
-disposable database to review it. The migration does not rewrite config caches,
-opaque JSON, MAS content, associations or identities.
-
-1. Record the selected legacy timezone and back up the development database.
-   Stop Management writers and CFNs using it; leave PostgreSQL running. For an
-   untouched existing development database, use a separate database instead.
-2. Export the selected database's `POSTGRES_DB`, `POSTGRES_USER`,
-   `POSTGRES_PASSWORD`, `POSTGRES_HOST` and `POSTGRES_PORT` plus the chosen
-   `LEGACY_TIMESTAMP_TZ`. Apply `task db-migrate-apply` (or use the compatible
-   Management image's normal migration entrypoint). In the CFN local source
-   workflow, `POSTGRES_DB` must be the selected `LOCAL_CF_MGMT_DB`, not the
-   published-stack database or an unrelated default. See the
-   [CFN local workflow](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/deploy/README.md#utc-timestamp-cutover).
-   Resume no old Management binary against the new schema.
-3. Once, after migration, run the checked cache regeneration below with exactly
-   those same database settings. Require a zero exit status and the verified
-   CFN count before continuing. This includes disabled/offline non-deleted CFNs,
-   which may never re-register. Deleted records' archived config JSON is excluded.
-4. Restart updated CFNs to obtain a canonical registration baseline, then
-   start/reload the updated UI. Check the API/storage timestamps and a genuine
-   MAS change's notification. Regeneration and CFN restart may run in either
-   order after migration: unchanged business data yields identical MAS stamps.
-   Restarting is required for an old in-memory naive baseline; this is not a
-   mixed-version rolling-upgrade guarantee.
-
-### Checked one-off config regeneration
-
-From this repository root in a native Poetry environment, with all five selected
-`POSTGRES_*` settings already exported:
-
-```bash
-poetry run python scripts/regenerate_cfn_configs.py
-```
-
-The script intentionally does **not** load `.env` or use default database
-settings. A plain Python command does not inherit the local workflow's database
-selection. For an updated Management container, use its existing environment:
-
-```bash
-docker exec ioc-scale-cf-mgmt-svc python /home/app/scripts/regenerate_cfn_configs.py
-```
-
-Use the actual selected container name if different. Do not invoke a fresh image
-without supplying its target database settings.
-
-The command calls the existing `update_config_for_all_cfns()` once, then checks
-results in a fresh session because that helper swallows exceptions. It verifies
-that every expected non-deleted CFN's version advanced, the embedded version
-matches, assigned workspace/MAS/CE coverage and associations remain complete, and
-CF-owned snapshot timestamps use UTC `Z`. It prints a checked count or failing CFN
-IDs and exits nonzero on failure. Do not continue cutover after a failed check.
-Regeneration can advance CFN versions/`updated_at`; it does not change MAS content,
-MAS freshness or associations. This is a one-off maintenance command, not a
-startup hook, recurring job or API.
-
-### Downgrade
-
-Stop writers and CFNs, export the **same recorded** `LEGACY_TIMESTAMP_TZ`, then
-explicitly run `alembic downgrade mas_metadata_0009` against the selected database.
-It validates the zone and converts only those 19 columns back to naive wall time.
-Existing aware CE/association columns and config caches (including `Z` strings)
-are unchanged. Downgrade loses timezone/offset information, including distinctions
-between instants in a repeated autumn hour; a later re-upgrade in a named zone
-cannot guarantee exact restoration. Restore a backup when exact recovery matters.
-Changing/removing the override after upgrade does not reinterpret stored data or
-change runtime UTC behavior.
+CE-supplied timestamps and opaque evidence retain their existing capture rules.
+See the [timestamp contract](../../docs/specs/utc-timestamps.md) for timestamp
+ownership, API formatting and UI display.

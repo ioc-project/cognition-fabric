@@ -9,9 +9,9 @@ import json
 from pathlib import Path
 import unittest
 
-LOCAL = Path(__file__).resolve().parents[1]
-SOURCE = LOCAL / "noa-trip-planner/src/noa_trip_planner/multi_agent_system.py"
-DECLARATION = LOCAL / "mas-onboarding/noa-mas-local.json"
+SAMPLE = Path(__file__).resolve().parents[1]
+SOURCE = SAMPLE / "src/noa_trip_planner/multi_agent_system.py"
+DECLARATION = SAMPLE / "mas/noa-mas-local.json"
 
 
 def string(node):
@@ -135,7 +135,7 @@ class NOADeclarationTests(unittest.TestCase):
     def test_runtime_tool_definitions_match_source_declarations(self):
         source = ast.parse(
             (
-                LOCAL / "noa-trip-planner/src/noa_trip_planner/agents/tools.py"
+                SAMPLE / "src/noa_trip_planner/agents/tools.py"
             ).read_text()
         )
         functions = {
@@ -176,7 +176,7 @@ class NOADeclarationTests(unittest.TestCase):
             self.assertNotIn("url", entry)
         registry = ast.parse(
             (
-                LOCAL / "noa-trip-planner/src/noa_trip_planner/tool_registry.py"
+                SAMPLE / "src/noa_trip_planner/tool_registry.py"
             ).read_text()
         )
         assignments = ast.literal_eval(

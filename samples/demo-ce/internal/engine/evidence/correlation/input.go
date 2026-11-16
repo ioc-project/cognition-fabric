@@ -6,10 +6,10 @@ package correlation
 
 import (
 	"encoding/json"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence/events"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/oxp"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence/events"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/oxp"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/pkg/config"
 )
 
 // attribute decodes both string-valued OTel attributes and structured JSON values.

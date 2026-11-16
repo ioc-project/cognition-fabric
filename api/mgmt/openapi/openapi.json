@@ -3,7 +3,7 @@
   "info": {
     "title": "ioc-scale-cf-mgmt-svc API",
     "description": "IoC CFN Management Backend Service API",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
   "paths": {
     "/metrics": {
@@ -99,6 +99,10 @@
           {
             "HTTPBearer": []
           }
+        ],
+        "x-internal": true,
+        "x-callers": [
+          "CFN"
         ]
       }
     },
@@ -277,7 +281,12 @@
               }
             }
           }
-        }
+        },
+        "x-internal": true,
+        "x-callers": [
+          "CFN",
+          "cf-ui"
+        ]
       },
       "delete": {
         "tags": [
@@ -316,7 +325,12 @@
               }
             }
           }
-        }
+        },
+        "x-internal": true,
+        "x-callers": [
+          "CFN",
+          "cf-ui"
+        ]
       },
       "get": {
         "tags": [
@@ -362,7 +376,12 @@
               }
             }
           }
-        }
+        },
+        "x-internal": true,
+        "x-callers": [
+          "CFN",
+          "cf-ui"
+        ]
       }
     },
     "/api/cognition-fabric-nodes/{id}/enable": {
@@ -506,7 +525,11 @@
               }
             }
           }
-        }
+        },
+        "x-internal": true,
+        "x-callers": [
+          "CFN"
+        ]
       }
     },
     "/api/cognitive-fabric-node/{id}/workspaces": {
@@ -1415,7 +1438,12 @@
               }
             }
           }
-        }
+        },
+        "x-internal": true,
+        "x-callers": [
+          "CFN",
+          "cf-ui"
+        ]
       },
       "get": {
         "tags": [
@@ -1488,7 +1516,12 @@
               }
             }
           }
-        }
+        },
+        "x-internal": true,
+        "x-callers": [
+          "CFN",
+          "cf-ui"
+        ]
       }
     },
     "/api/cognition-engines/{ce_id}": {
@@ -1536,7 +1569,12 @@
               }
             }
           }
-        }
+        },
+        "x-internal": true,
+        "x-callers": [
+          "CFN",
+          "cf-ui"
+        ]
       },
       "patch": {
         "tags": [
@@ -1592,7 +1630,12 @@
               }
             }
           }
-        }
+        },
+        "x-internal": true,
+        "x-callers": [
+          "CFN",
+          "cf-ui"
+        ]
       },
       "delete": {
         "tags": [
@@ -1631,7 +1674,12 @@
               }
             }
           }
-        }
+        },
+        "x-internal": true,
+        "x-callers": [
+          "CFN",
+          "cf-ui"
+        ]
       }
     },
     "/api/audit-events/": {

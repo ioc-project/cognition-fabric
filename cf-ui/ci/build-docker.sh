@@ -1,9 +1,13 @@
+#!/bin/bash -e
+
 # Copyright 2026 Cisco Systems, Inc. and its affiliates
 #
 # SPDX-License-Identifier: Apache-2.0
 
-#!/bin/bash -e
 # Syntax build-docker.sh [-i|--image imagename]
+
+UI_COMPONENT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+UI_REPOSITORY_DIR="$(cd "$UI_COMPONENT_DIR/.." && pwd)"
 
 PROJECT=ioc-cfn-mgmt-plane-ui
 DOCKER_IMAGE=${PROJECT}:latest
@@ -36,6 +40,5 @@ do
 done
 
 echo BUILDING DOCKER ${DOCKER_IMAGE}
-docker build --no-cache -t ${DOCKER_IMAGE} \
-  --secret id=npmrc,src=$HOME/.npmrc \
-  -f ./ci/docker/Dockerfile.next .
+docker build --no-cache -t "$DOCKER_IMAGE" \
+  -f "$UI_COMPONENT_DIR/ci/docker/Dockerfile.next" "$UI_REPOSITORY_DIR"

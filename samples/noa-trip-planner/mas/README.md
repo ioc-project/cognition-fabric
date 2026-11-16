@@ -37,7 +37,7 @@ available for correction.
 ## Declaration source and limits
 
 The declaration uses the four runtime IDs and descriptions in
-`noa-trip-planner/src/noa_trip_planner/multi_agent_system.py`. It represents the
+`../src/noa_trip_planner/multi_agent_system.py`. It represents the
 default all-agents capability graph; `available_agents` may select fewer
 specialists per request. It is not an observed trace.
 
@@ -57,7 +57,7 @@ runtime tools. NOA's tool service is not MCP, so `mcp_servers` is empty.
 Development verification reads source via AST without importing or running NOA:
 
 ```bash
-python3 -m unittest discover -s deploy/local/tests -p test_mas_onboarding.py -v
+python3 -m unittest discover -s samples/noa-trip-planner/tests -p test_mas_onboarding.py -v
 ```
 
 This is a source consistency check, not a deployed onboarding command. The

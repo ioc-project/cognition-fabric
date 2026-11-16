@@ -36,10 +36,10 @@ it does not demonstrate network proxy integration or guarantee that the OXP
 span is queryable before the CE decision. Template CE accepts `span_id`, but its
 forced verdict does not use that span reference to evaluate the action.
 
-Run it from the CFN service repository after starting the local CF services:
+Run it from the monorepo root after starting the local CF services:
 
 ```bash
-(cd deploy/local/noa-trip-planner && uv sync --frozen)
+(cd samples/noa-trip-planner && uv sync --frozen)
 task run:full-mas
 ```
 
@@ -75,21 +75,21 @@ uv run --frozen --group dev python -m pytest tests -q
 ## MAS identity
 
 Set `NOA_MODE=source`, `NOA_ENFORCEMENT_MODE=direct`, and `NOA_MAS_ID` in
-the CFN repository `.env`. Use the MAS ID created in the local
+the monorepo root `.env`. Use the MAS ID created in the local
 CF management UI. The same ID is used as the Observe application ID so the
 telemetry and enforcement requests refer to the same MAS. The source runner
 sets `NOA_CFN_GRPC_TARGET` to
 `127.0.0.1:9003` and uses the shared OTel Collector. Agent and tool names are
 used as demonstration identifiers in the request; CFN currently routes by
 MAS ID and does not validate those names against management agent records.
-The vendored `generated/enforcement.proto` matches the canonical CFN Enforcement
-contract. From the CFN repository root, `make proto` synchronizes this copy and
-regenerates its Python bindings with protoc 35.1. `make proto-check` verifies both
-files without rewriting them. See the [tool setup](../../../README.md#grpc-enforcement-api).
+The Enforcement contract lives under `api/enforcement/proto/` at the repository
+root. `task proto` generates the sample Python binding directly from that canonical
+source with protoc 35.1; `task proto:check` compares temporary output without
+rewriting the reviewed tree. See the [API tool setup](../../api/README.md).
 
 ## Proxy mode
 
-Set these in the CFN `.env` before `task infra:up`:
+Set these in the root `.env` before `task infra:up`:
 
 ```dotenv
 NOA_MODE=source
@@ -117,7 +117,7 @@ pre-call event pipeline required for content-sensitive enforcement.
 
 The tool service binds to `NOA_TOOLS_HOST` (default `0.0.0.0`) on
 `NOA_TOOLS_PORT` (default 8126), uses only allowlisted agent/tool pairs, and
-requires a token inserted by Envoy. Generated configuration is under the CFN
-repo's ignored `tmp/enforcement/`. Use `task proxy:logs` for the proxy-side
-requests and audit logs. See the [CF local guide](../../README.md#use-envoy-with-source-noa)
+requires a token inserted by Envoy. Generated configuration is under the monorepo
+root's ignored `.local/enforcement/`. Use `task proxy:logs` for the proxy-side
+requests and audit logs. See the [CF local guide](../../dev/README.md#noa-onboarding-and-proxy-mode)
 for ports, configuration, limitations, and shutdown.

@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	enforcementv1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/database"
+	enforcementv1 "github.com/cisco-eti/cognition-fabric/api/enforcement/v1"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/client/database"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -22,7 +22,7 @@ import (
 )
 
 func TestGetDispositionWithFrozenLegacyServer(t *testing.T) {
-	data, err := os.ReadFile("../api/ce/v1/testdata/legacy/ce.protoset")
+	data, err := os.ReadFile("../../../api/ce/v1/testdata/legacy/ce.protoset")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -60,7 +60,7 @@ func TestGetDispositionWithFrozenLegacyServer(t *testing.T) {
 			}
 			server := grpc.NewServer()
 			defer server.Stop()
-			responseBytes, err := os.ReadFile("../api/ce/v1/testdata/legacy/" + tc.name + ".bin")
+			responseBytes, err := os.ReadFile("../../../api/ce/v1/testdata/legacy/" + tc.name + ".bin")
 			if err != nil {
 				t.Fatal(err)
 			}

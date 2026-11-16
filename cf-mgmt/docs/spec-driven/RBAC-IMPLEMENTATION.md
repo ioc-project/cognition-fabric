@@ -376,7 +376,6 @@ def require_permission(self, user: Dict[str, Any], action: str, resource: str, d
 - `src/server/api/endpoints/cognitive_fabric_node.py` - Migrated to centralized authz
 - `src/server/api/endpoints/multi_agentic_system.py` - Migrated to centralized authz
 - `docs/spec-driven/CFN-config.md` - Added RBAC section
-- `docs/spec-driven/CLAUDE.md` - Added RBAC section
 
 ### Test Results
 

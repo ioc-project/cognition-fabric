@@ -6,9 +6,9 @@ dotenv:
 vars:
   TASK_VERSION: v3.39.2
   TASK_INSTALL_DIR: ./bin
-  SRC_DIR: "{{.PWD}}/src"
+  SRC_DIR: "{{.TASKFILE_DIR}}/src"
   PYTHON: python3
-  BIN_DIR: "{{.PWD}}/bin"
+  BIN_DIR: "{{.TASKFILE_DIR}}/bin"
   GIT_COMMIT_SHA:
     sh: git rev-parse --short HEAD 2>/dev/null || echo "unknown"
   GIT_COMMIT_TIME:
@@ -35,10 +35,16 @@ tasks:
       - poetry check
 
   generate-openapi-spec:
-    desc: Generate OpenAPI specification and save to docs/openapi/openapi.json
+    desc: Generate the canonical api/mgmt/openapi/openapi.json schema
     cmds:
-      - poetry run python {{.PWD}}/scripts/generate_openapi_spec.py
+      - poetry run python {{.TASKFILE_DIR}}/scripts/generate_openapi_spec.py
     dir: "{{.SRC_DIR}}"
+
+  check-openapi-spec:
+    desc: Check the canonical Management schema without rewriting files
+    cmds:
+      - poetry run python {{.TASKFILE_DIR}}/scripts/generate_openapi_spec.py --check
+    dir: "{{.TASKFILE_DIR}}"
 
   dev:
     desc: Start development server with hot reload
@@ -88,7 +94,7 @@ tasks:
   docker-build:
     desc: Build Docker image
     cmds:
-      - docker build -t ${IMAGE_NAME} -f Dockerfile .
+      - docker build -t ${IMAGE_NAME} -f {{.TASKFILE_DIR}}/Dockerfile {{.TASKFILE_DIR}}/..
 
   # Database migration tasks (Alembic)
   db-migrate-apply:

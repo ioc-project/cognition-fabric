@@ -13,7 +13,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             v7.35.1
-// source: api/proto/ce/v1/ce.proto
+// source: ce/proto/ce/v1/ce.proto
 
 package cev1
 
@@ -176,5 +176,5 @@ var CognitionEngine_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/proto/ce/v1/ce.proto",
+	Metadata: "ce/proto/ce/v1/ce.proto",
 }

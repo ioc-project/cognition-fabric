@@ -1,13 +1,10 @@
 services:
-  # Demo CE, built from demo-ce/Dockerfile. The build needs a GitHub token able to read the private
-  # cisco-eti/ioc-scale-cfn-svc module: export GITHUB_TOKEN before running.
+  # Demo CE, built from the repository-root context with the local shared API module.
   # Start with: docker compose up --build
   demo-ce:
     build:
-      context: ./demo-ce
-      dockerfile: Dockerfile
-      secrets:
-        - github_token
+      context: ..
+      dockerfile: samples/demo-ce/Dockerfile
     image: demo-ce:dev
     container_name: demo-ce
     ports:
@@ -27,7 +24,3 @@ services:
     volumes:
       - ./demo-ce/config/config.json:/etc/demo-ce/config.json:ro
     restart: unless-stopped
-
-secrets:
-  github_token:
-    environment: GITHUB_TOKEN

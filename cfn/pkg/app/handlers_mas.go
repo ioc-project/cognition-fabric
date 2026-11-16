@@ -13,8 +13,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/mgmt"
-	eh "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/tools/easyhttp"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/client/mgmt"
+	eh "github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/easyhttp"
 )
 
 // getMASHandler handles GET /api/multi-agentic-systems/{masId}
@@ -25,7 +25,7 @@ import (
 // @Produce      json
 // @Param        metadata query boolean false "Opt in to expanded onboarding metadata; legacy shape is the default"
 // @Param        masId path string true "MAS ID"
-// @Success      200 {object} mgmt.MASResponse "MAS details"
+// @Success      200 {object} cognitionengine.LegacyMASResponse "Default legacy response; metadata=true returns expanded mgmt.MASResponse, specified in api/ce/openapi/cfn-ce.yaml"
 // @Failure      400 {object} map[string]string "mas_id is required"
 // @Failure      404 {object} map[string]string "MAS not found"
 // @Failure      500 {object} map[string]string "Internal error"

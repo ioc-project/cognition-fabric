@@ -17,9 +17,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/app/httpapi/cognitionengine"
-	httpclient "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/http"
-	eh "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/tools/easyhttp"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/app/httpapi/cognitionengine"
+	httpclient "github.com/cisco-eti/cognition-fabric/cfn/pkg/client/http"
+	eh "github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/easyhttp"
 	"github.com/google/uuid"
 )
 
@@ -74,7 +74,11 @@ var validCETypes = map[string]bool{
 // @Accept       json
 // @Produce      json
 // @Param        request body cognitionengine.RegisterRequest true "CE Registration Request"
-// @Success      200 {object} cognitionengine.RegisterResponse "CE registered successfully"
+// @Success      200 {object} cognitionengine.RegisterResponse "Existing registration returned by Management"
+// @Success      201 {object} cognitionengine.RegisterResponse "New CE registered successfully"
+// @Failure      404 {object} map[string]any "CFN not found by Management"
+// @Failure      409 {object} map[string]any "Registration or endpoint conflict; detail can include existing_ce_id"
+// @Failure      422 {object} map[string]any "Management registration validation failed"
 // @Failure      400 {object} cognitionengine.ErrorResponse "Invalid request"
 // @Failure      502 {object} cognitionengine.ErrorResponse "Management plane error"
 // @Failure      503 {object} cognitionengine.ErrorResponse "CFN not registered"
@@ -468,6 +472,7 @@ func (a *App) patchCognitionEngineHandler(w http.ResponseWriter, r *http.Request
 // @Produce      json
 // @Param        ceId path string true "Cognition Engine ID (UUID)"
 // @Success      204 "CE deleted successfully"
+// @Failure      409 {object} map[string]any "CE must be disabled and have no active MAS associations"
 // @Failure      400 {object} cognitionengine.ErrorResponse "Invalid CE ID"
 // @Failure      404 {object} cognitionengine.ErrorResponse "CE not found"
 // @Failure      502 {object} cognitionengine.ErrorResponse "Management plane error"

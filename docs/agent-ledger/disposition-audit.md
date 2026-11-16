@@ -11,7 +11,7 @@ The source field identifies the producer, separately from the deciding CE.
 Shared Outcome and Status filters run in CFN before pagination through optional
 outcome and success=true/false parameters forwarded by Management. The legacy
 decision=allow/block/modify aliases now use the same canonical outcomes across
-producers, as specified in [Proxy audit ingestion](../specs/proxy-audit-ingestion.md).
+producers, as specified in [Proxy audit ingestion](../../api/enforcement/docs/proxy-audit-ingestion.md).
 Block matches the CE DENY outcome; status uses whole-flow success, so
 a completed policy block matches Success. Missing status values match only All.
 Filter changes reset pagination, refresh preserves selections, and Clear filters
@@ -110,7 +110,7 @@ The enhancement preserves existing resource and evaluated-event semantics while
 adding previously unaudited request paths. Proxy ingestion remains separate work.
 
 **Evidence:** [Issue #34](https://github.com/cisco-eti/ioc-scale-cfn-svc/issues/34),
-[approved plan](../plans/audit-upgrades.plan.md) and
+approved plan (optional local plan) and
 [audit contract](../specs/disposition-audit.md).
 
 **Revisit when:** A separately approved producer or audit-contract change alters

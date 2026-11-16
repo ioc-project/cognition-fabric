@@ -1,0 +1,20 @@
+# Local-only material
+/.vscode/
+/.local/
+/.agents
+/.claude
+/.env
+/.env.local
+*.code-workspace
+*.log
+**/__pycache__/
+**/.pytest_cache/
+**/.venv/
+**/node_modules/
+**/.next/
+**/.cache/
+**/.docusaurus/
+**/coverage.out
+**/coverage.html
+**/*.out
+.DS_Store

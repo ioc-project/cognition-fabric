@@ -9,7 +9,7 @@ import (
 	"strings"
 	"unicode"
 
-	api "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
+	api "github.com/cisco-eti/cognition-fabric/api/enforcement/v1"
 	"github.com/google/uuid"
 )
 

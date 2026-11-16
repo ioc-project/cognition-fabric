@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Tests for workspace endpoints in ioc-cfn-mgmt-plane.
+Tests for workspace endpoints in cf-mgmt.
 """
 import uuid
 

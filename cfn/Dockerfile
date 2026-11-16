@@ -2,41 +2,23 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Build stage
+# Build from the repository root: docker build -f cfn/Dockerfile .
 FROM golang:1.25-alpine AS builder
-
-WORKDIR /app
-
-# Install build dependencies
-RUN apk add --no-cache git ca-certificates
-
-# Copy go mod files first for better caching
-COPY go.mod go.sum ./
+WORKDIR /src
+ENV GOWORK=off
+RUN apk add --no-cache ca-certificates
+COPY api/go.mod api/go.sum ./api/
+COPY cfn/go.mod cfn/go.sum ./cfn/
+WORKDIR /src/cfn
 RUN go mod download
-
-# Copy source code
-COPY . .
-
-# Build the binary
+COPY api/ /src/api/
+COPY cfn/ /src/cfn/
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /cfn ./cmd/cfn
 
-# Runtime stage
 FROM alpine:3.20
-
 WORKDIR /app
-
-# Install runtime dependencies
-RUN apk add --no-cache ca-certificates tzdata
-
-# Copy the binary from builder
+RUN apk add --no-cache ca-certificates tzdata && adduser -D -g '' appuser
 COPY --from=builder /cfn /app/cfn
-
-# Create non-root user
-RUN adduser -D -g '' appuser
 USER appuser
-
-# Expose the default port
-EXPOSE 9002
-
-# Run the binary
+EXPOSE 9002 9003
 ENTRYPOINT ["/app/cfn"]

@@ -5,9 +5,20 @@
 
 set -euo pipefail
 
-cfn_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-deployment_dir="$cfn_dir/../ioc-scale-cf-deployment"
-[[ -f "$deployment_dir/docker-compose.yml" ]] || { printf "Local CF: Missing sibling deployment checkout at %s. Clone https://github.com/cisco-eti/ioc-scale-cf-deployment beside ioc-scale-cfn-svc.\n" "$deployment_dir" >&2; exit 1; }
+root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cfn_dir="$root_dir/cfn"
+api_dir="$root_dir/api"
+mgmt_dir="$root_dir/cf-mgmt"
+ui_dir="$root_dir/cf-ui"
+samples_dir="$root_dir/samples"
+dev_dir="$root_dir/dev"
+local_dir="$root_dir/.local"
+[[ -n "${CF_DEPLOYMENT_DIR:-}" ]] || { printf 'Local CF: Set CF_DEPLOYMENT_DIR in the root .env to your ioc-scale-cf-deployment checkout. See .env.example.\n' >&2; exit 1; }
+deployment_dir="$CF_DEPLOYMENT_DIR"
+[[ "$deployment_dir" = /* ]] || deployment_dir="$root_dir/$deployment_dir"
+export GOWORK="$root_dir/go.work"
+[[ -f "$deployment_dir/docker-compose.yml" ]] || { printf 'Local CF: Deployment checkout not found at %s (docker-compose.yml missing). Set CF_DEPLOYMENT_DIR in the root .env.\n' "$deployment_dir" >&2; exit 1; }
+deployment_dir="$(cd "$deployment_dir" && pwd)"
 cd "$deployment_dir"
 
 cf_services=(
@@ -36,32 +47,34 @@ require_tool() {
 require_env() {
   local name
   for name in "$@"; do
-    [[ -n "${!name:-}" ]] || fail "Set $name in the CFN service .env before running this task."
+    [[ -n "${!name:-}" ]] || fail "Set $name in the root .env before running this task."
   done
 }
 
 require_local_env() {
-  [[ -f "$cfn_dir/.env" ]] || fail "Missing $cfn_dir/.env. Run cp .env.example .env in the CFN repository and configure it."
+  [[ -f "$root_dir/.env" ]] || fail "Missing $root_dir/.env. Run cp .env.example .env in the monorepo root and configure it."
 }
 
 compose() {
+  export CF_LOCAL_ENV_FILE="$root_dir/.env"
   docker compose --project-directory "$deployment_dir" \
     -p "${COMPOSE_PROJECT_NAME:-ioc-scale-cf-deployment}" \
-    --env-file "$cfn_dir/.env" -f "$deployment_dir/docker-compose.yml" "$@"
+    --env-file "$root_dir/.env" -f "$deployment_dir/docker-compose.yml" \
+    -f "$dev_dir/compose/infrastructure.override.yaml" "$@"
 }
 
 image_compose() {
   # Set paths even for non-CE commands: Compose interpolates every service.
-  export CF_LOCAL_CE_CONFIG_FILE="${CF_LOCAL_CE_CONFIG_FILE:-$cfn_dir/tmp/config.json}"
-  export CF_LOCAL_CE_MAS_FILE="${CF_LOCAL_CE_MAS_FILE:-$cfn_dir/tmp/images/mas-id}"
-  COMPOSE_IGNORE_ORPHANS=true docker compose --project-directory "$cfn_dir" \
+  export CF_LOCAL_CE_CONFIG_FILE="${CF_LOCAL_CE_CONFIG_FILE:-$local_dir/ce/config.json}"
+  export CF_LOCAL_CE_MAS_FILE="${CF_LOCAL_CE_MAS_FILE:-$local_dir/ce/mas-id}"
+  COMPOSE_IGNORE_ORPHANS=true docker compose --project-directory "$root_dir" \
     -p "${COMPOSE_PROJECT_NAME:-ioc-scale-cf-deployment}" \
-    --env-file "$cfn_dir/.env" -f "$cfn_dir/deploy/local/images/compose.yaml" "$@"
+    --env-file "$root_dir/.env" -f "$dev_dir/compose/images.yaml" "$@"
 }
 
 require_checkout() {
-  local path="$1" marker="$2" url="$3"
-  [[ -d "$path" && -f "$path/$marker" ]] || fail "Missing sibling checkout at $path (expected $marker). Clone $url beside ioc-scale-cfn-svc."
+  local path="$1" marker="$2"
+  [[ -d "$path" && -f "$path/$marker" ]] || fail "Missing component at $path (expected $marker). Restore it from the cognition-fabric checkout."
 }
 
 require_docker_compose() {
@@ -94,7 +107,7 @@ require_service_container_stopped() {
 
 require_ports_free() {
   require_tool python3
-  python3 "$cfn_dir/deploy/local/check_ports.py" "$@"
+  python3 "$dev_dir/tools/check_ports.py" "$@"
 }
 
 require_local_postgres() {
@@ -119,11 +132,11 @@ source_ce_host() {
 
 prepare_demo_config() {
   require_env CE_CONFIG_FILE
-  [[ "$CE_CONFIG_FILE" = /* ]] || CE_CONFIG_FILE="$cfn_dir/$CE_CONFIG_FILE"
-  [[ -f "$CE_CONFIG_FILE" ]] || fail "Config file not found at $CE_CONFIG_FILE. See deploy/README.md for demo CE setup."
+  [[ "$CE_CONFIG_FILE" = /* ]] || CE_CONFIG_FILE="$root_dir/$CE_CONFIG_FILE"
+  [[ -f "$CE_CONFIG_FILE" ]] || fail "Config file not found at $CE_CONFIG_FILE. See dev/README.md for demo CE setup."
   export CE_CONFIG_FILE
   if [[ -n "${CE_MAS_FILE:-}" ]]; then
-    [[ "$CE_MAS_FILE" = /* ]] || CE_MAS_FILE="$cfn_dir/$CE_MAS_FILE"
+    [[ "$CE_MAS_FILE" = /* ]] || CE_MAS_FILE="$root_dir/$CE_MAS_FILE"
     export CE_MAS_FILE
   fi
 }
@@ -150,8 +163,8 @@ run_cf_image() {
         [[ -f "$CE_MAS_FILE" ]] || fail "MAS file not found at $CE_MAS_FILE."
         export CF_LOCAL_CE_MAS_FILE="$CE_MAS_FILE"
       else
-        mkdir -p "$cfn_dir/tmp/images"
-        touch "$cfn_dir/tmp/images/mas-id"
+        mkdir -p "$local_dir/ce"
+        touch "$local_dir/ce/mas-id"
       fi
       if cfn_runs_in_container; then
         export CF_LOCAL_CE_HOST=ioc-scale-cf-demo-ce
@@ -167,7 +180,7 @@ run_cf_image() {
   image_compose pull "$service"
   if [[ "$service" = ioc-scale-cf-mgmt-svc ]]; then
     image_compose run --rm --no-deps -T --entrypoint python3 "$service" - \
-      < "$cfn_dir/deploy/local/check_mgmt_migrations.py"
+      < "$dev_dir/tools/check_mgmt_migrations.py"
   fi
   # Do not pull a different mutable tag after checking its migration graph.
   # Management's selected image runs its own Alembic entrypoint migrations.
@@ -203,11 +216,14 @@ SQL
 }
 
 require_cf_checkouts() {
-  require_checkout "$deployment_dir/../ioc-scale-cf-mgmt-svc" pyproject.toml https://github.com/cisco-eti/ioc-scale-cf-mgmt-svc
-  require_checkout "$cfn_dir" go.mod https://github.com/cisco-eti/ioc-scale-cfn-svc
-  require_checkout "$deployment_dir/../ioc-scale-cf-ui" package.json https://github.com/cisco-eti/ioc-scale-cf-ui
-  require_checkout "$deployment_dir/../ioc-scale-cf-demo-ce" template-ce/pyproject.toml https://github.com/cisco-eti/ioc-scale-cf-demo-ce
-  require_checkout "$deployment_dir/../ioc-scale-cf-demo-ce" demo-ce/go.mod https://github.com/cisco-eti/ioc-scale-cf-demo-ce
+  require_checkout "$api_dir" go.mod
+  require_checkout "$cfn_dir" go.mod
+  require_checkout "$mgmt_dir" pyproject.toml
+  require_checkout "$ui_dir" package.json
+  require_checkout "$samples_dir/template-ce" pyproject.toml
+  require_checkout "$samples_dir/demo-ce" go.mod
+  require_checkout "$samples_dir/noa-trip-planner" pyproject.toml
+  [[ -f "$root_dir/go.work" ]] || fail "Missing root Go workspace."
 }
 
 prepare_management_test_db() {
@@ -215,18 +231,18 @@ prepare_management_test_db() {
   require_local_env
   require_docker_compose
   require_tool poetry
-  [[ ! -f "$deployment_dir/../ioc-scale-cf-mgmt-svc/.env" ]] || fail "The management checkout .env can override test database settings. Move it aside before running tests."
+  [[ ! -f "$mgmt_dir/.env" ]] || fail "The management checkout .env can override test database settings. Move it aside before running tests."
 
   running="$(compose ps --status running --services ioc-scale-db)" || fail "Could not inspect the local Postgres container."
   [[ "$running" = ioc-scale-db ]] || fail "Local Postgres is not running. Run 'task infra:up' before running CF tests."
   set_local_postgres
   mapped_port="$(compose port ioc-scale-db 5432)" || fail "Could not inspect the local Postgres port."
-  [[ "${mapped_port##*:}" = "$POSTGRES_PORT" ]] || fail "Local Postgres is not published on port $POSTGRES_PORT. Check IOC_SCALE_DB_PORT in the CFN .env."
+  [[ "${mapped_port##*:}" = "$POSTGRES_PORT" ]] || fail "Local Postgres is not published on port $POSTGRES_PORT. Check IOC_SCALE_DB_PORT in the root .env."
   export POSTGRES_DB=ioc_test
 
   # The management fixture recreates tables in ioc_test. Verify its target
   # before it can fall back to other local Postgres ports.
-  (cd "$deployment_dir/../ioc-scale-cf-mgmt-svc" && poetry run python -c '
+  (cd "$mgmt_dir" && poetry run python -c '
 import os
 import psycopg2
 connection = psycopg2.connect(
@@ -245,15 +261,26 @@ run_cf_tests() {
   require_tool go
   require_tool make
   require_tool uv
+  require_tool npm
+  require_tool task
   prepare_management_test_db
 
-  printf 'CF tests: management service (dedicated ioc_test database)\n'
-  (cd "$deployment_dir/../ioc-scale-cf-mgmt-svc" && poetry run pytest tests/)
+  printf 'CF tests: shared API and compatibility contracts\n'
+  (cd "$api_dir" && make test)
   printf 'CF tests: CFN service\n'
   (cd "$cfn_dir" && make test)
+  printf 'CF tests: management service (dedicated ioc_test database)\n'
+  (cd "$mgmt_dir" && poetry run pytest tests/)
+  printf 'CF tests: UI\n'
+  (cd "$ui_dir" && npm test)
+  printf 'CF tests: Go demo CE\n'
+  (cd "$samples_dir/demo-ce" && go test -race ./...)
   printf 'CF tests: template CE\n'
-  (cd "$deployment_dir/../ioc-scale-cf-demo-ce/template-ce" && uv run --frozen --extra test pytest)
-  printf 'CF tests: UI and deployment have no unit-test suite.\n'
+  (cd "$samples_dir/template-ce" && uv run --frozen --extra test pytest)
+  printf 'CF tests: NOA sample and declaration\n'
+  (cd "$samples_dir/noa-trip-planner" && uv run --frozen --group dev python -m pytest tests -q)
+  printf 'CF tests: local development tools and automation\n'
+  (cd "$root_dir" && task test:dev)
 }
 
 run_cf_checks() {
@@ -263,16 +290,22 @@ run_cf_checks() {
   require_tool task
   require_tool make
   require_tool npm
-  [[ -x "$deployment_dir/../ioc-scale-cf-ui/node_modules/.bin/tsc" ]] || fail "UI dependencies are missing. Run 'npm ci' in the sibling ioc-scale-cf-ui checkout."
+  [[ -x "$ui_dir/node_modules/.bin/tsc" ]] || fail "UI dependencies are missing. Run 'npm ci' in cf-ui."
 
-  printf 'CF checks: deployment Compose configuration\n'
+  printf 'CF checks: shell and Compose configuration\n'
+  bash -n "$dev_dir/cf-local.sh"
   compose config --quiet
-  printf 'CF checks: management formatting and lint\n'
-  (cd "$deployment_dir/../ioc-scale-cf-mgmt-svc" && task lint-check)
-  printf 'CF checks: CFN formatting and vet\n'
-  (cd "$cfn_dir" && make lint)
-  printf 'CF checks: UI lint, Prettier, and types\n'
-  (cd "$deployment_dir/../ioc-scale-cf-ui" && npm run lint:check && ./node_modules/.bin/tsc --noEmit)
+  image_compose config --quiet
+  printf 'CF checks: shared API formatting, vet, generated bindings and OpenAPI validation\n'
+  (cd "$api_dir" && make lint proto-check openapi-check)
+  printf 'CF checks: management formatting, lint and OpenAPI drift\n'
+  (cd "$mgmt_dir" && task lint-check check-openapi-spec)
+  printf 'CF checks: CFN formatting, vet and internal API docs\n'
+  (cd "$cfn_dir" && make lint docs-check)
+  printf 'CF checks: UI lint, Prettier, types and API drift\n'
+  (cd "$ui_dir" && npm run lint:check && ./node_modules/.bin/tsc --noEmit && npm run check:api)
+  printf 'CF checks: Go demo CE formatting and vet\n'
+  (cd "$samples_dir/demo-ce" && [[ -z "$(gofmt -l .)" ]] && go vet ./...)
   run_cf_tests
 }
 
@@ -282,11 +315,11 @@ validate_noa_modes() {
   export NOA_ENFORCEMENT_MODE="${NOA_ENFORCEMENT_MODE:-direct}"
   [[ "$NOA_MODE" = published || "$NOA_MODE" = source ]] || fail "Invalid NOA_MODE '$NOA_MODE'. Use published or source."
   [[ "$NOA_ENFORCEMENT_MODE" = direct || "$NOA_ENFORCEMENT_MODE" = proxy ]] || fail "Invalid NOA_ENFORCEMENT_MODE '$NOA_ENFORCEMENT_MODE'. Use direct or proxy."
-  [[ "$NOA_MODE:$NOA_ENFORCEMENT_MODE" != published:proxy ]] || fail "Proxy enforcement requires NOA_MODE=source in the CFN .env."
+  [[ "$NOA_MODE:$NOA_ENFORCEMENT_MODE" != published:proxy ]] || fail "Proxy enforcement requires NOA_MODE=source in the root .env."
 }
 
 proxy_settings() {
-  export CFN_PROXY_CONFIG_DIR="$cfn_dir/tmp/enforcement"
+  export CFN_PROXY_CONFIG_DIR="$local_dir/enforcement"
   export NOA_TOOLS_PORT="${NOA_TOOLS_PORT:-8126}"
   export NOA_TOOLS_HOST="${NOA_TOOLS_HOST:-0.0.0.0}"
   export NOA_ENFORCEMENT_PROXY_URL="${NOA_ENFORCEMENT_PROXY_URL:-http://127.0.0.1:${ENVOY_HTTP_PORT:-9010}}"
@@ -295,7 +328,7 @@ proxy_settings() {
 
 proxy_compose() {
   compose -f "$deployment_dir/enforcement/envoy/compose.yaml" \
-    -f "$cfn_dir/deploy/local/enforcement/compose.override.yaml" "$@"
+    -f "$dev_dir/compose/enforcement.override.yaml" "$@"
 }
 
 require_proxy_ownership() {
@@ -307,7 +340,7 @@ require_proxy_ownership() {
 
 render_proxy_config() {
   require_tool python3
-  PYTHONPATH="$cfn_dir/deploy/local/noa-trip-planner/src" python3 -m noa_trip_planner.proxy_config \
+  PYTHONPATH="$samples_dir/noa-trip-planner/src" python3 -m noa_trip_planner.proxy_config \
     --directory "$CFN_PROXY_CONFIG_DIR" --mas-id "${NOA_MAS_ID:-}" --tools-port "$NOA_TOOLS_PORT"
 }
 
@@ -357,7 +390,7 @@ prepare_noa_proxy() {
   proxy_settings
   require_proxy_ownership
   running="$(proxy_compose ps --status running --services ioc-scale-enforcement-proxy-envoy)"
-  [[ "$running" = ioc-scale-enforcement-proxy-envoy ]] || fail "Proxy mode is selected but Envoy is not running. Run 'task infra:up' with the same CFN .env first."
+  [[ "$running" = ioc-scale-enforcement-proxy-envoy ]] || fail "Proxy mode is selected but Envoy is not running. Run 'task infra:up' with the same root .env first."
   # The MAS may have been created after infra:up. Recreate Envoy to load the
   # exact generated routes and new file mounts; no infrastructure is started.
   render_proxy_config
@@ -415,8 +448,8 @@ case "${1:-}" in
     ;;
   run-cfn-mgmt)
     require_local_env
-    repo="$deployment_dir/../ioc-scale-cf-mgmt-svc"
-    require_checkout "$repo" pyproject.toml https://github.com/cisco-eti/ioc-scale-cf-mgmt-svc
+    repo="$mgmt_dir"
+    require_checkout "$repo" pyproject.toml
     require_docker_compose
     require_service_container_stopped ioc-scale-cf-mgmt-svc
     require_ports_free 9000
@@ -435,7 +468,7 @@ case "${1:-}" in
     cd "$repo"
     poetry run python -c 'import alembic, fastapi, uvicorn' >/dev/null 2>&1 || fail "Management dependencies are missing. Run 'poetry install' in $repo."
     [[ "$POSTGRES_HOST:$POSTGRES_PORT/$POSTGRES_DB" = "localhost:${IOC_SCALE_DB_PORT:-5456}/${LOCAL_CF_MGMT_DB:-cfn_mgmt_local}" && -z "${ALEMBIC_DB_URL:-}" ]] || fail "Management migration target is not the local CF database."
-    poetry run python "$cfn_dir/deploy/local/check_mgmt_migrations.py"
+    poetry run python "$dev_dir/tools/check_mgmt_migrations.py"
     poetry run alembic upgrade head
     require_service_container_stopped ioc-scale-cf-mgmt-svc
     exec poetry run uvicorn server.main:app --app-dir src --host "${LOCAL_CF_BIND_HOST:-127.0.0.1}" --port 9000 --reload
@@ -443,7 +476,7 @@ case "${1:-}" in
   run-cfn)
     require_local_env
     repo="$cfn_dir"
-    require_checkout "$repo" go.mod https://github.com/cisco-eti/ioc-scale-cfn-svc
+    require_checkout "$repo" go.mod
     require_docker_compose
     require_service_container_stopped ioc-scale-cfn-svc
     require_ports_free 9002 9003
@@ -464,8 +497,8 @@ case "${1:-}" in
     ;;
   run-cf-ui)
     require_local_env
-    repo="$deployment_dir/../ioc-scale-cf-ui"
-    require_checkout "$repo" package.json https://github.com/cisco-eti/ioc-scale-cf-ui
+    repo="$ui_dir"
+    require_checkout "$repo" package.json
     require_docker_compose
     require_service_container_stopped ioc-scale-cf-mgmt-plane-ui
     require_ports_free 9001
@@ -491,8 +524,8 @@ case "${1:-}" in
     if [[ "$mode" = published ]]; then
       compose --profile full-mas up --no-build --no-deps noa-trip-planner
     else
-      repo="$cfn_dir/deploy/local/noa-trip-planner"
-      [[ -f "$repo/pyproject.toml" && -f "$repo/src/noa_trip_planner/enforcement.py" ]] || fail "Missing CF-owned NOA source at $repo. Check the CFN service checkout."
+      repo="$samples_dir/noa-trip-planner"
+      [[ -f "$repo/pyproject.toml" && -f "$repo/src/noa_trip_planner/enforcement.py" ]] || fail "Missing CF-owned NOA source at $repo. Check the monorepo sample files."
       running="$(compose --profile full-mas ps --status running --services noa-trip-planner)" || fail "Could not inspect the NOA container. Check Docker Compose."
       [[ -z "$running" ]] || fail "The published NOA container is running. Stop it with: docker compose --profile full-mas stop noa-trip-planner"
       running="$(compose ps --status running --services otel-collector)" || fail "Could not inspect the OTel collector. Check Docker Compose."
@@ -517,8 +550,8 @@ case "${1:-}" in
     ;;
   run-template-ce)
     require_local_env
-    repo="$deployment_dir/../ioc-scale-cf-demo-ce/template-ce"
-    require_checkout "$deployment_dir/../ioc-scale-cf-demo-ce" template-ce/pyproject.toml https://github.com/cisco-eti/ioc-scale-cf-demo-ce
+    repo="$samples_dir/template-ce"
+    require_checkout "$repo" pyproject.toml
     require_docker_compose
     require_service_container_stopped ioc-scale-cf-demo-ce
     require_ports_free 50051 8082 8080
@@ -536,13 +569,13 @@ case "${1:-}" in
     export COGNITION_STORE_URL=http://localhost:8081
     cd "$repo"
     require_service_container_stopped ioc-scale-cf-demo-ce
-    # Sync locked runtime dependencies after sibling updates, preserving installed extras.
+    # Sync locked runtime dependencies after source updates, preserving installed extras.
     exec uv run --frozen python -m src
     ;;
   run-demo-ce)
     require_local_env
-    repo="$deployment_dir/../ioc-scale-cf-demo-ce/demo-ce"
-    require_checkout "$deployment_dir/../ioc-scale-cf-demo-ce" demo-ce/go.mod https://github.com/cisco-eti/ioc-scale-cf-demo-ce
+    repo="$samples_dir/demo-ce"
+    require_checkout "$repo" go.mod
     prepare_demo_config
     require_docker_compose
     require_service_container_stopped ioc-scale-cf-demo-ce
@@ -561,16 +594,14 @@ case "${1:-}" in
     export ADVERTISED_HEALTH_URL="http://$ce_host:18000"
     # Registration defaults belong to the CE; forward only an explicit name override.
     [[ -z "${DEMO_CE_NAME:-}" ]] || export CE_NAME="$DEMO_CE_NAME"
-    export CGO_ENABLED=0 GOWORK=off
-    # Use sibling CFN contracts without changing either checkout's module files.
-    build_dir="$(mktemp -d "${TMPDIR:-/tmp}/cf-demo-ce.XXXXXX")"
+    export CGO_ENABLED=0
+    # Build against the root workspace without changing component module files.
+    mkdir -p "$local_dir/tmp"
+    build_dir="$(mktemp -d "$local_dir/tmp/cf-demo-ce.XXXXXX")"
     trap 'rm -rf "$build_dir"' EXIT
-    cp "$repo/go.mod" "$build_dir/demo-ce.mod"
-    cp "$repo/go.sum" "$build_dir/demo-ce.sum"
     cd "$repo"
-    go mod edit -modfile="$build_dir/demo-ce.mod" "-replace=github.com/cisco-eti/ioc-scale-cfn-svc=$cfn_dir"
     printf 'Building demo CE from %s (config: %s)\n' "$repo" "$CE_CONFIG_FILE"
-    go build -mod=mod -modfile="$build_dir/demo-ce.mod" -o "$build_dir/demo-ce" ./cmd/demo-ce
+    go build -o "$build_dir/demo-ce" ./cmd/demo-ce
     require_service_container_stopped ioc-scale-cf-demo-ce
     "$build_dir/demo-ce"
     ;;

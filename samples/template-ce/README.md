@@ -19,7 +19,7 @@ policy judgment. Restart the template CE after changing the setting.
 ## Run Locally (without Docker)
 
 ```bash
-cd template-ce
+cd samples/template-ce
 uv sync --extra test
 uv run python -m src
 ```
@@ -32,14 +32,14 @@ stack sets `HEALTH_PORT=8082` because OXP already occupies 8081.
 
 ```bash
 export CFN_URL="http://localhost:9002"
-export COGNITION_STORE_URL="http://localhost:8000"
+export COGNITION_STORE_URL="http://localhost:8081"
 uv run python -m src
 ```
 
 ## Test
 
 ```bash
-cd template-ce
+cd samples/template-ce
 uv run pytest -v
 ```
 
@@ -63,7 +63,7 @@ Authorization decision for an in-scope MAS action.
 
 The response remains readable by older CFN/CE clients using their existing
 bindings. Existing real CEs can keep returning legacy diagnostics unchanged.
-See [the shared response contract](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/docs/specs/ce-evaluation-response.md).
+See [the shared response contract](../../api/ce/docs/ce-evaluation-response.md).
 
 Regenerate and check the Python bindings using the locked toolchain:
 
@@ -100,7 +100,7 @@ notification listener and is advertised as `notification_url`. On the CF source 
 `task run:template-ce` keeps health on `8082`. Concurrent instances need separate
 network namespaces or distinct port triples.
 
-See the [documentation site source](../docs/README.md) for setup and extension guidance.
+See the [documentation site source](../docs-site/README.md) for setup and extension guidance.
 
 ## MAS lifecycle summaries
 
@@ -135,7 +135,7 @@ schemas, raw document snapshots and provenance are excluded from this summary.
 
 ```
 template-ce/
-├── proto/ce.proto           # ioc.ce.v1 Protocol Buffer definition
+├── scripts/generate_proto.py # reads canonical ../../api/ce/proto/ce/v1/ce.proto
 ├── src/
 │   ├── generated/           # Generated gRPC stubs
 │   ├── service.py           # gRPC server

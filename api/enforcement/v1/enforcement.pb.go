@@ -6,7 +6,7 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        v7.35.1
-// source: api/proto/enforcement/v1/enforcement.proto
+// source: enforcement/proto/enforcement/v1/enforcement.proto
 
 package enforcementv1
 
@@ -65,11 +65,11 @@ func (x DispositionAction) String() string {
 }
 
 func (DispositionAction) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_proto_enforcement_v1_enforcement_proto_enumTypes[0].Descriptor()
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_enumTypes[0].Descriptor()
 }
 
 func (DispositionAction) Type() protoreflect.EnumType {
-	return &file_api_proto_enforcement_v1_enforcement_proto_enumTypes[0]
+	return &file_enforcement_proto_enforcement_v1_enforcement_proto_enumTypes[0]
 }
 
 func (x DispositionAction) Number() protoreflect.EnumNumber {
@@ -78,7 +78,7 @@ func (x DispositionAction) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DispositionAction.Descriptor instead.
 func (DispositionAction) EnumDescriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{0}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{0}
 }
 
 type AppliedOutcome int32
@@ -120,11 +120,11 @@ func (x AppliedOutcome) String() string {
 }
 
 func (AppliedOutcome) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_proto_enforcement_v1_enforcement_proto_enumTypes[1].Descriptor()
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_enumTypes[1].Descriptor()
 }
 
 func (AppliedOutcome) Type() protoreflect.EnumType {
-	return &file_api_proto_enforcement_v1_enforcement_proto_enumTypes[1]
+	return &file_enforcement_proto_enforcement_v1_enforcement_proto_enumTypes[1]
 }
 
 func (x AppliedOutcome) Number() protoreflect.EnumNumber {
@@ -133,7 +133,7 @@ func (x AppliedOutcome) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AppliedOutcome.Descriptor instead.
 func (AppliedOutcome) EnumDescriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{1}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{1}
 }
 
 type UpstreamInvocationState int32
@@ -172,11 +172,11 @@ func (x UpstreamInvocationState) String() string {
 }
 
 func (UpstreamInvocationState) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_proto_enforcement_v1_enforcement_proto_enumTypes[2].Descriptor()
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_enumTypes[2].Descriptor()
 }
 
 func (UpstreamInvocationState) Type() protoreflect.EnumType {
-	return &file_api_proto_enforcement_v1_enforcement_proto_enumTypes[2]
+	return &file_enforcement_proto_enforcement_v1_enforcement_proto_enumTypes[2]
 }
 
 func (x UpstreamInvocationState) Number() protoreflect.EnumNumber {
@@ -185,7 +185,7 @@ func (x UpstreamInvocationState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use UpstreamInvocationState.Descriptor instead.
 func (UpstreamInvocationState) EnumDescriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{2}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{2}
 }
 
 // Action represents the enforcement disposition.
@@ -230,11 +230,11 @@ func (x GetDispositionResponse_Action) String() string {
 }
 
 func (GetDispositionResponse_Action) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_proto_enforcement_v1_enforcement_proto_enumTypes[3].Descriptor()
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_enumTypes[3].Descriptor()
 }
 
 func (GetDispositionResponse_Action) Type() protoreflect.EnumType {
-	return &file_api_proto_enforcement_v1_enforcement_proto_enumTypes[3]
+	return &file_enforcement_proto_enforcement_v1_enforcement_proto_enumTypes[3]
 }
 
 func (x GetDispositionResponse_Action) Number() protoreflect.EnumNumber {
@@ -243,7 +243,7 @@ func (x GetDispositionResponse_Action) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use GetDispositionResponse_Action.Descriptor instead.
 func (GetDispositionResponse_Action) EnumDescriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{2, 0}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{2, 0}
 }
 
 // GetDispositionRequest contains identifiers only (reference-only submit).
@@ -261,7 +261,7 @@ type GetDispositionRequest struct {
 
 func (x *GetDispositionRequest) Reset() {
 	*x = GetDispositionRequest{}
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[0]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -273,7 +273,7 @@ func (x *GetDispositionRequest) String() string {
 func (*GetDispositionRequest) ProtoMessage() {}
 
 func (x *GetDispositionRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[0]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -286,7 +286,7 @@ func (x *GetDispositionRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDispositionRequest.ProtoReflect.Descriptor instead.
 func (*GetDispositionRequest) Descriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{0}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *GetDispositionRequest) GetExtra() map[string]string {
@@ -322,7 +322,7 @@ type GetDispositionPayload struct {
 
 func (x *GetDispositionPayload) Reset() {
 	*x = GetDispositionPayload{}
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[1]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -334,7 +334,7 @@ func (x *GetDispositionPayload) String() string {
 func (*GetDispositionPayload) ProtoMessage() {}
 
 func (x *GetDispositionPayload) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[1]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -347,7 +347,7 @@ func (x *GetDispositionPayload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDispositionPayload.ProtoReflect.Descriptor instead.
 func (*GetDispositionPayload) Descriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{1}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *GetDispositionPayload) GetMasId() string {
@@ -398,7 +398,7 @@ type GetDispositionResponse struct {
 
 func (x *GetDispositionResponse) Reset() {
 	*x = GetDispositionResponse{}
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[2]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -410,7 +410,7 @@ func (x *GetDispositionResponse) String() string {
 func (*GetDispositionResponse) ProtoMessage() {}
 
 func (x *GetDispositionResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[2]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -423,7 +423,7 @@ func (x *GetDispositionResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetDispositionResponse.ProtoReflect.Descriptor instead.
 func (*GetDispositionResponse) Descriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{2}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *GetDispositionResponse) GetAction() GetDispositionResponse_Action {
@@ -457,7 +457,7 @@ type CapturedForm struct {
 
 func (x *CapturedForm) Reset() {
 	*x = CapturedForm{}
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[3]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -469,7 +469,7 @@ func (x *CapturedForm) String() string {
 func (*CapturedForm) ProtoMessage() {}
 
 func (x *CapturedForm) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[3]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -482,7 +482,7 @@ func (x *CapturedForm) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CapturedForm.ProtoReflect.Descriptor instead.
 func (*CapturedForm) Descriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{3}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CapturedForm) GetContentType() string {
@@ -548,7 +548,7 @@ type AuthorizationContext struct {
 
 func (x *AuthorizationContext) Reset() {
 	*x = AuthorizationContext{}
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[4]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -560,7 +560,7 @@ func (x *AuthorizationContext) String() string {
 func (*AuthorizationContext) ProtoMessage() {}
 
 func (x *AuthorizationContext) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[4]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -573,7 +573,7 @@ func (x *AuthorizationContext) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuthorizationContext.ProtoReflect.Descriptor instead.
 func (*AuthorizationContext) Descriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{4}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *AuthorizationContext) GetEvaluationId() string {
@@ -628,7 +628,7 @@ type ResponseObservation struct {
 
 func (x *ResponseObservation) Reset() {
 	*x = ResponseObservation{}
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[5]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -640,7 +640,7 @@ func (x *ResponseObservation) String() string {
 func (*ResponseObservation) ProtoMessage() {}
 
 func (x *ResponseObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[5]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -653,7 +653,7 @@ func (x *ResponseObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResponseObservation.ProtoReflect.Descriptor instead.
 func (*ResponseObservation) Descriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{5}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ResponseObservation) GetAuthorizationRecordId() string {
@@ -724,7 +724,7 @@ type MiddlewareContext struct {
 
 func (x *MiddlewareContext) Reset() {
 	*x = MiddlewareContext{}
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[6]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -736,7 +736,7 @@ func (x *MiddlewareContext) String() string {
 func (*MiddlewareContext) ProtoMessage() {}
 
 func (x *MiddlewareContext) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[6]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -749,7 +749,7 @@ func (x *MiddlewareContext) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MiddlewareContext.ProtoReflect.Descriptor instead.
 func (*MiddlewareContext) Descriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{6}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *MiddlewareContext) GetEvaluationId() string {
@@ -828,7 +828,7 @@ type MiddlewareAuthorization struct {
 
 func (x *MiddlewareAuthorization) Reset() {
 	*x = MiddlewareAuthorization{}
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[7]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -840,7 +840,7 @@ func (x *MiddlewareAuthorization) String() string {
 func (*MiddlewareAuthorization) ProtoMessage() {}
 
 func (x *MiddlewareAuthorization) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[7]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -853,7 +853,7 @@ func (x *MiddlewareAuthorization) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MiddlewareAuthorization.ProtoReflect.Descriptor instead.
 func (*MiddlewareAuthorization) Descriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{7}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *MiddlewareAuthorization) GetContext() *MiddlewareContext {
@@ -890,7 +890,7 @@ type MiddlewareResponseObservation struct {
 
 func (x *MiddlewareResponseObservation) Reset() {
 	*x = MiddlewareResponseObservation{}
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[8]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -902,7 +902,7 @@ func (x *MiddlewareResponseObservation) String() string {
 func (*MiddlewareResponseObservation) ProtoMessage() {}
 
 func (x *MiddlewareResponseObservation) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[8]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -915,7 +915,7 @@ func (x *MiddlewareResponseObservation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MiddlewareResponseObservation.ProtoReflect.Descriptor instead.
 func (*MiddlewareResponseObservation) Descriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{8}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *MiddlewareResponseObservation) GetContext() *MiddlewareContext {
@@ -1037,7 +1037,7 @@ type AuditRecord struct {
 
 func (x *AuditRecord) Reset() {
 	*x = AuditRecord{}
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[9]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1049,7 +1049,7 @@ func (x *AuditRecord) String() string {
 func (*AuditRecord) ProtoMessage() {}
 
 func (x *AuditRecord) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[9]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1062,7 +1062,7 @@ func (x *AuditRecord) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AuditRecord.ProtoReflect.Descriptor instead.
 func (*AuditRecord) Descriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{9}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *AuditRecord) GetAuditRecordId() string {
@@ -1315,7 +1315,7 @@ type AppendAuditRecordRequest struct {
 
 func (x *AppendAuditRecordRequest) Reset() {
 	*x = AppendAuditRecordRequest{}
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[10]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1327,7 +1327,7 @@ func (x *AppendAuditRecordRequest) String() string {
 func (*AppendAuditRecordRequest) ProtoMessage() {}
 
 func (x *AppendAuditRecordRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[10]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1340,7 +1340,7 @@ func (x *AppendAuditRecordRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendAuditRecordRequest.ProtoReflect.Descriptor instead.
 func (*AppendAuditRecordRequest) Descriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{10}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *AppendAuditRecordRequest) GetRecord() *AuditRecord {
@@ -1359,7 +1359,7 @@ type AppendAuditRecordResponse struct {
 
 func (x *AppendAuditRecordResponse) Reset() {
 	*x = AppendAuditRecordResponse{}
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[11]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1371,7 +1371,7 @@ func (x *AppendAuditRecordResponse) String() string {
 func (*AppendAuditRecordResponse) ProtoMessage() {}
 
 func (x *AppendAuditRecordResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_enforcement_v1_enforcement_proto_msgTypes[11]
+	mi := &file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1384,7 +1384,7 @@ func (x *AppendAuditRecordResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AppendAuditRecordResponse.ProtoReflect.Descriptor instead.
 func (*AppendAuditRecordResponse) Descriptor() ([]byte, []int) {
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{11}
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *AppendAuditRecordResponse) GetAuditRecordId() string {
@@ -1394,11 +1394,11 @@ func (x *AppendAuditRecordResponse) GetAuditRecordId() string {
 	return ""
 }
 
-var File_api_proto_enforcement_v1_enforcement_proto protoreflect.FileDescriptor
+var File_enforcement_proto_enforcement_v1_enforcement_proto protoreflect.FileDescriptor
 
-const file_api_proto_enforcement_v1_enforcement_proto_rawDesc = "" +
+const file_enforcement_proto_enforcement_v1_enforcement_proto_rawDesc = "" +
 	"\n" +
-	"*api/proto/enforcement/v1/enforcement.proto\x12\x15ioc.cf.enforcement.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe8\x01\n" +
+	"2enforcement/proto/enforcement/v1/enforcement.proto\x12\x15ioc.cf.enforcement.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xe8\x01\n" +
 	"\x15GetDispositionRequest\x12M\n" +
 	"\x05extra\x18\x01 \x03(\v27.ioc.cf.enforcement.v1.GetDispositionRequest.ExtraEntryR\x05extra\x12F\n" +
 	"\apayload\x18\x02 \x01(\v2,.ioc.cf.enforcement.v1.GetDispositionPayloadR\apayload\x1a8\n" +
@@ -1547,23 +1547,23 @@ const file_api_proto_enforcement_v1_enforcement_proto_rawDesc = "" +
 	"#UPSTREAM_INVOCATION_STATE_COMPLETED\x10\x032\xf4\x01\n" +
 	"\vEnforcement\x12m\n" +
 	"\x0eGetDisposition\x12,.ioc.cf.enforcement.v1.GetDispositionRequest\x1a-.ioc.cf.enforcement.v1.GetDispositionResponse\x12v\n" +
-	"\x11AppendAuditRecord\x12/.ioc.cf.enforcement.v1.AppendAuditRecordRequest\x1a0.ioc.cf.enforcement.v1.AppendAuditRecordResponseBMZKgithub.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1;enforcementv1b\x06proto3"
+	"\x11AppendAuditRecord\x12/.ioc.cf.enforcement.v1.AppendAuditRecordRequest\x1a0.ioc.cf.enforcement.v1.AppendAuditRecordResponseBHZFgithub.com/cisco-eti/cognition-fabric/api/enforcement/v1;enforcementv1b\x06proto3"
 
 var (
-	file_api_proto_enforcement_v1_enforcement_proto_rawDescOnce sync.Once
-	file_api_proto_enforcement_v1_enforcement_proto_rawDescData []byte
+	file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescOnce sync.Once
+	file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescData []byte
 )
 
-func file_api_proto_enforcement_v1_enforcement_proto_rawDescGZIP() []byte {
-	file_api_proto_enforcement_v1_enforcement_proto_rawDescOnce.Do(func() {
-		file_api_proto_enforcement_v1_enforcement_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_api_proto_enforcement_v1_enforcement_proto_rawDesc), len(file_api_proto_enforcement_v1_enforcement_proto_rawDesc)))
+func file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescGZIP() []byte {
+	file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescOnce.Do(func() {
+		file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_enforcement_proto_enforcement_v1_enforcement_proto_rawDesc), len(file_enforcement_proto_enforcement_v1_enforcement_proto_rawDesc)))
 	})
-	return file_api_proto_enforcement_v1_enforcement_proto_rawDescData
+	return file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescData
 }
 
-var file_api_proto_enforcement_v1_enforcement_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_api_proto_enforcement_v1_enforcement_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
-var file_api_proto_enforcement_v1_enforcement_proto_goTypes = []any{
+var file_enforcement_proto_enforcement_v1_enforcement_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_enforcement_proto_enforcement_v1_enforcement_proto_goTypes = []any{
 	(DispositionAction)(0),                // 0: ioc.cf.enforcement.v1.DispositionAction
 	(AppliedOutcome)(0),                   // 1: ioc.cf.enforcement.v1.AppliedOutcome
 	(UpstreamInvocationState)(0),          // 2: ioc.cf.enforcement.v1.UpstreamInvocationState
@@ -1585,7 +1585,7 @@ var file_api_proto_enforcement_v1_enforcement_proto_goTypes = []any{
 	nil,                                   // 18: ioc.cf.enforcement.v1.AuditRecord.BoundaryEvidenceEntry
 	(*timestamppb.Timestamp)(nil),         // 19: google.protobuf.Timestamp
 }
-var file_api_proto_enforcement_v1_enforcement_proto_depIdxs = []int32{
+var file_enforcement_proto_enforcement_v1_enforcement_proto_depIdxs = []int32{
 	16, // 0: ioc.cf.enforcement.v1.GetDispositionRequest.extra:type_name -> ioc.cf.enforcement.v1.GetDispositionRequest.ExtraEntry
 	5,  // 1: ioc.cf.enforcement.v1.GetDispositionRequest.payload:type_name -> ioc.cf.enforcement.v1.GetDispositionPayload
 	3,  // 2: ioc.cf.enforcement.v1.GetDispositionResponse.action:type_name -> ioc.cf.enforcement.v1.GetDispositionResponse.Action
@@ -1623,14 +1623,14 @@ var file_api_proto_enforcement_v1_enforcement_proto_depIdxs = []int32{
 	0,  // [0:26] is the sub-list for field type_name
 }
 
-func init() { file_api_proto_enforcement_v1_enforcement_proto_init() }
-func file_api_proto_enforcement_v1_enforcement_proto_init() {
-	if File_api_proto_enforcement_v1_enforcement_proto != nil {
+func init() { file_enforcement_proto_enforcement_v1_enforcement_proto_init() }
+func file_enforcement_proto_enforcement_v1_enforcement_proto_init() {
+	if File_enforcement_proto_enforcement_v1_enforcement_proto != nil {
 		return
 	}
-	file_api_proto_enforcement_v1_enforcement_proto_msgTypes[5].OneofWrappers = []any{}
-	file_api_proto_enforcement_v1_enforcement_proto_msgTypes[8].OneofWrappers = []any{}
-	file_api_proto_enforcement_v1_enforcement_proto_msgTypes[9].OneofWrappers = []any{
+	file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[5].OneofWrappers = []any{}
+	file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[8].OneofWrappers = []any{}
+	file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes[9].OneofWrappers = []any{
 		(*AuditRecord_Authorization)(nil),
 		(*AuditRecord_ResponseObservation)(nil),
 		(*AuditRecord_MiddlewareAuthorization)(nil),
@@ -1640,18 +1640,18 @@ func file_api_proto_enforcement_v1_enforcement_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_enforcement_v1_enforcement_proto_rawDesc), len(file_api_proto_enforcement_v1_enforcement_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_enforcement_proto_enforcement_v1_enforcement_proto_rawDesc), len(file_enforcement_proto_enforcement_v1_enforcement_proto_rawDesc)),
 			NumEnums:      4,
 			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_api_proto_enforcement_v1_enforcement_proto_goTypes,
-		DependencyIndexes: file_api_proto_enforcement_v1_enforcement_proto_depIdxs,
-		EnumInfos:         file_api_proto_enforcement_v1_enforcement_proto_enumTypes,
-		MessageInfos:      file_api_proto_enforcement_v1_enforcement_proto_msgTypes,
+		GoTypes:           file_enforcement_proto_enforcement_v1_enforcement_proto_goTypes,
+		DependencyIndexes: file_enforcement_proto_enforcement_v1_enforcement_proto_depIdxs,
+		EnumInfos:         file_enforcement_proto_enforcement_v1_enforcement_proto_enumTypes,
+		MessageInfos:      file_enforcement_proto_enforcement_v1_enforcement_proto_msgTypes,
 	}.Build()
-	File_api_proto_enforcement_v1_enforcement_proto = out.File
-	file_api_proto_enforcement_v1_enforcement_proto_goTypes = nil
-	file_api_proto_enforcement_v1_enforcement_proto_depIdxs = nil
+	File_enforcement_proto_enforcement_v1_enforcement_proto = out.File
+	file_enforcement_proto_enforcement_v1_enforcement_proto_goTypes = nil
+	file_enforcement_proto_enforcement_v1_enforcement_proto_depIdxs = nil
 }

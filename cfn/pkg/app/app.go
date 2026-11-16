@@ -16,14 +16,14 @@ import (
 	"sync"
 	"time"
 
-	_ "github.com/cisco-eti/ioc-scale-cfn-svc/docs/api" // Swagger docs
-	enforcementv1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/enforcement/v1"
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/audit"
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/database"
-	httpclient "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/client/http"
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/config"
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/tools/easyhttp"
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/tools/logger"
+	enforcementv1 "github.com/cisco-eti/cognition-fabric/api/enforcement/v1"
+	_ "github.com/cisco-eti/cognition-fabric/cfn/docs/api" // Swagger docs
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/audit"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/client/database"
+	httpclient "github.com/cisco-eti/cognition-fabric/cfn/pkg/client/http"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/config"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/easyhttp"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/logger"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"

@@ -1,71 +1,24 @@
-# Documentation Directory
+# Management documentation
 
-This directory contains all documentation for the IoC CFN Management Backend Service.
+The canonical Management API schema is
+[`api/mgmt/openapi/openapi.json`](../../api/mgmt/openapi/openapi.json).
+It retains the existing OpenAPI 3.0.0 export format. Internal CFN registration,
+heartbeat and CE synchronization operations carry `x-internal` and `x-callers`
+annotations in this documentation artifact.
 
-## Directory Structure
+From `cf-mgmt/`, run `task generate-openapi-spec` to regenerate it and
+`task check-openapi-spec` to compare without changing files. Generation imports
+route definitions without starting the application lifespan, loading private
+`.env` settings, or connecting to a running service. Runtime documentation remains
+at `/api/docs`, `/api/redoc`, and `/api/openapi.json` on Management's HTTP listener.
 
-```
-docs/
-├── README.md           # This file - documentation index
-└── openapi/            # OpenAPI specification files
-    └── openapi.json    # Generated OpenAPI 3.1.0 spec
-```
+The [MAS onboarding contract](../../api/mgmt/docs/MAS_METADATA.md) describes rich
+snapshots and atomic validation. The [database migrations guide](DATABASE_MIGRATIONS.md)
+covers schema authoring and automatic migration application at startup.
 
-## Documentation Contents
+The root Pages workflow combines the sample docs site and this directory's
+`index.html` viewer with the canonical schema under `/mgmt-api/`. Run
+`python3 .github/scripts/build_pages.py --output /tmp/cf-pages` from the repository
+root after building the docs site. Python 3.11+ is required for automation tools.
 
-- [MAS onboarding metadata](MAS_METADATA.md) — optional rich snapshots, presence
-  semantics, atomic mutations and the `mas_metadata_0009` migration.
-
-- [Database migrations](DATABASE_MIGRATIONS.md), including the `agent_identity_0008` agent
-  storage-key cutover and `utc_timestamps_0010` UTC cutover, checked one-off
-  config regeneration, rollback boundaries and manual verification steps.
-
-### OpenAPI Specification (`openapi/`)
-
-Contains the generated OpenAPI/Swagger specification files:
-
-- **openapi.json** - Auto-generated OpenAPI 3.1.0 specification
-- Generated from FastAPI application schema
-- Used by Swagger UI, ReDoc, Postman, and other API tools
-
-## Generating Documentation
-
-### Generate OpenAPI Spec
-
-```bash
-task generate-openapi-spec
-```
-
-This will regenerate `openapi/openapi.json` based on the current API implementation.
-
-## Viewing API Documentation
-
-Once the application is running, view the interactive API documentation at:
-
-- **Swagger UI**: http://localhost:9000/api/docs
-- **ReDoc**: http://localhost:9000/api/redoc
-- **OpenAPI JSON**: http://localhost:9000/api/openapi.json
-
-## Using the OpenAPI Spec
-
-The `openapi/openapi.json` file can be used with:
-
-- **Swagger UI** - Interactive API documentation
-- **Postman** - Import spec to generate API requests
-- **OpenAPI Generator** - Generate client SDKs
-- **API testing tools** - Automated API testing
-
-### Import into Postman
-
-1. Open Postman
-2. Click "Import"
-3. Choose "Link" tab
-4. Paste: `http://localhost:9000/api/openapi.json`
-5. Click "Import"
-
-## Additional Documentation
-
-See also:
-
-- [Contributing Guide](../CONTRIBUTING.md) - Development and contribution guidelines
-- [Main README](../README.md) - Project overview and setup instructions
+See [the root contribution guide](../../CONTRIBUTING.md) for project-wide checks.

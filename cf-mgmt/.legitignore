@@ -1,6 +1,5 @@
 # Legit Security Scanner Ignore Rules
 
-.env.example
 src/server/database/relational_db/README.md
 src/server/database/relational_db/atlas.hcl
 # files have been removed from these repository locations

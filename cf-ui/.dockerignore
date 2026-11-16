@@ -38,7 +38,6 @@ lerna-debug.log*
 
 # Environment files
 .env*
-!.env.sample
 
 # Temporary files
 tmp

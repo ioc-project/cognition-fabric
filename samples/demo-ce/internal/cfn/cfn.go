@@ -19,7 +19,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/httpjson"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/httpjson"
 )
 
 // Lifecycle registers this CE with CFN. CFN is reached over REST. HealthURL is the base URL CFN probes with a GET on /healthz

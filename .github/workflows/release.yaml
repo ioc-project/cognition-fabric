@@ -1,0 +1,75 @@
+name: Component release
+
+on:
+  push:
+    tags:
+      - 'api/v*'
+      - 'cfn/v*'
+      - 'cf-mgmt/v*'
+      - 'cf-ui/v*'
+      - 'samples/demo-ce/v*'
+      - 'samples/template-ce/v*'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  target:
+    runs-on: ubuntu-latest
+    outputs:
+      historical: ${{ steps.target.outputs.historical }}
+      publish_image: ${{ steps.target.outputs.publish_image }}
+      image: ${{ steps.target.outputs.image }}
+      image_tag: ${{ steps.target.outputs.image_tag }}
+      dockerfile: ${{ steps.target.outputs.dockerfile }}
+      component: ${{ steps.target.outputs.component }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - id: target
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: python .github/scripts/release_target.py "$RELEASE_TAG" --github-output "$GITHUB_OUTPUT"
+
+  checks:
+    needs: target
+    if: needs.target.outputs.historical != 'true'
+    uses: ./.github/workflows/ci.yaml
+
+  publish:
+    name: Publish selected component image
+    needs: [target, checks]
+    if: needs.target.outputs.publish_image == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ needs.target.outputs.dockerfile }}
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ needs.target.outputs.image }}:${{ needs.target.outputs.image_tag }}
+          build-args: |
+            CFN_UI_API_BASE_URL=${{ vars.CFN_UI_API_BASE_URL || 'http://localhost:9000' }}
+          cache-from: type=gha,scope=${{ needs.target.outputs.component }}
+          cache-to: type=gha,mode=max,scope=${{ needs.target.outputs.component }}
+          provenance: false
+
+  api:
+    name: API module tag validated
+    needs: [target, checks]
+    if: needs.target.outputs.component == 'api'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo 'The api/ module is released by this validated Git tag; no image is published.'

@@ -1,0 +1,338 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.9'
+          cache-dependency-path: api/go.sum
+      - run: make -C api lint test
+
+  cfn:
+    name: CFN checks and process integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: localdev
+          POSTGRES_DB: cfn_audit_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    env:
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: localdev
+      POSTGRES_AUDIT_DB: cfn_audit_test
+      POSTGRES_TEST_DB: cfn_audit_test
+      INTEGRATION_SKIP_DB: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.9'
+          cache-dependency-path: |
+            api/go.sum
+            cfn/go.sum
+      - uses: go-task/setup-task@v2
+        with:
+          version: 3.x
+      - run: make -C cfn lint test
+      - run: task test:integration
+      - name: Build outside Go workspace
+        working-directory: cfn
+        run: GOWORK=off go build ./...
+
+  management:
+    name: Management checks and schema
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgresUser
+          POSTGRES_PASSWORD: postgresPW
+          POSTGRES_DB: ioc_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s
+          --health-timeout 5s --health-retries 5
+    env:
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: '5432'
+      POSTGRES_USER: postgresUser
+      POSTGRES_PASSWORD: postgresPW
+      POSTGRES_DB: ioc_test
+      PYTHON_DOTENV_DISABLED: '1'
+    defaults:
+      run:
+        working-directory: cf-mgmt
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install poetry==2.2.1
+      - run: poetry install --no-interaction
+      - run: bash scripts/lint.sh --check
+      - run: poetry run pytest tests/ -v
+      - run: poetry run python scripts/generate_openapi_spec.py --check
+      - run: poetry run python -m unittest discover -s ../dev/tests -v
+
+  ui:
+    name: UI checks and generated types
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cf-ui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: cf-ui/package-lock.json
+      - run: npm ci
+      - run: npm run check:api
+      - run: npm test
+      - run: npm run lint:check
+      - run: npx tsc --noEmit
+      - run: npm run build
+      - name: Dependency audit (advisory, preserving existing policy)
+        run: npm audit --audit-level=moderate || true
+
+  demo-ce:
+    name: Demo CE checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: samples/demo-ce
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.9'
+          cache-dependency-path: |
+            api/go.sum
+            samples/demo-ce/go.sum
+      - name: Check Go formatting without rewriting files
+        run: |
+          if [ -n "$(gofmt -l .)" ]; then gofmt -d .; exit 1; fi
+      - run: go vet ./...
+      - run: go test ./...
+      - run: GOWORK=off go build ./...
+
+  template-ce:
+    name: Template CE checks and image smoke
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: samples/template-ce
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.11'
+          version: '0.13.7'
+      - run: uv sync --frozen --extra test
+      - run: uv run --frozen python scripts/generate_proto.py --check
+      - run: uv run --frozen pytest
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: samples/template-ce/Dockerfile
+          push: false
+          load: true
+          platforms: linux/amd64
+          tags: template-ce:smoke
+          cache-from: type=gha,scope=template-ce
+      - name: Probe disposable image health and GetInfo
+        run: |
+          docker run -d --name template-ce-smoke template-ce:smoke
+          trap 'docker rm -f template-ce-smoke >/dev/null 2>&1 || true' EXIT
+          for i in $(seq 1 30); do
+            if docker exec template-ce-smoke /home/app/.venv/bin/python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/healthz')"; then
+              break
+            fi
+            if [ "$i" -eq 30 ]; then docker logs template-ce-smoke; exit 1; fi
+            sleep 1
+          done
+          docker cp scripts/smoke_image.py template-ce-smoke:/tmp/smoke_image.py
+          docker exec -e PYTHONPATH=/home/app/src -w /tmp template-ce-smoke /home/app/.venv/bin/python /tmp/smoke_image.py
+
+  noa:
+    name: NOA sample and onboarding tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: samples/noa-trip-planner
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.11'
+          version: '0.13.7'
+      - run: uv sync --frozen --group dev
+      - run: uv run --frozen --group dev python -m pytest tests -q
+
+  generation:
+    name: Protobuf and internal Swagger drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.25.9'
+          cache-dependency-path: |
+            api/go.sum
+            cfn/go.sum
+      - name: Install pinned generation tools
+        run: |
+          curl -fsSL --retry 3 https://github.com/protocolbuffers/protobuf/releases/download/v35.1/protoc-35.1-linux-x86_64.zip -o "$RUNNER_TEMP/protoc.zip"
+          echo "6930ebf62bd4ea607b98fff052596c6ee564b9835b4ce172c75a3f53ae9d91b7  $RUNNER_TEMP/protoc.zip" | sha256sum --check
+          unzip -q "$RUNNER_TEMP/protoc.zip" -d "$RUNNER_TEMP/protoc"
+          echo "$RUNNER_TEMP/protoc/bin" >> "$GITHUB_PATH"
+          go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.12
+          go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.2
+          go install github.com/swaggo/swag/cmd/swag@v1.16.6
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: '3.11'
+          version: '0.13.7'
+      - run: uv sync --frozen --extra test --project samples/template-ce
+      - run: make -C api proto-check
+      - run: make -C api openapi-check
+      - run: make -C cfn docs-check
+
+  automation:
+    name: Release and Pages automation tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m unittest discover -s .github/tests -v
+      - name: Validate all component metadata and release mappings
+        run: python .github/scripts/release_target.py --validate-all
+
+  docs:
+    name: Combined Pages artifact build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: samples/docs-site/package-lock.json
+      - run: npm ci --prefix samples/docs-site
+      - name: Build site at project subpath
+        run: npm run build --prefix samples/docs-site
+        env:
+          PAGES_URL: https://cisco-eti.github.io/cognition-fabric/
+      - run: python3 .github/scripts/build_pages.py --output "$RUNNER_TEMP/pages-project"
+      - name: Build site at root path
+        run: npm run build --prefix samples/docs-site
+        env:
+          PAGES_URL: https://example.invalid/
+      - run: python3 .github/scripts/build_pages.py --output "$RUNNER_TEMP/pages-root"
+
+  images:
+    name: Image (${{ matrix.component }})
+    needs: [api, cfn, management, ui, demo-ce, template-ce, noa, generation, automation, docs]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: cfn
+            image: ghcr.io/cisco-eti/ioc-scale-cfn-svc
+            dockerfile: cfn/Dockerfile
+          - component: cf-mgmt
+            image: ghcr.io/cisco-eti/ioc-scale-cf-mgmt-svc
+            dockerfile: cf-mgmt/Dockerfile
+          - component: cf-ui
+            image: ghcr.io/cisco-eti/ioc-scale-cf-ui
+            dockerfile: cf-ui/ci/docker/Dockerfile.next
+          - component: demo-ce
+            image: ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce
+            dockerfile: samples/demo-ce/Dockerfile
+          - component: template-ce
+            image: ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/template-ce
+            dockerfile: samples/template-ce/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Select preserved main aliases or local validation tag
+        id: tags
+        env:
+          IMAGE: ${{ matrix.image }}
+          COMPONENT: ${{ matrix.component }}
+        run: |
+          {
+            echo 'tags<<EOF'
+            if [ "$GITHUB_EVENT_NAME" = push ] && [ "$GITHUB_REF" = refs/heads/main ]; then
+              echo "$IMAGE:latest"
+              echo "$IMAGE:$(date -u +%Y-%m-%d)-${GITHUB_SHA:0:7}"
+              if [ "$COMPONENT" = cf-mgmt ] || [ "$COMPONENT" = cf-ui ]; then echo "$IMAGE:main"; fi
+            else
+              echo "$IMAGE:ci-${GITHUB_SHA:0:7}"
+            fi
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          platforms: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && 'linux/amd64,linux/arm64' || 'linux/amd64' }}
+          tags: ${{ steps.tags.outputs.tags }}
+          build-args: |
+            CFN_UI_API_BASE_URL=${{ vars.CFN_UI_API_BASE_URL || 'http://localhost:9000' }}
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+          provenance: false
+
+  ci-status:
+    name: CI Status
+    if: always()
+    needs: [api, cfn, management, ui, demo-ce, template-ce, noa, generation, automation, docs, images]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require every suite and image build
+        env:
+          RESULTS: ${{ join(needs.*.result, ',') }}
+        run: |
+          for result in ${RESULTS//,/ }; do
+            [ "$result" = success ] || { echo "A required check did not succeed: $result"; exit 1; }
+          done
