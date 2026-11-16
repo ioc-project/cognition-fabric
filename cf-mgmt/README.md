@@ -1,7 +1,7 @@
 # Internet of Cognition (IOC) - Cognition Fabric Node (CFN) Management Backend Service
 
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-blue?logo=docker)](https://github.com/orgs/cisco-eti/packages/container/package/ioc-scale-cf-mgmt-svc)
-[![GitHub Pages Site](https://img.shields.io/badge/GitHub%20Pages-Visit-green?logo=github)](https://scaling-potato-qm8j7n7.pages.github.io/)
+[![GitHub Pages Site](https://img.shields.io/badge/GitHub%20Pages-Visit-green?logo=github)](../samples/docs-site/README.md)
 
 IoC CFN Management Backend Service - FastAPI backend for workspaces, users, API keys, Cognitive Fabric Nodes, and Multi-Agentic Systems
 
@@ -18,17 +18,18 @@ IoC CFN Management Backend Service - FastAPI backend for workspaces, users, API 
 
 ### Environment Configuration
 
-1. Copy the example environment file:
+Use the repository root's [`.env.example`](../.env.example), which groups shared
+and component settings in commented sections. Follow the
+[local workflow](../dev/README.md#configuration) to configure the stack.
+
+From the repository root, create `.env`:
 
 ```bash
 cp .env.example .env
 ```
 
-2. Edit `.env` to set your configuration values:
-
-```bash
-vi .env  # or use your preferred editor
-```
+Edit that root `.env` with your configuration values. Root tasks derive
+Management's database connection from the shared PostgreSQL settings.
 
 ### Dependencies for the Relational DB
 
@@ -45,34 +46,23 @@ For full stack deployment (all services), see [ioc-scale-cf-deployment](https://
 
 ### Local Development
 
-Requires PostgreSQL running locally. You can start one with Docker:
+From the repository root, install Management's dependencies and start it through
+the local tasks:
 
 ```bash
-docker run -d --name postgres-cfn \
-  -e POSTGRES_USER=postgresUser \
-  -e POSTGRES_PASSWORD=postgresPW \
-  -e POSTGRES_DB=cfn_mgmt \
-  -p 5433:5432 \
-  postgres:17-alpine
+(cd cf-mgmt && poetry install)
+task infra:up
+task run:cfn-mgmt
 ```
 
-Then run the service:
-
-```bash
-task run    # installs deps, applies db migrations, then runs
-```
-
-Or with Poetry directly:
-
-```bash
-poetry install
-task dev
-```
+Infrastructure prepares the local database. The Management task loads root `.env`,
+applies pending migrations and starts the source server. See the
+[local workflow](../dev/README.md) for prerequisites and service startup order.
 
 **API Documentation:** http://localhost:9000/docs
 
 After applying migration `0007`, restart the intended CE if multiple enabled registrations share
-an endpoint. See [CFN's CE lifecycle contract](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/docs/CE-LIFECYCLE.md#endpoint-ownership)
+an endpoint. See [CFN's CE lifecycle contract](../api/ce/docs/CE-LIFECYCLE.md#endpoint-ownership)
 for ownership, reconnect, and version compatibility details.
 
 Migration `agent_identity_0008` changes the agent storage key. Stop older Management writers for
@@ -81,11 +71,10 @@ cutover, not a mixed-version rolling upgrade. Existing runtime agent IDs remain
 unchanged, and Management reads add a read-only `cf_agent_id` UUID. See the
 [agent identity migration and manual checks](docs/DATABASE_MIGRATIONS.md#agent-storage-identity-agent_identity_0008).
 
-Migration `utc_timestamps_0010` stores CF-owned instants as `timestamptz`; APIs
-return UTC RFC 3339 `Z` timestamps. Stop writers/CFNs, choose the migration-only
-`LEGACY_TIMESTAMP_TZ` (default `UTC`), migrate, run the checked one-off config
-regeneration, and restart CFNs. See the [UTC timestamp cutover](docs/DATABASE_MIGRATIONS.md#utc-timestamps-utc_timestamps_0010)
-for database selection, disabled-node caches and rollback limits.
+Management startup applies pending Alembic migrations automatically. CF-owned
+instants are stored as `timestamptz`; APIs return UTC RFC 3339 `Z` timestamps. See
+the [timestamp contract](../docs/specs/utc-timestamps.md) for storage, output and
+CE timestamp ownership.
 
 ### Encryption Keys
 
@@ -93,20 +82,18 @@ Memory provider credentials are encrypted using a Fernet key. The key is automat
 
 ## Development
 
-**Using Task**
+From the repository root, run the CF test suites with the shared database
+configuration and Management test-database checks:
 
 ```bash
-task dev              # Start development server with hot reload
-task test             # Run all tests
-task lint             # Fix linting issues
-task docker-build     # Build Docker image
+task test
 ```
 
-**Using Poetry directly**
+Run formatting and image-build commands from `cf-mgmt/`:
 
 ```bash
-cd src
-poetry run python -m server.main
+task lint             # Fix linting issues
+task docker-build     # Build Docker image
 ```
 
 ## API Endpoints
@@ -143,7 +130,7 @@ direct API calls. The same native tool name may occur on different servers.
 - Legacy `decision=allow|block|modify` aliases also filter canonical outcomes across producers.
 
 The optional top-level `outcome` supplements the preserved source details in
-`audit_information`. See the [CF-owned audit contract](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/docs/specs/proxy-audit-ingestion.md)
+`audit_information`. See the [CF-owned audit contract](../api/enforcement/docs/proxy-audit-ingestion.md)
 for outcome mappings, delivery requirements and rollout.
 - Get event by ID: `GET /api/audit-events/{id}`
 
@@ -167,7 +154,7 @@ curl http://localhost:9000/api/audit-events/5bda66e6-1608-4f83-b7e4-aadbddce312c
 
 ## License
 
-This project is licensed under the Apache License, Version 2.0 - see the [LICENSE.md](LICENSE.md) file for full details.
+This project is licensed under the Apache License, Version 2.0 - see the [LICENSE.md](../LICENSE.md) file for full details.
 
 Copyright (c) 2026 Cisco Systems, Inc. and its affiliates. All rights reserved.
 
@@ -179,9 +166,11 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 ## Third-Party Notices
 
-This project uses third-party open source components. See [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES) for copyright and license information.
+This project uses third-party open source components. See [THIRD-PARTY-NOTICES](../THIRD-PARTY-NOTICES) for copyright and license information.
 
 ## MAS onboarding metadata
 
-See [MAS metadata](docs/MAS_METADATA.md) for the optional Stage 3 contract,
+See [MAS metadata](../api/mgmt/docs/MAS_METADATA.md) for the optional Stage 3 contract,
 snapshot semantics, atomic reference validation and additive migration.
+
+Management API documentation is generated locally into [the canonical schema](../api/mgmt/openapi/openapi.json). Run `task generate-openapi-spec` or the nonmutating `task check-openapi-spec` from this folder. The root Pages deployment serves its viewer under `/mgmt-api/`.

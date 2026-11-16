@@ -1,0 +1,759 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
+openapi: 3.0.3
+info:
+  title: Cognition Fabric REST API for Cognition Engines
+  version: 1.0.0
+  description: Implemented by CFN and called by CEs. Existing external CE registration
+    and discovery behavior; internal Management-to-CFN routes are excluded.
+servers:
+- url: http://localhost:9002
+  description: Local CFN; use the configured CFN origin in deployment
+paths:
+  /api/cognition-engine:
+    post:
+      description: Register a CE with the CFN. The CFN adds cfn_id and forwards the
+        request to the management plane.
+      tags:
+      - cognition-engines
+      summary: Register a Cognition Engine
+      responses:
+        '200':
+          description: Management returned an existing/updated registration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.RegisterResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        '502':
+          description: Management plane error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        '503':
+          description: CFN not registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        '500':
+          description: CFN could not serialize the forwarded request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        default:
+          description: Other Management response status and object are forwarded unchanged;
+            a non-object or malformed body is represented by a raw string field. Persistent
+            retryable upstream failures are reported as502.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagementError'
+        '401':
+          description: Management authentication or authorization rejected the operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagementError'
+        '403':
+          description: Management authentication or authorization rejected the operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagementError'
+        '201':
+          description: New CE registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.RegisterResponse'
+        '404':
+          description: CFN registration was not found by Management
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagementError'
+        '409':
+          description: A registration or endpoint claim already exists; Management
+            can provide existing_ce_id in its conflict detail for reconnect recovery
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationConflictResponse'
+        '422':
+          description: Management rejected registration validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagementError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cognitionengine.RegisterRequest'
+  /api/cognition-engine/{ceId}:
+    delete:
+      description: Unregister (soft-delete) a CE by ID. CFN forwards the request to
+        the management plane.
+      tags:
+      - cognition-engines
+      summary: Unregister/Delete a Cognition Engine
+      responses:
+        '204':
+          description: CE deleted successfully
+        '400':
+          description: Invalid CE ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        '404':
+          description: CE not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        '502':
+          description: Management plane error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        '503':
+          description: CFN not registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        default:
+          description: Other Management response status and object are forwarded unchanged;
+            a non-object or malformed body is represented by a raw string field. Persistent
+            retryable upstream failures are reported as502.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagementError'
+        '401':
+          description: Management authentication or authorization rejected the operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagementError'
+        '403':
+          description: Management authentication or authorization rejected the operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagementError'
+        '409':
+          description: CE must be disabled before deletion and have no active MAS
+            associations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagementError'
+      parameters:
+      - description: Cognition Engine ID (UUID)
+        name: ceId
+        in: path
+        required: true
+        schema:
+          type: string
+    patch:
+      description: Update a CE by ID. CFN forwards the request to the management plane.
+      tags:
+      - cognition-engines
+      summary: Update a Cognition Engine
+      responses:
+        '200':
+          description: CE updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        '404':
+          description: CE not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        '502':
+          description: Management plane error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        '503':
+          description: CFN not registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        '500':
+          description: CFN could not serialize the forwarded request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        default:
+          description: Other Management response status and object are forwarded unchanged;
+            a non-object or malformed body is represented by a raw string field. Persistent
+            retryable upstream failures are reported as502.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagementError'
+        '401':
+          description: Management authentication or authorization rejected the operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagementError'
+        '403':
+          description: Management authentication or authorization rejected the operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagementError'
+        '422':
+          description: Management rejected endpoint pairing, ownership or request
+            validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ManagementError'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+      parameters:
+      - description: Cognition Engine ID (UUID)
+        name: ceId
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/cognition-engine/{ceId}/multi-agentic-systems:
+    get:
+      description: Returns sorted mas_ids for the CE from the loaded config snapshot.
+        This is the initial-sync pull; it does not replay MAS lifecycle notifications.
+        404 means the CE is not in the snapshot yet (retry). An empty list means the
+        CE is present and has no associations.
+      tags:
+      - cognition-engines
+      summary: List MAS IDs associated with a Cognition Engine
+      responses:
+        '200':
+          description: Associated MAS IDs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.AssociatedMASResponse'
+        '400':
+          description: Invalid CE ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        '404':
+          description: CE not yet in CFN config
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        '503':
+          description: Config snapshot unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+        '500':
+          description: CFN failed to resolve associated MAS IDs
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cognitionengine.ErrorResponse'
+      parameters:
+      - description: Cognition Engine ID (UUID)
+        name: ceId
+        in: path
+        required: true
+        schema:
+          type: string
+  /api/multi-agentic-systems/{masId}:
+    get:
+      description: Default and every metadata value other than the exact string true
+        return LegacyMASResponse. metadata=true returns ExpandedMASResponse. Existing
+        payloads and timestamp handling are unchanged. The shapes overlap when optional
+        metadata is absent.
+      tags:
+      - multi-agentic-systems
+      summary: Get MAS details
+      responses:
+        '200':
+          description: MAS details
+          content:
+            application/json:
+              schema:
+                anyOf:
+                - $ref: '#/components/schemas/LegacyMASResponse'
+                - $ref: '#/components/schemas/ExpandedMASResponse'
+              examples:
+                legacy:
+                  summary: Default response
+                  value:
+                    id: mas-id
+                    workspace_id: workspace-id
+                    name: Example MAS
+                    cognition_engines: []
+                expanded:
+                  summary: metadata=true
+                  value:
+                    id: mas-id
+                    workspace_id: workspace-id
+                    name: Example MAS
+                    cognition_engines: []
+                    config: {}
+                    tools: []
+                    updated_at: '2026-11-13T15:00:00Z'
+        '400':
+          description: mas_id is required
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+        '404':
+          description: MAS not found
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+        '500':
+          description: Internal error
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+        '502':
+          description: Failed to fetch MAS from management plane
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+        '503':
+          description: Config snapshot or management plane unavailable
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: string
+      parameters:
+      - description: Opt in to expanded onboarding metadata; legacy shape is the default
+        name: metadata
+        in: query
+        schema:
+          type: boolean
+      - description: MAS ID
+        name: masId
+        in: path
+        required: true
+        schema:
+          type: string
+components:
+  schemas:
+    cognitionengine.AssociatedMASResponse:
+      description: Snapshot-backed list of MAS IDs associated with the given CE. Empty
+        when the CE is present and has no associations.
+      type: object
+      properties:
+        mas_ids:
+          description: Sorted MAS IDs associated with this CE on this CFN
+          type: array
+          items:
+            type: string
+    cognitionengine.ErrorResponse:
+      description: Error response payload.
+      type: object
+      properties:
+        error:
+          description: Error message
+          type: string
+          example: ce_type is required
+    cognitionengine.RegisterRequest:
+      description: Enforcing URL/endpoint and notification URL/endpoint must each
+        be supplied together. Omitted protocols default to grpc/http/http. mas_auto_associate
+        defaults to true.
+      type: object
+      properties:
+        ce_type:
+          description: CE type - must be "CASA" or "DETECTIVE"
+          type: string
+          enum:
+          - CASA
+          - DETECTIVE
+          example: CASA
+        enforcing_endpoint:
+          description: gRPC service name for enforcement (required when enforcing_url
+            is set)
+          type: string
+          example: ioc.ce.v1.CognitionEngine
+        enforcing_protocol:
+          description: Enforcement protocol. Only "grpc" is supported today (default
+            "grpc")
+          type: string
+          enum:
+          - grpc
+          example: grpc
+        enforcing_url:
+          description: Address CFN sends enforcement requests to (gRPC host:port,
+            e.g. "my-ce:50051"). Optional, but set together with enforcing_endpoint
+          type: string
+          example: my-ce:50051
+        health_endpoint:
+          description: Health probe path, appended to health_url (required). Must
+            start with "/"
+          type: string
+          example: /healthz
+        health_protocol:
+          description: Health protocol. Only "http" is supported today (default "http")
+          type: string
+          enum:
+          - http
+          example: http
+        health_url:
+          description: Base URL CFN probes with an HTTP GET to check the CE is alive
+            (required, http or https)
+          type: string
+          example: http://my-ce:8080
+        mas_auto_associate:
+          description: Auto-associate with all MAS in the workspace (defaults to true
+            if not specified)
+          type: boolean
+          example: true
+        mas_config:
+          description: Factory defaults for per-MAS configuration
+          type: object
+          additionalProperties: {}
+        name:
+          description: CE name (e.g., "my-ce")
+          type: string
+          example: my-ce
+        notification_endpoint:
+          description: Path CFN appends to notification_url. Must start with "/" and
+            be set together with notification_url
+          type: string
+          example: /notification/mas-lifecycle
+        notification_protocol:
+          description: Notification protocol. Only "http" is supported today (default
+            "http")
+          type: string
+          enum:
+          - http
+          example: http
+        notification_url:
+          description: Notification base URL for MAS event notifications
+          type: string
+          example: http://my-ce:8080
+        version:
+          description: CE version (e.g., "1.0.0")
+          type: string
+          example: 1.0.0
+      required:
+      - name
+      - version
+      - ce_type
+      - health_url
+      - health_endpoint
+    cognitionengine.RegisterResponse:
+      description: CE registration response from management plane.
+      type: object
+      properties:
+        ce_id:
+          description: Cognition Engine ID (UUID)
+          type: string
+          example: 550e8400-e29b-41d4-a716-446655440000
+        ce_type:
+          description: CE type
+          type: string
+          example: CASA
+        cfn_id:
+          description: Cognition Fabric Node ID (UUID)
+          type: string
+          example: 660e8400-e29b-41d4-a716-446655440001
+        created:
+          description: Whether this was a new registration (true) or update (false)
+          type: boolean
+          example: true
+        enabled:
+          description: Whether the CE is enabled
+          type: boolean
+          example: true
+        enforcing_endpoint:
+          description: gRPC service name for enforcement
+          type: string
+          example: ioc.ce.v1.CognitionEngine
+        enforcing_protocol:
+          description: Enforcement protocol
+          type: string
+          example: grpc
+        enforcing_url:
+          description: Address CFN sends enforcement requests to
+          type: string
+          example: my-ce:50051
+        health_endpoint:
+          description: Health probe path appended to health_url
+          type: string
+          example: /healthz
+        health_protocol:
+          description: Health protocol
+          type: string
+          example: http
+        health_url:
+          description: Health check URL probed by CFN
+          type: string
+          example: http://my-ce:8080
+        mas_auto_associate:
+          description: Auto-associate with all MAS
+          type: boolean
+          example: false
+        name:
+          description: CE name
+          type: string
+          example: my-ce
+        notification_endpoint:
+          description: Notification endpoint path for MAS event notifications
+          type: string
+          example: /notification/mas-lifecycle
+        notification_protocol:
+          description: Notification protocol
+          type: string
+          example: http
+        notification_url:
+          description: Notification base URL for MAS event notifications
+          type: string
+          example: http://my-ce:8080
+        status:
+          description: CE status (online/offline)
+          type: string
+          example: offline
+        version:
+          description: CE version
+          type: string
+          example: 1.0.0
+    mgmt.MASCognitionEngine:
+      type: object
+      properties:
+        ce_id:
+          type: string
+        ce_type:
+          type: string
+        enabled:
+          type: boolean
+        enforcing_endpoint:
+          type: string
+        enforcing_protocol:
+          type: string
+        enforcing_url:
+          type: string
+        mas_config:
+          type: object
+          nullable: true
+        name:
+          type: string
+        status:
+          type: string
+        version:
+          type: string
+    LegacyMASCognitionEngine:
+      type: object
+      additionalProperties: false
+      required:
+      - ce_id
+      - ce_type
+      - enabled
+      - enforcing_endpoint
+      - enforcing_protocol
+      - enforcing_url
+      - name
+      - status
+      - version
+      properties:
+        ce_id:
+          type: string
+        ce_type:
+          type: string
+        enabled:
+          type: boolean
+        enforcing_endpoint:
+          type: string
+        enforcing_protocol:
+          type: string
+        enforcing_url:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+        version:
+          type: string
+    LegacyMASResponse:
+      type: object
+      additionalProperties: false
+      required:
+      - id
+      - workspace_id
+      - name
+      - cognition_engines
+      properties:
+        id:
+          type: string
+        workspace_id:
+          type: string
+        name:
+          type: string
+        cognition_engines:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/LegacyMASCognitionEngine'
+    ExpandedMASResponse:
+      type: object
+      properties:
+        agents:
+          type: array
+          items:
+            type: object
+          nullable: true
+        cognition_engines:
+          type: array
+          items:
+            $ref: '#/components/schemas/mgmt.MASCognitionEngine'
+          nullable: true
+        config:
+          type: object
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          description: RFC3339 UTC instant ending in Z; absent, null, invalid and
+            zone-less source values are omitted by CFN.
+        description:
+          type: string
+          nullable: true
+        documentation:
+          type: array
+          items:
+            type: object
+          nullable: true
+        id:
+          type: string
+        mcp_servers:
+          type: array
+          items:
+            type: object
+          nullable: true
+        metadata:
+          type: object
+          nullable: true
+        metadata_schema_version:
+          type: string
+        name:
+          type: string
+        tag:
+          type: string
+        tools:
+          type: array
+          items:
+            type: object
+          nullable: true
+        topologies:
+          type: array
+          items:
+            type: object
+          nullable: true
+        topology_sources:
+          type: object
+          nullable: true
+        updated_at:
+          type: string
+          format: date-time
+          description: RFC3339 UTC instant ending in Z; absent, null, invalid and
+            zone-less source values are omitted by CFN.
+        version:
+          type: string
+        workspace_id:
+          type: string
+      required:
+      - id
+      - workspace_id
+      - name
+      - cognition_engines
+      additionalProperties: false
+      description: Known fields returned by CFN when metadata=true. Opaque metadata
+        retains JSON values and presence; this is not the complete Management MAS
+        wire schema.
+    ManagementError:
+      type: object
+      additionalProperties: true
+      description: Management error object forwarded without normalization. detail
+        can be a string, validation list or structured object; registration conflicts
+        can include existing_ce_id under detail. A malformed/non-object Management
+        response may be represented by raw.
+      nullable: true
+    RegistrationConflictResponse:
+      type: object
+      additionalProperties: true
+      description: Repeated(cfn_id,name,version) registration normally returns detail
+        with error and existing_ce_id; CE clients recover by PATCHing that ID. Flat
+        legacy conflicts are also forwarded unchanged. Other endpoint ownership conflicts
+        can provide a string detail.
+      anyOf:
+      - required:
+        - detail
+      - required:
+        - error
+        - existing_ce_id
+      properties:
+        error:
+          type: string
+        existing_ce_id:
+          type: string
+        detail:
+          anyOf:
+          - type: string
+          - type: object
+            additionalProperties: true
+            properties:
+              error:
+                type: string
+              existing_ce_id:
+                type: string

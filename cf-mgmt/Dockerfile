@@ -17,7 +17,7 @@ RUN useradd -u 1001 app && mkdir /home/app
 WORKDIR /home/app
 
 # Copy dependency files
-COPY pyproject.toml poetry.lock ./
+COPY cf-mgmt/pyproject.toml cf-mgmt/poetry.lock ./
 
 # Install poetry and dependencies
 RUN pip3 install --no-cache-dir poetry \
@@ -28,7 +28,7 @@ RUN pip3 install --no-cache-dir poetry \
 FROM python:3.11-slim AS runtime
 
 # Link this container image to the GitHub repository
-LABEL org.opencontainers.image.source=https://github.com/cisco-eti/ioc-scale-cf-mgmt-svc
+LABEL org.opencontainers.image.source=https://github.com/cisco-eti/cognition-fabric
 
 # Install only runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -49,12 +49,12 @@ COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Copy application source, scripts, and Alembic migrations
-COPY --chown=app:app src/ ./src/
-COPY --chown=app:app scripts/ ./scripts/
-COPY --chown=app:app alembic/ ./alembic/
-COPY --chown=app:app alembic.ini ./
-COPY --chown=app:app pyproject.toml ./
-COPY --chown=app:app docker-entrypoint.sh ./
+COPY --chown=app:app cf-mgmt/src/ ./src/
+COPY --chown=app:app cf-mgmt/scripts/ ./scripts/
+COPY --chown=app:app cf-mgmt/alembic/ ./alembic/
+COPY --chown=app:app cf-mgmt/alembic.ini ./
+COPY --chown=app:app cf-mgmt/pyproject.toml ./
+COPY --chown=app:app cf-mgmt/docker-entrypoint.sh ./
 
 # Make entrypoint executable
 RUN chmod +x docker-entrypoint.sh

@@ -2,8 +2,8 @@
 
 Stage 3 adds optional metadata to the existing workspace MAS create/update APIs.
 The request contract and response models are generated in
-[OpenAPI](openapi/openapi.json). The cross-service contract, examples and UI/CE
-behavior are documented in [CFN D6](../../ioc-scale-cfn-svc/docs/discussions/0006-mas-onboarding-metadata.md).
+[OpenAPI](../openapi/openapi.json). The cross-service contract, examples and UI/CE
+behavior are documented in [CFN D6](../../../docs/discussions/0006-mas-onboarding-metadata.md).
 
 Apply the normal Alembic upgrade to `mas_metadata_0009` before running new writers.
 It adds nullable columns to MAS, agent and MCP tool records, with no data

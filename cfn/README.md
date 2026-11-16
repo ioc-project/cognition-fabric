@@ -1,4 +1,4 @@
-# ioc-scale-cfn-svc
+# Cognition Fabric Node
 
 **Cognition Fabric Node (CFN)** — the central orchestration plane for Cognition Fabric.
 
@@ -17,7 +17,7 @@ CF provides:
 
 ## Architecture
 
-![CF High Level Architecture](docs/assets/CF_high_level_architecture.png)
+![CF High Level Architecture](../docs/assets/CF_high_level_architecture.png)
 
 ## Key contracts
 
@@ -47,21 +47,20 @@ CF provides:
 
 | Document | Description |
 |----------|-------------|
-| [`docs/charter.md`](docs/charter.md) | Project charter — problem, scope, goals |
-| [`docs/architecture.md`](docs/architecture.md) | Architecture of record |
-| [`docs/dependencies.md`](docs/dependencies.md) | Project dependencies and relationships |
-| [`docs/glossary.md`](docs/glossary.md) | Term definitions |
-| [`docs/decisions/`](docs/decisions/) | Curated Architecture Decision Records (ADRs) |
-| [`docs/target-architecture.md`](docs/target-architecture.md) | Longer-term target architecture |
-| [`docs/agent-ledger/`](docs/agent-ledger/README.md) | Agent working guidance |
-| [`deploy/README.md`](deploy/README.md) | Local CF source workflow and cross-repository checks |
-| [`docs/specs/`](docs/specs/) | Behavioral specifications |
+| [`docs/charter.md`](../docs/charter.md) | Project charter — problem, scope, goals |
+| [`docs/architecture.md`](../docs/architecture.md) | Architecture of record |
+| [`docs/dependencies.md`](../docs/dependencies.md) | Project dependencies and relationships |
+| [`docs/glossary.md`](../docs/glossary.md) | Term definitions |
+| [`docs/decisions/`](../docs/decisions) | Curated Architecture Decision Records (ADRs) |
+| [`docs/target-architecture.md`](../docs/target-architecture.md) | Longer-term target architecture |
+| [`docs/agent-ledger/`](../docs/agent-ledger/README.md) | Agent working guidance |
+| [`dev/README.md`](../dev/README.md) | Local CF source workflow and cross-repository checks |
+| [`docs/specs/`](../docs/specs) | Behavioral specifications |
 
 CF-owned timestamps are stored as UTC instants and returned as RFC 3339 strings
 with `Z`; the UI applies display formatting. CE-supplied timestamp strings and
 opaque evidence retain their existing meaning and capture rules. See the
-[timestamp contract](docs/specs/utc-timestamps.md) and the
-[local UTC cutover](deploy/README.md#utc-timestamp-cutover).
+[timestamp contract](../docs/specs/utc-timestamps.md).
 
 ## Development
 
@@ -77,8 +76,8 @@ opaque evidence retain their existing meaning and capture rules. See the
 
 ```bash
 # Clone the repo
-git clone git@github.com:cisco-eti/ioc-scale-cfn-svc.git
-cd ioc-scale-cfn-svc
+git clone git@github.com:cisco-eti/cognition-fabric.git
+cd cognition-fabric/cfn
 
 # Install dependencies
 go mod download
@@ -107,22 +106,22 @@ go install github.com/swaggo/swag/cmd/swag@latest
 
 ### Running Locally
 
+Configure root `.env` from [`.env.example`](../.env.example) and start infrastructure and
+Management as described in the [local workflow](../dev/README.md). Then, from
+the repository root:
+
 ```bash
-# Copy the sample env file and edit as needed
-cp .env.sample .env
-
-# Edit .env with your configuration
-# vim .env
-
-# Run the service (automatically loads .env)
-make run
+task run:cfn
 ```
 
 ### Environment Variables
 
-The service loads environment variables from a `.env` file if present. See [`.env.sample`](.env.sample) for running CFN alone. For the full local CF stack, follow the [local workflow](deploy/README.md) and create `.env` from this repository's [`.env.example`](.env.example).
+User settings live in root `.env`, based on the CFN section of
+[`.env.example`](../.env.example). The root launcher supplies database settings,
+local service addresses and listener ports. The table below records standalone
+service fallbacks; root tasks select the local-mode addresses and ports.
 
-| Variable | Description | Default |
+| Variable | Description | Service fallback |
 |----------|-------------|---------|
 | `MGMT_URL` | Management plane base URL | `http://localhost:9000` |
 | `CFN_NAME` | Name for this CFN instance | `cfn-local` |
@@ -135,10 +134,9 @@ The service loads environment variables from a `.env` file if present. See [`.en
 ### Project Structure
 
 ```
-api/proto/         # Protocol Buffer definitions
+../api/            # Canonical proto contracts and generated API bindings
 cmd/cfn/           # Application entrypoint
 pkg/
-  api/enforcement/ # Generated gRPC code for Enforcement API
   app/             # HTTP and gRPC handlers, application logic
     httpapi/       # HTTP request/response DTOs
   client/
@@ -162,7 +160,7 @@ docs/api/          # Generated OpenAPI specification
 
 The CFN exposes a gRPC Enforcement API on port 9003 (configurable via `GRPC_PORT`).
 
-**Proto definition:** `api/proto/enforcement/v1/enforcement.proto`
+**Proto definition:** `../api/enforcement/proto/enforcement/v1/enforcement.proto`
 
 **Service:** `ioc.cf.enforcement.v1.Enforcement`
 
@@ -171,7 +169,7 @@ The CFN exposes a gRPC Enforcement API on port 9003 (configurable via `GRPC_PORT
 | `GetDisposition` | Returns disposition (allow/block) for an L9 interaction |
 | `AppendAuditRecord` | Commits a finalized Proxy audit record with an idempotent receipt |
 
-See the [Proxy audit contract](docs/specs/proxy-audit-ingestion.md) for record
+See the [Proxy audit contract](../api/enforcement/docs/proxy-audit-ingestion.md) for record
 variants, size limits, error/receipt semantics, common outcome filtering and rollout.
 
 **Testing with grpcurl:**
@@ -213,18 +211,12 @@ make proto
 make proto-check
 ```
 
-If the sibling Template CE is set up with its locked virtual environment, its
-compiler can be selected instead. Run these commands from this CFN repository:
-
-```bash
-make PROTOC='../ioc-scale-cf-demo-ce/template-ce/.venv/bin/python -m grpc_tools.protoc' proto
-make PROTOC='../ioc-scale-cf-demo-ce/template-ce/.venv/bin/python -m grpc_tools.protoc' proto-check
-```
-
-`proto-check` compares the generated `.pb.go` file list and contents against the
-working tree without rewriting files. It also checks the local NOA proto copy
-against the canonical Enforcement contract and checks its generated Python file.
-CI runs these checks with the pinned tools before building or publishing an image.
+`proto-check` compares generated Go filenames/content and NOA Python bindings
+against temporary output without changing the working tree. Template CE bindings
+are checked with its locked Python generator. Every active binding is generated
+directly from canonical `api/` protos; no active proto copies remain in samples.
+Use the pinned protoc executable on PATH (or an absolute executable path in
+`PROTOC`). CI runs these checks before image builds or publication.
 
 ### Code Style
 
@@ -236,11 +228,11 @@ CI runs these checks with the pinned tools before building or publishing an imag
 
 **T3:** CF — Darren Lau (Lead), Chidumga Izuzu, Samuel Yang, Shridhar Shah
 
-See [`docs/team-assignments.md`](docs/team-assignments.md) for full roster.
+See [`docs/team-assignments.md`](../docs/team-assignments.md) for full roster.
 
 ## License
 
-This project is licensed under the Apache License, Version 2.0 - see the [LICENSE.md](LICENSE.md) file for full details.
+This project is licensed under the Apache License, Version 2.0 - see the [LICENSE.md](../LICENSE.md) file for full details.
 
 Copyright (c) 2026 Cisco Systems, Inc. and its affiliates. All rights reserved.
 
@@ -252,4 +244,4 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 ## Third-Party Notices
 
-This project uses third-party open source components. See [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES) for copyright and license information.
+This project uses third-party open source components. See [THIRD-PARTY-NOTICES](../THIRD-PARTY-NOTICES) for copyright and license information.

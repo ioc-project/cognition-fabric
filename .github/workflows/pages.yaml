@@ -1,0 +1,57 @@
+name: Combined documentation Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'samples/docs-site/**'
+      - 'api/mgmt/openapi/**'
+      - 'cf-mgmt/docs/index.html'
+      - '.github/scripts/build_pages.py'
+      - '.github/workflows/pages.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: samples/docs-site/package-lock.json
+      - uses: actions/configure-pages@v5
+        id: pages
+      - run: npm ci --prefix samples/docs-site
+      - run: npm run build --prefix samples/docs-site
+        env:
+          PAGES_URL: ${{ steps.pages.outputs.base_url }}
+      - run: python3 .github/scripts/build_pages.py --output "$RUNNER_TEMP/pages"
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/pages
+
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

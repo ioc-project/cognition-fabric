@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/tools/easyhttp"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/easyhttp"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )

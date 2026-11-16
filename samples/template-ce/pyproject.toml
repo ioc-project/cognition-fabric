@@ -1,6 +1,6 @@
 [project]
 name = "template-ce"
-version = "0.1.0"
+version = "1.0.0"
 description = "Template CE Service - ioc.ce.v1 gRPC implementation"
 requires-python = ">=3.11"
 dependencies = [

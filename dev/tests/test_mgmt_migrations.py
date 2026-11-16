@@ -18,7 +18,7 @@ if HAS_ALEMBIC:
     from sqlalchemy.exc import SQLAlchemyError
 
     spec = importlib.util.spec_from_file_location(
-        "check_mgmt_migrations", Path(__file__).resolve().parents[1] / "check_mgmt_migrations.py"
+        "check_mgmt_migrations", Path(__file__).resolve().parents[1] / "tools" / "check_mgmt_migrations.py"
     )
     migrations = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(migrations)

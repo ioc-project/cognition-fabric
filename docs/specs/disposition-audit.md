@@ -96,7 +96,7 @@ not shortened and no SQL length constraint is added to JSONB.
 `context_sufficiency`, CE `timestamp`, echoed `trace_id`, and checks' `check_id` and
 `passed`. Explicitly present UNSPECIFIED enums are retained; absent default values
 from older bindings are not invented. It can also contain optional CE-owned JSON
-under `ce_response.details`, as described in the [CE response contract](ce-evaluation-response.md).
+under `ce_response.details`, as described in the [CE response contract](../../api/ce/docs/ce-evaluation-response.md).
 Encoded JSON size includes escaping. If necessary, omit the new details object
 first, then timestamp, echoed trace ID, and trailing checks until the envelope
 fits, marking each affected path. Empty check lists are never sliced.
@@ -162,7 +162,7 @@ CFN's existing audit read endpoints return the enriched entity. Management forwa
 the JSON and publishes optional source/success fields to tolerate older CFN versions.
 Both CFN event types retain their existing MAS association semantics in the UI.
 Issue #41 extends the panel with a shared canonical Outcome filter, described in
-[Proxy audit ingestion](proxy-audit-ingestion.md). It covers CFN and Proxy events;
+[Proxy audit ingestion](../../api/enforcement/docs/proxy-audit-ingestion.md). It covers CFN and Proxy events;
 the legacy decision aliases also match canonical outcomes across producers.
 Block matches DECISION_DENY, whose returned action is ACTION_BLOCK. Status matches
 the whole-flow success flag, so a completed policy block can match Success. Missing

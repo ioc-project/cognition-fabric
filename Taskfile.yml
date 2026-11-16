@@ -9,14 +9,37 @@ vars:
   INTEGRATION_PG_USER: postgres
   # Same test password as .github/workflows/ci.yaml; not a production secret.
   INTEGRATION_PG_PASSWORD: localdev
-  INTEGRATION_COMPOSE_FILE: test/integration/compose.yaml
+  INTEGRATION_COMPOSE_FILE: cfn/test/integration/compose.yaml
 
 tasks:
   test:
-    desc: Run tests in the sibling CF source repositories
+    desc: Run all eight Cognition Fabric test suites
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh test
+      - bash dev/cf-local.sh test
+
+  test:dev:
+    desc: Test local launchers, helpers, release dispatch and Pages staging without starting services
+    dir: cf-mgmt
+    cmds:
+      - poetry run python -m unittest discover -s ../dev/tests -v
+      - poetry run python -m unittest discover -s ../.github/tests -v
+
+  test:noa:
+    desc: Test NOA with fake LLMs and in-memory telemetry, including MAS declaration consistency
+    dir: samples/noa-trip-planner
+    cmds:
+      - uv run --frozen --group dev python -m pytest tests -q
+
+  proto:
+    desc: Regenerate shared Go and sample Python bindings from canonical API contracts
+    cmds:
+      - make -C api proto
+
+  proto:check:
+    desc: Check generated Go and Python bindings without changing the reviewed tree
+    cmds:
+      - make -C api proto-check
 
   test:integration:db:
     desc: Start throwaway Postgres for CFN integration tests (no-op when INTEGRATION_SKIP_DB=true)
@@ -45,89 +68,89 @@ tasks:
             exit 0
           fi
           docker compose -f {{.INTEGRATION_COMPOSE_FILE}} down -v
-      - go vet -tags integration ./test/integration/...
-      - go test -v -tags integration -count=1 ./test/integration/...
+      - go -C cfn vet -tags integration ./test/integration/...
+      - go -C cfn test -v -tags integration -count=1 ./test/integration/...
 
   check:
     desc: Check formatting, lint, and types before running CF tests
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh check
+      - bash dev/cf-local.sh check
 
   infra:up:
     desc: Start local infrastructure, including Envoy when NOA_ENFORCEMENT_MODE=proxy
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh infra-up
+      - bash dev/cf-local.sh infra-up
 
   infra:down:
     desc: Stop local CF images, infrastructure, and local Envoy without deleting volumes
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh infra-down
+      - bash dev/cf-local.sh infra-down
 
   proxy:logs:
     desc: Follow the local Envoy and mediation service logs
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh proxy-logs
+      - bash dev/cf-local.sh proxy-logs
 
   run:cfn-mgmt:
     desc: Migrate the local management database and run management from source
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh run-cfn-mgmt
+      - bash dev/cf-local.sh run-cfn-mgmt
 
   run:cfn-mgmt:image:
     desc: Pull CF_MGMT_SVC_TAG (default latest) and run management against the local database
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh run-cfn-mgmt-image
+      - bash dev/cf-local.sh run-cfn-mgmt-image
 
   run:cfn:
     desc: Run CFN from source against the local CF databases
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh run-cfn
+      - bash dev/cf-local.sh run-cfn
 
   run:cfn:image:
     desc: Pull CFN_SVC_TAG (default latest) and run CFN against local management and audit
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh run-cfn-image
+      - bash dev/cf-local.sh run-cfn-image
 
   run:cf-ui:
     desc: Run the management UI from source
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh run-cf-ui
+      - bash dev/cf-local.sh run-cf-ui
 
   run:cf-ui:image:
     desc: Pull CF_UI_TAG (default latest) and run the UI against local management
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh run-cf-ui-image
+      - bash dev/cf-local.sh run-cf-ui-image
 
   run:template-ce:
     desc: Run the Python template CE from source against local CFN and shared OXP
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh run-template-ce
+      - bash dev/cf-local.sh run-template-ce
 
   run:demo-ce:
     desc: Run the Go demo CE from source using CE_CONFIG_FILE against local CFN and OXP
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh run-demo-ce
+      - bash dev/cf-local.sh run-demo-ce
 
   run:demo-ce:image:
     desc: Pull CF_DEMO_CE_TAG (default latest) and run the Go demo CE using CE_CONFIG_FILE
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh run-demo-ce-image
+      - bash dev/cf-local.sh run-demo-ce-image
 
   run:full-mas:
     desc: Run NOA using NOA_MODE and NOA_ENFORCEMENT_MODE from .env
     silent: true
     cmds:
-      - bash deploy/local/cf-local.sh run-full-mas
+      - bash dev/cf-local.sh run-full-mas

@@ -4,7 +4,7 @@
 
 package engine
 
-import "github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
+import "github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/inbox"
 
 const (
 	trace     = "0123456789abcdef0123456789abcdef"

@@ -11,18 +11,18 @@ with the code.
 | Spec | Scope | Status |
 |------|-------|--------|
 | [CFN disposition audit](disposition-audit.md) | Shared producer identity and CFN disposition audit records, limits and rollout | Accepted; issue #34 implementation |
-| [CE evaluation response](ce-evaluation-response.md) | Neutral decision, optional CE details, legacy binary compatibility and audit capture | Issue #55; local implementation |
-| [Proxy audit ingestion](proxy-audit-ingestion.md) | CF-owned append, shared outcomes/filtering, persistence and combined audit UI | Issue #41 CF implementation; Proxy delivery qualification pending |
-| [UTC timestamps](utc-timestamps.md) | UTC storage/output, legacy local-data conversion, cache cutover and CE compatibility | Issue #72; local implementation |
+| [CE evaluation response](../../api/ce/docs/ce-evaluation-response.md) | Neutral decision, optional CE details, legacy binary compatibility and audit capture | Issue #55; local implementation |
+| [Proxy audit ingestion](../../api/enforcement/docs/proxy-audit-ingestion.md) | CF-owned append, shared outcomes/filtering, persistence and combined audit UI | Issue #41 CF implementation; Proxy delivery qualification pending |
+| [UTC timestamps](utc-timestamps.md) | UTC storage and API output, config change detection, UI display and CE timestamp ownership | Issue #72; local implementation |
 
 ## Pending
 
 The following are under discussion and will become specs once finalized:
 
-- [Enforcement API contract](../discussions.md#d1-enforcement-api-contract) — initial agreement with Enforcement Proxy T3
+- [Enforcement API contract](../discussions/0001-enforcement-api-contract.md) — initial agreement with Enforcement Proxy T3
 
 ## Related
 
-- [Discussions](../discussions.md) — open questions and in-progress API designs
+- [Discussions](../discussions/README.md) — open questions and in-progress API designs
 - [Decisions](../decisions/README.md) — rationale behind architectural choices
 - [Target architecture](../target-architecture.md) — planned three-tier API surface

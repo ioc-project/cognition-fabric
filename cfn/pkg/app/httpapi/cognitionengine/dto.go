@@ -126,3 +126,26 @@ type MASLifecycleNotification struct {
 	// MAS ID that was created, updated, or deleted
 	MASID string `json:"mas_id" example:"550e8400-e29b-41d4-a716-446655440000"`
 }
+
+// LegacyMASResponse documents the fixed default CE response. It is deliberately
+// separate from Management's expanded metadata DTO; runtime serialization stays unchanged.
+type LegacyMASResponse struct {
+	ID          string `json:"id"`
+	WorkspaceID string `json:"workspace_id"`
+	Name        string `json:"name"`
+	// Null when the source CE collection is null; otherwise an array, including empty.
+	CognitionEngines []LegacyMASCognitionEngine `json:"cognition_engines"`
+}
+
+// LegacyMASCognitionEngine documents the exact default-response CE keys.
+type LegacyMASCognitionEngine struct {
+	CEID              string `json:"ce_id"`
+	Name              string `json:"name"`
+	Version           string `json:"version"`
+	CEType            string `json:"ce_type"`
+	EnforcingURL      string `json:"enforcing_url"`
+	EnforcingEndpoint string `json:"enforcing_endpoint"`
+	EnforcingProtocol string `json:"enforcing_protocol"`
+	Enabled           bool   `json:"enabled"`
+	Status            string `json:"status"`
+}

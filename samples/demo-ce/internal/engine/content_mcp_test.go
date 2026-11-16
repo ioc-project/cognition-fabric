@@ -6,13 +6,13 @@ package engine
 
 import (
 	"context"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/identity"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/identity"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/inbox"
 	"strings"
 	"testing"
 	"time"
 
-	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
+	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
 )
 
 // The fixtures are the pre-call tool.started events the event exporter pushed to the CE inbox for two real

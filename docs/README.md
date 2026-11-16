@@ -1,6 +1,6 @@
 # docs/
 
-Canonical Cognition Fabric project documentation in `ioc-scale-cfn-svc`. **Start with
+Canonical Cognition Fabric project documentation in `cognition-fabric`. **Start with
 [`charter.md`](charter.md)**, then [`architecture.md`](architecture.md).
 
 This set follows the org TOME template list. Each file notes its category:
@@ -23,7 +23,6 @@ This set follows the org TOME template list. Each file notes its category:
 | [`dependencies.md`](dependencies.md) | source + generated | Project-level dependency edges. |
 | [`issues.md`](issues.md) | generated | Issues, risks, and disagreements. |
 | [`status.md`](status.md) | generated | Current health, risks, open decisions, and ready work. |
-| [`actions.md`](actions.md) | generated | Clean next-task snapshot. |
 | [`decision-log.md`](decision-log.md) | generated | Snapshot of decisions and discussions; consult ADRs for accepted CFN decisions. |
 
 ## Supporting documents
@@ -33,13 +32,12 @@ This set follows the org TOME template list. Each file notes its category:
 | [`glossary.md`](glossary.md) | Source definitions, one `##` heading per term. **Start here if a term is unfamiliar.** |
 | [`target-architecture.md`](target-architecture.md) | Longer-term CF target; distinguish it from the Releases 1–3 architecture. |
 | [`agent-ledger/`](agent-ledger/README.md) | Agent working guidance, separate from curated ADRs. |
-| [`plans/`](plans/local-cf-source-workflow.plan.md) | Historical CF implementation plans. |
 | [`decisions/`](decisions/README.md) | Curated, numbered CFN architecture decision records. |
 | [`specs/`](specs/README.md) | Behavioural specs and API contracts. |
 
 ## Related sources of truth
 
-- [`../README.md`](../README.md) — concise project overview and current maturity.
+- [`../README.md`](../cfn/README.md) — concise project overview and current maturity.
 
 ## Conventions
 

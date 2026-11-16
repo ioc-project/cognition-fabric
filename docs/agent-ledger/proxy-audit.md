@@ -23,9 +23,9 @@ schema, introducing identity columns, or limiting a common outcome filter to CFN
 Permanent application validation/size failures return INVALID_ARGUMENT; the
 journal retries RESOURCE_EXHAUSTED, so its hard transport cap is a separate concern.
 
-**Evidence:** [Behavioral contract](../specs/proxy-audit-ingestion.md),
+**Evidence:** [Behavioral contract](../../api/enforcement/docs/proxy-audit-ingestion.md),
 [issue #41](https://github.com/cisco-eti/ioc-scale-cfn-svc/issues/41), and the approved
-[plan](../plans/issue-41-proxy-audit-ingestion.md). Proxy client adoption and
+plan (optional local plan). Proxy client adoption and
 production transport/receipt qualification remain external integration work.
 
 **Revisit when:** The record schema, producer limits, transport or delivery contract changes.

@@ -10,7 +10,7 @@ import socket
 import unittest
 
 
-spec = importlib.util.spec_from_file_location("check_ports", Path(__file__).resolve().parents[1] / "check_ports.py")
+spec = importlib.util.spec_from_file_location("check_ports", Path(__file__).resolve().parents[1] / "tools" / "check_ports.py")
 check_ports = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(check_ports)
 

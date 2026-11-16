@@ -13,7 +13,7 @@
 // versions:
 // 	protoc-gen-go v1.36.12
 // 	protoc        v7.35.1
-// source: api/proto/ce/v1/ce.proto
+// source: ce/proto/ce/v1/ce.proto
 
 package cev1
 
@@ -70,11 +70,11 @@ func (x Decision) String() string {
 }
 
 func (Decision) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_proto_ce_v1_ce_proto_enumTypes[0].Descriptor()
+	return file_ce_proto_ce_v1_ce_proto_enumTypes[0].Descriptor()
 }
 
 func (Decision) Type() protoreflect.EnumType {
-	return &file_api_proto_ce_v1_ce_proto_enumTypes[0]
+	return &file_ce_proto_ce_v1_ce_proto_enumTypes[0]
 }
 
 func (x Decision) Number() protoreflect.EnumNumber {
@@ -83,7 +83,7 @@ func (x Decision) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Decision.Descriptor instead.
 func (Decision) EnumDescriptor() ([]byte, []int) {
-	return file_api_proto_ce_v1_ce_proto_rawDescGZIP(), []int{0}
+	return file_ce_proto_ce_v1_ce_proto_rawDescGZIP(), []int{0}
 }
 
 // Type of action being evaluated
@@ -123,11 +123,11 @@ func (x ActionClass) String() string {
 }
 
 func (ActionClass) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_proto_ce_v1_ce_proto_enumTypes[1].Descriptor()
+	return file_ce_proto_ce_v1_ce_proto_enumTypes[1].Descriptor()
 }
 
 func (ActionClass) Type() protoreflect.EnumType {
-	return &file_api_proto_ce_v1_ce_proto_enumTypes[1]
+	return &file_ce_proto_ce_v1_ce_proto_enumTypes[1]
 }
 
 func (x ActionClass) Number() protoreflect.EnumNumber {
@@ -136,7 +136,7 @@ func (x ActionClass) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ActionClass.Descriptor instead.
 func (ActionClass) EnumDescriptor() ([]byte, []int) {
-	return file_api_proto_ce_v1_ce_proto_rawDescGZIP(), []int{1}
+	return file_ce_proto_ce_v1_ce_proto_rawDescGZIP(), []int{1}
 }
 
 // Direction of the action being inspected
@@ -173,11 +173,11 @@ func (x Direction) String() string {
 }
 
 func (Direction) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_proto_ce_v1_ce_proto_enumTypes[2].Descriptor()
+	return file_ce_proto_ce_v1_ce_proto_enumTypes[2].Descriptor()
 }
 
 func (Direction) Type() protoreflect.EnumType {
-	return &file_api_proto_ce_v1_ce_proto_enumTypes[2]
+	return &file_ce_proto_ce_v1_ce_proto_enumTypes[2]
 }
 
 func (x Direction) Number() protoreflect.EnumNumber {
@@ -186,7 +186,7 @@ func (x Direction) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Direction.Descriptor instead.
 func (Direction) EnumDescriptor() ([]byte, []int) {
-	return file_api_proto_ce_v1_ce_proto_rawDescGZIP(), []int{2}
+	return file_ce_proto_ce_v1_ce_proto_rawDescGZIP(), []int{2}
 }
 
 // Legacy CASA denial diagnostics. Other CEs may omit these.
@@ -223,11 +223,11 @@ func (x DenialReason) String() string {
 }
 
 func (DenialReason) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_proto_ce_v1_ce_proto_enumTypes[3].Descriptor()
+	return file_ce_proto_ce_v1_ce_proto_enumTypes[3].Descriptor()
 }
 
 func (DenialReason) Type() protoreflect.EnumType {
-	return &file_api_proto_ce_v1_ce_proto_enumTypes[3]
+	return &file_ce_proto_ce_v1_ce_proto_enumTypes[3]
 }
 
 func (x DenialReason) Number() protoreflect.EnumNumber {
@@ -236,7 +236,7 @@ func (x DenialReason) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use DenialReason.Descriptor instead.
 func (DenialReason) EnumDescriptor() ([]byte, []int) {
-	return file_api_proto_ce_v1_ce_proto_rawDescGZIP(), []int{3}
+	return file_ce_proto_ce_v1_ce_proto_rawDescGZIP(), []int{3}
 }
 
 // Cause of MISSING_CONTEXT
@@ -273,11 +273,11 @@ func (x MissingContextCause) String() string {
 }
 
 func (MissingContextCause) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_proto_ce_v1_ce_proto_enumTypes[4].Descriptor()
+	return file_ce_proto_ce_v1_ce_proto_enumTypes[4].Descriptor()
 }
 
 func (MissingContextCause) Type() protoreflect.EnumType {
-	return &file_api_proto_ce_v1_ce_proto_enumTypes[4]
+	return &file_ce_proto_ce_v1_ce_proto_enumTypes[4]
 }
 
 func (x MissingContextCause) Number() protoreflect.EnumNumber {
@@ -286,7 +286,7 @@ func (x MissingContextCause) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MissingContextCause.Descriptor instead.
 func (MissingContextCause) EnumDescriptor() ([]byte, []int) {
-	return file_api_proto_ce_v1_ce_proto_rawDescGZIP(), []int{4}
+	return file_ce_proto_ce_v1_ce_proto_rawDescGZIP(), []int{4}
 }
 
 // Whether MAS-level context was complete
@@ -323,11 +323,11 @@ func (x ContextSufficiency) String() string {
 }
 
 func (ContextSufficiency) Descriptor() protoreflect.EnumDescriptor {
-	return file_api_proto_ce_v1_ce_proto_enumTypes[5].Descriptor()
+	return file_ce_proto_ce_v1_ce_proto_enumTypes[5].Descriptor()
 }
 
 func (ContextSufficiency) Type() protoreflect.EnumType {
-	return &file_api_proto_ce_v1_ce_proto_enumTypes[5]
+	return &file_ce_proto_ce_v1_ce_proto_enumTypes[5]
 }
 
 func (x ContextSufficiency) Number() protoreflect.EnumNumber {
@@ -336,7 +336,7 @@ func (x ContextSufficiency) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ContextSufficiency.Descriptor instead.
 func (ContextSufficiency) EnumDescriptor() ([]byte, []int) {
-	return file_api_proto_ce_v1_ce_proto_rawDescGZIP(), []int{5}
+	return file_ce_proto_ce_v1_ce_proto_rawDescGZIP(), []int{5}
 }
 
 // Details for MCP tool call actions
@@ -351,7 +351,7 @@ type ToolCallDetails struct {
 
 func (x *ToolCallDetails) Reset() {
 	*x = ToolCallDetails{}
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[0]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -363,7 +363,7 @@ func (x *ToolCallDetails) String() string {
 func (*ToolCallDetails) ProtoMessage() {}
 
 func (x *ToolCallDetails) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[0]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -376,7 +376,7 @@ func (x *ToolCallDetails) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ToolCallDetails.ProtoReflect.Descriptor instead.
 func (*ToolCallDetails) Descriptor() ([]byte, []int) {
-	return file_api_proto_ce_v1_ce_proto_rawDescGZIP(), []int{0}
+	return file_ce_proto_ce_v1_ce_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *ToolCallDetails) GetToolName() string {
@@ -412,7 +412,7 @@ type A2ADelegationDetails struct {
 
 func (x *A2ADelegationDetails) Reset() {
 	*x = A2ADelegationDetails{}
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[1]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -424,7 +424,7 @@ func (x *A2ADelegationDetails) String() string {
 func (*A2ADelegationDetails) ProtoMessage() {}
 
 func (x *A2ADelegationDetails) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[1]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -437,7 +437,7 @@ func (x *A2ADelegationDetails) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use A2ADelegationDetails.ProtoReflect.Descriptor instead.
 func (*A2ADelegationDetails) Descriptor() ([]byte, []int) {
-	return file_api_proto_ce_v1_ce_proto_rawDescGZIP(), []int{1}
+	return file_ce_proto_ce_v1_ce_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *A2ADelegationDetails) GetTargetAgentId() string {
@@ -472,7 +472,7 @@ type AgentResponseDetails struct {
 
 func (x *AgentResponseDetails) Reset() {
 	*x = AgentResponseDetails{}
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[2]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -484,7 +484,7 @@ func (x *AgentResponseDetails) String() string {
 func (*AgentResponseDetails) ProtoMessage() {}
 
 func (x *AgentResponseDetails) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[2]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -497,7 +497,7 @@ func (x *AgentResponseDetails) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use AgentResponseDetails.ProtoReflect.Descriptor instead.
 func (*AgentResponseDetails) Descriptor() ([]byte, []int) {
-	return file_api_proto_ce_v1_ce_proto_rawDescGZIP(), []int{2}
+	return file_ce_proto_ce_v1_ce_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *AgentResponseDetails) GetResponseContent() string {
@@ -526,7 +526,7 @@ type CheckResult struct {
 
 func (x *CheckResult) Reset() {
 	*x = CheckResult{}
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[3]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -538,7 +538,7 @@ func (x *CheckResult) String() string {
 func (*CheckResult) ProtoMessage() {}
 
 func (x *CheckResult) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[3]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -551,7 +551,7 @@ func (x *CheckResult) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CheckResult.ProtoReflect.Descriptor instead.
 func (*CheckResult) Descriptor() ([]byte, []int) {
-	return file_api_proto_ce_v1_ce_proto_rawDescGZIP(), []int{3}
+	return file_ce_proto_ce_v1_ce_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CheckResult) GetCheckId() string {
@@ -609,7 +609,7 @@ type EvaluateRequest struct {
 
 func (x *EvaluateRequest) Reset() {
 	*x = EvaluateRequest{}
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[4]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -621,7 +621,7 @@ func (x *EvaluateRequest) String() string {
 func (*EvaluateRequest) ProtoMessage() {}
 
 func (x *EvaluateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[4]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -634,7 +634,7 @@ func (x *EvaluateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EvaluateRequest.ProtoReflect.Descriptor instead.
 func (*EvaluateRequest) Descriptor() ([]byte, []int) {
-	return file_api_proto_ce_v1_ce_proto_rawDescGZIP(), []int{4}
+	return file_ce_proto_ce_v1_ce_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *EvaluateRequest) GetMasId() string {
@@ -771,16 +771,16 @@ type EvaluateResponse struct {
 	// Legacy CASA diagnostics, retained for unchanged CE binaries and bindings.
 	// Presence is optional; CFN also accepts older bindings' omitted defaults.
 	//
-	// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
+	// Deprecated: Marked as deprecated in ce/proto/ce/v1/ce.proto.
 	DenialReason *DenialReason `protobuf:"varint,2,opt,name=denial_reason,json=denialReason,proto3,enum=ioc.ce.v1.DenialReason,oneof" json:"denial_reason,omitempty"`
-	// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
+	// Deprecated: Marked as deprecated in ce/proto/ce/v1/ce.proto.
 	MissingContextCause *MissingContextCause `protobuf:"varint,3,opt,name=missing_context_cause,json=missingContextCause,proto3,enum=ioc.ce.v1.MissingContextCause,oneof" json:"missing_context_cause,omitempty"`
 	Reason              string               `protobuf:"bytes,4,opt,name=reason,proto3" json:"reason,omitempty"` // Human-readable explanation
 	// Check results
 	//
-	// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
+	// Deprecated: Marked as deprecated in ce/proto/ce/v1/ce.proto.
 	ChecksRun []*CheckResult `protobuf:"bytes,5,rep,name=checks_run,json=checksRun,proto3" json:"checks_run,omitempty"` // Empty means no check details
-	// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
+	// Deprecated: Marked as deprecated in ce/proto/ce/v1/ce.proto.
 	ContextSufficiency *ContextSufficiency `protobuf:"varint,6,opt,name=context_sufficiency,json=contextSufficiency,proto3,enum=ioc.ce.v1.ContextSufficiency,oneof" json:"context_sufficiency,omitempty"`
 	// Modification (for MODIFY outcomes)
 	ModifiedAction map[string]string `protobuf:"bytes,7,rep,name=modified_action,json=modifiedAction,proto3" json:"modified_action,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // The amended action
@@ -797,7 +797,7 @@ type EvaluateResponse struct {
 
 func (x *EvaluateResponse) Reset() {
 	*x = EvaluateResponse{}
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[5]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -809,7 +809,7 @@ func (x *EvaluateResponse) String() string {
 func (*EvaluateResponse) ProtoMessage() {}
 
 func (x *EvaluateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[5]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -822,7 +822,7 @@ func (x *EvaluateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EvaluateResponse.ProtoReflect.Descriptor instead.
 func (*EvaluateResponse) Descriptor() ([]byte, []int) {
-	return file_api_proto_ce_v1_ce_proto_rawDescGZIP(), []int{5}
+	return file_ce_proto_ce_v1_ce_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *EvaluateResponse) GetOutcome() Decision {
@@ -832,7 +832,7 @@ func (x *EvaluateResponse) GetOutcome() Decision {
 	return Decision_DECISION_UNSPECIFIED
 }
 
-// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
+// Deprecated: Marked as deprecated in ce/proto/ce/v1/ce.proto.
 func (x *EvaluateResponse) GetDenialReason() DenialReason {
 	if x != nil && x.DenialReason != nil {
 		return *x.DenialReason
@@ -840,7 +840,7 @@ func (x *EvaluateResponse) GetDenialReason() DenialReason {
 	return DenialReason_DENIAL_REASON_UNSPECIFIED
 }
 
-// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
+// Deprecated: Marked as deprecated in ce/proto/ce/v1/ce.proto.
 func (x *EvaluateResponse) GetMissingContextCause() MissingContextCause {
 	if x != nil && x.MissingContextCause != nil {
 		return *x.MissingContextCause
@@ -855,7 +855,7 @@ func (x *EvaluateResponse) GetReason() string {
 	return ""
 }
 
-// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
+// Deprecated: Marked as deprecated in ce/proto/ce/v1/ce.proto.
 func (x *EvaluateResponse) GetChecksRun() []*CheckResult {
 	if x != nil {
 		return x.ChecksRun
@@ -863,7 +863,7 @@ func (x *EvaluateResponse) GetChecksRun() []*CheckResult {
 	return nil
 }
 
-// Deprecated: Marked as deprecated in api/proto/ce/v1/ce.proto.
+// Deprecated: Marked as deprecated in ce/proto/ce/v1/ce.proto.
 func (x *EvaluateResponse) GetContextSufficiency() ContextSufficiency {
 	if x != nil && x.ContextSufficiency != nil {
 		return *x.ContextSufficiency
@@ -908,7 +908,7 @@ type GetInfoRequest struct {
 
 func (x *GetInfoRequest) Reset() {
 	*x = GetInfoRequest{}
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[6]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -920,7 +920,7 @@ func (x *GetInfoRequest) String() string {
 func (*GetInfoRequest) ProtoMessage() {}
 
 func (x *GetInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[6]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -933,7 +933,7 @@ func (x *GetInfoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetInfoRequest.ProtoReflect.Descriptor instead.
 func (*GetInfoRequest) Descriptor() ([]byte, []int) {
-	return file_api_proto_ce_v1_ce_proto_rawDescGZIP(), []int{6}
+	return file_ce_proto_ce_v1_ce_proto_rawDescGZIP(), []int{6}
 }
 
 // Response for the GetInfo RPC
@@ -949,7 +949,7 @@ type GetInfoResponse struct {
 
 func (x *GetInfoResponse) Reset() {
 	*x = GetInfoResponse{}
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[7]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -961,7 +961,7 @@ func (x *GetInfoResponse) String() string {
 func (*GetInfoResponse) ProtoMessage() {}
 
 func (x *GetInfoResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_api_proto_ce_v1_ce_proto_msgTypes[7]
+	mi := &file_ce_proto_ce_v1_ce_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -974,7 +974,7 @@ func (x *GetInfoResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetInfoResponse.ProtoReflect.Descriptor instead.
 func (*GetInfoResponse) Descriptor() ([]byte, []int) {
-	return file_api_proto_ce_v1_ce_proto_rawDescGZIP(), []int{7}
+	return file_ce_proto_ce_v1_ce_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetInfoResponse) GetCeType() string {
@@ -1005,11 +1005,11 @@ func (x *GetInfoResponse) GetMatcherStrategy() string {
 	return ""
 }
 
-var File_api_proto_ce_v1_ce_proto protoreflect.FileDescriptor
+var File_ce_proto_ce_v1_ce_proto protoreflect.FileDescriptor
 
-const file_api_proto_ce_v1_ce_proto_rawDesc = "" +
+const file_ce_proto_ce_v1_ce_proto_rawDesc = "" +
 	"\n" +
-	"\x18api/proto/ce/v1/ce.proto\x12\tioc.ce.v1\x1a\x1cgoogle/protobuf/struct.proto\"\x85\x02\n" +
+	"\x17ce/proto/ce/v1/ce.proto\x12\tioc.ce.v1\x1a\x1cgoogle/protobuf/struct.proto\"\x85\x02\n" +
 	"\x0fToolCallDetails\x12\x1b\n" +
 	"\ttool_name\x18\x01 \x01(\tR\btoolName\x12c\n" +
 	"\x13args_classification\x18\x02 \x03(\v22.ioc.ce.v1.ToolCallDetails.ArgsClassificationEntryR\x12argsClassification\x12)\n" +
@@ -1107,23 +1107,23 @@ const file_api_proto_ce_v1_ce_proto_rawDesc = "" +
 	"#CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC\x10\x022\x98\x01\n" +
 	"\x0fCognitionEngine\x12C\n" +
 	"\bEvaluate\x12\x1a.ioc.ce.v1.EvaluateRequest\x1a\x1b.ioc.ce.v1.EvaluateResponse\x12@\n" +
-	"\aGetInfo\x12\x19.ioc.ce.v1.GetInfoRequest\x1a\x1a.ioc.ce.v1.GetInfoResponseB;Z9github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1;cev1b\x06proto3"
+	"\aGetInfo\x12\x19.ioc.ce.v1.GetInfoRequest\x1a\x1a.ioc.ce.v1.GetInfoResponseB6Z4github.com/cisco-eti/cognition-fabric/api/ce/v1;cev1b\x06proto3"
 
 var (
-	file_api_proto_ce_v1_ce_proto_rawDescOnce sync.Once
-	file_api_proto_ce_v1_ce_proto_rawDescData []byte
+	file_ce_proto_ce_v1_ce_proto_rawDescOnce sync.Once
+	file_ce_proto_ce_v1_ce_proto_rawDescData []byte
 )
 
-func file_api_proto_ce_v1_ce_proto_rawDescGZIP() []byte {
-	file_api_proto_ce_v1_ce_proto_rawDescOnce.Do(func() {
-		file_api_proto_ce_v1_ce_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_api_proto_ce_v1_ce_proto_rawDesc), len(file_api_proto_ce_v1_ce_proto_rawDesc)))
+func file_ce_proto_ce_v1_ce_proto_rawDescGZIP() []byte {
+	file_ce_proto_ce_v1_ce_proto_rawDescOnce.Do(func() {
+		file_ce_proto_ce_v1_ce_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_ce_proto_ce_v1_ce_proto_rawDesc), len(file_ce_proto_ce_v1_ce_proto_rawDesc)))
 	})
-	return file_api_proto_ce_v1_ce_proto_rawDescData
+	return file_ce_proto_ce_v1_ce_proto_rawDescData
 }
 
-var file_api_proto_ce_v1_ce_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
-var file_api_proto_ce_v1_ce_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
-var file_api_proto_ce_v1_ce_proto_goTypes = []any{
+var file_ce_proto_ce_v1_ce_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_ce_proto_ce_v1_ce_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_ce_proto_ce_v1_ce_proto_goTypes = []any{
 	(Decision)(0),                // 0: ioc.ce.v1.Decision
 	(ActionClass)(0),             // 1: ioc.ce.v1.ActionClass
 	(Direction)(0),               // 2: ioc.ce.v1.Direction
@@ -1143,7 +1143,7 @@ var file_api_proto_ce_v1_ce_proto_goTypes = []any{
 	nil,                          // 16: ioc.ce.v1.EvaluateResponse.ModifiedActionEntry
 	(*structpb.Struct)(nil),      // 17: google.protobuf.Struct
 }
-var file_api_proto_ce_v1_ce_proto_depIdxs = []int32{
+var file_ce_proto_ce_v1_ce_proto_depIdxs = []int32{
 	14, // 0: ioc.ce.v1.ToolCallDetails.args_classification:type_name -> ioc.ce.v1.ToolCallDetails.ArgsClassificationEntry
 	1,  // 1: ioc.ce.v1.EvaluateRequest.action_class:type_name -> ioc.ce.v1.ActionClass
 	2,  // 2: ioc.ce.v1.EvaluateRequest.direction:type_name -> ioc.ce.v1.Direction
@@ -1169,28 +1169,28 @@ var file_api_proto_ce_v1_ce_proto_depIdxs = []int32{
 	0,  // [0:14] is the sub-list for field type_name
 }
 
-func init() { file_api_proto_ce_v1_ce_proto_init() }
-func file_api_proto_ce_v1_ce_proto_init() {
-	if File_api_proto_ce_v1_ce_proto != nil {
+func init() { file_ce_proto_ce_v1_ce_proto_init() }
+func file_ce_proto_ce_v1_ce_proto_init() {
+	if File_ce_proto_ce_v1_ce_proto != nil {
 		return
 	}
-	file_api_proto_ce_v1_ce_proto_msgTypes[5].OneofWrappers = []any{}
+	file_ce_proto_ce_v1_ce_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_api_proto_ce_v1_ce_proto_rawDesc), len(file_api_proto_ce_v1_ce_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_ce_proto_ce_v1_ce_proto_rawDesc), len(file_ce_proto_ce_v1_ce_proto_rawDesc)),
 			NumEnums:      6,
 			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_api_proto_ce_v1_ce_proto_goTypes,
-		DependencyIndexes: file_api_proto_ce_v1_ce_proto_depIdxs,
-		EnumInfos:         file_api_proto_ce_v1_ce_proto_enumTypes,
-		MessageInfos:      file_api_proto_ce_v1_ce_proto_msgTypes,
+		GoTypes:           file_ce_proto_ce_v1_ce_proto_goTypes,
+		DependencyIndexes: file_ce_proto_ce_v1_ce_proto_depIdxs,
+		EnumInfos:         file_ce_proto_ce_v1_ce_proto_enumTypes,
+		MessageInfos:      file_ce_proto_ce_v1_ce_proto_msgTypes,
 	}.Build()
-	File_api_proto_ce_v1_ce_proto = out.File
-	file_api_proto_ce_v1_ce_proto_goTypes = nil
-	file_api_proto_ce_v1_ce_proto_depIdxs = nil
+	File_ce_proto_ce_v1_ce_proto = out.File
+	file_ce_proto_ce_v1_ce_proto_goTypes = nil
+	file_ce_proto_ce_v1_ce_proto_depIdxs = nil
 }

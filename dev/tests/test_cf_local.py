@@ -4,7 +4,7 @@
 
 """Exercise launcher decisions without starting containers or source services.
 
-Run: python3 -m unittest discover -s deploy/local/tests -v
+Run: python3 -m unittest discover -s dev/tests -v
 """
 
 import json
@@ -18,7 +18,7 @@ import unittest
 
 
 RUNNER = Path(__file__).resolve().parents[1] / "cf-local.sh"
-CFN_DIR = RUNNER.parents[2]
+ROOT_DIR = RUNNER.parent.parent
 FAKE_TOOL = r'''
 import json
 import os
@@ -32,15 +32,15 @@ keys = (
     "ADVERTISED_GRPC_ADDRESS", "ADVERTISED_HEALTH_URL", "CF_LOCAL_CE_HOST",
     "CF_LOCAL_CE_CONFIG_FILE", "CF_LOCAL_CE_MAS_FILE", "CFN_SVC_TAG",
     "CF_MGMT_SVC_TAG", "CF_UI_TAG", "CF_DEMO_CE_TAG", "NOA_CFN_GRPC_TARGET",
-    "GRPC_LISTEN_ADDRESS", "HTTP_LISTEN_ADDRESS", "LOCAL_CF_MGMT_DB",
+    "GRPC_LISTEN_ADDRESS", "HTTP_LISTEN_ADDRESS", "LOCAL_CF_MGMT_DB", "GOWORK", "CF_LOCAL_ENV_FILE",
 )
 with open(os.environ["MOCK_LOG"], "a") as log:
-    log.write(json.dumps({"tool": name, "args": args,
+    log.write(json.dumps({"tool": name, "args": args, "cwd": os.getcwd(),
                          "env": {key: os.environ.get(key) for key in keys}}) + "\n")
 if name == "docker":
     if args[0] == "inspect":
         if ".Mounts" in args[2]:
-            print(os.environ["MOCK_CFN"] + "/tmp/enforcement/envoy.json")
+            print(os.environ.get("MOCK_PROXY_MOUNT", os.environ["MOCK_CFN"] + "/.local/enforcement/envoy.json"))
         else:
             print("false" if args[-1] == os.environ.get("MOCK_UNOWNED") else "true")
     elif "ps" in args and "--services" in args:
@@ -49,6 +49,8 @@ if name == "docker":
         services = set(args[args.index("--services") + 1:])
         running = os.environ.get("MOCK_RUNNING", "").split(",")
         print("\n".join(service for service in running if service in services))
+    elif "port" in args:
+        print("127.0.0.1:5456")
     elif "run" in args and "--entrypoint" in args:
         sys.stdin.read()
         sys.exit(int(os.environ.get("MOCK_MIGRATION_EXIT", "0")))
@@ -71,31 +73,34 @@ class LocalLauncherTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
-        workspace = Path(self.temporary.name)
-        self.cfn = workspace / "ioc-scale-cfn-svc"
-        self.runner = self.cfn / "deploy/local/cf-local.sh"
+        workspace = Path(self.temporary.name).resolve()
+        self.cfn = workspace / "cognition-fabric"
+        self.runner = self.cfn / "dev/cf-local.sh"
         self.runner.parent.mkdir(parents=True)
         shutil.copyfile(RUNNER, self.runner)
         for helper in ("check_ports.py", "check_mgmt_migrations.py"):
-            shutil.copyfile(RUNNER.parent / helper, self.runner.parent / helper)
-        shutil.copyfile(CFN_DIR / "Taskfile.yml", self.cfn / "Taskfile.yml")
+            (self.runner.parent / "tools").mkdir(exist_ok=True)
+            shutil.copyfile(RUNNER.parent / "tools" / helper, self.runner.parent / "tools" / helper)
+        shutil.copyfile(ROOT_DIR / "Taskfile.yml", self.cfn / "Taskfile.yml")
         (self.cfn / ".env").touch()
-        (self.cfn / "go.mod").touch()
+        (self.cfn / "go.work").touch()
         deployment = workspace / "ioc-scale-cf-deployment"
         deployment.mkdir()
         (deployment / "docker-compose.yml").touch()
         for repo, marker in [
-            ("ioc-scale-cf-mgmt-svc", "pyproject.toml"),
-            ("ioc-scale-cf-ui", "package.json"),
-            ("ioc-scale-cf-demo-ce", "template-ce/pyproject.toml"),
-            ("ioc-scale-cf-demo-ce", "demo-ce/go.mod"),
-            ("ioc-scale-cf-demo-ce", "demo-ce/go.sum"),
+            ("api", "go.mod"),
+            ("cfn", "go.mod"),
+            ("cf-mgmt", "pyproject.toml"),
+            ("cf-ui", "package.json"),
+            ("samples/template-ce", "pyproject.toml"),
+            ("samples/demo-ce", "go.mod"),
+            ("samples/demo-ce", "go.sum"),
         ]:
-            path = workspace / repo / marker
+            path = self.cfn / repo / marker
             path.parent.mkdir(parents=True, exist_ok=True)
             path.touch()
         (self.cfn / "policy.json").write_text('{"mas": []}')
-        noa = self.cfn / "deploy/local/noa-trip-planner"
+        noa = self.cfn / "samples/noa-trip-planner"
         (noa / "src/noa_trip_planner").mkdir(parents=True)
         (noa / "src/noa_trip_planner/enforcement.py").touch()
         (noa / "pyproject.toml").touch()
@@ -105,8 +110,11 @@ class LocalLauncherTests(unittest.TestCase):
         tool = binaries / "fake-tool"
         tool.write_text(f"#!{sys.executable}\n" + FAKE_TOOL)
         tool.chmod(0o755)
-        for name in ("docker", "curl", "python3", "go", "uv", "poetry"):
+        for name in ("docker", "curl", "python3", "go", "uv", "poetry", "make", "npm", "task"):
             (binaries / name).symlink_to(tool)
+        typescript = self.cfn / "cf-ui/node_modules/.bin/tsc"
+        typescript.parent.mkdir(parents=True)
+        typescript.symlink_to(tool)
         self.log = workspace / "commands.jsonl"
         self.env = dict(os.environ)
         # Do not inherit developer configuration into the fixtures.
@@ -122,6 +130,7 @@ class LocalLauncherTests(unittest.TestCase):
             IOC_SCALE_DB_PASSWORD="test",
             ADMIN_USER_PASSWORD="test",
             NEXTAUTH_SECRET="test",
+            CF_DEPLOYMENT_DIR="../ioc-scale-cf-deployment",
             CE_CONFIG_FILE="policy.json",
             AI_GATEWAY_BASE_URL="http://example.invalid/v1",
             AI_GATEWAY_API_KEY="test",
@@ -140,6 +149,47 @@ class LocalLauncherTests(unittest.TestCase):
     def last_up(self):
         return next(command for command in reversed(self.commands())
                     if command["tool"] == "docker" and "up" in command["args"])
+
+    def test_deployment_path_accepts_absolute_and_root_relative_paths_with_spaces(self):
+        deployment = self.cfn.parent / "external infrastructure" / "shared checkout"
+        deployment.parent.mkdir()
+        (self.cfn.parent / "ioc-scale-cf-deployment").rename(deployment)
+        for value in (str(deployment), "../external infrastructure/shared checkout"):
+            with self.subTest(path=value):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task("infra-up", CF_DEPLOYMENT_DIR=value)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                commands = [x for x in self.commands() if "--project-directory" in x["args"]]
+                self.assertTrue(commands)
+                for command in commands:
+                    args = command["args"]
+                    self.assertEqual(args[args.index("--project-directory") + 1], str(deployment))
+                    self.assertIn(str(deployment / "docker-compose.yml"), args)
+                    self.assertEqual(command["cwd"], str(deployment))
+
+    def test_missing_or_invalid_deployment_setting_fails_before_docker(self):
+        for value in ("", "../missing-deployment-checkout"):
+            with self.subTest(path=value):
+                result = self.run_task("infra-up", CF_DEPLOYMENT_DIR=value)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("CF_DEPLOYMENT_DIR", result.stderr)
+                self.assertFalse(self.log.exists())
+
+    @unittest.skipUnless(shutil.which("task"), "Task CLI is not installed")
+    def test_task_loads_deployment_path_from_root_dotenv(self):
+        deployment = self.cfn.parent / "custom infrastructure"
+        (self.cfn.parent / "ioc-scale-cf-deployment").rename(deployment)
+        (self.cfn / ".env").write_text('CF_DEPLOYMENT_DIR="../custom infrastructure"\n')
+        env = dict(self.env)
+        del env["CF_DEPLOYMENT_DIR"]
+        result = subprocess.run(
+            [shutil.which("task"), "--dir", str(self.cfn), "infra:up"],
+            env=env, capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        command = self.last_up()
+        args = command["args"]
+        self.assertEqual(args[args.index("--project-directory") + 1], str(deployment))
 
     def test_each_image_starts_only_selected_service_and_preserves_tag(self):
         for task, service, tag in [
@@ -220,6 +270,8 @@ class LocalLauncherTests(unittest.TestCase):
                           if command["tool"] == "docker" and "exec" in command["args"])
         args = initialize["args"]
         self.assertEqual(args[args.index("-e") + 1], "LOCAL_CF_MGMT_DB=cfn_mgmt_image")
+        self.assertEqual(initialize["env"]["CF_LOCAL_ENV_FILE"], str(self.cfn / ".env"))
+        self.assertIn(str(self.cfn / "dev/compose/infrastructure.override.yaml"), args)
 
     def test_source_services_default_to_loopback_and_allow_explicit_wider_bind(self):
         for settings, host in [({}, "127.0.0.1"), ({"LOCAL_CF_BIND_HOST": "0.0.0.0"}, "0.0.0.0")]:
@@ -273,7 +325,7 @@ class LocalLauncherTests(unittest.TestCase):
         self.assertIn("ioc-scale-db", stops[1]["args"])
 
     def test_down_stops_local_proxy_even_after_switching_to_direct_mode(self):
-        directory = self.cfn / "tmp/enforcement"
+        directory = self.cfn / ".local/enforcement"
         directory.mkdir(parents=True)
         (directory / "state.json").write_text("{}")
         result = self.run_task("infra-down", MOCK_RUNNING="ioc-scale-cfn-svc",
@@ -291,11 +343,65 @@ class LocalLauncherTests(unittest.TestCase):
                 result = self.run_task("run-cfn-mgmt-image", **settings)
                 self.assertNotEqual(result.returncode, 0)
 
+    def test_source_commands_run_from_components_and_use_root_workspace(self):
+        for action, component in [
+            ("run-cfn", "cfn"),
+            ("run-cfn-mgmt", "cf-mgmt"),
+            ("run-template-ce", "samples/template-ce"),
+            ("run-full-mas", "samples/noa-trip-planner"),
+            ("run-demo-ce", "samples/demo-ce"),
+        ]:
+            with self.subTest(action=action):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task(action)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                command = self.commands()[-1]
+                self.assertEqual(command["cwd"], str(self.cfn / component))
+                self.assertEqual(command["env"]["GOWORK"], str(self.cfn / "go.work"))
+        go_commands = [x for x in self.commands() if x["tool"] == "go"]
+        self.assertEqual([x["args"][0] for x in go_commands], ["build"])
+        self.assertFalse(any("-modfile" in arg for x in go_commands for arg in x["args"]))
+
+    def test_new_checkout_rejects_existing_proxy_mount_before_reconfiguration(self):
+        result = self.run_task(
+            "run-full-mas", NOA_ENFORCEMENT_MODE="proxy",
+            MOCK_PROXY_MOUNT="/old-checkout/.local/enforcement/envoy.json",
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("another workflow", result.stderr)
+        self.assertFalse(any("up" in x["args"] or "stop" in x["args"] for x in self.commands()))
+
+    def test_all_eight_suites_are_in_aggregate_and_test_database_is_isolated(self):
+        for action in ("test", "check"):
+            with self.subTest(action=action):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task(action)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                commands = self.commands()
+                expected = {
+                    ("make", "api"), ("make", "cfn"), ("poetry", "cf-mgmt"),
+                    ("npm", "cf-ui"), ("go", "samples/demo-ce"),
+                    ("uv", "samples/template-ce"), ("uv", "samples/noa-trip-planner"),
+                    ("task", "."),
+                }
+                covered = {(x["tool"], str(Path(x["cwd"]).relative_to(self.cfn)))
+                           for x in commands if Path(x["cwd"]).is_relative_to(self.cfn)}
+                self.assertTrue(expected <= covered, expected - covered)
+                management = [x for x in commands if x["tool"] == "poetry" and "pytest" in x["args"]]
+                self.assertEqual(management[0]["env"]["POSTGRES_DB"], "ioc_test")
+                self.assertFalse(any("up" in x["args"] for x in commands))
+                if action == "check":
+                    self.assertTrue(any(
+                        x["tool"] == "make" and x["cwd"] == str(self.cfn / "api")
+                        and x["args"] == ["lint", "proto-check", "openapi-check"]
+                        for x in commands
+                    ))
+
     @unittest.skipUnless(shutil.which("task"), "Task CLI is not installed")
     def test_shell_tag_override_wins_over_task_dotenv(self):
         (self.cfn / ".env").write_text("CFN_SVC_TAG=from-dotenv\n")
         result = subprocess.run(
-            ["task", "--dir", str(self.cfn), "run:cfn:image"],
+            [shutil.which("task"), "--dir", str(self.cfn), "run:cfn:image"],
             env=self.env | {"CFN_SVC_TAG": "123"}, capture_output=True, text=True,
         )
         self.assertEqual(result.returncode, 0, result.stderr)
@@ -304,6 +410,61 @@ class LocalLauncherTests(unittest.TestCase):
 
 @unittest.skipUnless(shutil.which("docker"), "Docker Compose CLI is not installed")
 class ImageComposeTests(unittest.TestCase):
+    def test_infrastructure_reads_root_env_and_ignores_deployment_private_env(self):
+        services = (
+            "oxp-api", "norm", "embedding", "mce", "grouping", "analysis",
+            "hierarchical-grouping", "decision-block", "stateful-eval", "noa-trip-planner",
+        )
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            deployment = root / "ioc-scale-cf-deployment"
+            deployment.mkdir()
+            envfile = root / "root.env"
+            envfile.write_text("ROOT_MARKER=from-monorepo\nIOC_SCALE_DB_PORT=5456\n")
+            base = deployment / "compose.yaml"
+            base.write_text("services:\n" + "".join(
+                f"  {name}:\n    image: example.invalid/fixture\n"
+                "    env_file: .env\n    environment:\n      BASE_VALUE: preserved\n"
+                + ("      POSTGRES_PORT: ${IOC_SCALE_DB_PORT}\n" if name == "oxp-api" else "")
+                for name in services
+            ))
+            env = {key: value for key, value in os.environ.items()
+                   if not key.startswith(("CF_", "CFN_", "COMPOSE_"))}
+            env["CF_LOCAL_ENV_FILE"] = str(envfile)
+            command = [
+                "docker", "compose", "--project-directory", str(deployment),
+                "--env-file", str(envfile), "-f", str(base), "-f",
+                str(ROOT_DIR / "dev/compose/infrastructure.override.yaml"),
+                "config", "--format", "json",
+            ]
+            for private_env in (False, True):
+                with self.subTest(deployment_env_exists=private_env):
+                    if private_env:
+                        (deployment / ".env").write_text("DEPLOYMENT_ONLY=private\nROOT_MARKER=wrong\n")
+                    result = subprocess.run(command, env=env, capture_output=True, text=True)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    model = json.loads(result.stdout)
+                    for name in services:
+                        expected = {"ROOT_MARKER": "from-monorepo", "BASE_VALUE": "preserved",
+                                    "IOC_SCALE_DB_PORT": "5456"}
+                        if name == "oxp-api":
+                            expected["POSTGRES_PORT"] = "5432"
+                        self.assertEqual(model["services"][name]["environment"], expected)
+
+    def test_sample_compose_build_uses_root_context_without_private_module_secret(self):
+        result = subprocess.run(
+            ["docker", "compose", "-f", str(ROOT_DIR / "samples/docker-compose.yml"),
+             "config", "--format", "json"],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        config = json.loads(result.stdout)
+        build = config["services"]["demo-ce"]["build"]
+        self.assertEqual(Path(build["context"]).resolve(), ROOT_DIR.resolve())
+        self.assertEqual(build["dockerfile"], "samples/demo-ce/Dockerfile")
+        self.assertNotIn("secrets", build)
+        self.assertFalse(config.get("secrets"))
+
     def test_rendered_images_share_local_databases_without_starting_dependencies(self):
         # `compose config` is read-only and needs no running Docker daemon.
         with tempfile.TemporaryDirectory() as temporary:
@@ -320,7 +481,7 @@ class ImageComposeTests(unittest.TestCase):
                        CF_LOCAL_CE_MAS_FILE=str(Path(temporary) / "mas-id"))
             result = subprocess.run(
                 ["docker", "compose", "--env-file", str(envfile), "-f",
-                 str(CFN_DIR / "deploy/local/images/compose.yaml"),
+                 str(ROOT_DIR / "dev/compose/images.yaml"),
                  "config", "--format", "json"],
                 env=env, capture_output=True, text=True,
             )

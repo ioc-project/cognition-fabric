@@ -20,7 +20,6 @@ RUN apk add --update \
 WORKDIR /home/web
 
 # Copy src
-COPY .env.sample .env
 COPY . .
 
 # Create env file if not exists

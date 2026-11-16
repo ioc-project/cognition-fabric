@@ -17,11 +17,11 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/engine/evidence/events"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/inbox"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
-	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
+	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence/events"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/inbox"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/pkg/config"
 )
 
 const itemKindToolCall = "tool_call"

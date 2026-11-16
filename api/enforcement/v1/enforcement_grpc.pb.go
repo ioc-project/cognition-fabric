@@ -6,7 +6,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.2
 // - protoc             v7.35.1
-// source: api/proto/enforcement/v1/enforcement.proto
+// source: enforcement/proto/enforcement/v1/enforcement.proto
 
 package enforcementv1
 
@@ -177,5 +177,5 @@ var Enforcement_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "api/proto/enforcement/v1/enforcement.proto",
+	Metadata: "enforcement/proto/enforcement/v1/enforcement.proto",
 }

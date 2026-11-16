@@ -4,7 +4,7 @@ A demonstration Cognition Engine (`ioc.ce.v1.CognitionEngine`) for the IOC platf
 application: it loads identity and content rules per MAS from a JSON file and answers `Evaluate` from them.
 The JSON config supplies the demo rules.
 
-CFN calls the CE over gRPC (`:18001`, `ce.v1`, the contract comes from the `ioc-scale-cfn-svc` Go module).
+CFN calls the CE over gRPC (`:18001`, `ce.v1`, the contract comes from the local `github.com/cisco-eti/cognition-fabric/api` Go module).
 The CE registers itself with CFN over REST (`POST /api/cognition-engine`, conflict recovery by `PATCH`),
 attempting registration immediately and retrying once per second until it succeeds. It declares a
 `health_url` (its `GET /healthz`) and a `notification_url` on the same HTTP listener (`POST /notification`).
@@ -12,7 +12,7 @@ After register or PATCH it pulls currently associated MAS IDs from CFN, then sta
 lifecycle notifications. CFN probes health every couple of seconds to decide whether the CE is online,
 so the CE sends no heartbeats. Associated MAS state is for lifecycle logging only; it is not a policy source.
 
-See the [documentation site source](../docs/README.md) for the full Demo CE guide.
+See the [documentation site source](../docs-site/README.md) for the full Demo CE guide.
 
 ## Evaluation response
 
@@ -22,7 +22,7 @@ Demo diagnostics now live in `details` with `schema: demo-ce.v1`, `checks_run`
 four deprecated top-level diagnostics are omitted. Policy evaluation, evidence,
 findings and logs retain their previous behavior. Existing consumers still decode
 outcome/reason; unchanged real CEs can keep using their existing bindings.
-See the [shared response contract](https://github.com/cisco-eti/ioc-scale-cfn-svc/blob/main/docs/specs/ce-evaluation-response.md).
+See the [shared response contract](../../api/ce/docs/ce-evaluation-response.md).
 
 The frozen descriptor under `internal/engine/testdata/` must remain independent
 of current generation.
@@ -35,16 +35,16 @@ below provide the onboarding, application traffic, telemetry and enforcement sho
 
 | Component | Repository / source | Role in the demo |
 |---|---|---|
-| Demo CE | [ioc-scale-cf-demo-ce / demo-ce](https://github.com/cisco-eti/ioc-scale-cf-demo-ce/tree/main/demo-ce) | Loads `config.json`, evaluates requests and persists final findings |
-| CFN service and CE contract | [ioc-scale-cfn-svc](https://github.com/cisco-eti/ioc-scale-cfn-svc) | Registers CEs and invokes `ioc.ce.v1.CognitionEngine.Evaluate` over gRPC |
+| Demo CE | [ioc-scale-cf-demo-ce / demo-ce](.) | Loads `config.json`, evaluates requests and persists final findings |
+| CFN service and CE contract | [ioc-scale-cfn-svc](../../cfn) | Registers CEs and invokes `ioc.ce.v1.CognitionEngine.Evaluate` over gRPC |
 | OXP runtime context API | [ioc-scaling-oxp](https://github.com/cisco-eti/ioc-scaling-oxp), [API source](https://github.com/cisco-eti/ioc-scaling-oxp/tree/main/ioc-analytics-api/api) | Serves realtime events and session spans used to resolve the current input and causal context |
 | Cognition Store API | [cognition_store.py](https://github.com/cisco-eti/ioc-scaling-oxp/blob/main/ioc-analytics-api/api/oxp/api/api_v1/endpoints/cognition_store.py) in the same OXP repository | Reads prior findings and accepts the final ALLOW/DENY finding; it is not a separate CE |
 | Observe SDK | [agntcy/observe](https://github.com/agntcy/observe) | Instruments the MAS and publishes runtime events for OXP and the CE inbox |
 | Enforcement proxy | [ioc-scaling-enforcement-proxy](https://github.com/cisco-eti/ioc-scaling-enforcement-proxy) | Envoy integration and mediation of A2A/MCP/LLM calls through CFN |
 | NOA demo orchestration | [ioc-scaling-demos / noa](https://github.com/cisco-eti/ioc-scaling-demos/tree/main/noa) | Runs the demo with Compose and selects the enforcement adapter |
 | NOA application sources | [oxp-sample-apps](https://github.com/cisco-eti/oxp-sample-apps) | Source repository for the NOA trip-planner applications used by the demo |
-| CF management API | [ioc-scale-cf-mgmt-svc](https://github.com/cisco-eti/ioc-scale-cf-mgmt-svc) | Management API behind manual MAS onboarding and CE association |
-| CFN UI | [ioc-scale-cf-ui](https://github.com/cisco-eti/ioc-scale-cf-ui) | Onboards the MAS and associates its Demo CE |
+| CF management API | [ioc-scale-cf-mgmt-svc](../../cf-mgmt) | Management API behind manual MAS onboarding and CE association |
+| CFN UI | [ioc-scale-cf-ui](../../cf-ui) | Onboards the MAS and associates its Demo CE |
 | Shared platform deployment | [ioc-scale-cf-deployment](https://github.com/cisco-eti/ioc-scale-cf-deployment) | Platform Compose configuration and supporting databases, brokers, collectors and OXP workers |
 
 Start with the [NOA demo instructions](https://github.com/cisco-eti/ioc-scaling-demos/tree/main/noa)
@@ -335,25 +335,16 @@ docker compose logs -f --no-log-prefix demo-ce | jq 'select(.event == "evaluatio
 
 ## Build and test
 
-Generated CE protobuf/gRPC types come from the `github.com/cisco-eti/ioc-scale-cfn-svc`
-Go module at the version pinned in [go.mod](go.mod). Go downloads this dependency;
-a local CFN checkout is not required.
-
-The pinned version, `v0.0.0-20261110062707-7bc7f7f66973`, includes the CE response
-contract merged in [CFN PR #68](https://github.com/cisco-eti/ioc-scale-cfn-svc/pull/68).
-
-Run these commands from the `demo-ce/` directory:
+The CE imports the local API module through the root Go workspace and a local
+`replace` directive in [go.mod](go.mod). No private-module credential is needed.
+From the monorepo root:
 
 ```bash
-go vet ./...
-go test -race ./...
-docker build --secret id=github_token,env=GITHUB_TOKEN -t demo-ce:dev .
+go -C samples/demo-ce test -race ./...
+GOWORK=off go -C samples/demo-ce build ./...
+docker build -f samples/demo-ce/Dockerfile -t demo-ce:dev .
 ```
 
-or, from the repository root, through compose (builds `demo-ce/Dockerfile`):
-
-```bash
-docker compose up --build
-```
-
-`GITHUB_TOKEN` must be exported by you and able to read `cisco-eti/ioc-scale-cfn-svc`.
+The root `task test` and `task check` aggregates also cover this CE. Use the
+[local stack guide](../../dev/README.md) for source/image runs and the
+[release guide](../../docs/releases.md) for folder-prefixed component tags.

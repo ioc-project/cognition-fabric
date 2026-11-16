@@ -6,12 +6,12 @@ package identity
 
 import (
 	"context"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/pkg/config"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/pkg/config"
 	"net"
 	"strings"
 	"testing"
 
-	cev1 "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/api/ce/v1"
+	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"

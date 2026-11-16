@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/audit"
-	eh "github.com/cisco-eti/ioc-scale-cfn-svc/pkg/tools/easyhttp"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/audit"
+	eh "github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/easyhttp"
 	"github.com/google/uuid"
 )
 

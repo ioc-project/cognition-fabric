@@ -233,7 +233,7 @@ The body is `{ "mas_ids": ["…"] }` (sorted). Interpret the status as follows:
 
 A 404 on `GET /api/multi-agentic-systems/{masId}` means that MAS is gone. That is not the same as discovery 404; drop local state for that ID instead of retrying.
 
-See [D3 — MAS Lifecycle Notifications](discussions/0003-mas-lifecycle-notifications.md).
+See [D3 — MAS Lifecycle Notifications](../../../docs/discussions/0003-mas-lifecycle-notifications.md).
 
 ### CFN CE Selection
 

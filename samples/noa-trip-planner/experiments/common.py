@@ -8,6 +8,8 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+DEFAULT_RESULTS_DIR = Path(__file__).resolve().parents[3] / ".local/experiments/noa"
+
 
 def load_experiment_config(
     config_file: str = "configs/all_coalitions.json", filter_coalition: str = None

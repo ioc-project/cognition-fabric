@@ -1,0 +1,90 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
+openapi: 3.0.3
+info:
+  title: CE-implemented Cognition Fabric callbacks
+  version: 1.0.0
+  description: Implemented by each CE and called by CFN. Callback URLs are registration
+    values, not fixed CFN routes. Paths below use the sample defaults; health_endpoint
+    and notification_endpoint can be other leading-slash paths and are appended to
+    their registered base URLs.
+servers:
+- url: http://localhost:18000
+  description: Example Go Demo CE origin; use health_url or notification_url from
+    registration for the corresponding operation
+paths:
+  /healthz:
+    get:
+      operationId: probeCEHealth
+      summary: CE background health probe
+      description: GET {health_url}{health_endpoint}. A direct request with no proxy
+        or redirect following; HTTP200 within CE_PROBE_TIMEOUT_SECONDS is healthy.
+        Default timeout 1s, configurable greater than zero and at most 10s. Other status,
+        redirects, network errors and timeout are unhealthy. The response body is
+        not inspected. No gRPC RPC substitutes for this health check.
+      responses:
+        '200':
+          description: CE is healthy; arbitrary response body is ignored
+        default:
+          description: Any non-200 status is unhealthy
+      x-cf-registered-base-url: health_url
+      x-cf-registered-endpoint: health_endpoint
+  /notification:
+    post:
+      operationId: receiveMASLifecycleNotification
+      summary: Receive an optional MAS lifecycle notification
+      description: POST {notification_url}{notification_endpoint}. Both registration
+        fields must be configured together. CFN sends the event only to associated
+        CE IDs that have callback endpoints. Any 2xx acknowledgement succeeds. The
+        default shared HTTP client retries network errors, 429, and 5xx up to 3 times
+        after 1s, 2s, and 4s, within a 10-second request context; retries can repeat the
+        same payload. Persistent failures return a client error and are logged. There
+        is no additional guaranteed retry beyond that client behavior. Handle duplicates
+        safely and acknowledge promptly. CE handlers may fetch GET /api/multi-agentic-systems/{masId}?metadata=true
+        asynchronously for created/updated events and drop local state for deleted
+        events; receipt acknowledgement alone does not prove that fetch completed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MASLifecycleNotification'
+            example:
+              event_type: mas.updated
+              timestamp: '2026-11-13T15:00:00Z'
+              mas_id: mas-id
+      responses:
+        2XX:
+          description: Notification acknowledged
+        '429':
+          description: Retryable within the shared client deadline
+        5XX:
+          description: Retryable within the shared client deadline
+        default:
+          description: Other non-2xx acknowledgement is failure
+      x-cf-registered-base-url: notification_url
+      x-cf-registered-endpoint: notification_endpoint
+components:
+  schemas:
+    MASLifecycleNotification:
+      type: object
+      additionalProperties: false
+      required:
+      - event_type
+      - timestamp
+      - mas_id
+      properties:
+        event_type:
+          type: string
+          enum:
+          - mas.created
+          - mas.updated
+          - mas.deleted
+        timestamp:
+          type: string
+          format: date-time
+          description: UTC RFC3339 event emission instant ending in Z
+        mas_id:
+          type: string

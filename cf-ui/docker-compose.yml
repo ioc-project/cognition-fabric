@@ -1,8 +1,8 @@
 services:
   app:
     build:
-      context: .
-      dockerfile: ./ci/docker/Dockerfile.next
+      context: ..
+      dockerfile: cf-ui/ci/docker/Dockerfile.next
       args:
         CFN_UI_API_BASE_URL: ${CFN_UI_API_BASE_URL:-http://host.docker.internal:9000}
     image: ioc-cfn-mgmt-plane-ui:latest

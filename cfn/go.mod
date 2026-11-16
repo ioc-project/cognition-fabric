@@ -1,8 +1,9 @@
-module github.com/cisco-eti/ioc-scale-cfn-svc
+module github.com/cisco-eti/cognition-fabric/cfn
 
 go 1.25.0
 
 require (
+	github.com/cisco-eti/cognition-fabric/api v1.0.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/onsi/ginkgo/v2 v2.33.1
@@ -41,7 +42,7 @@ require (
 	github.com/rogpeppe/go-internal v1.16.0 // indirect
 	github.com/swaggo/files v0.0.0-20220610200504-28940afbdbfe // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.5 // indirect
+	go.yaml.in/yaml/v3 v3.0.5
 	golang.org/x/mod v0.38.0 // indirect
 	golang.org/x/net v0.58.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
@@ -52,3 +53,5 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gorm.io/driver/mysql v1.5.6 // indirect
 )
+
+replace github.com/cisco-eti/cognition-fabric/api => ../api

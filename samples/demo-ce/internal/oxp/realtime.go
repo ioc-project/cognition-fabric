@@ -15,8 +15,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/ids"
-	"github.com/cisco-eti/ioc-scale-cf-demo-ce/demo-ce/internal/logging"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/ids"
+	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/logging"
 )
 
 // ErrEventPending means OXP does not (yet) expose the event: it may still be on its way through ingestion.

@@ -2,7 +2,7 @@
 
 These runners come from upstream `noa-trip-planner/` at `cc0c0f2` and use its
 coalitions, questions, and JSONL result format. Run commands from
-`deploy/local/noa-trip-planner`.
+`samples/noa-trip-planner`.
 
 ## Use the running local MAS
 
@@ -16,7 +16,7 @@ uv run --frozen --group experiments -m experiments.run_experiment_http \
 ```
 
 `--base-url` defaults to `NOA_API_URL` or `http://localhost:8125`. Override it
-when `NOA_API_PORT` is different. The HTTP runner does not load CFN's `.env` or
+when `NOA_API_PORT` is different. The HTTP runner does not load the root `.env` or
 start a second MAS process. This keeps requests in the existing direct or
 proxy enforcement setup.
 
@@ -42,14 +42,14 @@ runner when testing an existing CF stack.
 
 ## Results and checks
 
-Results are saved under the ignored `experiments/results/` directory. Each
+Results are saved under the monorepo's ignored `.local/experiments/noa/` directory. Each
 record includes the coalition, question, session ID, final answer, message
 count, communication chain, and success/error status. Session IDs can be used
 to correlate OXP telemetry. Analyze a result file with:
 
 ```bash
 uv run --frozen -m experiments.analyze_results \
-  experiments/results/YYYYMMDD_HHMMSS_results.jsonl
+  ../../.local/experiments/noa/YYYYMMDD_HHMMSS_results.jsonl
 ```
 
 Run the experiment and CF enforcement regression checks without model calls:

@@ -1,7 +1,7 @@
 # CE evaluation response
 
 Issue [#55](https://github.com/cisco-eti/ioc-scale-cfn-svc/issues/55).
-The wire definition is [ce.proto](../../api/proto/ce/v1/ce.proto).
+The wire definition is [ce.proto](../proto/ce/v1/ce.proto).
 
 ## Common decision
 
@@ -56,7 +56,7 @@ CE routing.
 
 ## Audit capture
 
-The [disposition audit](disposition-audit.md) preserves the selected CE identity,
+The [disposition audit](../../../docs/specs/disposition-audit.md) preserves the selected CE identity,
 decision/reason and result. New audit records use `ce_response` for captured CE
 response metadata and fields. CE-owned data is stored under `ce_response.details`;
 legacy diagnostics from unchanged CEs are captured directly under `ce_response`.
@@ -91,19 +91,24 @@ rewrite those fields or alter the CE's free-text explanation contract.
 ## Generation and verification
 
 CFN generation uses protoc 35.1, protoc-gen-go v1.36.12 and
-protoc-gen-go-grpc v1.6.2. `make proto` generates both CE and Enforcement bindings;
-`make proto-check` compares fresh temporary output with the current files, including
-uncommitted files, checking both `.pb.go` filenames and contents under `pkg/api`.
-Generation also synchronizes the local NOA Enforcement proto and regenerates its
-Python binding; freshness checking covers that copy and binding as well.
+protoc-gen-go-grpc v1.6.2. From the repository root, `task proto` generates both CE
+and Enforcement bindings; `task proto:check` compares fresh temporary output with
+the current files, including uncommitted files, checking both `.pb.go` filenames
+and contents under `api/ce/v1/` and `api/enforcement/v1/`.
+Generation reads the canonical Enforcement proto directly and regenerates the
+NOA Python binding; no active sample proto copy remains.
 CI installs the pinned compiler/plugins and runs this check before image builds or
-publication. See the [setup commands](../../README.md#grpc-enforcement-api).
-`PROTOC` can select another compatible compiler command.
-Template CE's locked generator is `uv run --frozen python scripts/generate_proto.py`;
+publication. See the [setup commands](../../../cfn/README.md#grpc-enforcement-api).
+`PROTOC` can select an absolute path to the pinned compiler executable.
+Run Template CE's locked generator from `samples/template-ce/`:
+`uv run --frozen python scripts/generate_proto.py`;
 add `--check` to check freshness without rewriting files.
 
 The frozen pre-change descriptor and binary responses in
-`pkg/api/ce/v1/testdata/legacy/` must remain independent of current generation.
+`api/ce/v1/testdata/legacy/` must remain independent of current generation.
 Tests use private descriptor pools to avoid duplicate global protobuf names.
-See [local compatibility results and commands](../verification/ce-neutral-evaluation-response.md)
-for the pinned old-image gate, sample checks, exact revisions and remaining limits.
+The [wire compatibility tests](../v1/compatibility_test.go) check frozen responses
+and descriptors. The [legacy CE server tests](../../../cfn/pkg/app/grpc_legacy_test.go)
+exercise CFN against unchanged wire responses, and the
+[PostgreSQL audit tests](../../../cfn/pkg/audit/disposition_db_test.go) cover JSONB
+storage and historical records.

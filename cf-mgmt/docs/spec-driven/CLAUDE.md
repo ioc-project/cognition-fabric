@@ -758,7 +758,7 @@ ioc-mgmt-svc <-> ioc-cfn. This communication contract is purely http REST based.
 - Get Details: GET `/api/workspaces/{workspace_id}/cognitive-fabric-node/{cfn_id}`
 
 **Note**: CFNs are like IoT devices - they always call the same create endpoint.
-Disabled CFNs must be manually enabled before they can reconnect. See [CFN.md](./CFN.md) for detailed lifecycle documentation.
+Disabled CFNs must be manually enabled before they can reconnect. See the [Management CFN endpoints](../../src/server/api/endpoints/cognition_fabric_node.py) for the implemented registration and heartbeat lifecycle.
 
 **Note**: We do not implement CFN here. Only the management side is implemented.
 

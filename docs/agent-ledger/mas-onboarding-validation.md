@@ -14,11 +14,11 @@ HTTP 422 and leave saved state unchanged. Database uniqueness constraints remain
 the final integrity boundary.
 
 **Evidence:** The user confirmed backend enforcement during issue #43 review.
-The [implementation plan](../plans/issue-43-mas-onboarding-metadata.md) includes
+The implementation plan (optional local plan) includes
 the narrow Management correction in stage 2. Workspace implementation and direct
 API/Postgres regressions are in the
-[Management service](../../../ioc-scale-cf-mgmt-svc/src/server/services/multi_agentic_system.py)
-and [MCP name tests](../../../ioc-scale-cf-mgmt-svc/tests/test_mcp_name_validation.py).
+[Management service](../../cf-mgmt/src/server/services/multi_agentic_system.py)
+and [MCP name tests](../../cf-mgmt/tests/test_mcp_name_validation.py).
 
 **Revisit when:** The API changes accepted names, name normalization, or the
 uniqueness scopes, or Management delegates semantic validation to another
@@ -52,10 +52,10 @@ including references, format/version, provenance and unknown extensions.
 Validate known definition projection types before committing so a write cannot
 produce an unreadable record.
 
-Evidence: [metadata helpers](../../../ioc-scale-cf-mgmt-svc/src/server/services/mas_metadata.py),
-[API/concurrency tests](../../../ioc-scale-cf-mgmt-svc/tests/test_mas_metadata.py),
-[read/snapshot regressions](../../../ioc-scale-cf-mgmt-svc/tests/test_mas_review_regressions.py),
-and [UI request regressions](../../../ioc-scale-cf-ui/tests/mas-request-draft.test.mjs).
+Evidence: [metadata helpers](../../cf-mgmt/src/server/services/mas_metadata.py),
+[API/concurrency tests](../../cf-mgmt/tests/test_mas_metadata.py),
+[read/snapshot regressions](../../cf-mgmt/tests/test_mas_review_regressions.py),
+and [UI request regressions](../../cf-ui/tests/mas-request-draft.test.mjs).
 
 ## Existing binary CE compatibility
 
@@ -73,8 +73,8 @@ timezone. Zone-less Management values remain omitted until the separate
 Management UTC-timestamp issue makes Management emit UTC `Z`; #43 does not depend
 on it. Leave nested JSON and raw Management/config snapshot timestamps unchanged.
 
-Evidence: [CFN retrieval](../../pkg/app/handlers_mas.go),
-[representation tests](../../pkg/app/handlers_mas_metadata_test.go), and
+Evidence: [CFN retrieval](../../cfn/pkg/app/handlers_mas.go),
+[representation tests](../../cfn/pkg/app/handlers_mas_metadata_test.go), and
 [the implemented contract](../discussions/0006-mas-onboarding-metadata.md).
 
 ## Read-only topology presentation
@@ -129,6 +129,6 @@ context so click/deselect updates leave the node array and objects unchanged.
 Verify with browser mutation and animation-frame sampling during repeated
 selection: no hidden nodes and no missing edges after initial layout settles.
 
-Evidence: [graph view](../../../ioc-scale-cf-ui/src/components/mas/mas-topology.tsx),
-[source/model tests](../../../ioc-scale-cf-ui/tests/mas-topology.test.mjs), and
-[the UI guidance](../../../ioc-scale-cf-ui/README.md#mas-metadata-onboarding).
+Evidence: [graph view](../../cf-ui/src/components/mas/mas-topology.tsx),
+[source/model tests](../../cf-ui/tests/mas-topology.test.mjs), and
+[the UI guidance](../../cf-ui/README.md#mas-metadata-onboarding).

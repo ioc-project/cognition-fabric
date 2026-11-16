@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/audit"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/audit"
 	"github.com/google/uuid"
 )
 

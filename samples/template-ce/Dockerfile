@@ -16,7 +16,7 @@ RUN mkdir /home/app/ && chown -R app:app /home/app
 WORKDIR /home/app
 
 # Copy dependency files
-COPY --chown=app:app pyproject.toml uv.lock ./
+COPY --chown=app:app samples/template-ce/pyproject.toml samples/template-ce/uv.lock ./
 
 # Run the application as user app
 USER app
@@ -25,10 +25,7 @@ USER app
 RUN uv sync --frozen --no-dev
 
 # Copy the source code to the working directory
-COPY --chown=app:app src/ ./src/
-
-# Copy proto files and generated code
-COPY --chown=app:app proto/ ./proto/
+COPY --chown=app:app samples/template-ce/src/ ./src/
 
 ENV GRPC_PORT=50051
 ENV HTTP_PORT=8080

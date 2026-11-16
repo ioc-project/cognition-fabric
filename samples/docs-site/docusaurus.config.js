@@ -2,8 +2,11 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-const repository = 'https://github.com/cisco-eti/ioc-scale-cf-demo-ce';
-const pagesUrl = new URL(process.env.PAGES_URL || 'https://refactored-carnival-2m9k3yw.pages.github.io/');
+const repository = 'https://github.com/cisco-eti/cognition-fabric';
+const pagesUrl = new URL(process.env.PAGES_URL || 'https://cisco-eti.github.io/cognition-fabric/');
+// configure-pages may return a project URL without the final slash. Treat it
+// as a directory before deriving either Docusaurus's base or the viewer URL.
+pagesUrl.pathname = `${pagesUrl.pathname.replace(/\/+$/, '')}/`;
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -13,7 +16,7 @@ const config = {
   url: pagesUrl.origin,
   baseUrl: pagesUrl.pathname,
   organizationName: 'cisco-eti',
-  projectName: 'ioc-scale-cf-demo-ce',
+  projectName: 'cognition-fabric',
   trailingSlash: true,
   onBrokenLinks: 'throw',
   markdown: { mermaid: true, hooks: { onBrokenMarkdownLinks: 'throw' } },
@@ -34,7 +37,7 @@ const config = {
       path: 'content',
       routeBasePath: '/',
       sidebarPath: './sidebars.js',
-      editUrl: `${repository}/edit/main/docs/`,
+      editUrl: `${repository}/edit/main/samples/docs-site/`,
       showLastUpdateAuthor: false,
       showLastUpdateTime: false,
     },
@@ -50,6 +53,7 @@ const config = {
       items: [
         { to: '/demo-ce/overview', label: 'Demo CE', position: 'left' },
         { to: '/template-ce/overview', label: 'Template CE', position: 'left' },
+        { href: new URL('mgmt-api/', pagesUrl).href, label: 'Management API', position: 'right' },
         { href: repository, label: 'GitHub', position: 'right' },
       ],
     },

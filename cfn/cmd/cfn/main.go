@@ -18,8 +18,8 @@ import (
 	"strconv"
 	"syscall"
 
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/app"
-	"github.com/cisco-eti/ioc-scale-cfn-svc/pkg/tools/logger"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/app"
+	"github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/logger"
 	"github.com/joho/godotenv"
 )
 

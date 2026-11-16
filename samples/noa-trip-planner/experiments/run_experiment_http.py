@@ -20,6 +20,7 @@ from pathlib import Path
 import httpx
 
 from experiments.common import (
+    DEFAULT_RESULTS_DIR,
     error_record,
     load_experiment_config,
     load_questions,
@@ -66,7 +67,7 @@ def run_experiment(
     if output_prefix is None:
         output_prefix = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    results_dir = results_dir or Path(__file__).parent / "results"
+    results_dir = results_dir or DEFAULT_RESULTS_DIR
     results_dir.mkdir(parents=True, exist_ok=True)
     results_file = results_dir / f"{output_prefix}_results.jsonl"
 

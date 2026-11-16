@@ -4,10 +4,14 @@
 
 **Guidance:** `NOA_MODE` selects source (the default) versus published NOA;
 `NOA_ENFORCEMENT_MODE` selects direct versus proxy enforcement for source NOA.
-Both are read from CFN's `.env`. Proxy mode is rejected for the published image.
+Both are read from the repository root's `.env`. Proxy mode is rejected for the published image.
 Infrastructure includes Envoy only in proxy mode, while the source NOA task
 supervises its HTTP tool service. Direct mode retains its in-process tools and
 direct CFN authorization call.
+
+Keep one root `.env.example`, with shared and component sections. Component
+READMEs point to that template and the root tasks, which supply mode-specific
+addresses, ports and database settings.
 
 CFN owns the source-specific Compose override and generated configuration.
 The deployment checkout supplies reusable images and overlays and is not
@@ -89,9 +93,9 @@ context, and avoid a second direct authorization or local-execution fallback.
 Identity-based routing does not establish OXP event delivery or content-evidence
 readiness.
 
-**Evidence:** [Source workflow](../../deploy/README.md#use-envoy-with-source-noa),
-[NOA integration](../../deploy/local/noa-trip-planner/README.md#proxy-mode), and
-[local launcher](../../deploy/local/cf-local.sh).
+**Evidence:** [Source workflow](../../dev/README.md#use-envoy-with-source-noa),
+[NOA integration](../../samples/noa-trip-planner/README.md#proxy-mode), and
+[local launcher](../../dev/cf-local.sh).
 
 **Revisit when:** The source NOA is replaced by a network-native sample, the
 published image supports the same mode switch, or proxy configuration contracts

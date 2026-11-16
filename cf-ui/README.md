@@ -20,35 +20,33 @@ Cognition Fabric Node Management UI Service.
 
 ## Development
 
-Copy the example environment file:
+Use the repository root's [`.env.example`](../.env.example). Its Management UI
+section contains authentication and audit display settings. Follow the
+[local workflow](../dev/README.md) for infrastructure and Management startup.
+
+From the repository root, create `.env`:
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
 
-Optionally, generate your own `NEXTAUTH_SECRET`:
+Generate a `NEXTAUTH_SECRET` and put it in root `.env`:
 
 ```bash
 openssl rand -base64 32
 ```
 
-If you use nvm, select the repository's Node version:
+Use the Node version in [`.nvmrc`](.nvmrc). From the repository root, install
+the locked dependencies:
 
 ```bash
-nvm install
-nvm use
+npm --prefix cf-ui ci
 ```
 
-Install the locked dependencies:
+Once Management is ready, run the development server from the repository root:
 
 ```bash
-npm ci
-```
-
-Run dev server:
-
-```bash
-npm run dev
+task run:cf-ui
 ```
 
 Open [http://localhost:9001](http://localhost:9001)
@@ -72,11 +70,10 @@ and expanded JSON are preserved when switching modes.
 If a recorded CE name is unavailable, the CE column shows its shortened, copyable
 stored CE ID; N/A means neither is available.
 
-Set `CFN_UI_AUDIT_REFRESH_INTERVAL_SECONDS=30` in `.env.local` to configure audit
+Set `CFN_UI_AUDIT_REFRESH_INTERVAL_SECONDS=30` in root `.env` to configure audit
 auto-refresh (default: 30 seconds; `0` disables it). Use a nonnegative whole number
-of seconds; invalid values fall back to 30. When using `task run:cf-ui`, set this
-in the CFN repository's `.env` instead. Restart the UI and reload the browser page
-after changing it.
+of seconds; invalid values fall back to 30. Restart the UI and reload the browser
+page after changing it.
 
 The open audit panel refreshes all loaded pages while the browser tab is visible
 and online. It preserves pagination depth and expanded item state; trace summaries
@@ -101,15 +98,15 @@ audit items, without implying that a trace has opened or closed.
 
 ### Docker
 
-Alternatively, run with Docker:
+To run the published UI image against the local stack, use the root task:
 
 ```bash
-docker-compose up --build
+task run:cf-ui:image
 ```
 
-For this Compose setup, set `CFN_UI_AUDIT_REFRESH_INTERVAL_SECONDS` and
-`CFN_UI_AUDIT_FLASH_DURATION_SECONDS` in the UI repository's `.env`; Compose forwards
-them to the container at runtime.
+This task reads authentication settings from root `.env` and selects the
+container-to-Management address. Audit refresh and flash settings above apply to
+the source UI; the image task uses the selected image's defaults.
 
 ## Authentication
 
@@ -120,14 +117,15 @@ Use these below to login:
 
 ## Build
 
+From the repository root:
+
 ```bash
-npm run build
-npm start
+npm --prefix cf-ui run build
 ```
 
 ## License
 
-This project is licensed under the Apache License, Version 2.0 - see the [LICENSE.md](LICENSE.md) file for full details.
+This project is licensed under the Apache License, Version 2.0 - see the [LICENSE.md](../LICENSE.md) file for full details.
 
 Copyright (c) 2024-2026 Cisco Systems, Inc. and its affiliates. All rights reserved.
 
@@ -139,7 +137,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 ## Third-Party Notices
 
-This project uses third-party open source components. See [THIRD-PARTY-NOTICES](THIRD-PARTY-NOTICES) for copyright and license information.
+This project uses third-party open source components. See [THIRD-PARTY-NOTICES](../THIRD-PARTY-NOTICES) for copyright and license information.
 
 ## MAS metadata onboarding
 
@@ -162,5 +160,7 @@ disabled until the optional source integration is connected; this UI makes no
 OXP/CFN requests. In edit mode the graph is replaced by provided-topology JSON
 using the existing Save/Cancel flow. Browsing never writes metadata or node
 positions, and background refresh failures retain loaded data and unsaved edits.
-See the [CFN metadata contract](../ioc-scale-cfn-svc/docs/discussions/0006-mas-onboarding-metadata.md)
-and [NOA pasteable declaration](../ioc-scale-cfn-svc/deploy/local/mas-onboarding/README.md).
+See the [CFN metadata contract](../docs/discussions/0006-mas-onboarding-metadata.md)
+and [NOA pasteable declaration](../samples/noa-trip-planner/mas/README.md).
+
+Generate Management API types with `npm run generate:api`; `npm run check:api` compares without rewriting files. Both consume the committed [canonical schema](../api/mgmt/openapi/openapi.json), so no running Management service is needed. `CFN_UI_API_BASE_URL` continues to configure application requests and image builds.
