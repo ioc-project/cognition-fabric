@@ -14,7 +14,7 @@ COPY api/ /src/api/
 COPY samples/demo-ce/ /src/samples/demo-ce/
 RUN CGO_ENABLED=0 go build -trimpath -ldflags='-s -w' -o /out/demo-ce ./cmd/demo-ce
 
-FROM alpine:3.21
+FROM alpine:3.24
 RUN apk add --no-cache ca-certificates && adduser -D -H -u 65532 demo
 COPY --from=build /out/demo-ce /usr/local/bin/demo-ce
 USER demo
