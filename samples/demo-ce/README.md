@@ -27,24 +27,24 @@ See the [shared response contract](../../api/ce/docs/ce-evaluation-response.md).
 The frozen descriptor under `internal/engine/testdata/` must remain independent
 of current generation.
 
-## Stack and repositories
+## Components and sources
 
 The Demo CE calls **CFN** for registration and is called by CFN for evaluation.
 It calls the **OXP API** for runtime context and Cognition Store findings. The other components
 below provide the onboarding, application traffic, telemetry and enforcement shown in the NOA demo.
 
-| Component | Repository / source | Role in the demo |
+| Component | Source | Role in the demo |
 |---|---|---|
-| Demo CE | [ioc-scale-cf-demo-ce / demo-ce](.) | Loads `config.json`, evaluates requests and persists final findings |
-| CFN service and CE contract | [ioc-scale-cfn-svc](../../cfn) | Registers CEs and invokes `ioc.ce.v1.CognitionEngine.Evaluate` over gRPC |
+| Demo CE | [samples/demo-ce/](.) | Loads `config.json`, evaluates requests and persists final findings |
+| CFN service and CE contract | [cfn/](../../cfn), [api/ce/](../../api/ce) | Registers CEs and invokes `ioc.ce.v1.CognitionEngine.Evaluate` over gRPC |
 | OXP runtime context API | [ioc-scaling-oxp](https://github.com/cisco-eti/ioc-scaling-oxp), [API source](https://github.com/cisco-eti/ioc-scaling-oxp/tree/main/ioc-analytics-api/api) | Serves realtime events and session spans used to resolve the current input and causal context |
 | Cognition Store API | [cognition_store.py](https://github.com/cisco-eti/ioc-scaling-oxp/blob/main/ioc-analytics-api/api/oxp/api/api_v1/endpoints/cognition_store.py) in the same OXP repository | Reads prior findings and accepts the final ALLOW/DENY finding; it is not a separate CE |
 | Observe SDK | [agntcy/observe](https://github.com/agntcy/observe) | Instruments the MAS and publishes runtime events for OXP and the CE inbox |
 | Enforcement proxy | [ioc-scaling-enforcement-proxy](https://github.com/cisco-eti/ioc-scaling-enforcement-proxy) | Envoy integration and mediation of A2A/MCP/LLM calls through CFN |
 | NOA demo orchestration | [ioc-scaling-demos / noa](https://github.com/cisco-eti/ioc-scaling-demos/tree/main/noa) | Runs the demo with Compose and selects the enforcement adapter |
 | NOA application sources | [oxp-sample-apps](https://github.com/cisco-eti/oxp-sample-apps) | Source repository for the NOA trip-planner applications used by the demo |
-| CF management API | [ioc-scale-cf-mgmt-svc](../../cf-mgmt) | Management API behind manual MAS onboarding and CE association |
-| CFN UI | [ioc-scale-cf-ui](../../cf-ui) | Onboards the MAS and associates its Demo CE |
+| CF management API | [cf-mgmt/](../../cf-mgmt) | Management API behind manual MAS onboarding and CE association |
+| CFN UI | [cf-ui/](../../cf-ui) | Onboards the MAS and associates its Demo CE |
 | Shared platform deployment | [ioc-scale-cf-deployment](https://github.com/cisco-eti/ioc-scale-cf-deployment) | Platform Compose configuration and supporting databases, brokers, collectors and OXP workers |
 
 Start with the [NOA demo instructions](https://github.com/cisco-eti/ioc-scaling-demos/tree/main/noa)

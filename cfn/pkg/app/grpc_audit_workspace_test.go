@@ -18,7 +18,7 @@ import (
 	"gorm.io/datatypes"
 )
 
-// Opt in with CF_AUDIT_WORKSPACE_VERIFY=1 when the sibling Management virtualenv
+// Opt in with CF_AUDIT_WORKSPACE_VERIFY=1 when the monorepo's Management virtualenv
 // and UI dependencies are available. The upstream CFN HTTP call is real; no
 // Management request mocks or production services/databases are used.
 func verifyAuditWorkspaceReaders(t *testing.T, store database.Store) {
@@ -35,11 +35,11 @@ func verifyAuditWorkspaceReaders(t *testing.T, store database.Store) {
 	a := &App{db: store}
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { a.listAuditEventsHandler(w, r) }))
 	defer upstream.Close()
-	mgmt, err := filepath.Abs("../../../ioc-scale-cf-mgmt-svc")
+	mgmt, err := filepath.Abs("../../../cf-mgmt")
 	if err != nil {
 		t.Fatal(err)
 	}
-	ui, err := filepath.Abs("../../../ioc-scale-cf-ui")
+	ui, err := filepath.Abs("../../../cf-ui")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +57,10 @@ assert data["pageInfo"]["totalElements"] == 3, data
 assert {row["source"] for row in data["data"]} == {"CFN", "PROXY"}
 assert client.get("/api/audit-events/?decision=allow").json()["pageInfo"]["totalElements"] == 3
 assert client.get("/api/audit-events/?audit_type=PROXY_MEDIATED&outcome=ALLOW").json()["pageInfo"]["totalElements"] == 2
-assert client.get("/api/audit-events/?outcome=UNKNOWN").json()["pageInfo"]["totalElements"] == 1
+# The authorization and two middleware variants have no host-applied outcome.
+unknown = client.get("/api/audit-events/?outcome=UNKNOWN").json()
+assert unknown["pageInfo"]["totalElements"] == 3, unknown
+assert {row["outcome"] for row in unknown["data"]} == {"UNKNOWN"}, unknown
 assert client.get("/api/audit-events/?decision=block&outcome=ALLOW").status_code == 400
 Path(os.environ["CF_AUDIT_VERIFY_RESULT"]).write_text(json.dumps(data))
 `)

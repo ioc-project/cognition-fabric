@@ -2,4 +2,4 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Test package for ioc-cfn-mgmt-plane
+# Test package for cf-mgmt.

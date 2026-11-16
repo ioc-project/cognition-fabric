@@ -1,6 +1,6 @@
 # Local NOA enforcement modes
 
-**Scope:** CFN's local source/image workflow and its bundled NOA application.
+**Scope:** The monorepo's local source/image workflow and its bundled NOA application.
 
 **Guidance:** `NOA_MODE` selects source (the default) versus published NOA;
 `NOA_ENFORCEMENT_MODE` selects direct versus proxy enforcement for source NOA.
@@ -64,14 +64,14 @@ produce HTTP 503 after a successful CFN ALLOW, before the tool service is reache
 CE choice is independent of the source NOA enforcement mode: both template and
 demo CEs answer CFN's `Evaluate` calls in direct and proxy modes. The local
 template task assigns health port 8082 separately from its fixed notification port
-8080, and runs `uv run --frozen` to synchronize locked dependencies after sibling
+8080, and runs `uv run --frozen` to synchronize locked dependencies after source
 updates. When switching CEs, the chosen CE must be associated, enabled, and
 online; CFN does not select a CE based on which local task was started last.
 
-The Python `demo-ce/` was renamed to `template-ce/`; the Go `policy-ce/` became
-`demo-ce/`. Keep the CFN top-level tasks and launcher in sync: `run:template-ce`
-runs Python, while `run:demo-ce` builds `demo-ce/cmd/demo-ce` and passes
-`CE_CONFIG_FILE`. Python's forced verdict uses `TEMPLATE_CE_DECISION`. Name
+Keep the root tasks and `dev/cf-local.sh` in sync: `run:template-ce` runs Python
+from `samples/template-ce/`, while `run:demo-ce` builds
+`samples/demo-ce/cmd/demo-ce` and passes `CE_CONFIG_FILE`. Python's forced verdict
+uses `TEMPLATE_CE_DECISION`. Name
 overrides are `DEMO_CE_NAME` and `TEMPLATE_CE_NAME`, forwarded to native
 `CE_NAME` only when explicitly configured. Names, versions and CE types
 otherwise come from each CE's own registration defaults. Remove obsolete

@@ -11,7 +11,7 @@ import "github.com/google/uuid"
 // Fixture IDs and payload shapes match the management-plane responses CFN
 // unmarshals today (CfnConfigPayload and mgmt.MASResponse): snapshot CEs use
 // "id", GetMAS CEs use "ce_id", register 201 uses "ce_id", PATCH 200 uses "id".
-// See ioc-scale-cf-mgmt-svc cognition_fabric_node / cognition_engine handlers.
+// See cf-mgmt/src/server/api/endpoints/cognition_fabric_node.py and cognition_engine.py.
 
 const (
 	fixtureWorkspaceName = "Integration Workspace"

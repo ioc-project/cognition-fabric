@@ -184,9 +184,9 @@ cover all variants. Qualify actual Proxy delivery separately, including receipt
 checking, retries, permanent errors and outage recovery; the logging-only client
 cannot satisfy issue #41's complete production-path acceptance.
 
-With the sibling Management virtualenv and UI dependencies installed, set
+With the `cf-mgmt/.venv` and `cf-ui/` dependencies installed, set
 `CF_AUDIT_WORKSPACE_VERIFY=1` and run
-`go test ./pkg/app -run TestProxyRPCPostgresAndReadAPI -count=1 -v` with isolated
-PostgreSQL settings. This checks RPC → PostgreSQL → CFN HTTP → Management → UI
-presentation helpers with live upstream calls. It does not exercise browser
-layout or substitute for actual Proxy-client qualification.
+`go -C cfn test ./pkg/app -run TestProxyRPCPostgresAndReadAPI -count=1 -v` from the
+repository root with isolated PostgreSQL settings. This checks RPC → PostgreSQL →
+CFN HTTP → Management → UI presentation helpers with live upstream calls. It does
+not exercise browser layout or substitute for actual Proxy-client qualification.

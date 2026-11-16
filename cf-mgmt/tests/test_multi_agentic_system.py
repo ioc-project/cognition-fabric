@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Tests for Multi-Agent System endpoints in ioc-cfn-mgmt-plane.
+Tests for Multi-Agent System endpoints in cf-mgmt.
 """
 import pytest
 

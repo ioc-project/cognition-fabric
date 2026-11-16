@@ -7,12 +7,15 @@ services:
         CFN_UI_API_BASE_URL: ${CFN_UI_API_BASE_URL:-http://host.docker.internal:9000}
     image: ioc-cfn-mgmt-plane-ui:latest
     container_name: ioc-cfn-mgmt-plane-ui
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     ports:
       - '9001:9001'
     env_file:
       - .env.docker
     environment:
       - NODE_ENV=production
+      - CFN_UI_API_BASE_URL=${CFN_UI_API_BASE_URL:-http://host.docker.internal:9000}
       - CFN_UI_AUDIT_REFRESH_INTERVAL_SECONDS=${CFN_UI_AUDIT_REFRESH_INTERVAL_SECONDS:-30}
       - CFN_UI_AUDIT_FLASH_DURATION_SECONDS=${CFN_UI_AUDIT_FLASH_DURATION_SECONDS:-60}
     restart: unless-stopped
