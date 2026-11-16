@@ -1,0 +1,57 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
+package authz.roles.viewer
+
+import rego.v1
+import data.authz.operations.workspaces
+import data.authz.operations.users
+import data.authz.operations.softwares
+import data.authz.operations.cognition_fabric_node
+import data.authz.operations.cognition_engine
+import data.authz.operations.memory_provider
+import data.authz.operations.multi_agentic_system
+
+# Viewer role permissions - read-only operations
+allow if {
+	input.user.role == "viewer"
+	input.resource == "workspace"
+	input.operation in workspaces.viewer
+}
+
+allow if {
+	input.user.role == "viewer"
+	input.resource == "user"
+	input.operation in users.viewer
+}
+
+allow if {
+	input.user.role == "viewer"
+	input.resource == "software"
+	input.operation in softwares.viewer
+}
+
+allow if {
+	input.user.role == "viewer"
+	input.resource == "cognition_fabric_node"
+	input.operation in cognition_fabric_node.viewer
+}
+
+allow if {
+	input.user.role == "viewer"
+	input.resource == "cognition_engine"
+	input.operation in cognition_engine.viewer
+}
+
+allow if {
+	input.user.role == "viewer"
+	input.resource == "memory_provider"
+	input.operation in memory_provider.viewer
+}
+
+allow if {
+	input.user.role == "viewer"
+	input.resource == "multi_agentic_system"
+	input.operation in multi_agentic_system.viewer
+}

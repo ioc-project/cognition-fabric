@@ -1,0 +1,148 @@
+name: CI - Lint and Unit Test
+
+on:
+  # we want pull requests so we can build(test) but not push to image registry
+  push:
+    branches:
+      - "main"
+    tags: ["*"]
+  pull_request:
+    branches:
+      - "main"
+  workflow_dispatch:
+
+# Grant read access for GITHUB_TOKEN on all jobs
+permissions:
+  contents: read # This is required for actions/checkout
+
+jobs:
+  ################################## Code Checkout ##############################
+  ###############################################################################
+  checkout-unit-tests:
+    name: checkout & unit test
+    runs-on: ubuntu-latest
+
+    services:
+      ioc-mgmt-relational-db:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: cfn_mgmt
+          POSTGRES_USER: postgresUser
+          POSTGRES_PASSWORD: postgresPW
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.2.0
+        with:
+          # The branch, tag or SHA to checkout, otherwise, uses the default branch.
+          ref: ${{ github.ref }}
+          # Relative path under $GITHUB_WORKSPACE to place the repository
+          path: ""
+          # Whether to execute `git clean -ffdx && git reset --hard HEAD` before fetching
+          # Default: true
+          clean: true
+          # Whether to download Git-LFS files
+          # Default: false
+          lfs: ""
+          # Whether to checkout submodules: `true` to checkout submodules or `recursive` to
+          # recursively checkout submodules.
+          # Default: false
+          submodules: ""
+
+      ################################## Setup Python & Poetry #######################
+      ###############################################################################
+
+      - name: Check Python version
+        run: |
+          python3 --version || python --version
+
+      - name: Install Poetry
+        run: |
+          python3 -m pip install --break-system-packages --ignore-installed poetry || python -m pip install --break-system-packages --ignore-installed poetry
+          poetry --version
+
+      ################################## Install Dependencies #######################
+      ###############################################################################
+
+      - name: Setup virtual environment
+        run: |
+          poetry config virtualenvs.create true --local
+          poetry config virtualenvs.in-project true --local
+
+      - name: Install system dependencies (needed to build psycopg2)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            libpq-dev \
+            gcc \
+            python3-dev \
+            pkg-config
+
+      - name: Install Dependencies
+        run: |
+          poetry install
+
+      ################################## Linting ####################################
+      ###############################################################################
+
+      - name: Run Linting
+        run: |
+          bash scripts/lint.sh
+
+      ################################## Unit Test ##################################
+      ###############################################################################
+
+      - name: Load environment variables from .env.example
+        run: |
+          set -a
+          . $GITHUB_WORKSPACE/.env.example
+          set +a
+          echo "POSTGRES_DB=$POSTGRES_DB" >> $GITHUB_ENV
+          echo "POSTGRES_USER=$POSTGRES_USER" >> $GITHUB_ENV
+          echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" >> $GITHUB_ENV
+          echo "POSTGRES_PORT=5432" >> $GITHUB_ENV
+
+      - name: Wait for PostgreSQL
+        env:
+          POSTGRES_HOST: localhost
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          until pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
+          echo "PostgreSQL is ready!"
+
+      - name: Run Unit Tests
+        env:
+          POSTGRES_HOST: localhost
+        run: |
+          bash scripts/unit-test.sh
+
+  ################################## Send Status for PR Checks ###########################
+  ########################################################################################
+  # This Job is REQUIRED, it is what allows for the WHOLE workflow to show up in the PR status checks as a requirement for branch rules
+  reusable-workflow-ci-status:
+    name: Reusable Workflow CI Status
+    # This should be an array of ALL active jobs that are used/run
+    needs: [checkout-unit-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: report failure
+        if: ${{ cancelled() || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'failure') }}
+        run: |
+          echo -e "\033[31m*** WORKFLOW FAILED ***\033[0m"
+          exit 1
+      - name: report success
+        run: |
+          echo -e "\033[1;36m*** WORKFLOW SUCCESS ***\033[0m"
+          exit 0

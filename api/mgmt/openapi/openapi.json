@@ -1,0 +1,5849 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "ioc-scale-cf-mgmt-svc API",
+    "description": "IoC CFN Management Backend Service API",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/metrics": {
+      "get": {
+        "summary": "Metrics",
+        "description": "Endpoint that serves Prometheus metrics.",
+        "operationId": "metrics_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/env": {
+      "get": {
+        "summary": "Env Var",
+        "operationId": "env_var_env_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cognition-fabric-nodes/register": {
+      "post": {
+        "tags": [
+          "cognition-fabric-nodes"
+        ],
+        "summary": "Create Cfn Node",
+        "description": "Register a new CFN node\n\n- **id**: Persistent CFN identifier (provided by CFN, immutable)\n- **name**: Human-readable CFN name (globally unique, can be updated later)\n- **cfn_config**: Optional current CFN configuration\n\nCFN identifies to the management plane.\nRegistration creates the CFN record without workspace association.\nWorkspace association happens during workspace creation.\n\n**Response includes:**\n- **id**: The CFN identifier\n- **name**: The CFN name\n- **status**: Current status (offline)\n- **config**: Configuration for the CFN to apply locally\n  - cognition_fabric_node: CFN-specific operational settings (non-workspace scoped)\n  - workspaces: Associated workspaces with MAS, cognitive agents, engines\n\nCFN must send heartbeat to change status from offline to online.",
+        "operationId": "create_cfn_node_api_cognition_fabric_nodes_register_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CognitionFabricNodeRegisterRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitionFabricNodeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/cognition-fabric-nodes": {
+      "post": {
+        "tags": [
+          "cognition-fabric-nodes"
+        ],
+        "summary": "Create Cfn Node",
+        "description": "Register a new CFN node\n\n- **id**: Persistent CFN identifier (provided by CFN, immutable)\n- **name**: Human-readable CFN name (globally unique, can be updated later)\n- **cfn_config**: Optional current CFN configuration\n\nCFN identifies to the management plane.\nRegistration creates the CFN record without workspace association.\nWorkspace association happens during workspace creation.\n\n**Response includes:**\n- **id**: The CFN identifier\n- **name**: The CFN name\n- **status**: Current status (offline)\n- **config**: Configuration for the CFN to apply locally\n  - cognition_fabric_node: CFN-specific operational settings (non-workspace scoped)\n  - workspaces: Associated workspaces with MAS, cognitive agents, engines\n\nCFN must send heartbeat to change status from offline to online.",
+        "operationId": "create_cfn_node_api_cognition_fabric_nodes_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CognitionFabricNodeRegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitionFabricNodeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "cognition-fabric-nodes"
+        ],
+        "summary": "List Cfn Nodes",
+        "description": "List all CFN nodes, optionally filtered by workspace\n\n- **workspace_id**: Optional workspace filter\n- **status**: Optional status filter (online, offline, blocked)\n\nReturns all CFN nodes (enabled and disabled). Deleted CFNs are never included.",
+        "operationId": "list_cfn_nodes_api_cognition_fabric_nodes_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by workspace ID",
+              "title": "Workspace Id"
+            },
+            "description": "Filter by workspace ID"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by status (online, offline, blocked)",
+              "title": "Status"
+            },
+            "description": "Filter by status (online, offline, blocked)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitionFabricNodeList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cognition-fabric-nodes/{id}": {
+      "put": {
+        "tags": [
+          "cognition-fabric-nodes"
+        ],
+        "summary": "Update Cfn Node",
+        "description": "Update CFN node information\n\n- **id**: CFN identifier (immutable)\n- **name**: Optional updated CFN name (globally unique)\n- **cfn_config**: Optional updated CFN configuration\n\n**Response includes:**\n- Full CFN details (id, workspace_ids, name, cfn_config, status, last_seen, enabled, timestamps)\n- **config**: Regenerated configuration for the CFN to apply\n  - cognition_fabric_node: CFN-specific operational settings\n  - workspaces: List of workspace details with MAS, cognitive agents, engines\n\nThe config is automatically regenerated with each update to ensure CFN has the latest configuration.",
+        "operationId": "update_cfn_node_api_cognition_fabric_nodes__id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CognitionFabricNodeUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitionFabricNodeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "cognition-fabric-nodes"
+        ],
+        "summary": "Delete Cfn Node",
+        "description": "Delete CFN node (hard delete)\n\n- **id**: CFN identifier\n\n**IMPORTANT:** A CFN must be disabled first before it can be deleted.\n\nDeleting a CFN marks it as deleted in the database and removes all\nworkspace associations. After deletion, the CFN ID can be reused to\ncreate a new CFN node.\n\n**Flow:**\n1. User clicks \"Disable\" in UI \u2192 CFN is disabled (PATCH /disable)\n2. \"Delete\" button appears in UI\n3. User clicks \"Delete\" \u2192 CFN is deleted (DELETE)\n4. CFN ID is now available for reuse\n\nNo response body (204 No Content).",
+        "operationId": "delete_cfn_node_api_cognition_fabric_nodes__id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "cognition-fabric-nodes"
+        ],
+        "summary": "Get Cfn Node",
+        "description": "Get detailed CFN node information\n\n- **id**: CFN identifier\n\nReturns full CFN details including:\n- id, name\n- workspace_ids (all associated workspaces)\n- cfn_config (node-reported configuration)\n- config (aggregated configuration to be applied)\n- status (online, offline)\n- enabled flag (true if CFN can operate, false if disabled)\n- created_at, updated_at, last_seen timestamps\n\nThis endpoint retrieves information for both enabled and disabled CFNs.\nDeleted CFNs will return 404 Not Found.",
+        "operationId": "get_cfn_node_api_cognition_fabric_nodes__id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitionFabricNodeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cognition-fabric-nodes/{id}/enable": {
+      "patch": {
+        "tags": [
+          "cognition-fabric-nodes"
+        ],
+        "summary": "Enable Cfn Node",
+        "description": "Enable a disabled CFN node\n\n- **id**: CFN identifier\n\nThis is an admin operation to re-enable a disabled CFN.\nAfter enabling, the CFN can call /register to reconnect and resume operations.\n\n**Response includes:**\n- Full CFN details with enabled=True and status=offline (until heartbeat is sent)\n- **config**: Configuration for the CFN to apply when it reconnects\n  - cognition_fabric_node: CFN-specific operational settings\n  - workspaces: List of workspace details with MAS, cognitive agents, engines",
+        "operationId": "enable_cfn_node_api_cognition_fabric_nodes__id__enable_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitionFabricNodeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cognition-fabric-nodes/{id}/disable": {
+      "patch": {
+        "tags": [
+          "cognition-fabric-nodes"
+        ],
+        "summary": "Disable Cfn Node",
+        "description": "Disable CFN node (soft disable, prepares for deletion)\n\n- **id**: CFN identifier\n\nDisabling a CFN stops heartbeats and prepares it for deletion.\nThe CFN will no longer be able to send heartbeats.\nThe CFN ID is LOCKED and cannot be reused while in disabled state.\n\nAfter disabling, the \"Delete\" button will appear in the UI.\nThe CFN can be re-enabled using the /enable endpoint, or permanently\ndeleted using the DELETE endpoint.\n\n**Response includes:**\n- Full CFN details with enabled=False\n- **config**: Configuration (preserved from last state)",
+        "operationId": "disable_cfn_node_api_cognition_fabric_nodes__id__disable_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitionFabricNodeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cognition-fabric-nodes/{id}/heartbeat": {
+      "put": {
+        "tags": [
+          "cognition-fabric-nodes"
+        ],
+        "summary": "Cfn Heartbeat",
+        "description": "CFN heartbeat endpoint - updates last_seen timestamp and returns config_version\n\n- **id**: CFN identifier\n\nCFN nodes call this periodically (e.g., every 30 seconds) to indicate they are online.\nReturns the current status, last_seen timestamp, and config_version.\n\nCFN compares the returned config_version with its stored value.\nIf version differs, CFN should call GET /cognition-fabric-nodes/{id} to fetch updated config.\n\nNote: This endpoint requires authentication but not write access.\nDisabled or deleted nodes will receive 403 Forbidden.",
+        "operationId": "cfn_heartbeat_api_cognition_fabric_nodes__id__heartbeat_put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitionFabricNodeHeartbeatResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cognitive-fabric-node/{id}/workspaces": {
+      "get": {
+        "tags": [
+          "cognition-fabric-nodes"
+        ],
+        "summary": "Get Cfn Workspaces Config",
+        "description": "Get aggregated workspace configuration for a CFN node\n\nThis endpoint returns the consolidated configuration document that aggregates\nworkspace-scoped and global resources for the CFN service to apply.\n\n- **id**: CFN identifier\n\nReturns configuration with:\n- **version**: Configuration schema version (0.1.0)\n- **cognition_fabric_node**: List of CFN-specific operational settings (non-workspace scoped)\n- **workspaces**: List of workspaces with their resources:\n  - workspace_id: Workspace identifier\n  - workspace_name: Workspace name\n  - multi_agentic_systems: MAS available in this workspace\n  - cognition_engines: Cognition engines in this workspace (not included for March 2026)\n  - policies: Policies in this workspace (not included for March 2026)",
+        "operationId": "get_cfn_workspaces_config_api_cognitive_fabric_node__id__workspaces_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Get Cfn Workspaces Config Api Cognitive Fabric Node  Id  Workspaces Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cognition-fabric": {
+      "get": {
+        "tags": [
+          "cognition-fabric"
+        ],
+        "summary": "Get Cognition Fabric Topology",
+        "description": "Returns the full Cognition Fabric topology with nested CEs per CFN.",
+        "operationId": "get_cognition_fabric_topology_api_cognition_fabric_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitionFabricTopologyResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/workspaces/create": {
+      "post": {
+        "tags": [
+          "workspaces"
+        ],
+        "summary": "Create Workspace",
+        "description": "Create a new workspace\n\n- **name**: Name of the workspace (required)\n- **cfn_id**: CFN identifier to associate with this workspace (required)\n- **config**: Workspace configuration (optional)\n\nThe workspace is bound to a CFN during creation.\nReturns the UUID of the created workspace",
+        "operationId": "create_workspace_api_workspaces_create_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkspaceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/workspaces": {
+      "get": {
+        "tags": [
+          "workspaces"
+        ],
+        "summary": "List Workspaces",
+        "description": "List workspaces accessible to the user\n\nUsers see only workspaces they are members of. Super admins (future) see all workspaces.",
+        "operationId": "list_workspaces_api_workspaces_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceList"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/workspaces/list": {
+      "get": {
+        "tags": [
+          "workspaces"
+        ],
+        "summary": "List Workspaces",
+        "description": "List workspaces accessible to the user\n\nUsers see only workspaces they are members of. Super admins (future) see all workspaces.",
+        "operationId": "list_workspaces_api_workspaces_list_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceList"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/workspaces/{workspace_id}": {
+      "get": {
+        "tags": [
+          "workspaces"
+        ],
+        "summary": "Get Workspace",
+        "description": "Get a specific workspace by ID\n\n- **workspace_id**: UUID of the workspace\n\nReturns detailed workspace information if user has access",
+        "operationId": "get_workspace_api_workspaces__workspace_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "workspaces"
+        ],
+        "summary": "Update Workspace",
+        "description": "Update a workspace\n\n- **workspace_id**: UUID of the workspace\n- **name**: New name for the workspace (optional)\n- **cfn_id**: Reassign workspace to a different CFN (optional)\n\nReturns the updated workspace details if user has access",
+        "operationId": "update_workspace_api_workspaces__workspace_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkspaceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "workspaces"
+        ],
+        "summary": "Delete Workspace",
+        "description": "Delete a workspace\n\n- **workspace_id**: UUID of the workspace\n\nPerforms a soft delete. Returns success message if user has access",
+        "operationId": "delete_workspace_api_workspaces__workspace_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspace_id}/multi-agentic-systems": {
+      "post": {
+        "tags": [
+          "multi-agentic-systems"
+        ],
+        "summary": "Create Multi Agentic System",
+        "description": "Create a new Multi-Agentic System (MAS) within a workspace\n\n- **workspace_id**: UUID of the workspace\n- **name**: Unique name within the workspace for the MAS\n- **description**: Optional description of the MAS\n- **agents**: Optional configuration of agents in the system\n- **config**: Optional configuration for managing long-term memories\n\nReturns the UUID and name of the created MAS",
+        "operationId": "create_multi_agentic_system_api_workspaces__workspace_id__multi_agentic_systems_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MultiAgenticSystemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MultiAgenticSystemResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "multi-agentic-systems"
+        ],
+        "summary": "List Multi Agentic Systems",
+        "description": "List all Multi-Agentic Systems in a workspace\n\n- **workspace_id**: UUID of the workspace\n\nReturns list of MAS in the workspace",
+        "operationId": "list_multi_agentic_systems_api_workspaces__workspace_id__multi_agentic_systems_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MultiAgenticSystems"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspace_id}/multi-agentic-systems/query": {
+      "post": {
+        "tags": [
+          "multi-agentic-systems"
+        ],
+        "summary": "Query Multi Agentic Systems By Identity",
+        "description": "Query Multi-Agentic Systems that have agents with claude identity matching the given identifiers.\n\n- **workspace_id**: UUID of the workspace\n- **identity_identifiers**: Key-value pairs to match against agent identity_identifiers (e.g. {\"xyz\": \"pqr\"})\n\nReturns list of MAS containing agents with identity_type 'claude' and matching identity_identifiers.",
+        "operationId": "query_multi_agentic_systems_by_identity_api_workspaces__workspace_id__multi_agentic_systems_query_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MASQueryByIdentity"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MultiAgenticSystems"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}": {
+      "get": {
+        "tags": [
+          "multi-agentic-systems"
+        ],
+        "summary": "Get Multi Agentic System",
+        "description": "Get a specific Multi-Agentic System by ID\n\n- **workspace_id**: UUID of the workspace\n- **mas_id**: UUID of the multi-agentic system\n\nReturns detailed MAS information",
+        "operationId": "get_multi_agentic_system_api_workspaces__workspace_id__multi_agentic_systems__mas_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          },
+          {
+            "name": "mas_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mas Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MultiAgenticSystem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "multi-agentic-systems"
+        ],
+        "summary": "Update Multi Agentic System",
+        "description": "Update a Multi-Agentic System\n\n- **workspace_id**: UUID of the workspace\n- **mas_id**: UUID of the multi-agentic system to update\n- **name**: Updated name for the MAS (optional)\n- **description**: Updated description (optional)\n- **agents**: Updated agent configuration (optional)\n- **config**: Updated configuration (optional)\n\nReturns the updated MAS details",
+        "operationId": "update_multi_agentic_system_api_workspaces__workspace_id__multi_agentic_systems__mas_id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          },
+          {
+            "name": "mas_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mas Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MultiAgenticSystemUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MultiAgenticSystem"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "multi-agentic-systems"
+        ],
+        "summary": "Delete Multi Agentic System",
+        "description": "Delete a Multi-Agentic System\n\n- **workspace_id**: UUID of the workspace\n- **mas_id**: UUID of the multi-agentic system to delete\n- **_purge**: Optional query parameter. If false (default), performs soft delete. If true, performs hard delete.\n\nReturns success message",
+        "operationId": "delete_multi_agentic_system_api_workspaces__workspace_id__multi_agentic_systems__mas_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          },
+          {
+            "name": "mas_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mas Id"
+            }
+          },
+          {
+            "name": "_purge",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": " Purge"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}/cognition-engines": {
+      "post": {
+        "tags": [
+          "multi-agentic-systems"
+        ],
+        "summary": "Associate CE with MAS",
+        "description": "Add a Cognition Engine to a Multi-Agentic System. The CE's CFN must match the workspace's CFN.",
+        "operationId": "associate_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          },
+          {
+            "name": "mas_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mas Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MasCognitionEngineAssociateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitionEngineAssociateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workspaces/{workspace_id}/multi-agentic-systems/{mas_id}/cognition-engines/{ce_id}": {
+      "patch": {
+        "tags": [
+          "multi-agentic-systems"
+        ],
+        "summary": "Update CE mas_config for a specific MAS",
+        "description": "Override the mas_config for a single CE-MAS association.",
+        "operationId": "patch_mas_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines__ce_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          },
+          {
+            "name": "mas_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mas Id"
+            }
+          },
+          {
+            "name": "ce_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ce Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MasCognitionEnginePatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "multi-agentic-systems"
+        ],
+        "summary": "Disassociate CE from MAS",
+        "description": "Remove a Cognition Engine from a Multi-Agentic System.",
+        "operationId": "disassociate_cognition_engine_api_workspaces__workspace_id__multi_agentic_systems__mas_id__cognition_engines__ce_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "workspace_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Workspace Id"
+            }
+          },
+          {
+            "name": "mas_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Mas Id"
+            }
+          },
+          {
+            "name": "ce_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ce Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cognition-engines": {
+      "post": {
+        "tags": [
+          "cognition-engines"
+        ],
+        "summary": "Register Cognition Engine",
+        "description": "Register a new Cognition Engine with a CFN. Returns 409 Conflict if CE with same (cfn_id, name, version) already exists. The 409 response includes existing_ce_id for recovery via PUT. Same name with a different version creates a new CE record.",
+        "operationId": "register_cognition_engine_api_cognition_engines_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CognitionEngineRegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitionEngineResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "CE created successfully"
+          },
+          "409": {
+            "description": "CE with same (name, version) already exists"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "cognition-engines"
+        ],
+        "summary": "List Cognition Engines",
+        "description": "List cognition engines, optionally filtered by cfn_id and/or status.",
+        "operationId": "list_cognition_engines_api_cognition_engines_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cfn_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by CFN ID",
+              "title": "Cfn Id"
+            },
+            "description": "Filter by CFN ID"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by status: 'online' or 'offline'",
+              "title": "Status"
+            },
+            "description": "Filter by status: 'online' or 'offline'"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitionEngineList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cognition-engines/{ce_id}": {
+      "get": {
+        "tags": [
+          "cognition-engines"
+        ],
+        "summary": "Get Cognition Engine",
+        "description": "Get details of a specific cognition engine.",
+        "operationId": "get_cognition_engine_api_cognition_engines__ce_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "ce_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ce Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitionEngineDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "cognition-engines"
+        ],
+        "summary": "Update Cognition Engine",
+        "description": "Partially update a Cognition Engine. Immutable fields (cfn_id, version, name, kind, subkind) cannot be updated \u2014 returns 400 if attempted.",
+        "operationId": "patch_cognition_engine_api_cognition_engines__ce_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "ce_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ce Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CognitionEnginePatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CognitionEngineDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "cognition-engines"
+        ],
+        "summary": "Deregister Cognition Engine",
+        "description": "Soft-delete (deregister) a cognition engine.",
+        "operationId": "delete_cognition_engine_api_cognition_engines__ce_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "ce_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Ce Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audit-events/": {
+      "get": {
+        "tags": [
+          "audit-events"
+        ],
+        "summary": "List CFN Audit Events",
+        "description": "Retrieve a paginated list of audit events from ioc-cfn-svc. Supports optional filtering by `resource_type`, `audit_type`, `outcome`, `decision` and `success`, before pagination. CFN dispositions use CE_INVOKED for Evaluate attempts or CE_NOT_INVOKED for earlier failures; Proxy records use PROXY_MEDIATED. Canonical outcome filters all producers. source identifies the producer; success describes the whole operation, independently of a policy ALLOW/DENY. Filters require support in the upstream CFN version.",
+        "operationId": "list_audit_events_api_audit_events__get",
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "0-based page number",
+              "default": 0,
+              "title": "Page"
+            },
+            "description": "0-based page number"
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of records per page. Defaults to DEFAULT_PAGE_SIZE env var (fallback 20). Clamped to MAX_PAGE_SIZE env var (fallback 100).",
+              "title": "Pagesize"
+            },
+            "description": "Number of records per page. Defaults to DEFAULT_PAGE_SIZE env var (fallback 20). Clamped to MAX_PAGE_SIZE env var (fallback 100)."
+          },
+          {
+            "name": "resource_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by resource type (COGNITION_ENGINE or ENFORCEMENT_PROXY)",
+              "title": "Resource Type"
+            },
+            "description": "Filter by resource type (COGNITION_ENGINE or ENFORCEMENT_PROXY)"
+          },
+          {
+            "name": "audit_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by audit type (CE_INVOKED, CE_NOT_INVOKED or PROXY_MEDIATED; requires upgraded CFN)",
+              "title": "Audit Type"
+            },
+            "description": "Filter by audit type (CE_INVOKED, CE_NOT_INVOKED or PROXY_MEDIATED; requires upgraded CFN)"
+          },
+          {
+            "name": "decision",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "allow",
+                    "block",
+                    "modify"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Legacy alias for canonical ALLOW, BLOCK or MODIFY_REQUESTED across producers. Requires upgraded CFN.",
+              "title": "Decision"
+            },
+            "description": "Legacy alias for canonical ALLOW, BLOCK or MODIFY_REQUESTED across producers. Requires upgraded CFN."
+          },
+          {
+            "name": "success",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Whole-flow status: true for success, false for failure. A completed policy block is successful.",
+              "title": "Success"
+            },
+            "description": "Whole-flow status: true for success, false for failure. A completed policy block is successful."
+          },
+          {
+            "name": "outcome",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "ALLOW",
+                    "BLOCK",
+                    "MODIFY_REQUESTED",
+                    "ERROR",
+                    "DEGRADED",
+                    "UNSUPPORTED",
+                    "UNKNOWN"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Canonical outcome across all producers; requires upgraded CFN.",
+              "title": "Outcome"
+            },
+            "description": "Canonical outcome across all producers; requires upgraded CFN."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of audit events returned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditCfnEventListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid pagination or an unsupported upstream resource/event type"
+          },
+          "500": {
+            "description": "Internal server error while querying ioc-cfn-svc"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audit-events/{eventId}": {
+      "get": {
+        "tags": [
+          "audit-events"
+        ],
+        "summary": "Get CFN Audit Event by ID",
+        "description": "Retrieve a single audit event from ioc-cfn-svc by its UUID.",
+        "operationId": "get_audit_event_api_audit_events__eventId__get",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Eventid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit event returned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuditCfnEventResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid event ID"
+          },
+          "404": {
+            "description": "Audit event not found"
+          },
+          "500": {
+            "description": "Internal server error while querying ioc-cfn-svc"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AgentConfig": {
+        "properties": {
+          "agent_descriptions": {
+            "items": {
+              "$ref": "#/components/schemas/AgentDescription"
+            },
+            "type": "array",
+            "title": "Agent Descriptions"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id",
+            "description": "Runtime agent identifier, unique within the MAS; generated if omitted"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Human-readable agent name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Agent description (used for governance integrity checks)"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url",
+            "description": "Agent endpoint URL"
+          },
+          "identity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentIdentity"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Identity provider configuration"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config",
+            "description": "Agent-specific configuration"
+          }
+        },
+        "type": "object",
+        "title": "AgentConfig",
+        "description": "Schema for individual agent configuration in MAS (input)"
+      },
+      "AgentDescription": {
+        "properties": {
+          "content": {
+            "title": "Content"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "media_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Type"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "spec_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spec Version"
+          },
+          "schema_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schema Version"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "format"
+        ],
+        "title": "AgentDescription"
+      },
+      "AgentDescriptionRead": {
+        "properties": {
+          "content": {
+            "title": "Content"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "media_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Type"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          },
+          "collected_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Collected At"
+          },
+          "content_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Hash"
+          },
+          "resolution_state": {
+            "type": "string",
+            "enum": [
+              "inline",
+              "unresolved"
+            ],
+            "title": "Resolution State"
+          },
+          "format": {
+            "type": "string",
+            "title": "Format"
+          },
+          "spec_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spec Version"
+          },
+          "schema_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schema Version"
+          },
+          "support_state": {
+            "type": "string",
+            "enum": [
+              "supported",
+              "unsupported"
+            ],
+            "title": "Support State"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "collected_at",
+          "resolution_state",
+          "format",
+          "support_state"
+        ],
+        "title": "AgentDescriptionRead"
+      },
+      "AgentDetail": {
+        "properties": {
+          "agent_descriptions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AgentDescriptionRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Descriptions"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "cf_agent_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Cf Agent Id",
+            "description": "Immutable CF-generated storage identifier for this agent",
+            "readOnly": true
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id",
+            "description": "Runtime agent identifier, unique within the MAS"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Human-readable agent name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Agent description (used for governance integrity checks)"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url",
+            "description": "Agent endpoint URL"
+          },
+          "identity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AgentIdentity"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Identity provider configuration"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config",
+            "description": "Agent-specific configuration"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cf_agent_id",
+          "agent_id"
+        ],
+        "title": "AgentDetail",
+        "description": "Schema for agent details (output)"
+      },
+      "AgentIdentity": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "description": "Identity provider type (e.g. openclaw, claude_code, or any custom type)"
+          },
+          "identifiers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Identifiers",
+            "description": "Provider-specific identifiers (varies by type)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "identifiers"
+        ],
+        "title": "AgentIdentity",
+        "description": "Schema for agent identity provider configuration"
+      },
+      "AuditCfnEventListResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AuditCfnEventResponse"
+            },
+            "type": "array",
+            "title": "Data",
+            "description": "List of audit events"
+          },
+          "pageInfo": {
+            "$ref": "#/components/schemas/AuditCfnPageInfo",
+            "description": "Pagination metadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data",
+          "pageInfo"
+        ],
+        "title": "AuditCfnEventListResponse",
+        "description": "Paginated list response matching the upstream cfn-svc shape."
+      },
+      "AuditCfnEventResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id",
+            "description": "Unique audit event ID (UUID)"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source",
+            "description": "Original audit producer, e.g. CFN or PROXY; absent from older CFN versions"
+          },
+          "success": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success",
+            "description": "Whether the entire audited operation completed without an operational error; a completed policy DENY/BLOCK is successful"
+          },
+          "operation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Operation Id",
+            "description": "Operation identifier"
+          },
+          "outcome": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outcome",
+            "description": "Canonical result across producers: ALLOW, BLOCK, MODIFY_REQUESTED, ERROR, DEGRADED, UNSUPPORTED or UNKNOWN; absent from older records/CFN"
+          },
+          "resource_type": {
+            "type": "string",
+            "title": "Resource Type",
+            "description": "Type of the resource (e.g. COGNITION_ENGINE or ENFORCEMENT_PROXY)"
+          },
+          "resource_identifier": {
+            "type": "string",
+            "title": "Resource Identifier",
+            "description": "Selected CE ID for CFN dispositions; empty if no CE was selected or for Proxy records"
+          },
+          "audit_type": {
+            "type": "string",
+            "title": "Audit Type",
+            "description": "CFN dispositions use CE_INVOKED when Evaluate was attempted, CE_NOT_INVOKED for an earlier failure; Proxy records use PROXY_MEDIATED"
+          },
+          "audit_resource_identifier": {
+            "type": "string",
+            "title": "Audit Resource Identifier",
+            "description": "MAS association for CFN and Proxy records; empty if missing or too long; full Proxy MAS ID remains in audit_information"
+          },
+          "audit_information": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audit Information",
+            "description": "JSONB audit event details"
+          },
+          "audit_extra_information": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audit Extra Information",
+            "description": "Additional information as text"
+          },
+          "created_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Created By",
+            "description": "UUID of the user who created the event"
+          },
+          "created_on": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created On",
+            "description": "Timestamp when the event was created"
+          },
+          "last_modified_by": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Last Modified By",
+            "description": "UUID of the user who last modified the event"
+          },
+          "last_modified_on": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Modified On",
+            "description": "Timestamp when the event was last modified"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "resource_type",
+          "resource_identifier",
+          "audit_type",
+          "audit_resource_identifier",
+          "created_by",
+          "created_on",
+          "last_modified_by",
+          "last_modified_on"
+        ],
+        "title": "AuditCfnEventResponse",
+        "description": "Response model for CFN audit events from cfn_cp database."
+      },
+      "AuditCfnPageInfo": {
+        "properties": {
+          "page": {
+            "type": "integer",
+            "title": "Page",
+            "description": "Current 0-based page number"
+          },
+          "pageSize": {
+            "type": "integer",
+            "title": "Pagesize",
+            "description": "Requested page size"
+          },
+          "pageCount": {
+            "type": "integer",
+            "title": "Pagecount",
+            "description": "Number of elements returned in this page"
+          },
+          "totalElements": {
+            "type": "integer",
+            "title": "Totalelements",
+            "description": "Total number of matching records across all pages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "page",
+          "pageSize",
+          "pageCount",
+          "totalElements"
+        ],
+        "title": "AuditCfnPageInfo",
+        "description": "Pagination metadata matching the upstream cfn-svc response."
+      },
+      "CEType": {
+        "type": "string",
+        "enum": [
+          "CASA",
+          "DETECTIVE"
+        ],
+        "title": "CEType",
+        "description": "Type of Cognition Engine.\n\n- CASA: Gateway CE for L9 enforcement\n- DETECTIVE: Detective CE for investigation/analysis"
+      },
+      "CognitionEngineAssociateResponse": {
+        "properties": {
+          "ce_id": {
+            "type": "string",
+            "title": "Ce Id"
+          },
+          "mas_id": {
+            "type": "string",
+            "title": "Mas Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ce_id",
+          "mas_id",
+          "created_at"
+        ],
+        "title": "CognitionEngineAssociateResponse",
+        "description": "Schema for CE-MAS association response"
+      },
+      "CognitionEngineDetail": {
+        "properties": {
+          "enforcing_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Url"
+          },
+          "enforcing_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Endpoint"
+          },
+          "enforcing_protocol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Protocol"
+          },
+          "health_url": {
+            "type": "string",
+            "title": "Health Url"
+          },
+          "health_endpoint": {
+            "type": "string",
+            "title": "Health Endpoint"
+          },
+          "health_protocol": {
+            "type": "string",
+            "title": "Health Protocol"
+          },
+          "notification_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Url"
+          },
+          "notification_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Endpoint"
+          },
+          "notification_protocol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Protocol"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "cfn_id": {
+            "type": "string",
+            "title": "Cfn Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "ce_type": {
+            "$ref": "#/components/schemas/CEType"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "mas_auto_associate": {
+            "type": "boolean",
+            "title": "Mas Auto Associate"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "last_seen": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen"
+          },
+          "mas_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mas Config"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "health_url",
+          "health_endpoint",
+          "health_protocol",
+          "id",
+          "cfn_id",
+          "name",
+          "version",
+          "ce_type",
+          "enabled",
+          "mas_auto_associate",
+          "status",
+          "last_seen",
+          "mas_config",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "CognitionEngineDetail",
+        "description": "Schema for detailed cognition engine information"
+      },
+      "CognitionEngineList": {
+        "properties": {
+          "cognition_engines": {
+            "items": {
+              "$ref": "#/components/schemas/CognitionEngineListItem"
+            },
+            "type": "array",
+            "title": "Cognition Engines"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cognition_engines",
+          "total"
+        ],
+        "title": "CognitionEngineList",
+        "description": "Schema for cognition engine list response"
+      },
+      "CognitionEngineListItem": {
+        "properties": {
+          "enforcing_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Url"
+          },
+          "enforcing_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Endpoint"
+          },
+          "enforcing_protocol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Protocol"
+          },
+          "health_url": {
+            "type": "string",
+            "title": "Health Url"
+          },
+          "health_endpoint": {
+            "type": "string",
+            "title": "Health Endpoint"
+          },
+          "health_protocol": {
+            "type": "string",
+            "title": "Health Protocol"
+          },
+          "notification_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Url"
+          },
+          "notification_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Endpoint"
+          },
+          "notification_protocol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Protocol"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "cfn_id": {
+            "type": "string",
+            "title": "Cfn Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "ce_type": {
+            "$ref": "#/components/schemas/CEType"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "mas_auto_associate": {
+            "type": "boolean",
+            "title": "Mas Auto Associate"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "last_seen": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen"
+          },
+          "mas_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mas Config"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "health_url",
+          "health_endpoint",
+          "health_protocol",
+          "id",
+          "cfn_id",
+          "name",
+          "version",
+          "ce_type",
+          "enabled",
+          "mas_auto_associate",
+          "status",
+          "last_seen",
+          "mas_config",
+          "created_at"
+        ],
+        "title": "CognitionEngineListItem",
+        "description": "Schema for a cognition engine in the list response"
+      },
+      "CognitionEnginePatchRequest": {
+        "properties": {
+          "enforcing_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Url",
+            "description": "gRPC address CFN sends enforcement requests to. Send null to clear"
+          },
+          "enforcing_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Endpoint",
+            "description": "gRPC service name for enforcement. Send null to clear"
+          },
+          "enforcing_protocol": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "grpc"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Protocol",
+            "description": "Enforcement protocol"
+          },
+          "health_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512,
+                "pattern": "^https?://\\S+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Url",
+            "description": "URL CFN probes with an HTTP GET to check liveness"
+          },
+          "health_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Endpoint",
+            "description": "Health probe path. Must start with '/'"
+          },
+          "health_protocol": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "http"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health Protocol",
+            "description": "Health probe protocol"
+          },
+          "notification_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Url",
+            "description": "Base URL for lifecycle event notifications. Send null to clear"
+          },
+          "notification_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Endpoint",
+            "description": "Path appended to notification_url. Must start with '/'. Send null to clear"
+          },
+          "notification_protocol": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "http"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Protocol",
+            "description": "Notification protocol"
+          },
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled",
+            "description": "Enable or disable the CE"
+          },
+          "mas_auto_associate": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mas Auto Associate",
+            "description": "Enable or disable auto-association to new MAS"
+          },
+          "cfn_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cfn Id",
+            "description": "Immutable \u2014 cannot be updated via PATCH"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Immutable \u2014 cannot be updated via PATCH"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version",
+            "description": "Immutable \u2014 cannot be updated via PATCH"
+          },
+          "ce_type": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CEType"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Immutable \u2014 cannot be updated via PATCH"
+          }
+        },
+        "type": "object",
+        "title": "CognitionEnginePatchRequest",
+        "description": "Schema for PATCH /cognition-engines/{id}.\n\nOnly the fields listed here can be updated.\nAttempting to update immutable fields (cfn_id, name, version, ce_type)\nwill be rejected with 400."
+      },
+      "CognitionEngineRegisterRequest": {
+        "properties": {
+          "cfn_id": {
+            "type": "string",
+            "title": "Cfn Id",
+            "description": "CFN this engine is registering under"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "CE name (e.g., 'demo-ce')"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version",
+            "description": "CE version (e.g., '1.0.0')"
+          },
+          "ce_type": {
+            "$ref": "#/components/schemas/CEType",
+            "description": "Type of Cognition Engine: CASA or DETECTIVE"
+          },
+          "enforcing_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Url",
+            "description": "gRPC address CFN sends enforcement requests to (e.g., 'demo-ce:50051'). Optional"
+          },
+          "enforcing_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Endpoint",
+            "description": "gRPC service name (e.g., 'ioc.ce.v1.CognitionEngine'). Required when enforcing_url is set."
+          },
+          "enforcing_protocol": {
+            "type": "string",
+            "const": "grpc",
+            "title": "Enforcing Protocol",
+            "description": "Enforcement protocol",
+            "default": "grpc"
+          },
+          "health_url": {
+            "type": "string",
+            "maxLength": 512,
+            "pattern": "^https?://\\S+$",
+            "title": "Health Url",
+            "description": "URL CFN probes with an HTTP GET to check liveness (e.g., 'http://demo-ce:8080/healthz')"
+          },
+          "health_endpoint": {
+            "type": "string",
+            "title": "Health Endpoint",
+            "description": "Health probe path (e.g., '/healthz'). Must start with '/'."
+          },
+          "health_protocol": {
+            "type": "string",
+            "const": "http",
+            "title": "Health Protocol",
+            "description": "Health probe protocol",
+            "default": "http"
+          },
+          "mas_auto_associate": {
+            "type": "boolean",
+            "title": "Mas Auto Associate",
+            "description": "If true, CE is auto-associated with all MAS under the same CFN's workspaces",
+            "default": false
+          },
+          "mas_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mas Config",
+            "description": "Factory defaults for per-MAS configuration (e.g. schedule). Copied to each MAS on association and overridable per MAS."
+          },
+          "notification_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Url",
+            "description": "Webhook base URL for MAS lifecycle notifications"
+          },
+          "notification_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Endpoint",
+            "description": "Path appended to notification_url (e.g., '/notifications'). Must start with '/'."
+          },
+          "notification_protocol": {
+            "type": "string",
+            "const": "http",
+            "title": "Notification Protocol",
+            "description": "Notification protocol",
+            "default": "http"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cfn_id",
+          "name",
+          "version",
+          "ce_type",
+          "health_url",
+          "health_endpoint"
+        ],
+        "title": "CognitionEngineRegisterRequest",
+        "description": "Schema for CE self-registration.\n\nPOST behavior:\n- If (cfn_id, name, version) exists: returns 409 Conflict with existing_ce_id\n- If (cfn_id, name) exists with different version: creates new CE record\n- Otherwise: creates new CE record"
+      },
+      "CognitionEngineResponse": {
+        "properties": {
+          "enforcing_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Url"
+          },
+          "enforcing_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Endpoint"
+          },
+          "enforcing_protocol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Protocol"
+          },
+          "health_url": {
+            "type": "string",
+            "title": "Health Url"
+          },
+          "health_endpoint": {
+            "type": "string",
+            "title": "Health Endpoint"
+          },
+          "health_protocol": {
+            "type": "string",
+            "title": "Health Protocol"
+          },
+          "notification_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Url"
+          },
+          "notification_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Endpoint"
+          },
+          "notification_protocol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Protocol"
+          },
+          "ce_id": {
+            "type": "string",
+            "title": "Ce Id"
+          },
+          "cfn_id": {
+            "type": "string",
+            "title": "Cfn Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "ce_type": {
+            "$ref": "#/components/schemas/CEType"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "mas_auto_associate": {
+            "type": "boolean",
+            "title": "Mas Auto Associate"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created": {
+            "type": "boolean",
+            "title": "Created",
+            "description": "True if new registration, False if existing record was updated"
+          }
+        },
+        "type": "object",
+        "required": [
+          "health_url",
+          "health_endpoint",
+          "health_protocol",
+          "ce_id",
+          "cfn_id",
+          "name",
+          "version",
+          "ce_type",
+          "enabled",
+          "mas_auto_associate",
+          "status",
+          "created"
+        ],
+        "title": "CognitionEngineResponse",
+        "description": "Schema for CE registration response"
+      },
+      "CognitionFabricNodeHeartbeatResponse": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/CognitionFabricNodeStatus",
+            "description": "Current node status"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen",
+            "description": "Last heartbeat timestamp"
+          },
+          "config_version": {
+            "type": "integer",
+            "title": "Config Version",
+            "description": "Monotonic config version for change detection"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "last_seen",
+          "config_version"
+        ],
+        "title": "CognitionFabricNodeHeartbeatResponse",
+        "description": "Schema for heartbeat response",
+        "example": {
+          "config_version": 5,
+          "last_seen": "2026-01-30T12:34:56Z",
+          "status": "online"
+        }
+      },
+      "CognitionFabricNodeList": {
+        "properties": {
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/CognitionFabricNodeListItem"
+            },
+            "type": "array",
+            "title": "Nodes",
+            "description": "List of Cognition Fabric Nodes"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "description": "Total number of Cognition Fabric Nodes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nodes",
+          "total"
+        ],
+        "title": "CognitionFabricNodeList",
+        "description": "Schema for listing Cognition Fabric Nodes",
+        "example": {
+          "nodes": [
+            {
+              "created_at": "2026-01-30T10:00:00Z",
+              "enabled": true,
+              "id": "cfn-persistent-id-123",
+              "last_seen": "2026-01-30T12:34:56Z",
+              "name": "cfn-node-prod-1",
+              "status": "online",
+              "workspace_ids": [
+                "workspace-uuid-1"
+              ]
+            }
+          ],
+          "total": 1
+        }
+      },
+      "CognitionFabricNodeListItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Cognition Fabric Node identifier"
+          },
+          "workspace_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Workspace Ids",
+            "description": "Associated workspace identifiers"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Cognition Fabric Node name"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CognitionFabricNodeStatus",
+            "description": "Current node status"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen",
+            "description": "Last heartbeat timestamp"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Whether node is enabled"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address",
+            "description": "Node IP address"
+          },
+          "port": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port",
+            "description": "Node port"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "last_seen",
+          "enabled",
+          "created_at"
+        ],
+        "title": "CognitionFabricNodeListItem",
+        "description": "Schema for Cognition Fabric Node in list view",
+        "example": {
+          "created_at": "2026-01-30T10:00:00Z",
+          "enabled": true,
+          "id": "cfn-persistent-id-123",
+          "last_seen": "2026-01-30T12:34:56Z",
+          "name": "cfn-node-prod-1",
+          "status": "online",
+          "workspace_ids": [
+            "workspace-uuid-1"
+          ]
+        }
+      },
+      "CognitionFabricNodeRegisterRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "description": "Human-readable CFN name (unique identifier)"
+          },
+          "cfn_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cfn Config",
+            "description": "CFN configuration used by the node"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 45
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address",
+            "description": "IP address of the CFN node"
+          },
+          "port": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 65535.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port",
+            "description": "Port number of the CFN node"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "CognitionFabricNodeRegisterRequest",
+        "description": "Schema for Cognition Fabric Node registration request",
+        "example": {
+          "cfn_config": {
+            "log_level": "info"
+          },
+          "ip_address": "192.168.1.100",
+          "name": "cfn-node-prod-1",
+          "port": 8080
+        }
+      },
+      "CognitionFabricNodeResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Cognition Fabric Node identifier"
+          },
+          "workspace_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Workspace Ids",
+            "description": "Associated workspace identifiers"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Cognition Fabric Node name"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config",
+            "description": "Aggregated configuration including cfn_config"
+          },
+          "status": {
+            "$ref": "#/components/schemas/CognitionFabricNodeStatus",
+            "description": "Current node status"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen",
+            "description": "Last heartbeat timestamp"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "description": "Whether node is enabled"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address",
+            "description": "IP address of the CFN node"
+          },
+          "port": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port",
+            "description": "Port number of the CFN node"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At",
+            "description": "Creation timestamp"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At",
+            "description": "Last update timestamp"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By",
+            "description": "Creator user ID"
+          },
+          "updated_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated By",
+            "description": "Last updater user ID"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "last_seen",
+          "enabled",
+          "created_at"
+        ],
+        "title": "CognitionFabricNodeResponse",
+        "description": "Schema for Cognition Fabric Node response (common response format)",
+        "example": {
+          "config": {
+            "workspaces": []
+          },
+          "created_at": "2026-02-19T19:46:49.102012Z",
+          "created_by": "00000000-0000-0000-0000-000000000000",
+          "enabled": true,
+          "id": "cfn-persistent-id-123",
+          "last_seen": "2026-02-19T19:46:49.185773Z",
+          "name": "cfn-node-prod-1",
+          "status": "offline",
+          "updated_at": "2026-02-19T19:46:49.102012Z",
+          "workspace_ids": []
+        }
+      },
+      "CognitionFabricNodeStatus": {
+        "type": "string",
+        "enum": [
+          "online",
+          "offline"
+        ],
+        "title": "CognitionFabricNodeStatus",
+        "description": "Cognition Fabric Node status enumeration"
+      },
+      "CognitionFabricNodeTopology": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "workspace_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Workspace Ids"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Last Seen"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address"
+          },
+          "port": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "cognition_engines": {
+            "items": {
+              "$ref": "#/components/schemas/CognitionEngineListItem"
+            },
+            "type": "array",
+            "title": "Cognition Engines"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "status",
+          "enabled",
+          "last_seen",
+          "created_at"
+        ],
+        "title": "CognitionFabricNodeTopology",
+        "description": "A CFN node with its nested cognition engines"
+      },
+      "CognitionFabricNodeUpdateRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Updated CFN name"
+          },
+          "cfn_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cfn Config",
+            "description": "Updated CFN configuration"
+          },
+          "ip_address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 45
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ip Address",
+            "description": "Updated IP address of the CFN node"
+          },
+          "port": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 65535.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Port",
+            "description": "Updated port number of the CFN node"
+          }
+        },
+        "type": "object",
+        "title": "CognitionFabricNodeUpdateRequest",
+        "description": "Schema for updating Cognition Fabric Node",
+        "example": {
+          "cfn_config": {
+            "log_level": "debug"
+          },
+          "ip_address": "192.168.1.101",
+          "name": "cfn-node-prod-1-updated",
+          "port": 8081
+        }
+      },
+      "CognitionFabricTopologyResponse": {
+        "properties": {
+          "cognition_fabric_nodes": {
+            "items": {
+              "$ref": "#/components/schemas/CognitionFabricNodeTopology"
+            },
+            "type": "array",
+            "title": "Cognition Fabric Nodes"
+          },
+          "counts": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Counts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cognition_fabric_nodes",
+          "counts"
+        ],
+        "title": "CognitionFabricTopologyResponse",
+        "description": "Aggregated view of the entire Cognition Fabric topology"
+      },
+      "DocumentRead": {
+        "properties": {
+          "content": {
+            "title": "Content"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "media_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Type"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          },
+          "collected_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Collected At"
+          },
+          "content_hash": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Content Hash"
+          },
+          "resolution_state": {
+            "type": "string",
+            "enum": [
+              "inline",
+              "unresolved"
+            ],
+            "title": "Resolution State"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "required": [
+          "collected_at",
+          "resolution_state"
+        ],
+        "title": "DocumentRead"
+      },
+      "DocumentSnapshot": {
+        "properties": {
+          "content": {
+            "title": "Content"
+          },
+          "source_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Url"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "media_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Media Type"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "DocumentSnapshot"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "MASQueryByIdentity": {
+        "properties": {
+          "identity_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identity Type",
+            "description": "Identity provider type to filter by (e.g. 'claude', 'openclaw')"
+          },
+          "identity_identifiers": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Identity Identifiers",
+            "description": "Identity identifiers to match against agent identity_identifiers (e.g. {\"xyz\": \"pqr\"})"
+          }
+        },
+        "type": "object",
+        "title": "MASQueryByIdentity",
+        "description": "Schema for querying MAS by agent identity type and/or identifiers"
+      },
+      "MCPServerConfig": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "MCP server name"
+          },
+          "transport": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transport",
+            "description": "Transport type (e.g. 'stdio', 'sse')"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "MCP server description"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MCPToolConfig"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "List of tools provided by this MCP server"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config",
+            "description": "MCP server-specific configuration"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "MCPServerConfig",
+        "description": "Schema for MCP server configuration (input)"
+      },
+      "MCPServerDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier for the MCP server"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "MCP server name"
+          },
+          "transport": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transport",
+            "description": "Transport type (e.g. 'stdio', 'sse')"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "MCP server description"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MCPToolDetail"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools",
+            "description": "List of tools provided by this MCP server"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config",
+            "description": "MCP server-specific configuration"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "MCPServerDetail",
+        "description": "Schema for MCP server details (output)"
+      },
+      "MCPToolConfig": {
+        "properties": {
+          "definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "protocol_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Version"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Tool name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Tool description (used for governance integrity checks)"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters",
+            "description": "JSON Schema for tool parameters"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "MCPToolConfig",
+        "description": "Schema for MCP tool configuration (input)"
+      },
+      "MCPToolDetail": {
+        "properties": {
+          "definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "source_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Snapshot"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SnapshotProvenanceRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Version"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier for the tool"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Tool name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Tool description (used for governance integrity checks)"
+          },
+          "parameters": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parameters",
+            "description": "JSON Schema for tool parameters"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "MCPToolDetail",
+        "description": "Schema for MCP tool details (output)"
+      },
+      "MasCognitionEngineAssociateRequest": {
+        "properties": {
+          "ce_id": {
+            "type": "string",
+            "title": "Ce Id",
+            "description": "ID of the Cognition Engine to associate with this MAS"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ce_id"
+        ],
+        "title": "MasCognitionEngineAssociateRequest",
+        "description": "Schema for adding a Cognition Engine to a MAS"
+      },
+      "MasCognitionEngineItem": {
+        "properties": {
+          "enforcing_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Url"
+          },
+          "enforcing_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Endpoint"
+          },
+          "enforcing_protocol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enforcing Protocol"
+          },
+          "health_url": {
+            "type": "string",
+            "title": "Health Url"
+          },
+          "health_endpoint": {
+            "type": "string",
+            "title": "Health Endpoint"
+          },
+          "health_protocol": {
+            "type": "string",
+            "title": "Health Protocol"
+          },
+          "notification_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Url"
+          },
+          "notification_endpoint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Endpoint"
+          },
+          "notification_protocol": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notification Protocol"
+          },
+          "ce_id": {
+            "type": "string",
+            "title": "Ce Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "ce_type": {
+            "type": "string",
+            "title": "Ce Type"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "mas_config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mas Config"
+          }
+        },
+        "type": "object",
+        "required": [
+          "health_url",
+          "health_endpoint",
+          "health_protocol",
+          "ce_id",
+          "name",
+          "version",
+          "ce_type",
+          "enabled",
+          "status",
+          "mas_config"
+        ],
+        "title": "MasCognitionEngineItem",
+        "description": "Schema for a cognition engine associated with a MAS"
+      },
+      "MasCognitionEnginePatchRequest": {
+        "properties": {
+          "mas_config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mas Config",
+            "description": "Per-MAS config override for this CE"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mas_config"
+        ],
+        "title": "MasCognitionEnginePatchRequest",
+        "description": "Schema for PATCH /workspaces/{ws}/mas/{mas_id}/cognition-engines/{ce_id}"
+      },
+      "MultiAgenticSystem": {
+        "properties": {
+          "metadata_schema_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata Schema Version"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "documentation": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DocumentRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Documentation"
+          },
+          "tools": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/RuntimeToolRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tools"
+          },
+          "topologies": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TopologyRead"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Topologies"
+          },
+          "topology_sources": {
+            "$ref": "#/components/schemas/TopologySources"
+          },
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "workspace_id": {
+            "type": "string",
+            "title": "Workspace Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "agents": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AgentDetail"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agents",
+            "description": "List of agents in the system"
+          },
+          "mcp_servers": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MCPServerDetail"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mcp Servers",
+            "description": "List of MCP servers in the system"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config"
+          },
+          "cognition_engines": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MasCognitionEngineItem"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cognition Engines"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "updated_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated By"
+          }
+        },
+        "type": "object",
+        "required": [
+          "topology_sources",
+          "id",
+          "workspace_id",
+          "name",
+          "created_at"
+        ],
+        "title": "MultiAgenticSystem",
+        "description": "Schema for detailed multi-agentic system information",
+        "example": {
+          "agents": [
+            {
+              "agent_id": "agent-1",
+              "config": {
+                "type": "planner"
+              },
+              "identity": {
+                "identifiers": {
+                  "url": "main::agents::agent-1"
+                },
+                "type": "openclaw"
+              },
+              "name": "retrieval-agent",
+              "url": "http://localhost:8080"
+            }
+          ],
+          "config": {
+            "memory": {
+              "retention": "90d",
+              "type": "long-term"
+            }
+          },
+          "created_at": "2024-12-11T10:30:00Z",
+          "description": "A system for collaborative AI agents",
+          "id": "550e8400-e29b-41d4-a716-446655440000",
+          "name": "unique-name-within-a-workspace",
+          "updated_at": "2024-12-11T10:30:00Z",
+          "workspace_id": "660e8400-e29b-41d4-a716-446655440000"
+        }
+      },
+      "MultiAgenticSystemRequest": {
+        "properties": {
+          "metadata_schema_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata Schema Version"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "documentation": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentSnapshot"
+            },
+            "type": "array",
+            "title": "Documentation"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeTool"
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "topologies": {
+            "items": {
+              "$ref": "#/components/schemas/ProvidedTopology"
+            },
+            "type": "array",
+            "maxItems": 1,
+            "title": "Topologies"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "description": "Unique name within the workspace for the multi-agentic system"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Description of the multi-agentic system"
+          },
+          "agents": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AgentConfig"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agents",
+            "description": "List of agents in the system with their configurations"
+          },
+          "mcp_servers": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MCPServerConfig"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mcp Servers",
+            "description": "List of MCP servers in the system with their tool definitions"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config",
+            "description": "Configuration object"
+          },
+          "cognition_engine_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cognition Engine Ids",
+            "description": "CE IDs to associate with this MAS on creation. Additive \u2014 auto-attach CEs are also attached."
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "MultiAgenticSystemRequest",
+        "description": "Schema for creating a new Multi-Agentic System"
+      },
+      "MultiAgenticSystemResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier for the multi-agentic system"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "Name of the multi-agentic system"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "MultiAgenticSystemResponse",
+        "description": "Schema for multi-agentic system creation response",
+        "example": {
+          "id": "550e8400-e29b-41d4-a716-446655440000",
+          "name": "unique-name-within-a-workspace"
+        }
+      },
+      "MultiAgenticSystemUpdate": {
+        "properties": {
+          "metadata_schema_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata Schema Version"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "documentation": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentSnapshot"
+            },
+            "type": "array",
+            "title": "Documentation"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/RuntimeTool"
+            },
+            "type": "array",
+            "title": "Tools"
+          },
+          "topologies": {
+            "items": {
+              "$ref": "#/components/schemas/ProvidedTopology"
+            },
+            "type": "array",
+            "maxItems": 1,
+            "title": "Topologies"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Updated name for the multi-agentic system"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description",
+            "description": "Updated description of the multi-agentic system"
+          },
+          "agents": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AgentConfig"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agents",
+            "description": "Updated list of agents in the system"
+          },
+          "mcp_servers": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/MCPServerConfig"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mcp Servers",
+            "description": "Updated list of MCP servers in the system"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config",
+            "description": "Updated configuration object"
+          },
+          "cognition_engine_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cognition Engine Ids",
+            "description": "CE IDs to sync with this MAS. Attaches new ones, detaches removed ones. Omit to leave unchanged."
+          },
+          "cognition_engine_configs": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cognition Engine Configs",
+            "description": "Per-CE mas_config overrides, keyed by ce_id. Overrides the CE factory defaults for this MAS only."
+          }
+        },
+        "type": "object",
+        "title": "MultiAgenticSystemUpdate",
+        "description": "Schema for updating a Multi-Agentic System"
+      },
+      "MultiAgenticSystems": {
+        "properties": {
+          "systems": {
+            "items": {
+              "$ref": "#/components/schemas/MultiAgenticSystem"
+            },
+            "type": "array",
+            "title": "Systems",
+            "description": "List of multi-agentic systems in the workspace"
+          }
+        },
+        "type": "object",
+        "required": [
+          "systems"
+        ],
+        "title": "MultiAgenticSystems",
+        "description": "Schema for listing multi-agentic systems"
+      },
+      "ProvidedTopology": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "const": "provided",
+            "title": "Source"
+          },
+          "completeness": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "partial"
+            ],
+            "title": "Completeness"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/TopologyNode"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/TopologyEdge"
+            },
+            "type": "array",
+            "title": "Edges"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "completeness",
+          "nodes",
+          "edges"
+        ],
+        "title": "ProvidedTopology"
+      },
+      "RuntimeTool": {
+        "properties": {
+          "definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "protocol_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Version"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provenance"
+          },
+          "tool_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Tool Id"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolProvider"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tool_id"
+        ],
+        "title": "RuntimeTool"
+      },
+      "RuntimeToolRead": {
+        "properties": {
+          "definition": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition"
+          },
+          "protocol_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Protocol Version"
+          },
+          "provenance": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SnapshotProvenanceRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "tool_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Tool Id"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ToolProvider"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "source_snapshot": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Snapshot"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tool_id"
+        ],
+        "title": "RuntimeToolRead"
+      },
+      "SnapshotProvenanceRead": {
+        "properties": {
+          "collected_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Collected At"
+          }
+        },
+        "additionalProperties": true,
+        "type": "object",
+        "title": "SnapshotProvenanceRead",
+        "description": "Only CF's receipt stamp is typed; caller claims remain opaque."
+      },
+      "SourceAvailability": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "available",
+              "absent",
+              "disabled",
+              "unavailable"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "SourceAvailability"
+      },
+      "ToolProvider": {
+        "properties": {
+          "mcp_server_name": {
+            "type": "string",
+            "title": "Mcp Server Name"
+          },
+          "native_tool_name": {
+            "type": "string",
+            "title": "Native Tool Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mcp_server_name",
+          "native_tool_name"
+        ],
+        "title": "ToolProvider"
+      },
+      "TopologyEdge": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "interaction_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Interaction Type"
+          },
+          "conditional": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conditional"
+          },
+          "data": {
+            "title": "Data"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source",
+          "target"
+        ],
+        "title": "TopologyEdge"
+      },
+      "TopologyNode": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Id"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "agent",
+              "start",
+              "end"
+            ],
+            "title": "Type",
+            "default": "agent"
+          },
+          "tool_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Tool Ids"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "TopologyNode"
+      },
+      "TopologyRead": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "provided",
+              "observed"
+            ],
+            "title": "Source"
+          },
+          "completeness": {
+            "type": "string",
+            "enum": [
+              "complete",
+              "partial"
+            ],
+            "title": "Completeness"
+          },
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/TopologyNode"
+            },
+            "type": "array",
+            "title": "Nodes"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/TopologyEdge"
+            },
+            "type": "array",
+            "title": "Edges"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "source",
+          "completeness",
+          "nodes",
+          "edges"
+        ],
+        "title": "TopologyRead"
+      },
+      "TopologySources": {
+        "properties": {
+          "provided": {
+            "$ref": "#/components/schemas/SourceAvailability"
+          },
+          "observed": {
+            "$ref": "#/components/schemas/SourceAvailability"
+          }
+        },
+        "type": "object",
+        "required": [
+          "provided",
+          "observed"
+        ],
+        "title": "TopologySources"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "WorkspaceCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Name",
+            "description": "Name of the workspace"
+          },
+          "cfn_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cfn Id",
+            "description": "CFN identifier to associate with this workspace (optional for default workspace)"
+          },
+          "config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Config",
+            "description": "Workspace configuration settings"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "WorkspaceCreate",
+        "example": {
+          "cfn_id": "cfn-node-001",
+          "config": {
+            "setting1": "value1",
+            "setting2": "value2"
+          },
+          "name": "cfn-workspace-001"
+        }
+      },
+      "WorkspaceDetail": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "cfn_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cfn Id",
+            "description": "CFN identifier that manages this workspace"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "created_by_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By Username",
+            "description": "Username of the workspace creator"
+          },
+          "updated_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated By"
+          },
+          "config": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Config"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "created_at"
+        ],
+        "title": "WorkspaceDetail",
+        "example": {
+          "cfn_id": "cfn-node-001",
+          "config": {},
+          "created_at": "2024-11-14T10:30:00Z",
+          "created_by": "user-123",
+          "id": "550e8400-e29b-41d4-a716-446655440000",
+          "name": "My Workspace",
+          "updated_at": "2024-11-14T11:15:00Z",
+          "updated_by": "user-456"
+        }
+      },
+      "WorkspaceList": {
+        "properties": {
+          "workspaces": {
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceDetail"
+            },
+            "type": "array",
+            "title": "Workspaces"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "workspaces",
+          "total"
+        ],
+        "title": "WorkspaceList",
+        "example": {
+          "total": 1,
+          "workspaces": [
+            {
+              "config": {},
+              "created_at": "2024-11-14T10:30:00Z",
+              "created_by": "user-123",
+              "id": "550e8400-e29b-41d4-a716-446655440000",
+              "name": "My Workspace",
+              "updated_at": "2024-11-14T11:15:00Z",
+              "updated_by": "user-456"
+            }
+          ]
+        }
+      },
+      "WorkspaceResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id",
+            "description": "Unique identifier for the workspace"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "title": "WorkspaceResponse",
+        "example": {
+          "id": "550e8400-e29b-41d4-a716-446655440000"
+        }
+      },
+      "WorkspaceUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 100,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name",
+            "description": "Updated name of the workspace"
+          },
+          "cfn_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cfn Id",
+            "description": "CFN identifier to reassign workspace to a different CFN"
+          }
+        },
+        "type": "object",
+        "title": "WorkspaceUpdate"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

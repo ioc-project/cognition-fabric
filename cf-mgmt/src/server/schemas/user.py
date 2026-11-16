@@ -1,0 +1,65 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
+from server.utils.timestamps import UtcDateTime
+from typing import List, Optional
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class UserResponse(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+            }
+        }
+    )
+
+    id: str = Field(..., description="Unique identifier for the user")
+
+
+class User(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "username": "admin",
+                "domain": "ioc.local",
+                "role": "admin",
+                "created_at": "2024-11-14T10:30:00Z",
+                "updated_at": "2024-11-14T11:15:00Z",
+            }
+        }
+    )
+
+    id: str
+    username: str
+    domain: str
+    role: str
+    created_at: UtcDateTime
+    updated_at: Optional[UtcDateTime] = None
+
+
+class Users(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "users": [
+                    {
+                        "id": "550e8400-e29b-41d4-a716-446655440000",
+                        "username": "admin",
+                        "domain": "ioc.local",
+                        "role": "admin",
+                        "created_at": "2024-11-14T10:30:00Z",
+                        "updated_at": "2024-11-14T11:15:00Z",
+                    }
+                ],
+                "total": 1,
+            }
+        }
+    )
+
+    users: List[User]
+    total: int

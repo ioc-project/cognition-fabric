@@ -1,0 +1,27 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
+package authz.operations.multi_agentic_system
+
+import rego.v1
+
+# Admin operations - full access to create, update, delete, list, get MAS, and manage CE associations
+admin := [
+	"create_multi_agentic_system",
+	"update_multi_agentic_system",
+	"delete_multi_agentic_system",
+	"get_multi_agentic_system",
+	"list_multi_agentic_system",
+	"associate_multi_agentic_system",
+	"disassociate_multi_agentic_system",
+]
+
+# Viewer operations - read-only access (list and get)
+viewer := [
+	"get_multi_agentic_system",
+	"list_multi_agentic_system",
+]
+
+# Guest operations - no access
+guest := []
