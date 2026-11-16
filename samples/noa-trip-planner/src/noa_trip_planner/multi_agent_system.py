@@ -15,7 +15,7 @@ import json
 import logging
 import operator
 import os
-from typing import Annotated, Literal, NotRequired, Sequence, TypedDict
+from typing import Annotated, Literal, Sequence
 
 from ioa_observe.sdk import Observe
 from ioa_observe.sdk.decorators import agent as ioa_observe_agent
@@ -42,6 +42,7 @@ from noa_trip_planner.agents.prompts import (
 from noa_trip_planner.reward_annotator import RewardAnnotator, prompt_for_reward
 from noa_trip_planner.enforcement import gated_tool_node
 from opentelemetry.context import get_value
+from typing_extensions import NotRequired, TypedDict
 
 
 APPLICATION_ID = os.environ.get("NOA_MAS_ID", "noa-trip-planner-mas")
