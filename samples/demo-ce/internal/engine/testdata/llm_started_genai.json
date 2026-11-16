@@ -1,0 +1,37 @@
+{
+ "correlation": {
+  "call_id": "902fa075f0d7eb7f",
+  "span_id": "902fa075f0d7eb7f",
+  "trace_flags": 3,
+  "trace_id": "3930aec7c988d52f05d45257b3d18ff4"
+ },
+ "data": {
+  "agent": {
+   "name": "moderator"
+  },
+  "call_id": "902fa075f0d7eb7f",
+  "input": [
+   {
+    "parts": [
+     {
+      "content": "Plan a day trip from Celestia to Luminos. You must delegate to all three: ask schedule_agent to read morning train departures, itinerary_agent to query routes and travel times, and concierge_agent to read train fares. Use MCP documents and graph tools for the findings.",
+      "type": "text"
+     }
+    ],
+    "role": "user"
+   }
+  ],
+  "model": "azure/gpt-4o",
+  "operation": "chat"
+ },
+ "session": {
+  "id": "noa-trip-planner-mas_6cef69bf-60ea-4858-8c51-b7a37296dd12",
+  "sequence": 3
+ },
+ "source": {
+  "instrumentation_scope": "ioa_observe.runtime_events",
+  "service_name": "noa-trip-planner-mas"
+ },
+ "time": "2026-10-15T12:48:48.865322Z",
+ "type": "llm.started"
+}

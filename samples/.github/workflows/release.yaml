@@ -1,0 +1,223 @@
+name: Release
+
+# Tag-only image publish. Main-branch `latest` and date-sha tags stay in ci.yaml.
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  id-token: write
+  contents: read
+  packages: write
+
+jobs:
+  validate-semver:
+    name: Validate Semantic Version Tag
+    runs-on:
+      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
+
+    steps:
+      - name: Check tag format
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          echo "Validating tag: $TAG"
+
+          # Semantic versioning pattern: vX.Y.Z or vX.Y.Z-prerelease
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9]+(\.[0-9]+)?)?$ ]]; then
+            echo "Error: Tag '$TAG' does not follow semantic versioning."
+            echo "Expected format: v1.2.3 or v1.2.3-alpha.1"
+            exit 1
+          fi
+
+          echo "Tag is a valid semantic version: $TAG"
+
+  demo-ce-unit-tests:
+    name: demo-ce Unit Tests
+    needs: [validate-semver]
+    runs-on:
+      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
+    env:
+      GOPRIVATE: github.com/cisco-eti/*
+      GONOSUMDB: github.com/cisco-eti/*
+      GIT_CONFIG_GLOBAL: /tmp/cfn-gitconfig
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: demo-ce/go.mod
+          cache-dependency-path: demo-ce/go.sum
+
+      - name: Generate CFN module token
+        id: cfn-token
+        uses: ./.github/actions/cfn-token
+        with:
+          vault-url: ${{ vars.KEEPER_URL }}
+          vault-namespace: ${{ vars.VAULT_NAMESPACE }}
+          vault-secret-path: ${{ vars.VAULT_SECRET_PATH }}
+          role-id: ${{ secrets.VAULT_APPROLE_ROLE_ID }}
+          secret-id: ${{ secrets.VAULT_APPROLE_SECRET_ID }}
+
+      - name: Authenticate Git for the private CFN module
+        env:
+          CFN_TOKEN: ${{ steps.cfn-token.outputs.token }}
+        run: |
+          git config --global url."https://x-access-token:${CFN_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - name: Run Unit Tests
+        run: |
+          cd demo-ce
+          go vet ./...
+          go test ./...
+
+      - name: Remove CFN module credentials
+        if: always()
+        run: rm -f "$GIT_CONFIG_GLOBAL"
+
+  demo-ce-docker-push:
+    name: Push tagged demo-ce Docker image
+    needs: [validate-semver, demo-ce-unit-tests]
+    runs-on:
+      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Generate CFN module token
+        id: cfn-token
+        uses: ./.github/actions/cfn-token
+        with:
+          vault-url: ${{ vars.KEEPER_URL }}
+          vault-namespace: ${{ vars.VAULT_NAMESPACE }}
+          vault-secret-path: ${{ vars.VAULT_SECRET_PATH }}
+          role-id: ${{ secrets.VAULT_APPROLE_ROLE_ID }}
+          secret-id: ${{ secrets.VAULT_APPROLE_SECRET_ID }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: demo-ce
+          file: demo-ce/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          secrets: |
+            github_token=${{ steps.cfn-token.outputs.token }}
+          tags: |
+            ghcr.io/${{ github.repository }}/demo-ce:${{ github.ref_name }}
+          cache-from: type=gha,scope=demo-ce
+          cache-to: type=gha,mode=max,scope=demo-ce
+          provenance: false
+
+  template-ce-unit-tests:
+    name: template-ce Unit Tests
+    needs: [validate-semver]
+    runs-on:
+      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+          version: "0.13.7"
+
+      - name: Run Unit Tests
+        run: |
+          cd template-ce
+          uv sync --frozen --extra test
+          uv run --frozen python scripts/generate_proto.py --check
+          uv run --frozen pytest
+
+  template-ce-image-smoke:
+    name: template-ce Image Smoke
+    needs: [validate-semver, template-ce-unit-tests]
+    runs-on:
+      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build smoke image
+        uses: docker/build-push-action@v6
+        with:
+          context: template-ce
+          file: template-ce/Dockerfile
+          push: false
+          load: true
+          platforms: linux/amd64
+          tags: template-ce:smoke
+          cache-from: type=gha,scope=template-ce
+          provenance: false
+
+      - name: Probe healthz and GetInfo
+        run: |
+          docker run -d --name template-ce-smoke template-ce:smoke
+          cleanup() { docker rm -f template-ce-smoke >/dev/null 2>&1 || true; }
+          trap cleanup EXIT
+          for i in $(seq 1 30); do
+            if docker exec template-ce-smoke /home/app/.venv/bin/python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8081/healthz')"; then
+              break
+            fi
+            if [ "$i" -eq 30 ]; then
+              docker logs template-ce-smoke
+              exit 1
+            fi
+            sleep 1
+          done
+          docker cp template-ce/scripts/smoke_image.py template-ce-smoke:/tmp/smoke_image.py
+          docker exec -e PYTHONPATH=/home/app/src -w /tmp template-ce-smoke /home/app/.venv/bin/python /tmp/smoke_image.py
+
+  template-ce-docker-push:
+    name: Push tagged template-ce Docker image
+    needs: [validate-semver, template-ce-unit-tests, template-ce-image-smoke]
+    runs-on:
+      group: ${{ vars.DEFAULT_ARC_RUNNERS }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: template-ce
+          file: template-ce/Dockerfile
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ github.repository }}/template-ce:${{ github.ref_name }}
+          cache-from: type=gha,scope=template-ce
+          cache-to: type=gha,mode=max,scope=template-ce
+          provenance: false
