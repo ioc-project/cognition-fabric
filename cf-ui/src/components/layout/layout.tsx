@@ -1,0 +1,30 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
+'use client';
+
+import {Sidebar} from './sidebar';
+import {NavBar} from './navbar';
+import {NodeRoute} from '../router/node-route';
+import {memo} from 'react';
+
+interface LayoutProps {
+  children: React.ReactNode;
+}
+
+export const Layout = memo(({children}: LayoutProps) => {
+  return (
+    <div className="flex flex-col h-screen bg-background">
+      <NavBar />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <main className="flex flex-col flex-1 overflow-y-auto p-8 bg-[hsl(var(--main-background))] border-l border-[hsl(var(--main-border))] relative z-[1] isolate">
+          <NodeRoute>{children}</NodeRoute>
+        </main>
+      </div>
+    </div>
+  );
+});
+
+Layout.displayName = 'Layout';

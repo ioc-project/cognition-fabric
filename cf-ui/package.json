@@ -1,0 +1,156 @@
+{
+  "name": "ioc-cfn-mgmt-plane-ui",
+  "version": "0.2.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 9001",
+    "test": "node --test tests/*.test.mjs",
+    "test:audit": "node --test tests/audit-presentation.test.mjs",
+    "build": "next build --webpack",
+    "build:clean": "rm -rf .next && npm run build",
+    "start": "next start",
+    "lint:check": "eslint . && prettier \"**/*.+(ts*|js*)\" --check",
+    "lint": "eslint --fix . && prettier \"**/*.+(ts*|js*)\" --write",
+    "format": "prettier \"**/*.+(ts*|js*)\" --write",
+    "clean": "rm -rf .next node_modules/.cache",
+    "generate:api": "openapi-typescript ${CFN_UI_API_BASE_URL:-http://localhost:9000}/api/openapi.json -o src/api/generated/schema.d.ts",
+    "postgenerate:api": "{ printf '// Copyright 2026 Cisco Systems, Inc. and its affiliates\\n//\\n// SPDX-License-Identifier: Apache-2.0\\n\\n'; cat src/api/generated/schema.d.ts; } > src/api/generated/schema.d.ts.tmp && mv src/api/generated/schema.d.ts.tmp src/api/generated/schema.d.ts"
+  },
+  "dependencies": {
+    "@radix-ui/react-avatar": "^1.1.11",
+    "@radix-ui/react-dialog": "^1.1.2",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-popover": "^1.1.17",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-separator": "^1.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-switch": "^1.2.6",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@radix-ui/react-toast": "^1.2.2",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "@types/cytoscape": "^3.31.0",
+    "@xyflow/react": "^12.10.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cytoscape": "^3.33.2",
+    "cytoscape-navigator": "^2.0.2",
+    "lucide-react": "^0.511.0",
+    "next": "^16.2.6",
+    "next-auth": "^4.24.13",
+    "openapi-fetch": "^0.15.0",
+    "react": "^19.1.1",
+    "react-day-picker": "^9.0.8",
+    "react-dom": "^19.1.1",
+    "react-force-graph-2d": "^1.29.0",
+    "recharts": "^3.8.1",
+    "sonner": "^1.5.0",
+    "swr": "^2.3.6",
+    "tailwind-merge": "^3.3.1"
+  },
+  "devDependencies": {
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/language": "^6.12.1",
+    "@eslint/eslintrc": "^3.3.3",
+    "@hookform/resolvers": "^3.9.0",
+    "@lezer/highlight": "^1.2.3",
+    "@segment/analytics-next": "^1.84.0",
+    "@server-sent-stream/web": "^1.0.3",
+    "@svgr/webpack": "^8.1.0",
+    "@tailwindcss/postcss": "^4.1.17",
+    "@tailwindcss/typography": "^0.5.15",
+    "@types/lodash": "^4.17.7",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@typescript-eslint/eslint-plugin": "^8.55.0",
+    "@typescript-eslint/parser": "^8.55.0",
+    "@uiw/codemirror-extensions-langs": "^4.23.6",
+    "@uiw/react-codemirror": "^4.23.6",
+    "autoprefixer": "^10.4.20",
+    "axios": "^1.19.0",
+    "brace-expansion": "^2.1.4",
+    "buffer": "^6.0.3",
+    "eslint": "^9.17.0",
+    "eslint-config-next": "^16.1.6",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-unused-imports": "^4.1.4",
+    "framer-motion": "^11.7.0",
+    "globals": "^15.9.0",
+    "lodash": "^4.18.1",
+    "loglevel": "^1.9.2",
+    "openapi-typescript": "^7.10.1",
+    "postcss": "^8.5.15",
+    "prettier": "^3.6.2",
+    "query-string": "^9.5.1",
+    "react-error-boundary": "^4.0.13",
+    "react-hook-form": "^7.53.0",
+    "react-markdown": "^10.1.0",
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.0",
+    "remark-parse": "^11.0.0",
+    "remark-stringify": "^11.0.0",
+    "tailwindcss": "^4",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "~5.5.4",
+    "unique-names-generator": "^4.7.1",
+    "zod": "^3.23.8",
+    "zustand": "^4.5.5"
+  },
+  "optionalDependencies": {
+    "lightningcss-linux-x64-gnu": "1.30.2",
+    "lightningcss-linux-x64-musl": "1.30.2",
+    "lightningcss-linux-arm64-gnu": "1.30.2",
+    "lightningcss-linux-arm64-musl": "1.30.2",
+    "@tailwindcss/oxide-linux-x64-gnu": "4.1.18",
+    "@tailwindcss/oxide-linux-x64-musl": "4.1.18",
+    "@tailwindcss/oxide-linux-arm64-gnu": "4.1.18",
+    "@tailwindcss/oxide-linux-arm64-musl": "4.1.18",
+    "@next/swc-linux-x64-gnu": "16.3.1",
+    "@next/swc-linux-x64-musl": "16.3.1",
+    "@next/swc-linux-arm64-gnu": "16.3.1",
+    "@next/swc-linux-arm64-musl": "16.3.1"
+  },
+  "overrides": {
+    "preact": "^10.28.2",
+    "js-cookie": "^3.0.8",
+    "lodash-es": "^4.18.1",
+    "minimatch": {
+      "brace-expansion": "2.1.4"
+    },
+    "@eslint/eslintrc": {
+      "minimatch": {
+        "brace-expansion": "2.1.4"
+      }
+    },
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": {
+        "brace-expansion": "2.1.4"
+      }
+    },
+    "@redocly/openapi-core": {
+      "minimatch": {
+        "brace-expansion": "2.1.4"
+      }
+    },
+    "next": {
+      "postcss": "^8.5.10"
+    },
+    "next-auth": {
+      "uuid": "^11.1.1"
+    }
+  },
+  "resolutions": {
+    "preact": "^10.28.2",
+    "js-cookie": "^3.0.8",
+    "brace-expansion": "2.1.4",
+    "lodash-es": "^4.18.1",
+    "postcss": "^8.5.10",
+    "uuid": "^11.1.1"
+  },
+  "engines": {
+    "node": ">= 20.9.0",
+    "npm": ">= 6.14.4"
+  }
+}

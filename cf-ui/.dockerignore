@@ -1,0 +1,59 @@
+# Dependencies
+node_modules
+bower_components
+
+# Build outputs
+.next
+.turbo
+dist
+build
+out
+
+# Testing
+coverage
+.nyc_output
+
+# Version control
+.git
+.gitignore
+.github
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Environment files
+.env*
+!.env.sample
+
+# Temporary files
+tmp
+temp
+tmp-ignore
+
+# Documentation
+*.md
+!README.md
+docs
+
+# CI/CD (only keep what's needed)
+.circleci
+.travis.yml
+
+# Other
+.cache
+.npmrc
