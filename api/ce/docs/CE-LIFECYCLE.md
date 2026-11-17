@@ -13,7 +13,7 @@ sequenceDiagram
     participant Mgmt as Mgmt Plane
 
     Note over CE,Mgmt: Registration Phase
-    CE->>CFN: POST /api/cognition-engine<br/>(name, version, ce_type, enforcing_url, enforcing_endpoint, health_url)
+    CE->>CFN: POST /api/cognition-engine<br/>(name, version, ce_type, enforcing_url, enforcing_endpoint, health_url, health_endpoint)
     CFN->>Mgmt: Forward + add cfn_id
     Mgmt-->>CFN: 201 Created (ce_id, status=online)
     CFN-->>CE: Return ce_id
@@ -21,13 +21,25 @@ sequenceDiagram
     Note over CE,Mgmt: Probe Loop (every 2s)
     loop Every 2 seconds, for each enabled endpoint owner
         Mgmt->>CFN: POST /api/internal/mgmt/cognition-engine/probe<br/>(ce_id)
-        CFN->>CFN: Look up health_url for ce_id
-        CFN->>CE: GET health_url
+        CFN->>CFN: Look up health_url + health_endpoint for ce_id
+        CFN->>CE: GET health_url + health_endpoint
         CE-->>CFN: 200 OK
         CFN-->>Mgmt: healthy=true
         Mgmt->>Mgmt: Update last_seen<br/>Set status=online
     end
 ```
+
+### CFN heartbeat and MAS updates
+
+Separately from CE probing, CFN sends `PUT /api/cognition-fabric-nodes/{id}/heartbeat`
+to Management (default every 10 seconds). Management advances CFN `last_seen` and
+returns `config_version`; a newer version triggers CFN's config pull.
+A Management MAS update regenerates that config and advances its version. CFN
+compares MAS `last_updated_on` values, sends `mas.updated` to associated CE callbacks,
+and the CE can pull `GET /api/multi-agentic-systems/{masId}?metadata=true`.
+The callback contains only `event_type`, UTC `timestamp` and `mas_id`. A callback
+acknowledgement does not establish that the metadata pull succeeded. See
+[MAS lifecycle notifications](../../../docs/discussions/0003-mas-lifecycle-notifications.md).
 
 ### Offline Detection
 
@@ -39,8 +51,8 @@ sequenceDiagram
 
     Note over CE: CE dies or disconnects
     loop Every 2 seconds
-        Mgmt->>CFN: Probe health_url
-        CFN-xCE: GET health_url (no 200 within 1s)
+        Mgmt->>CFN: POST /api/internal/mgmt/cognition-engine/probe<br/>(ce_id)
+        CFN-xCE: GET health_url + health_endpoint (no 200 within 1s)
         CFN-->>Mgmt: healthy=false
     end
 

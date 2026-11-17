@@ -21,12 +21,15 @@ This discussion captures the initial agreement on the API shape between the two 
 
 **Behavior:**
 - Blocking — the Enforcement Proxy blocks until CF returns a disposition
-- Timeout — TBD, depends on CASA CE response time
+- Timeout — currently 30 seconds per Management HTTP attempt, CE connection and CE
+  `Evaluate`, bounded by any earlier caller deadline. Management HTTP retries can
+  extend the total elapsed time; these are not a single 30-second end-to-end limit.
+  The agreed contract timeout remains open.
 
 ### Request (`GetDispositionRequest`)
 
 ```bash
-grpcurl -plaintext -d '{
+grpcurl -plaintext -emit-defaults -d '{
   "extra": { "key": "value" },
   "payload": {
     "mas_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -44,22 +47,55 @@ grpcurl -plaintext -d '{
 - `span_id` — Identifies the specific operation within the trace for precise correlation
 - `extra` — map of string key-value pairs for headers/metadata (contents TBD)
 
+CFN populates only these identifiers, the resolved `workspace_id` and `extra` in
+the CE `EvaluateRequest`. Evidence lookup and policy evaluation belong to the CE;
+CFN does not assemble OXP context or call an Active API fallback.
+
 ### Response (`GetDispositionResponse`)
 
 ```json
 {
-  "action": "allow",
+  "action": "ACTION_ALLOW",
   "modify": false
 }
 ```
 
-**Actions (Dec 2026 scope):**
+**Current actions:**
 - `allow` — permit the interaction to proceed unchanged
 - `block` — deny the interaction
+- `unspecified` — if the CE RPC succeeds with `DECISION_UNSPECIFIED` or an
+  unrecognized outcome, CFN returns `ACTION_UNSPECIFIED`, `modify=false` and gRPC
+  `OK`. The caller decides whether to fail closed; the local NOA direct caller
+  blocks execution. CE connection or RPC failures instead return gRPC errors.
 
-**Deferred actions (reserved in proto):**
-- `modify` — alter the interaction before forwarding
-- `inject` — inject content into the interaction
+CFN also maps a CE `DECISION_MODIFY` to `ACTION_MODIFY` with `modify=true`, but the
+response has no replacement-content field. This signals a requested modification;
+it does not implement rewriting. CFN does not emit `ACTION_INJECT`. End-to-end
+modification and injection remain deferred, despite the reserved proto values.
+
+### Current enforcement flow
+
+```mermaid
+sequenceDiagram
+    participant Caller as Proxy or direct runtime
+    participant CFN
+    participant Mgmt as Management
+    participant CE as Selected CASA CE
+    Caller->>CFN: GetDisposition (identifiers, extra)
+    CFN->>CFN: Resolve MAS to assigned workspace
+    CFN->>Mgmt: Fetch current MAS and associated CEs
+    Mgmt-->>CFN: MAS and CE eligibility
+    CFN->>CE: Evaluate (identifiers, workspace_id, extra)
+    CE-->>CFN: Outcome, reason, optional details
+    CFN-->>Caller: Action and modify flag
+```
+
+CFN selects the first associated CASA CE that is enabled, online and has an
+enforcing address. It does not fan out or chain evaluations. CE details are captured
+in the CFN audit when valid and within its budget, not returned to the caller.
+The caller owns applying the disposition; CE policy internals and actual Proxy
+forwarding are outside this CF flow. The separate
+[`AppendAuditRecord`](../../api/enforcement/docs/proxy-audit-ingestion.md) RPC records Proxy evidence.
 
 ## Decisions
 
@@ -79,7 +115,7 @@ grpcurl -plaintext -d '{
 | Item | Status | Owner |
 |------|--------|-------|
 | `extra` field contents — what headers/metadata are needed? | TBD | CF + Proxy |
-| Timeout value — depends on CASA CE response characteristics | TBD | CF + CASA |
+| Final end-to-end timeout agreement — current per-operation limits described above | TBD | CF + CASA |
 | `modify` action semantics — what can be modified and how? | TBD | CF + Proxy |
 | `mas_id` semantics — needs IOC-level agreement | TBD | IOC |
 | `trace_id` format and coordination — sync with Pavan | TBD | CF + Proxy |
