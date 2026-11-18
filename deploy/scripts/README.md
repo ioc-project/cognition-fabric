@@ -5,7 +5,7 @@
 databases.
 
 [`ensure-databases.sh`](ensure-databases.sh) runs as one-shot service
-`ioc-scale-db-init` on every `docker compose up`, ensuring those same databases
+`ioc-scale-db-init` on every `docker compose --env-file ../.env up`, ensuring those same databases
 exist even when reusing an existing Postgres volume.
 
 The rest of this page is the end-to-end run: app → ClickHouse → RabbitMQ →
@@ -33,13 +33,15 @@ one-shot services appear as `Exited (0)` after successful initialization:
 
 ## 1. Start the stack
 
+Run the stack commands below from `deploy/`, with the monorepo root `.env` configured.
+
 ```bash
-set -a; source .env; set +a    # credentials for the commands below
-docker compose --profile full-mas up -d
+set -a; source ../.env; set +a    # credentials for the commands below
+docker compose --env-file ../.env --profile full-mas up -d
 ```
 
 The profile adds the NOA trip planner, which needs `AI_GATEWAY_API_KEY` in
-`.env` with the chat model on its allow-list. The other 15 containers start
+the root `.env` with the chat model on its allow-list. The other 15 containers start
 either way — leave the profile off if you are pointing your own instrumented
 app at `http://localhost:4318` instead.
 
@@ -56,15 +58,15 @@ as the stack is up — you do not need to send a span first.
 Check initialization status:
 
 ```bash
-docker compose ps -a oxp-clickhouse-init oxp-rabbitmq-init
-docker compose logs oxp-clickhouse-init oxp-rabbitmq-init
+docker compose --env-file ../.env ps -a oxp-clickhouse-init oxp-rabbitmq-init
+docker compose --env-file ../.env logs oxp-clickhouse-init oxp-rabbitmq-init
 ```
 
 Both scripts are idempotent. If either service fails because a dependency took
 longer than its retry window, rerun them after the stack settles:
 
 ```bash
-docker compose up oxp-clickhouse-init oxp-rabbitmq-init
+docker compose --env-file ../.env up oxp-clickhouse-init oxp-rabbitmq-init
 ```
 
 ## 2. Ask the app something
@@ -79,7 +81,7 @@ curl -X POST http://localhost:8125/ask \
 ```
 
 Port 8125 rather than 8000, which belongs to `ioc-scale-cf-cognition-engine`.
-`NOA_API_PORT` in `.env` moves the published port; the app always listens on
+`NOA_API_PORT` in the root `.env` moves the published port; the app always listens on
 8125 inside the container.
 
 **Then wait about five minutes.** The request returning is not the end of the
@@ -271,5 +273,5 @@ docker logs ioc-scale-noa-trip-planner --tail 30
 ```
 
 A missing or unauthorised `AI_GATEWAY_API_KEY` fails the request before any
-span is emitted. `docker compose down` also leaves this container running,
-since it is profiled — use `docker compose --profile full-mas down`.
+span is emitted. `docker compose --env-file ../.env down` also leaves this container running,
+since it is profiled — use `docker compose --env-file ../.env --profile full-mas down`.

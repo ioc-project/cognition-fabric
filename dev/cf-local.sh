@@ -13,12 +13,9 @@ ui_dir="$root_dir/cf-ui"
 samples_dir="$root_dir/samples"
 dev_dir="$root_dir/dev"
 local_dir="$root_dir/.local"
-[[ -n "${CF_DEPLOYMENT_DIR:-}" ]] || { printf 'Local CF: Set CF_DEPLOYMENT_DIR in the root .env to your ioc-scale-cf-deployment checkout. See .env.example.\n' >&2; exit 1; }
-deployment_dir="$CF_DEPLOYMENT_DIR"
-[[ "$deployment_dir" = /* ]] || deployment_dir="$root_dir/$deployment_dir"
+deployment_dir="$root_dir/deploy"
 export GOWORK="$root_dir/go.work"
-[[ -f "$deployment_dir/docker-compose.yml" ]] || { printf 'Local CF: Deployment checkout not found at %s (docker-compose.yml missing). Set CF_DEPLOYMENT_DIR in the root .env.\n' "$deployment_dir" >&2; exit 1; }
-deployment_dir="$(cd "$deployment_dir" && pwd)"
+[[ -f "$deployment_dir/docker-compose.yml" ]] || { printf 'Local CF: Missing %s/docker-compose.yml. Restore deploy/ from the cognition-fabric checkout.\n' "$deployment_dir" >&2; exit 1; }
 cd "$deployment_dir"
 
 cf_services=(

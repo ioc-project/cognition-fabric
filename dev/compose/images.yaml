@@ -1,5 +1,5 @@
 # CF images in the local source workflow. Infrastructure is started separately
-# through the deployment checkout; these services share its existing network.
+# through deploy/; these services share its existing network.
 x-local-cf: &local-cf
   platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
   labels:

@@ -10,6 +10,7 @@ starts unless you ask for it, so `make up` stays light.
 | [`envoy/`](envoy/) | Envoy with the Go sidecar and traceparent Wasm filters, plus a test upstream | You mediate HTTP traffic (for example MCP or tool calls) |
 | [`shadi/`](shadi/) | The Go sender-authorization API (verifier) | You gate agent-to-agent sends from trusted SHADi hosts over SLIM |
 
+Run the commands below from `deploy/`, with the monorepo root `.env` configured.
 Pick one. Both talk to CF at `ioc-scale-cfn-svc:9003` and write audit records to
 `ioc-scale-enforcement-proxy-mediation`.
 
@@ -30,10 +31,10 @@ Each flavor needs config you provide;
   and `server.key`. See [`shadi/README.md`](shadi/README.md).
 
 Both files are gitignored. The `compose.yaml` in each directory is an overlay for
-the main compose file, so you can also run it by hand from the repo root:
+the main compose file, so you can also run it by hand from `deploy/`:
 
 ```bash
-docker compose -f docker-compose.yml -f enforcement/envoy/compose.yaml up -d
+docker compose --env-file ../.env -f docker-compose.yml -f enforcement/envoy/compose.yaml up -d
 ```
 
 ## Services and containers
@@ -52,7 +53,7 @@ Use the service name with `make logs service=<name>`.
 
 ## Shared settings
 
-All have defaults suited to the local stack; set them in `.env` to change them.
+All have defaults suited to the local stack; set them in the root `.env` to change them.
 
 | Variable | Default | Meaning |
 |----------|---------|---------|

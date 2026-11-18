@@ -4,7 +4,7 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-stack_env="${STACK_ENV:-${root}/.env}"
+stack_env="${STACK_ENV:-${root}/../.env}"
 stack_compose="${root}/docker-compose.yml"
 # Pinned so a checkout or worktree with another directory name still manages
 # the same stack (fixed container_name values would otherwise collide) and the

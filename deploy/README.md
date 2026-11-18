@@ -1,36 +1,45 @@
-# ioc-scale-cf-deployment
+# Deploy the Cognition Fabric stack
 
 Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
 
 ## Quick Start
 
-1. Copy `.env.example` to `.env` and fill in your credentials:
+Run these commands from the monorepo root.
+
+1. Copy the root environment template and fill in your credentials:
    ```bash
    cp .env.example .env
    ```
 
-2. Edit `demo-ce/config/config.json` with your MAS id and agent identities (see [Demo CE](#demo-ce)).
+2. Edit `deploy/demo-ce/config/config.json` with your MAS id and agent identities
+   (see [Demo CE](#demo-ce)).
 
-3. Start the stack:
+3. Use the Makefile to check configuration and start the stack:
    ```bash
-   docker compose up -d
-   docker compose --profile full-mas up -d   # adds the NOA sample app
+   make -C deploy doctor
+   make -C deploy up
+   make -C deploy up profile=full-mas     # adds the NOA sample app
    ```
-Or use the Makefile, which wraps the same compose file, checks the required
-settings and waits until every service is running, healthy or finished:
+
+The Makefile loads root `.env`, checks the required settings and waits until every
+service is running, healthy or finished:
 
 ```bash
-make doctor                  # check Docker, .env and the rendered config
-make up                      # boot the whole stack
-make up profile=full-mas     # also boot the NOA sample app
-make status                  # list containers
-make logs service=oxp-api    # follow one service (omit service= for all)
-make pull                    # pull the configured images
-make up enforcement=envoy    # add an optional enforcement flavor (or shadi)
-make down                    # stop the stack, volumes are preserved
+make -C deploy status                  # list containers
+make -C deploy logs service=oxp-api    # follow one service (omit service= for all)
+make -C deploy pull                    # pull the configured images
+make -C deploy up enforcement=envoy    # add an optional enforcement flavor (or shadi)
+make -C deploy down                    # stop the stack, volumes are preserved
 ```
 
-`make up` waits up to 180 seconds (`STACK_WAIT_TIMEOUT`) and names any service
+To use Compose directly from the monorepo root, load the same environment:
+
+```bash
+docker compose --env-file .env -f deploy/docker-compose.yml up -d
+docker compose --env-file .env -f deploy/docker-compose.yml --profile full-mas up -d
+```
+
+`make -C deploy up` waits up to 180 seconds (`STACK_WAIT_TIMEOUT`) and names any service
 that is not ready. The OXP workers `embedding`, `mce` and `analysis` restart in
 a loop without `AI_GATEWAY_API_KEY` and `OPENAI_API_KEY`, so they are the usual
 cause. The Compose project name is pinned to `ioc-scale-cf-deployment`, so the
@@ -41,7 +50,7 @@ All images are pulled from GHCR; nothing is built locally. The sample app is
 the only profiled service; the Go Demo CE starts by default.
 
 Every image is composed as `${REGISTRY}/<image>:${TAG}`, so registry and tag
-can be overridden in `.env` without editing the compose file:
+can be overridden in root `.env` without editing the compose file:
 
 - CF and enforcement proxy services (`ioc-scale-db`, `ioc-scale-cf-mgmt-svc`,
   `ioc-scale-cf-mgmt-plane-ui`, `ioc-scale-cfn-svc`, `ioc-scale-cf-demo-ce`,
@@ -58,14 +67,14 @@ can be overridden in `.env` without editing the compose file:
 - NOA sample app: `CLARIS_REGISTRY` plus `NOA_IMAGE_TAG`.
 
 
-The one image whose source lives in this repo is the database. See
+The database image source is in this directory. See
 [`docker-db/`](docker-db/) for the Dockerfile and how to publish a new tag.
 
 ### Demo CE
 
-`ioc-scale-cf-demo-ce` is the Go [Demo CE](https://github.com/cisco-eti/ioc-scale-cf-demo-ce/tree/main/demo-ce).
+`ioc-scale-cf-demo-ce` is the Go [Demo CE](../samples/demo-ce/README.md).
 It registers with CFN and evaluates identity and content rules per MAS from a
-JSON config file. It is the default CE for both `make up` and `docker compose up`.
+JSON config file. It is the default CE for both `make -C deploy up` and the direct Compose commands above.
 
 The CE waits for CFN to become healthy, then registers with `enforcing_url`
 and `enforcing_endpoint` for gRPC, plus `health_url` and `health_endpoint`
@@ -73,7 +82,7 @@ and `enforcing_endpoint` for gRPC, plus `health_url` and `health_endpoint`
 PATCH after a conflict. The CE sends no heartbeats after registration; CFN
 probes its health endpoint. `/readyz` returns 200 after registration succeeds.
 
-When upgrading, run `make pull` before `make up` so CFN, management and Demo CE
+When upgrading, run `make -C deploy pull` before `make -C deploy up` so CFN, management and Demo CE
 use current images with compatible registration fields.
 
 The config file is [`demo-ce/config/config.json`](demo-ce/config/config.json), a generic
@@ -81,8 +90,8 @@ starter mounted read-only at `/etc/demo-ce/config.json` through `CE_CONFIG_FILE`
 Before use, replace `replace-with-your-mas-id` with the id of your MAS and the
 example identities (`my-agent`, `my-tool`, `my-llm`) with those your MAS submits.
 A MAS that is not listed in the file is denied. To use your own file, set
-`DEMO_CE_CONFIG_FILE` in `.env`; relative paths resolve from this repository.
-`make up` checks that the file exists before starting services.
+`DEMO_CE_CONFIG_FILE` in `.env`; relative paths resolve from `deploy/`.
+`make -C deploy up` checks that the file exists before starting services.
 
 Other settings: `CF_DEMO_CE_TAG` (image tag), `DEMO_CE_NAME` (name in CFN),
 `DEMO_CE_LOG_FORMAT` (`console` or `json`), `LOG_LEVEL`, and `NO_COLOR`.
@@ -91,18 +100,15 @@ context retries. Evidence is selected per content rule in the JSON file.
 The CE uses `http://oxp-api:8000` for runtime context and Cognition Store access.
 Pre-call events can also be published to `http://ioc-scale-cf-demo-ce:18000/events`
 from the Compose network (or `http://localhost:18000/events` from the host).
-See the [Demo CE configuration reference](https://github.com/cisco-eti/ioc-scale-cf-demo-ce/blob/main/docs/content/demo-ce/configuration.md)
+See the [Demo CE configuration reference](../samples/docs-site/content/demo-ce/configuration.md)
 for the file format.
-
-If upgrading from an older deployment, run `make down` with that checkout
-before updating, to remove the old CE containers.
 
 ### Enforcement (optional)
 
 [`enforcement/`](enforcement/) holds two optional flavors, `envoy` (Envoy with the
 Go sidecar and Wasm filters) and `shadi` (the sender-authorization verifier), each
 with an overlay compose file and example configs. They are not part of the base
-stack; start one with `make up enforcement=envoy` or `enforcement=shadi`. Setup
+stack; start one with `make -C deploy up enforcement=envoy` or `enforcement=shadi`. Setup
 for each is in [`enforcement/README.md`](enforcement/README.md).
 
 ## Services
@@ -187,7 +193,7 @@ which the SDK sends on a five-minute idle timeout or at exit.
 
 ## Configuration
 
-See `.env.example` for all available configuration options. Key settings:
+See the root [`.env.example`](../.env.example) for all available configuration options. Key settings:
 
 - `IOC_SCALE_DB_*` - Database credentials
 - `ADMIN_USER_PASSWORD` - Admin password for mgmt backend

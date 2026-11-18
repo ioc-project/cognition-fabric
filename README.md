@@ -1,8 +1,8 @@
 # Cognition Fabric
 
 Cognition Fabric provides the management plane, node runtime, and CE/enforcement
-contracts used to govern multi-agent systems. OXP and the shared Deployment
-repository are maintained separately.
+contracts used to govern multi-agent systems. The shared stack is configured in
+`deploy/`; OXP remains an external integration.
 
 | Folder | Purpose |
 | --- | --- |
@@ -15,13 +15,13 @@ repository are maintained separately.
 | [samples/noa-trip-planner/](samples/noa-trip-planner/README.md) | Source NOA integration driver and MAS declarations |
 | [samples/docs-site/](samples/docs-site/README.md) | CE documentation site |
 | [dev/](dev/README.md) | Local launchers, Compose overrides, and development checks |
+| [deploy/](deploy/README.md) | Shared Compose stack, enforcement overlays, and database image source |
 | [docs/](docs/README.md) | CF-wide architecture, decisions, contracts, and operating guidance |
 
 Run `task test`, `task check`, `task infra:up`, and `task run:*` from this root.
 Start with [fresh checkout setup](dev/README.md#fresh-checkout) for prerequisites,
 source/image modes, and ports.
-Set `CF_DEPLOYMENT_DIR` in root `.env` to locate the shared
-`ioc-scale-cf-deployment` checkout; the example points beside this repository.
+The local stack uses the deployment assets in [deploy/](deploy/README.md).
 Do not run a second copy of an already-running service.
 
 Components are versioned independently with folder-prefixed tags. See the

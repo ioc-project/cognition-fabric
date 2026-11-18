@@ -1,7 +1,7 @@
 # `ioc-scale-db` image
 
 Source for `ghcr.io/cisco-eti/ioc-scale-db`, the database used by the
-`ioc-scale-db` service in `docker-compose.yml`.
+`ioc-scale-db` service in `deploy/docker-compose.yml`.
 
 It is a multi-stage build on `postgres:16-bookworm` that compiles
 [AgensGraph](https://github.com/skaiworldwide-oss/agensgraph) — a PostgreSQL 16
@@ -24,11 +24,11 @@ flags are needed at runtime.
 ## Publishing
 
 Run the **Manual Publish DB Image** workflow
-(`.github/workflows/publish-db-manual-image.yaml`) from the Actions tab and give
+([`.github/workflows/publish-db-manual-image.yaml`](../../.github/workflows/publish-db-manual-image.yaml)) from the Actions tab and give
 it a tag. It builds each architecture on a native runner, pushes both by digest,
 then joins them into a single multi-arch manifest. The workflow only appears in
 the Actions tab once it is on the default branch. After it finishes, bump the
-tag on the `ioc-scale-db` service in `docker-compose.yml` to match.
+tag on the `ioc-scale-db` service in `deploy/docker-compose.yml` to match.
 
 Verify the result carries both architectures:
 
@@ -41,7 +41,7 @@ docker buildx imagetools inspect ghcr.io/cisco-eti/ioc-scale-db:<tag>
 From the repository root:
 
 ```bash
-docker build -t ioc-scale-db docker-db
+docker build -t ioc-scale-db deploy/docker-db
 ```
 
 Expect 15-20 minutes; most of it is compiling AgensGraph and TimescaleDB.

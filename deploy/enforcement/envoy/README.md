@@ -4,6 +4,8 @@ Envoy in front of an upstream. Each request passes the traceparent Wasm filter
 (adds a `traceparent` if missing), then the Go sidecar filter, which asks CF for a
 decision and writes an audit record to `ioc-scale-enforcement-proxy-mediation`.
 
+Run these commands from `deploy/`, with the monorepo root `.env` configured.
+
 ```bash
 cp enforcement/envoy/sidecar-spec.example.yaml enforcement/envoy/sidecar-spec.yaml
 # edit the routes, then:

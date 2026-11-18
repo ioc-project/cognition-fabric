@@ -84,7 +84,7 @@ class LocalLauncherTests(unittest.TestCase):
         shutil.copyfile(ROOT_DIR / "Taskfile.yml", self.cfn / "Taskfile.yml")
         (self.cfn / ".env").touch()
         (self.cfn / "go.work").touch()
-        deployment = workspace / "ioc-scale-cf-deployment"
+        deployment = self.cfn / "deploy"
         deployment.mkdir()
         (deployment / "docker-compose.yml").touch()
         for repo, marker in [
@@ -130,7 +130,6 @@ class LocalLauncherTests(unittest.TestCase):
             IOC_SCALE_DB_PASSWORD="test",
             ADMIN_USER_PASSWORD="test",
             NEXTAUTH_SECRET="test",
-            CF_DEPLOYMENT_DIR="../ioc-scale-cf-deployment",
             CE_CONFIG_FILE="policy.json",
             AI_GATEWAY_BASE_URL="http://example.invalid/v1",
             AI_GATEWAY_API_KEY="test",
@@ -150,46 +149,25 @@ class LocalLauncherTests(unittest.TestCase):
         return next(command for command in reversed(self.commands())
                     if command["tool"] == "docker" and "up" in command["args"])
 
-    def test_deployment_path_accepts_absolute_and_root_relative_paths_with_spaces(self):
-        deployment = self.cfn.parent / "external infrastructure" / "shared checkout"
-        deployment.parent.mkdir()
-        (self.cfn.parent / "ioc-scale-cf-deployment").rename(deployment)
-        for value in (str(deployment), "../external infrastructure/shared checkout"):
-            with self.subTest(path=value):
-                self.log.unlink(missing_ok=True)
-                result = self.run_task("infra-up", CF_DEPLOYMENT_DIR=value)
-                self.assertEqual(result.returncode, 0, result.stderr)
-                commands = [x for x in self.commands() if "--project-directory" in x["args"]]
-                self.assertTrue(commands)
-                for command in commands:
-                    args = command["args"]
-                    self.assertEqual(args[args.index("--project-directory") + 1], str(deployment))
-                    self.assertIn(str(deployment / "docker-compose.yml"), args)
-                    self.assertEqual(command["cwd"], str(deployment))
-
-    def test_missing_or_invalid_deployment_setting_fails_before_docker(self):
-        for value in ("", "../missing-deployment-checkout"):
-            with self.subTest(path=value):
-                result = self.run_task("infra-up", CF_DEPLOYMENT_DIR=value)
-                self.assertNotEqual(result.returncode, 0)
-                self.assertIn("CF_DEPLOYMENT_DIR", result.stderr)
-                self.assertFalse(self.log.exists())
-
-    @unittest.skipUnless(shutil.which("task"), "Task CLI is not installed")
-    def test_task_loads_deployment_path_from_root_dotenv(self):
-        deployment = self.cfn.parent / "custom infrastructure"
-        (self.cfn.parent / "ioc-scale-cf-deployment").rename(deployment)
-        (self.cfn / ".env").write_text('CF_DEPLOYMENT_DIR="../custom infrastructure"\n')
-        env = dict(self.env)
-        del env["CF_DEPLOYMENT_DIR"]
-        result = subprocess.run(
-            [shutil.which("task"), "--dir", str(self.cfn), "infra:up"],
-            env=env, capture_output=True, text=True,
-        )
+    def test_deployment_is_bundled_in_the_monorepo(self):
+        deployment = self.cfn / "deploy"
+        result = self.run_task("infra-up")
         self.assertEqual(result.returncode, 0, result.stderr)
-        command = self.last_up()
-        args = command["args"]
-        self.assertEqual(args[args.index("--project-directory") + 1], str(deployment))
+        commands = [x for x in self.commands() if "--project-directory" in x["args"]]
+        self.assertTrue(commands)
+        for command in commands:
+            args = command["args"]
+            self.assertEqual(args[args.index("--project-directory") + 1], str(deployment))
+            self.assertIn(str(deployment / "docker-compose.yml"), args)
+            self.assertEqual(command["cwd"], str(deployment))
+
+    def test_missing_bundled_compose_fails_before_docker(self):
+        (self.cfn / "deploy/docker-compose.yml").unlink()
+        result = self.run_task("infra-up")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("docker-compose.yml", result.stderr)
+        self.assertIn("Restore deploy/", result.stderr)
+        self.assertFalse(self.log.exists())
 
     def test_each_image_starts_only_selected_service_and_preserves_tag(self):
         for task, service, tag in [
@@ -410,6 +388,47 @@ class LocalLauncherTests(unittest.TestCase):
 
 @unittest.skipUnless(shutil.which("docker"), "Docker Compose CLI is not installed")
 class ImageComposeTests(unittest.TestCase):
+    def test_bundled_deployment_uses_root_env_and_preserves_stack_identity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "cognition-fabric"
+            deployment = root / "deploy"
+            deployment.mkdir(parents=True)
+            shutil.copyfile(ROOT_DIR / "deploy/docker-compose.yml", deployment / "docker-compose.yml")
+            shutil.copyfile(ROOT_DIR / ".env.example", root / ".env")
+            # An unrelated deploy/.env must not supply the container environment.
+            (deployment / ".env").write_text("DEPLOYMENT_ONLY=private\n")
+            env = {key: os.environ[key] for key in ("PATH", "HOME", "DOCKER_CONFIG")
+                   if key in os.environ}
+            command = ["docker", "compose", "--env-file", str(root / ".env"),
+                       "-f", str(deployment / "docker-compose.yml")]
+            for flavor in (None, "envoy", "shadi", "local"):
+                with self.subTest(flavor=flavor):
+                    args = list(command)
+                    if flavor == "local":
+                        args += ["-f", str(ROOT_DIR / "dev/compose/infrastructure.override.yaml")]
+                    elif flavor:
+                        overlay = deployment / "enforcement" / flavor / "compose.yaml"
+                        overlay.parent.mkdir(parents=True)
+                        shutil.copyfile(ROOT_DIR / "deploy/enforcement" / flavor / "compose.yaml", overlay)
+                        args += ["-f", str(overlay)]
+                    result = subprocess.run(
+                        args + ["config", "--format", "json"], capture_output=True, text=True,
+                        env=env | {"CF_LOCAL_ENV_FILE": str(root / ".env")},
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    config = json.loads(result.stdout)
+                    self.assertEqual(config["name"], "ioc-scale-cf-deployment")
+                    self.assertEqual(config["networks"]["default"]["name"],
+                                     "ioc-scale-cf-deployment_default")
+                    self.assertEqual(config["volumes"]["ioc_scale_db_data"]["name"],
+                                     "ioc-scale-cf-deployment_ioc_scale_db_data")
+                    services = config["services"]
+                    self.assertEqual(services["oxp-api"]["environment"]["POSTGRES_PORT"], "5432")
+                    self.assertEqual(services["ioc-scale-db"]["environment"]["POSTGRES_USER"],
+                                     "postgresUser")
+                    self.assertNotIn("DEPLOYMENT_ONLY", services["oxp-api"]["environment"])
+                    self.assertNotIn("DEPLOYMENT_ONLY", services["norm"]["environment"])
+
     def test_infrastructure_reads_root_env_and_ignores_deployment_private_env(self):
         services = (
             "oxp-api", "norm", "embedding", "mce", "grouping", "analysis",
@@ -417,7 +436,7 @@ class ImageComposeTests(unittest.TestCase):
         )
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
-            deployment = root / "ioc-scale-cf-deployment"
+            deployment = root / "deploy"
             deployment.mkdir()
             envfile = root / "root.env"
             envfile.write_text("ROOT_MARKER=from-monorepo\nIOC_SCALE_DB_PORT=5456\n")

@@ -7,6 +7,8 @@ record. Replies are reported to `POST /observations`. Only `allow` lets the send
 proceed; everything else fails closed. The hosts themselves, and SLIM, run
 outside this stack.
 
+Run these commands from `deploy/`, with the monorepo root `.env` configured.
+
 ```bash
 enforcement/shadi/gen-dev-certs.sh spiffe://ioc.example/hosts/sender spiffe://ioc.example/hosts/receiver
 cp enforcement/shadi/config.example.json enforcement/shadi/config/config.json

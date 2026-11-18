@@ -1,3 +1,5 @@
+name: ioc-scale-cf-deployment
+
 # ---------------------------------------------------------------------------
 # OXP (Observability & Explainability Platform) worker environment
 # Workers run from prebuilt claris-lib images (GHCR) and are amd64-only.
@@ -31,7 +33,7 @@ x-worker-env: &worker-env
 x-worker-base: &worker-base
   platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
   env_file:
-    - path: .env
+    - path: ../.env
       required: false
   depends_on:
     rabbitmq:
@@ -281,7 +283,7 @@ services:
   oxp-api:
     image: ${OXP_API_IMAGE:-${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/ioc-analytics-api:${OXP_API_IMG_TAG:-latest}}
     platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
-    env_file: .env
+    env_file: ../.env
     container_name: ioc-scale-oxp-api
     environment:
       CLARIS_API_RELOAD: "false"
@@ -296,7 +298,8 @@ services:
       NEO4J_PASSWORD: ${NEO4J_PASSWORD:-testpassword}
       NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
       POSTGRES_HOST: ${IOC_SCALE_DB:-ioc-scale-db}
-      POSTGRES_PORT: ${IOC_SCALE_DB_PORT:-5432}
+      # IOC_SCALE_DB_PORT is the published host port, not the container port.
+      POSTGRES_PORT: "5432"
       POSTGRES_USER: ${IOC_SCALE_DB_USER:-postgresUser}
       POSTGRES_PASSWORD: ${IOC_SCALE_DB_PASSWORD:-postgresPW}
       POSTGRES_DB: ${OXP_POSTGRES_DB:-cognition_store}
@@ -633,7 +636,7 @@ services:
     platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
     container_name: ioc-scale-noa-trip-planner
     env_file:
-      - path: .env
+      - path: ../.env
         required: false
     ports:
       - "${NOA_API_PORT:-8125}:8125"

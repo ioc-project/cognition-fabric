@@ -14,8 +14,11 @@ READMEs point to that template and the root tasks, which supply mode-specific
 addresses, ports and database settings.
 
 CFN owns the source-specific Compose override and generated configuration.
-The deployment checkout supplies reusable images and overlays and is not
-modified by these tasks. MAS-specific routes are generated when NOA starts;
+`deploy/` supplies reusable images and overlays and is not modified by these
+tasks. Its stack and local tasks share root `.env` and the pinned Compose project
+name; moving the Compose file must not select new networks or volumes. Container
+database connections use port 5432, independently of the published host port.
+MAS-specific routes are generated when NOA starts;
 infrastructure can start before a MAS exists.
 
 CF source tasks have `:image` counterparts for management, CFN, UI, and Go Demo

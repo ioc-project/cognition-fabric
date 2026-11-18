@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Render CFN-owned Envoy configuration without changing the deployment checkout."""
+"""Render CFN-owned Envoy configuration without changing deploy/."""
 
 import argparse
 import fcntl

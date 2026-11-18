@@ -57,4 +57,4 @@ below provide the onboarding, application traffic, telemetry and enforcement sho
 | NOA application sources | [oxp-sample-apps](https://github.com/cisco-eti/oxp-sample-apps) | Source repository for the NOA trip-planner applications used by the demo |
 | CF management API | [cf-mgmt/](https://github.com/cisco-eti/cognition-fabric/tree/main/cf-mgmt) | Management API behind manual MAS onboarding and CE association |
 | CFN UI | [cf-ui/](https://github.com/cisco-eti/cognition-fabric/tree/main/cf-ui) | Onboards the MAS and associates its Demo CE |
-| Shared platform deployment | [ioc-scale-cf-deployment](https://github.com/cisco-eti/ioc-scale-cf-deployment) | Platform Compose configuration and supporting databases, brokers, collectors and OXP workers |
+| Shared platform deployment | [deploy/](https://github.com/cisco-eti/cognition-fabric/tree/main/deploy) | Platform Compose configuration and supporting databases, brokers, collectors and OXP workers |
