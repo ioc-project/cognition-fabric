@@ -31,8 +31,9 @@ import path.
 
 The [component release workflow](../.github/workflows/release.yaml) runs for
 component-prefixed tags. It validates the prefix and semantic version against
-the component metadata, runs the [CI checks](../.github/workflows/ci.yaml), and
-publishes the selected component's image to GHCR. For example, `cfn/v1.0.0`
+the component metadata, runs all [CI test suites](../.github/workflows/ci.yaml)
+with the five-image validation matrix disabled, and builds and publishes only the
+selected component's image to GHCR. For example, `cfn/v1.0.0`
 publishes image tag `v1.0.0`; the folder prefix belongs only to the Git tag.
 The API is released by its Go module tag and has no container image.
 
@@ -41,6 +42,22 @@ package must allow the repository's Actions access. UI image builds use the
 repository variable `CFN_UI_API_BASE_URL`, defaulting to `http://localhost:9000`.
 Main-branch CI publishes its configured image aliases separately from component
 tags.
+
+## Validate an ARM64 UI build
+
+To validate a published PR branch before merging, manually dispatch CI with the
+`ui-arm64` input:
+
+```bash
+gh workflow run ci.yaml --repo cisco-eti/cognition-fabric \
+  --ref <published-pr-branch> -F ui-arm64=true
+```
+
+This runs all test suites and the five validation image builds. The UI targets
+both `linux/amd64` and `linux/arm64`; the other images target `linux/amd64`.
+Manual dispatch does not publish images, including when the selected branch is
+`main`. Record the ARM64 `npm ci` and Next.js build durations from the Buildx
+logs, plus the total image-job duration.
 
 ## Documentation deployment
 

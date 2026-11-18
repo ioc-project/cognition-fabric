@@ -1,0 +1,29 @@
+# CI image build boundaries
+
+**Scope:** Image validation, component releases and UI ARM64 verification.
+
+**Guidance:** Preserve component-specific build tooling. Explicit QEMU setup is
+enabled only for Management in CI and component releases. Pin remote actions to
+full commit SHAs with verified version comments; changing action majors is a
+separate decision.
+
+The reusable CI workflow defaults `include-images` to true. Only boolean false
+disables its image matrix. `CI Status` accepts an image-job skip only in that
+case; every test suite must still succeed. Ordinary PR and main-push runs keep
+their image builds enabled when reusable-workflow inputs are absent.
+
+An AMD64 PR build does not validate the ARM64 image path. Use the build-only
+`ui-arm64` manual input on the published PR branch and record its ARM64 install,
+application-build and total job durations before claiming ARM64 verification.
+
+**Why:** Shared workflow defaults can change a component's working build setup.
+GitHub's loose equality also equates a missing input with boolean false unless
+the condition distinguishes their types.
+
+**Evidence:** [CI](../../.github/workflows/ci.yaml),
+[component releases](../../.github/workflows/release.yaml),
+[status regressions](../../.github/tests/test_ci_workflows.py), and
+[ARM64 validation procedure](../releases.md#validate-an-arm64-ui-build).
+
+**Revisit when:** Supported architectures, emulation, workflow inputs or release
+validation requirements change.

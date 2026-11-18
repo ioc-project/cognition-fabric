@@ -15,6 +15,8 @@ or observed code, surface the conflict instead of silently following the note.
 ## Active guidance
 
 - [Source and Pages checks](source-and-pages-checks.md) — tracked source coverage and Pages path normalization.
+- [CI image build boundaries](ci-image-builds.md) — component-specific emulation,
+  typed image-job opt-out and build-only UI ARM64 verification.
 
 - [CE evaluation response](ce-evaluation-response.md) — legacy binary compatibility,
   independent fixtures and bounded CE-specific audit JSON.
