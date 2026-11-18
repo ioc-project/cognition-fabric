@@ -42,7 +42,7 @@ For details please refer to the [README](src/server/database/relational_db/READM
 
 ### Full Stack Deployment
 
-For full stack deployment (all services), see [ioc-scale-cf-deployment](https://github.com/cisco-eti/ioc-scale-cf-deployment).
+For full stack deployment (all services), see [deploy/](../deploy/README.md).
 
 ### Local Development
 

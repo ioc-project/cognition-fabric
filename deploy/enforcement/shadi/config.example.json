@@ -1,0 +1,21 @@
+{
+  "hosts": [
+    {
+      "certificate_uri": "spiffe://ioc.example/hosts/sender",
+      "mas_id": "replace-with-registered-mas",
+      "agent_id": "sender",
+      "local_agent": "sender",
+      "did": "did:key:replace-with-real-sender-did",
+      "slim_name": "example/production/sender"
+    },
+    {
+      "certificate_uri": "spiffe://ioc.example/hosts/receiver",
+      "mas_id": "replace-with-registered-mas",
+      "agent_id": "receiver",
+      "local_agent": "receiver",
+      "did": "did:key:replace-with-real-receiver-did",
+      "slim_name": "example/production/receiver"
+    }
+  ],
+  "routes": [{"source": "sender", "destination": "receiver"}]
+}

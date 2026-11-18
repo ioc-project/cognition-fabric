@@ -1,25 +1,18 @@
 # Run Cognition Fabric locally
 
 Run these commands from the `cognition-fabric` repository root. The local tasks
-run CF components from this checkout and use the
-[`ioc-scale-cf-deployment`](https://github.com/cisco-eti/ioc-scale-cf-deployment)
-checkout configured by `CF_DEPLOYMENT_DIR` in root `.env` to start Postgres, OXP
-and Enforcement Proxy infrastructure.
-Deployment and OXP remain separate repositories; the tasks do not modify them.
+run CF components from this checkout and use [deploy/](../deploy/README.md) to
+start Postgres, OXP and Enforcement Proxy infrastructure. OXP and Enforcement
+Proxy continue to run from their existing published images.
 
 ## Fresh checkout
 
-For the sibling-directory layout shown in `.env.example`, clone both repositories
-into the same parent directory, then work from the monorepo root:
+Clone the repository, then work from its root:
 
 ```bash
 git clone https://github.com/cisco-eti/cognition-fabric.git
-git clone https://github.com/cisco-eti/ioc-scale-cf-deployment.git
 cd cognition-fabric
 ```
-
-The Deployment checkout can be elsewhere; set its location in root `.env` as
-described below.
 
 Install dependencies and create `.env` as described below. First startup
 initializes the local databases and registers the CF services.
@@ -36,6 +29,7 @@ initializes the local databases and registers the CF services.
 | `samples/template-ce/` | Python CE with MAS notifications |
 | `samples/noa-trip-planner/` | Source NOA, local tools, experiments and MAS declarations |
 | `dev/` | Launcher, Compose overrides, helper tools and regression tests |
+| `deploy/` | Shared Compose stack, enforcement overlays and database image source |
 
 Install Docker with Compose v2.24.4+, Task, Go 1.25.9+, Python 3.11+, Poetry, uv,
 Node.js 20 (at least 20.9) and npm. The Go modules use the shared API module
@@ -73,33 +67,19 @@ rejects it to protect the selected database.
 cp .env.example .env
 ```
 
-Set `CF_DEPLOYMENT_DIR` to your Deployment checkout. The example uses a sibling
-directory:
-
-```dotenv
-CF_DEPLOYMENT_DIR=../ioc-scale-cf-deployment
-```
-
-Absolute paths are also supported, for example
-`CF_DEPLOYMENT_DIR=/path/to/ioc-scale-cf-deployment`. Relative paths resolve from
-the monorepo root, regardless of the directory where you invoke Task. Quote a
-path containing spaces. The configured directory must contain
-`docker-compose.yml`; the launcher reports a missing setting or checkout before
-issuing Docker commands. Infrastructure, proxy and service tasks use this same
-setting.
-
 Supply your own gateway/model credentials and `NEXTAUTH_SECRET`. Set
 `ENFORCEMENT_PLATFORM` for your host (`linux/arm64` or `linux/amd64`). OXP
 infrastructure defaults to `linux/arm64`; on an Intel/AMD host, add
 `OXP_INFRA_PLATFORM=linux/amd64` to root `.env` so those containers run natively.
 OXP workers default to `linux/amd64`. Optional OXP and infrastructure tuning
-variables are listed in the Deployment checkout's `.env.example`; add them to
-root `.env` when overriding a default. The root template keeps CF settings,
+variables are listed in the root template's "Optional infrastructure overrides"
+section. The root template keeps CF settings,
 required external configuration and deliberate overrides such as the ClickHouse
 database shared with the OTel collector. Root tasks
 load `.env` automatically, so mode settings do not need inline overrides.
 The monorepo Compose override also uses this file for OXP and published NOA
-container environments; no `.env` is needed in the Deployment checkout. Compose
+container environments. The standalone [deployment workflow](../deploy/README.md)
+also loads root `.env`. Compose
 2.24.4+ is required for replacing the inherited environment-file list with
 [`!override`](https://docs.docker.com/reference/compose-file/merge/#replace-value).
 
@@ -223,7 +203,7 @@ logs so health checks, enforcement and MAS notification receipt can be observed.
 ## Published CF images with the local databases
 
 The existing image tasks pull the selected tag and run only that service through
-[`compose/images.yaml`](compose/images.yaml). They share the existing Deployment
+[`compose/images.yaml`](compose/images.yaml). They share the existing stack
 network and retain its service/container names and local ownership labels.
 The image file deliberately has no build configuration or infrastructure
 dependencies. Image builds use repository-root contexts separately.

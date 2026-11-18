@@ -45,7 +45,7 @@ below provide the onboarding, application traffic, telemetry and enforcement sho
 | NOA application sources | [oxp-sample-apps](https://github.com/cisco-eti/oxp-sample-apps) | Source repository for the NOA trip-planner applications used by the demo |
 | CF management API | [cf-mgmt/](../../cf-mgmt) | Management API behind manual MAS onboarding and CE association |
 | CFN UI | [cf-ui/](../../cf-ui) | Onboards the MAS and associates its Demo CE |
-| Shared platform deployment | [ioc-scale-cf-deployment](https://github.com/cisco-eti/ioc-scale-cf-deployment) | Platform Compose configuration and supporting databases, brokers, collectors and OXP workers |
+| Shared platform deployment | [deploy/](../../deploy/README.md) | Platform Compose configuration and supporting databases, brokers, collectors and OXP workers |
 
 Start with the [NOA demo instructions](https://github.com/cisco-eti/ioc-scaling-demos/tree/main/noa)
 for the full stack. This repository's root [docker-compose.yml](../docker-compose.yml) starts only the Demo CE

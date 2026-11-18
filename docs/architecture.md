@@ -111,6 +111,11 @@ to associated CE callbacks; CEs can then pull current MAS metadata. See
 
 ## Deployment
 
+The shared Compose stack, enforcement overlays and database image source live in
+[`deploy/`](../deploy/README.md). Local source and image tasks use these assets
+with the root `.env`. OXP and Enforcement Proxy remain external image and contract
+integrations.
+
 CF deploys as a set of microservices:
 - **CF Management service** — management plane and config
 - **CF UI** — management interface and audit display

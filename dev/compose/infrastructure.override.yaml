@@ -1,5 +1,5 @@
 # The monorepo root .env configures both Compose interpolation and containers.
-# Replace Deployment's env_file lists so its private .env is never required/read.
+# Resolve deploy/ env_file lists explicitly from the monorepo root.
 x-root-env: &root-env
   env_file: !override
     - ${CF_LOCAL_ENV_FILE:?Run through the monorepo local tasks}
