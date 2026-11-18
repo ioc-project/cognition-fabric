@@ -8,6 +8,8 @@ The Proxy consumes CF's definitions, following the same dependency direction as
 names. Binary compatibility with the Proxy-owned AuditService is not required.
 
 This CF implementation provides the receiving, persistence and read/UI path.
+CFN's own `GetDisposition` audit is a separate, asynchronous best-effort write;
+its RPC response does not carry the persistence guarantee of `AppendAuditRecord`.
 The Proxy's real CFN delivery client is separate integration work; its pending
 logging client is not evidence of delivery. The contract reference used here is
 Proxy commit [`ac537e2d96189d8e123f8f6ec4d1ef37628d3694`](https://github.com/cisco-eti/ioc-scaling-enforcement-proxy/commit/ac537e2d96189d8e123f8f6ec4d1ef37628d3694).
@@ -190,3 +192,7 @@ With the `cf-mgmt/.venv` and `cf-ui/` dependencies installed, set
 repository root with isolated PostgreSQL settings. This checks RPC → PostgreSQL →
 CFN HTTP → Management → UI presentation helpers with live upstream calls. It does
 not exercise browser layout or substitute for actual Proxy-client qualification.
+
+A synthetic record marked `extra.mock="true"` can verify CF ingestion, persistence,
+idempotent replay and CFN/Management readback. Report that evidence as mock: it does
+not establish real Proxy delivery or actual forwarding.
