@@ -1,0 +1,6 @@
+<clickhouse>
+    <rabbitmq>
+        <username from_env="RABBITMQ_USER" />
+        <password from_env="RABBITMQ_PASSWORD" />
+    </rabbitmq>
+</clickhouse>

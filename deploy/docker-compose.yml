@@ -1,0 +1,680 @@
+# ---------------------------------------------------------------------------
+# OXP (Observability & Explainability Platform) worker environment
+# Workers run from prebuilt claris-lib images (GHCR) and are amd64-only.
+# ---------------------------------------------------------------------------
+# Workers assemble the AMQP URL from these parts, so no connection string with
+# embedded credentials is needed here.
+x-rabbitmq-env: &rabbitmq-env
+  RABBITMQ_HOST: rabbitmq
+  RABBITMQ_PORT: 5672
+  RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+  RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest} # legit:ignore
+
+x-worker-env: &worker-env
+  <<: *rabbitmq-env
+  HOME: /claris
+  MPLCONFIGDIR: /claris/.config/matplotlib
+  API_BASE_URL: http://host.docker.internal:8081
+  NEO4J_HOST: neo4j:7687
+  NEO4J_URI: bolt://neo4j:7687
+  NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
+  NEO4J_PASSWORD: ${NEO4J_PASSWORD:-testpassword} # legit:ignore
+  UV_LINK_MODE: copy
+  UV_PROJECT_ENVIRONMENT: /opt/venv
+  PYTHONUNBUFFERED: 1
+  MLFLOW_TRACKING_URI: http://${MLFLOW_HOST}:${MLFLOW_PORT}
+  CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-clickhouse-server}
+  CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
+  CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME:-admin}
+  CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin} # legit:ignore
+
+x-worker-base: &worker-base
+  platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
+  env_file:
+    - path: .env
+      required: false
+  depends_on:
+    rabbitmq:
+      condition: service_healthy
+    neo4j:
+      condition: service_healthy
+    clickhouse-server:
+      condition: service_healthy
+  volumes:
+    - type: bind
+      source: ${MCE_CONFIG_FILE:-./mce_config.yaml}
+      target: /claris/mce_config.yaml
+    - /dev/null:/app/workflows/.env
+  environment: *worker-env
+
+services:
+  # Database - AgensGraph + PgVector + Postgres
+  # Port Mapping: 5456:5432
+  ioc-scale-db:
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-db:${IOC_SCALE_DB_TAG:-0.2.0}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-db
+    environment:
+      POSTGRES_DB: ${IOC_SCALE_DB:-ioc-scale-db}
+      POSTGRES_USER: ${IOC_SCALE_DB_USER}
+      POSTGRES_PASSWORD: ${IOC_SCALE_DB_PASSWORD}
+    ports:
+      - "${IOC_SCALE_DB_PORT:-5456}:5432"
+    volumes:
+      - ioc_scale_db_data:/var/lib/postgresql/data
+      - ./scripts/init-multi-db.sh:/docker-entrypoint-initdb.d/init-multi-db.sh:ro
+    restart: unless-stopped
+    healthcheck:
+      test: [
+          "CMD-SHELL",
+          "pg_isready -h localhost -p 5432 -U ${IOC_SCALE_DB_USER} -d
+          ${IOC_SCALE_DB:-ioc-scale-db}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Ensures required app databases exist even when reusing an existing PG volume.
+  ioc-scale-db-init:
+    image: postgres:16-alpine
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-db-init
+    entrypoint: ["/bin/sh", "/scripts/ensure-databases.sh"]
+    environment:
+      DB_HOST: ioc-scale-db
+      DB_PORT: 5432
+      POSTGRES_DB: ${IOC_SCALE_DB:-ioc-scale-db}
+      POSTGRES_USER: ${IOC_SCALE_DB_USER}
+      POSTGRES_PASSWORD: ${IOC_SCALE_DB_PASSWORD}
+    volumes:
+      - ./scripts/ensure-databases.sh:/scripts/ensure-databases.sh:ro
+    restart: "no"
+    depends_on:
+      ioc-scale-db:
+        condition: service_healthy
+
+  # Mgmt Backend Service - FastAPI backend for workspaces, users, CFN nodes
+  # Port Mapping: 9000:9000
+  ioc-scale-cf-mgmt-svc:
+    # Image Link: https://github.com/cisco-eti/ioc-scale-cf-mgmt-svc/pkgs/container/ioc-scale-cf-mgmt-svc
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-mgmt-svc:${CF_MGMT_SVC_TAG:-latest}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-cf-mgmt-svc
+    ports:
+      - "9000:9000"
+    environment:
+      - SERVICE_NAME=ioc-scale-cf-mgmt-svc
+      - APPLICATION_VERSION=dev
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ADMIN_USER_PASSWORD=${ADMIN_USER_PASSWORD}
+      - POSTGRES_HOST=ioc-scale-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=cfn_mgmt
+      - POSTGRES_USER=${IOC_SCALE_DB_USER}
+      - POSTGRES_PASSWORD=${IOC_SCALE_DB_PASSWORD}
+      - PORT=9000
+      - CFN_DEV_MODE=${CFN_DEV_MODE}
+      - CFN_SVC_URL=${CFN_SVC_URL:-http://ioc-scale-cfn-svc:9002}
+      # CE health probing (CFN probes each CE's health_url)
+      - CE_PROBE_INTERVAL_SECONDS=${CE_PROBE_INTERVAL_SECONDS:-2}
+      # Only sizes mgmt's call to CFN (timeout + 1s). The probe timeout itself is set on ioc-scale-cfn-svc.
+      - CE_PROBE_TIMEOUT_SECONDS=${CE_PROBE_TIMEOUT_SECONDS:-1}
+      - CE_OFFLINE_THRESHOLD_SECONDS=${CE_OFFLINE_THRESHOLD_SECONDS:-6}
+    volumes:
+      - ./.secrets:/home/app/.secrets:ro
+    restart: unless-stopped
+    depends_on:
+      ioc-scale-db:
+        condition: service_healthy
+      ioc-scale-db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://ioc-scale-cf-mgmt-svc:9000/api/internal/diagnostics/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Mgmt. Plane UI - Next.js frontend for management plane
+  # Port Mapping: 9001:9001
+  ioc-scale-cf-mgmt-plane-ui:
+    # Image Link: https://github.com/cisco-eti/ioc-scale-cf-ui/pkgs/container/ioc-scale-cf-ui
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-ui:${CF_UI_TAG:-latest}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-cf-mgmt-plane-ui
+    ports:
+      - "9001:9001"
+    environment:
+      - NODE_ENV=production
+      - PORT=9001
+      - CFN_UI_API_BASE_URL=http://ioc-scale-cf-mgmt-svc:9000
+      - NEXT_PUBLIC_CFN_UI_API_BASE_URL=http://localhost:9000
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:9001}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+    restart: unless-stopped
+    depends_on:
+      ioc-scale-cf-mgmt-svc:
+        condition: service_healthy
+
+  # CFN Service - Cognition Fabric Node
+  # Port Mapping: 9002:9002 (HTTP)
+  ioc-scale-cfn-svc:
+    # Image Link: https://github.com/cisco-eti/ioc-scale-cfn-svc/pkgs/container/ioc-scale-cfn-svc
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cfn-svc:${CFN_SVC_TAG:-latest}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-cfn-svc
+    restart: unless-stopped
+    ports:
+      - "9002:9002"
+      - "9003:9003"
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - MGMT_URL=${MGMT_URL:-http://ioc-scale-cf-mgmt-svc:9000}
+      - CFN_NAME=${CFN_NAME:-cfn-new}
+      - CFN_IP=${CFN_IP:-"Not Set"}
+      - HEARTBEAT_INTERVAL_SECONDS=${HEARTBEAT_INTERVAL_SECONDS:-10}
+      - SERVICE_NAME=${SERVICE_NAME:-ioc-cfn-svc}
+      # Timeout of the health probe CFN performs against each CE's health_url (the probe itself runs in CFN)
+      - CE_PROBE_TIMEOUT_SECONDS=${CE_PROBE_TIMEOUT_SECONDS:-1}
+      - POSTGRES_HOST=ioc-scale-db
+      - POSTGRES_PORT=5432
+      - POSTGRES_AUDIT_DB=cfn_audit
+      - POSTGRES_USER=${IOC_SCALE_DB_USER}
+      - POSTGRES_PASSWORD=${IOC_SCALE_DB_PASSWORD}
+    depends_on:
+      ioc-scale-db:
+        condition: service_healthy
+      ioc-scale-db-init:
+        condition: service_completed_successfully
+      ioc-scale-cf-mgmt-svc:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "--spider",
+          "http://localhost:9002/api/internal/diagnostics/health",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Demo CE: Go Cognition Engine driven by identity and content rules per MAS.
+  # Edit demo-ce/config/config.json (or DEMO_CE_CONFIG_FILE) before starting.
+  # Port Mapping: 18001:18001 (gRPC), 18000:18000 (HTTP), host loopback only
+  ioc-scale-cf-demo-ce:
+    # Image Link: https://github.com/cisco-eti/ioc-scale-cf-demo-ce/pkgs/container/ioc-scale-cf-demo-ce%2Fdemo-ce
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-demo-ce/demo-ce:${CF_DEMO_CE_TAG:-latest}
+    platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-cf-demo-ce
+    ports:
+      - "127.0.0.1:18001:18001"
+      - "127.0.0.1:18000:18000"
+    restart: unless-stopped
+    environment:
+      - CFN_URL=http://ioc-scale-cfn-svc:9002
+      - OXP_API_URL=http://oxp-api:8000
+      - ADVERTISED_GRPC_ADDRESS=ioc-scale-cf-demo-ce:18001
+      - CE_NAME=${DEMO_CE_NAME:-demo-ce}
+      - CE_VERSION=1.0.0
+      - CE_TYPE=CASA
+      - CE_CONFIG_FILE=/etc/demo-ce/config.json
+      - LOG_FORMAT=${DEMO_CE_LOG_FORMAT:-console}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - NO_COLOR=${NO_COLOR:-}
+      - CE_CONTEXT_WAIT=${CE_CONTEXT_WAIT:-1s}
+      - CE_CONTEXT_ATTEMPTS=${CE_CONTEXT_ATTEMPTS:-5}
+      - CE_CONTEXT_RETRY_WAIT=${CE_CONTEXT_RETRY_WAIT:-0.2s}
+    volumes:
+      - type: bind
+        source: ${DEMO_CE_CONFIG_FILE:-./demo-ce/config/config.json}
+        target: /etc/demo-ce/config.json
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      ioc-scale-cfn-svc:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:18000/readyz"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  # ===========================================================================
+  # OXP (Observability & Explainability Platform) stack
+  # Message broker + Knowledge Graph store + claris-lib pipeline workers.
+  # ===========================================================================
+
+  # Message broker for OXP workers
+  # Port Mapping: 5672 (AMQP), 15672 (management UI)
+  # Erlang crashes on startup under x86 emulation, so this must match the host arch.
+  rabbitmq:
+    image: rabbitmq:3-management
+    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-oxp-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-guest} # legit:ignore
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+       
+  oxp-api:
+    image: ${OXP_API_IMAGE:-${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/ioc-analytics-api:${OXP_API_IMG_TAG:-latest}}
+    platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
+    env_file: .env
+    container_name: ioc-scale-oxp-api
+    environment:
+      CLARIS_API_RELOAD: "false"
+      CLICKHOUSE_HOST: ${CLICKHOUSE_HOST:-clickhouse-server}
+      CLICKHOUSE_PORT: ${CLICKHOUSE_PORT:-8123}
+      CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME:-admin}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE:-oxp}
+      NEO4J_HOST: neo4j
+      NEO4J_PORT: ${NEO4J_PORT:-7687}
+      NEO4J_USERNAME: ${NEO4J_USERNAME:-neo4j}
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:-testpassword}
+      NEO4J_DATABASE: ${NEO4J_DATABASE:-neo4j}
+      POSTGRES_HOST: ${IOC_SCALE_DB:-ioc-scale-db}
+      POSTGRES_PORT: ${IOC_SCALE_DB_PORT:-5432}
+      POSTGRES_USER: ${IOC_SCALE_DB_USER:-postgresUser}
+      POSTGRES_PASSWORD: ${IOC_SCALE_DB_PASSWORD:-postgresPW}
+      POSTGRES_DB: ${OXP_POSTGRES_DB:-cognition_store}
+    ports:
+      - "8081:8000"
+    restart: unless-stopped
+    # The image has no curl or wget, so probe with Python. /healthz answers once the
+    # API is serving; the root path returns 404.
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      ioc-scale-db:
+        condition: service_healthy
+      clickhouse-server:
+        condition: service_healthy
+
+  # Knowledge Graph store for OXP
+  # Port Mapping: 7474 (HTTP), 7687 (Bolt)
+  neo4j:
+    image: neo4j:latest
+    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-oxp-neo4j
+    volumes:
+      - oxp_neo4j_data:/data
+      - oxp_neo4j_logs:/logs
+      - oxp_neo4j_config:/config
+      - oxp_neo4j_plugins:/plugins
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    restart: unless-stopped
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-testpassword} # legit:ignore
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # Raw telemetry store for OXP. Workers read session spans from here.
+  # Port Mapping: 8123 (HTTP, used by the workers), 9009 -> 9000 (native TCP).
+  # The native port is published on 9009 because host 9000 is ioc-scale-cf-mgmt-svc.
+  # Inside the compose network the collector still reaches it on 9000.
+  clickhouse-server:
+    image: clickhouse/clickhouse-server:24.8
+    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-oxp-clickhouse
+    ports:
+      - "8123:8123"
+      - "9009:9000"
+    environment:
+      CLICKHOUSE_USER: ${CLICKHOUSE_USERNAME:-admin}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin} # legit:ignore
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest} # legit:ignore
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - oxp_clickhouse_data:/var/lib/clickhouse
+      - oxp_clickhouse_logs:/var/log/clickhouse-server
+      - ./clickhouse-rabbitmq-config.xml:/etc/clickhouse-server/config.d/rabbitmq.xml:ro
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "--no-verbose",
+          "--tries=1",
+          "--spider",
+          "http://localhost:8123/ping",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  # OTLP ingest for instrumented apps; writes spans/metrics/logs to ClickHouse.
+  # Port Mapping: 4317 (gRPC), 4318 (HTTP)
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.121.0
+    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-oxp-otel-collector
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    command: ["--config", "/etc/otel-collector-config.yaml"]
+    environment:
+      CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME:-admin}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin} # legit:ignore
+    restart: unless-stopped
+    depends_on:
+      clickhouse-server:
+        condition: service_healthy
+
+  # Creates the materialized columns and RabbitMQ-backed view after the
+  # collector has created its trace table.
+  oxp-clickhouse-init:
+    image: clickhouse/clickhouse-server:24.8
+    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-oxp-clickhouse-init
+    entrypoint: ["/bin/sh", "/scripts/init-oxp-clickhouse.sh"]
+    environment:
+      CLICKHOUSE_HOST: clickhouse-server
+      CLICKHOUSE_NATIVE_PORT: 9000
+      CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME:-admin}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-admin} # legit:ignore
+      OXP_INIT_DELAY_SECONDS: ${OXP_INIT_DELAY_SECONDS:-5}
+    volumes:
+      - ./scripts/init-oxp-clickhouse.sh:/scripts/init-oxp-clickhouse.sh:ro
+      - ./scripts/init-oxp-clickhouse.sql:/scripts/init-oxp-clickhouse.sql:ro
+    restart: "no"
+    depends_on:
+      clickhouse-server:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+
+  # Connects the ClickHouse exchange to the queue declared by norm.
+  oxp-rabbitmq-init:
+    image: rabbitmq:3-management
+    platform: ${OXP_INFRA_PLATFORM:-linux/arm64}
+    container_name: ioc-scale-oxp-rabbitmq-init
+    entrypoint: ["/bin/sh", "/scripts/init-oxp-rabbitmq.sh"]
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_MANAGEMENT_PORT: 15672
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest} # legit:ignore
+    volumes:
+      - ./scripts/init-oxp-rabbitmq.sh:/scripts/init-oxp-rabbitmq.sh:ro
+    restart: "no"
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      norm:
+        condition: service_started
+      oxp-clickhouse-init:
+        condition: service_completed_successfully
+
+  # OXP: normalization worker (pipeline entry point)
+  norm:
+    <<: *worker-base
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-norm:${OXP_IMG_TAG:-latest}
+    container_name: ioc-scale-oxp-norm
+    command: ["--max-sessions", "-1"]
+    environment:
+      <<: *worker-env
+      MAX_INFLIGHT_MESSAGES: ${NORM_MAX_INFLIGHT_MESSAGES:-64}
+    restart: unless-stopped
+
+  # OXP: embedding worker
+  embedding:
+    <<: *worker-base
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-embedding:${OXP_IMG_TAG:-latest}
+    container_name: ioc-scale-oxp-embedding
+    command: ["--embedder-type", "OpenAIEmbedder", "--embedding-model", "${EMBEDDING_MODEL:-azure/text-embedding-3-small}"]
+    environment:
+      <<: *worker-env
+      MAX_INFLIGHT_MESSAGES: ${EMBEDDING_MAX_INFLIGHT_MESSAGES:-16}
+      EMBEDDING_OUTPUT_QUEUE: ${EMBEDDING_OUTPUT_QUEUE:-new_session_to_grouping,new_session_embedding_to_decision_block}
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      clickhouse-server:
+        condition: service_healthy
+      norm:
+        condition: service_started
+
+  # OXP: metrics computation engine worker
+  mce:
+    <<: *worker-base
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-mce:${OXP_IMG_TAG:-latest}
+    container_name: ioc-scale-oxp-mce
+    command: ["--config-file", "/claris/mce_config.yaml"]
+    environment:
+      <<: *worker-env
+      MAX_INFLIGHT_MESSAGES: ${MCE_MAX_INFLIGHT_MESSAGES:-16}
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      clickhouse-server:
+        condition: service_healthy
+      norm:
+        condition: service_started
+
+  # OXP: semantic grouping worker
+  grouping:
+    <<: *worker-base
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-grouping:${OXP_IMG_TAG:-latest}
+    container_name: ioc-scale-oxp-grouping
+    command: ["--embedding-model", "${EMBEDDING_MODEL:-azure/text-embedding-3-small}"]
+    environment:
+      <<: *worker-env
+      MAX_INFLIGHT_MESSAGES: ${GROUPING_MAX_INFLIGHT_MESSAGES:-16}
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      clickhouse-server:
+        condition: service_healthy
+      norm:
+        condition: service_started
+
+  # OXP: analysis worker (anomaly / consistency / normal-behaviour)
+  analysis:
+    <<: *worker-base
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-analysis:${OXP_IMG_TAG:-latest}
+    container_name: ioc-scale-oxp-analysis
+    command:
+      - "--embedding-model"
+      - "${EMBEDDING_MODEL:-azure/text-embedding-3-small}"
+    environment:
+      <<: *worker-env
+      MAX_INFLIGHT_MESSAGES: ${ANALYSIS_MAX_INFLIGHT_MESSAGES:-3}
+      ANOMALY_CONFIG_FILE: ${ANOMALY_CONFIG_FILE:-}
+      CONSISTENCY_CONFIG_FILE: ${CONSISTENCY_CONFIG_FILE:-}
+      NORMAL_BEHAVIOUR_CONFIG_FILE: ${NORMAL_BEHAVIOUR_CONFIG_FILE:-}
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      clickhouse-server:
+        condition: service_healthy
+      norm:
+        condition: service_started
+
+  # OXP: hierarchical grouping worker
+  hierarchical-grouping:
+    <<: *worker-base
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-hierarchical-grouping:${OXP_IMG_TAG:-latest}
+    container_name: ioc-scale-oxp-hierarchical-grouping
+    command:
+      - "--embedding-model"
+      - "${EMBEDDING_MODEL:-azure/text-embedding-3-small}"
+    environment:
+      <<: *worker-env
+      MAX_INFLIGHT_MESSAGES: ${HIERARCHICAL_GROUPING_MAX_INFLIGHT_MESSAGES:-1}
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      clickhouse-server:
+        condition: service_healthy
+      norm:
+        condition: service_started
+
+  # OXP: routes embedded sessions to downstream evaluation workers
+  decision-block:
+    <<: *worker-base
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-decision-block:${OXP_IMG_TAG:-latest}
+    container_name: ioc-scale-oxp-decision-block
+    environment:
+      <<: *worker-env
+      MAX_INFLIGHT_MESSAGES: ${DECISION_BLOCK_MAX_INFLIGHT_MESSAGES:-8}
+      DB_INPUT_QUEUE: ${DB_INPUT_QUEUE:-new_session_embedding_to_decision_block}
+      DB_NSEVAL_OUTPUT_Q: ${DB_NSEVAL_OUTPUT_Q:-new_session_to_nseval}
+      DB_STATEFUL_OUTPUT_Q: ${DB_STATEFUL_OUTPUT_Q:-new_session_to_stateful_eval}
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      clickhouse-server:
+        condition: service_healthy
+      embedding:
+        condition: service_started
+
+  # OXP: stateful evaluation worker
+  stateful-eval:
+    <<: *worker-base
+    image: ${OXP_REGISTRY:-ghcr.io/cisco-eti/oxp/container-images}/oxp-worker-stateful-eval:${OXP_IMG_TAG:-latest}
+    container_name: ioc-scale-oxp-stateful-eval
+    environment:
+      <<: *worker-env
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-${AI_GATEWAY_API_KEY:-}}
+      STATEFUL_EVAL_INPUT_QUEUE: ${STATEFUL_EVAL_INPUT_QUEUE:-new_session_to_stateful_eval}
+      MAX_INFLIGHT_MESSAGES: ${STATEFUL_EVAL_MAX_INFLIGHT_MESSAGES:-8}
+    restart: unless-stopped
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+      clickhouse-server:
+        condition: service_healthy
+      decision-block:
+        condition: service_started
+
+  # MAS sample app. Emits the OTLP spans the OXP workers turn into a knowledge
+  # graph, so the pipeline has something to process without a local checkout.
+  # Port Mapping: 8125:8125 (HTTP). Host 8000 is ioc-scale-cf-cognition-engine,
+  # and 8125 is what the app listens on by default.
+  #
+  # The only profiled service, so the stack stays usable without a gateway key:
+  #   docker compose up -d                       # everything except this app
+  #   docker compose --profile full-mas up -d    # everything, this app included
+  # Every other service is unprofiled and starts either way.
+  noa-trip-planner:
+    profiles: ["full-mas"]
+    image: ${CLARIS_REGISTRY:-ghcr.io/cisco-eti/claris/container-images}/noa-trip-planner:${NOA_IMAGE_TAG:-latest}
+    platform: ${CLARIS_WORKER_PLATFORM:-linux/amd64}
+    container_name: ioc-scale-noa-trip-planner
+    env_file:
+      - path: .env
+        required: false
+    ports:
+      - "${NOA_API_PORT:-8125}:8125"
+    environment:
+      # Fixed inside the container; NOA_API_PORT above only moves the host port.
+      NOA_API_PORT: 8125
+      NOA_API_HOST: 0.0.0.0
+      OTLP_HTTP_ENDPOINT: http://otel-collector:4318
+      AI_GATEWAY_BASE_URL: ${AI_GATEWAY_BASE_URL}
+      AI_GATEWAY_API_KEY: ${AI_GATEWAY_API_KEY}
+      NOA_LLM_MODEL: ${NOA_LLM_MODEL:-azure/gpt-4o}
+    restart: unless-stopped
+    depends_on:
+      otel-collector:
+        condition: service_started
+
+  # Enforcement proxy mediation core (BFF). Audit destination is CFN.
+  # Port Mapping: 9006:8081 (gRPC), 9005:8082 (HTTP). Host 8081 is oxp-api.
+  # Image Link: https://github.com/cisco-eti/ioc-scaling-enforcement-proxy/pkgs/container/ioc-scaling-enforcement-mediation
+  ioc-scale-enforcement-proxy-mediation:
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-mediation:${ENFORCEMENT_PROXY_MEDIATION_TAG:-0.0.1-alpha}
+    container_name: ioc-scale-enforcement-proxy-mediation
+    environment:
+      AUDIT_PERSISTENCE_MODE: AUDIT_PERSISTENCE_MODE_CFN
+      CF_ENFORCEMENT_ADDRESS: ${CF_ENFORCEMENT_ADDRESS:-ioc-scale-cfn-svc:9003}
+      CF_ENFORCEMENT_TIMEOUT: ${CF_ENFORCEMENT_TIMEOUT:-2s}
+      CF_ENFORCEMENT_ALLOW_PLAINTEXT: ${CF_ENFORCEMENT_ALLOW_PLAINTEXT:-true}
+      BFF_GRPC_ADDRESS: :8081
+      BFF_HTTP_ADDRESS: :8082
+      # Local-development exception to mTLS; keep false anywhere else.
+      BFF_GRPC_ALLOW_INSECURE_LOCAL: ${BFF_GRPC_ALLOW_INSECURE_LOCAL:-true}
+    ports:
+      - "127.0.0.1:${BFF_GRPC_PORT:-9006}:8081"
+      - "127.0.0.1:${BFF_HTTP_PORT:-9005}:8082"
+    restart: unless-stopped
+
+volumes:
+  ioc_scale_db_data:
+  oxp_clickhouse_data:
+  oxp_clickhouse_logs:
+  oxp_neo4j_data:
+  oxp_neo4j_logs:
+  oxp_neo4j_config:
+  oxp_neo4j_plugins:
