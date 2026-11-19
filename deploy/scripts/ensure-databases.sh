@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 set -eu
 
 DB_HOST="${DB_HOST:-ioc-scale-db}"
