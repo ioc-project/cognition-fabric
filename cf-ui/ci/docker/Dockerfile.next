@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Stage 1: Dependencies
-FROM node:20-alpine AS deps
+FROM node:26-alpine AS deps
 RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
@@ -14,7 +14,7 @@ COPY cf-ui/package.json cf-ui/package-lock.json ./
 RUN npm ci
 
 
-FROM node:20-alpine AS builder
+FROM node:26-alpine AS builder
 
 WORKDIR /app
 
@@ -28,7 +28,7 @@ ENV CFN_UI_API_BASE_URL=${CFN_UI_API_BASE_URL}
 RUN npm run build
 
 
-FROM node:20-alpine AS runner
+FROM node:26-alpine AS runner
 
 WORKDIR /app
 
