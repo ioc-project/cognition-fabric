@@ -54,7 +54,7 @@
     "@eslint/eslintrc": "^3.3.3",
     "@hookform/resolvers": "^3.9.0",
     "@lezer/highlight": "^1.2.3",
-    "@segment/analytics-next": "^1.84.0",
+    "@segment/analytics-next": "^1.84.3",
     "@server-sent-stream/web": "^1.0.3",
     "@svgr/webpack": "^8.1.0",
     "@tailwindcss/postcss": "^4.1.17",
