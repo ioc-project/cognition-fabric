@@ -58,7 +58,7 @@
     "@server-sent-stream/web": "^1.0.3",
     "@svgr/webpack": "^8.1.0",
     "@tailwindcss/postcss": "^4.1.17",
-    "@tailwindcss/typography": "^0.5.15",
+    "@tailwindcss/typography": "^0.5.20",
     "@types/lodash": "^4.17.7",
     "@types/node": "^20",
     "@types/react": "^19",
