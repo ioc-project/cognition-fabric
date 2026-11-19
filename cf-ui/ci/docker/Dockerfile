@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-FROM alpine:3.21.0 AS build
+FROM alpine:3.24.4 AS build
 
 # Use Docker secrets to securely pass ARTIFACTORY_PASSWORD
 # RUN --mount=type=secret,id=artifactory_password \
@@ -29,7 +29,7 @@ RUN touch .env && echo "ARTIFACTORY_PASSWORD=${ARTIFACTORY_PASSWORD}" >> .env
 RUN yarn install || true
 RUN yarn build
 
-FROM alpine:3.21.0
+FROM alpine:3.24.4
 
 # Install packages
 RUN apk add --update \
