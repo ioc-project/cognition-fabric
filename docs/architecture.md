@@ -8,8 +8,10 @@ The architecture of record for Cognition Fabric (CF).
 
 ![CF High Level Architecture](assets/CF_high_level_architecture.png)
 
-The diagram includes target capabilities: Active APIs and CE chaining are planned.
-The current enforcing path routes reference identifiers and metadata to one eligible
+This historical concept diagram uses older API labels. CF owns two API tiers:
+Active and Enforcing; Active APIs and CE chaining are planned. Analytics APIs and
+the Cognition Store are currently owned by OXP; CEs access OXP directly. The
+current enforcing path routes reference identifiers and metadata to one eligible
 CASA CE; it does not carry rewritten content or inject messages.
 
 ## Components

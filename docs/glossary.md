@@ -11,12 +11,26 @@ expansion on the first line. Terms still under discussion link to
 
 ## CFN
 
-The central orchestration plane for Cognition Fabric. CFN is a microservice that routes tasks to Cognitive Engines based on subprotocols, ingests metrics and audit events, and handles registration and health probing for CEs.
+The central orchestration plane for Cognition Fabric. CFN is a microservice that routes enforcement evaluations to an eligible CE, ingests audit events, and handles registration and health probing for CEs.
 
 ## Cognition Fabric
 
-The interconnected network of services that provide memory, knowledge, and cognitive
-capabilities to Multi-Agent Systems.
+The management plane and node runtime that connect Multi-Agent Systems to Cognition
+Engines for governance and enforcement. Shared findings and Analytics APIs are
+provided directly by OXP.
+
+## CF API Tiers
+
+CF owns two API tiers: **Enforcing** for runtime enforcement decisions and **Active**
+for planned direct MAS engagement. Analytics APIs are owned and served by OXP and
+are outside the CF API surface. CEs query OXP directly for observability data and
+Cognition Store findings.
+
+## Cognition Store
+
+The shared findings store currently owned by OXP. CEs publish their results and
+consume other CEs' findings through OXP interfaces. CF does not own or proxy this
+store. Notification requirements are subject to the OXP/CE contract.
 
 ## MAS
 
