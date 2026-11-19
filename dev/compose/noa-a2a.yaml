@@ -1,0 +1,180 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+# SPDX-License-Identifier: Apache-2.0
+
+# Native application connections are inputs to the upstream proxy controller.
+# Run through the root tasks; they supply the private installation environment.
+x-agent: &agent
+  image: ${NOA_A2A_IMAGE:?Run through the root Task workflow}
+  platform: ${NOA_A2A_PLATFORM:-linux/amd64}
+  command: [/app/bin/main]
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  read_only: true
+  tmpfs: [/tmp]
+  labels:
+    io.cisco.cf.local.noa: "true"
+  environment: &agent-environment
+    A2A_TRANSPORT: http
+    A2A_HTTP_URLS: '{"schedule_agent":"http://noa-schedule-agent:8000","itinerary_agent":"http://noa-itinerary-agent:8000","concierge_agent":"http://noa-concierge-agent:8000"}'
+    AI_GATEWAY_BASE_URL: ${AI_GATEWAY_BASE_URL:?Configure the model gateway}
+    AI_GATEWAY_API_KEY: ${AI_GATEWAY_API_KEY:?Configure the model credential}
+    NOA_LLM_MODEL: ${NOA_LLM_MODEL:-azure/gpt-4o}
+    NOA_ENABLE_SIMULATED_DELAY: "false"
+    AGENT_REQUEST_TIMEOUT_SECONDS: "240"
+    OTLP_HTTP_ENDPOINT: http://telemetry-relay:4318
+    NOA_API_HOST: 0.0.0.0
+    NOA_API_PORT: "8000"
+    TOOL_TRANSPORT: mcp
+  healthcheck:
+    test: [CMD, /app/bin/python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=2)"]
+    interval: 10s
+    start_interval: 10s
+    start_period: 60s
+    timeout: 3s
+    retries: 12
+
+services:
+  # Keep published ports outside the controller's startup-fenced applications.
+  # Forward the native API without a local application wrapper or image build.
+  api:
+    image: nginx:alpine
+    volumes:
+      - ./noa-api.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "127.0.0.1:${NOA_API_PORT:-8125}:8080"
+    networks: [noa-api, noa-ingress]
+    security_opt: [no-new-privileges:true]
+    labels:
+      io.cisco.cf.local.noa: "true"
+
+  noa-moderator:
+    <<: *agent
+    environment:
+      <<: *agent-environment
+      AGENT_ROLE: moderator
+    networks: [noa-ingress, noa-moderator]
+
+  noa-schedule-agent:
+    <<: *agent
+    environment:
+      <<: *agent-environment
+      AGENT_ROLE: schedule_agent
+      MCP_SERVER_URL: http://noa-mcp:8001/mcp
+    networks: [noa-schedule]
+
+  noa-itinerary-agent:
+    <<: *agent
+    environment:
+      <<: *agent-environment
+      AGENT_ROLE: itinerary_agent
+      MCP_SERVER_URL: http://noa-mcp:8001/mcp
+    networks: [noa-itinerary]
+
+  noa-concierge-agent:
+    <<: *agent
+    environment:
+      <<: *agent-environment
+      AGENT_ROLE: concierge_agent
+      MCP_SERVER_URL: http://noa-mcp:8001/mcp
+    networks: [noa-concierge]
+
+  mcp-network:
+    image: ${MCP_GUARD_IMAGE:?Run through the root Task workflow}
+    platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
+    entrypoint: [/bin/sh, -c, "sleep infinity"]
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks:
+      default: {}
+      noa-moderator:
+        aliases: [envoy]
+      noa-schedule:
+        aliases: [envoy]
+      noa-itinerary:
+        aliases: [envoy]
+      noa-concierge:
+        aliases: [envoy]
+    healthcheck:
+      test: [CMD-SHELL, "kill -0 1"]
+      interval: 10s
+      timeout: 2s
+      retries: 3
+
+  mcp-ingress-guard:
+    image: ${MCP_GUARD_IMAGE}
+    platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
+    network_mode: service:mcp-network
+    cap_drop: [ALL]
+    cap_add: [NET_ADMIN, BPF]
+    security_opt: [no-new-privileges:true, seccomp:unconfined, apparmor:unconfined]
+    depends_on:
+      mcp-network:
+        condition: service_healthy
+
+  noa-mcp:
+    image: ${NOA_A2A_IMAGE}
+    platform: ${NOA_A2A_PLATFORM:-linux/amd64}
+    command: [/app/bin/mcp-server]
+    network_mode: service:mcp-network
+    environment:
+      MCP_SERVER_HOST: 127.0.0.1
+      MCP_SERVER_PORT: "8001"
+      OTLP_HTTP_ENDPOINT: http://telemetry-relay:4318
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    read_only: true
+    tmpfs: [/tmp]
+    labels:
+      io.cisco.cf.local.noa: "true"
+    depends_on:
+      mcp-ingress-guard:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, /app/bin/python, -c, "import socket; socket.create_connection(('127.0.0.1',8001), timeout=2).close()"]
+      interval: 10s
+      start_interval: 10s
+      start_period: 60s
+      timeout: 3s
+      retries: 12
+
+  # The upstream runtime recipe supplies these services and their images.
+  envoy:
+    platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
+    network_mode: service:mcp-network
+    healthcheck:
+      start_interval: 10s
+      start_period: 60s
+    depends_on:
+      mcp-ingress-guard:
+        condition: service_completed_successfully
+  sidecar-installer:
+    platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
+  traceparent-wasm-installer:
+    platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
+
+  # Forward OTLP to the existing platform collector while agents stay isolated.
+  telemetry-relay:
+    image: otel/opentelemetry-collector-contrib:0.121.0
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    networks: [default, noa-moderator, noa-schedule, noa-itinerary, noa-concierge]
+    command: [--config=/etc/noa-telemetry.yaml]
+    environment:
+      OTLP_UPSTREAM: ${NOA_OTLP_UPSTREAM:-http://host.docker.internal:4318}
+    volumes:
+      - ./noa-telemetry.yaml:/etc/noa-telemetry.yaml:ro
+
+networks:
+  noa-api: {}
+  noa-ingress:
+    internal: true
+  noa-moderator:
+    internal: true
+  noa-schedule:
+    internal: true
+  noa-itinerary:
+    internal: true
+  noa-concierge:
+    internal: true

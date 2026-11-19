@@ -2,8 +2,8 @@
 
 Run these commands from the `cognition-fabric` repository root. The local tasks
 run CF components from this checkout and use [deploy/](../deploy/README.md) to
-start Postgres, OXP and Enforcement Proxy infrastructure. OXP and Enforcement
-Proxy continue to run from their existing published images.
+start Postgres and OXP infrastructure. Published native NOA A2A and Enforcement
+Proxy start together after MAS onboarding; CF source/image choices stay independent.
 
 ## Fresh checkout
 
@@ -35,8 +35,12 @@ Install Docker with Compose v2.24.4+, Task, Go 1.25.9+, Python 3.11+, Poetry, uv
 Node.js 20 (at least 20.9) and npm. The Go modules use the shared API module
 within this repository through `go.work` and relative module replacements.
 Pulling private published container images requires GHCR access, including OXP or
-Proxy images used by the infrastructure dependency. Authenticate Docker before
-starting infrastructure if those images require it.
+Proxy images. Authenticate Docker before starting them when required. The NOA
+proxy launcher also downloads reviewed upstream runtime files into ignored local
+cache. If that source repository requires authentication, install GitHub CLI
+(`gh`) and authenticate with read access; no separate proxy checkout is needed.
+Native NOA tasks use uv to select an installed Python 3.11+ for the upstream
+launcher. They do not download Python; macOS's system Python 3.9 is insufficient.
 
 Prepare dependencies once, with compatible Python/Node versions selected:
 
@@ -101,18 +105,21 @@ private policy. No launcher creates MAS/CE associations for the operator.
 Select the NOA implementation and enforcement path in root `.env`:
 
 ```dotenv
-NOA_MODE=source
+NOA_MODE=published
 NOA_ENFORCEMENT_MODE=proxy
 NOA_MAS_ID=
+NOA_MCP_SERVER_ID=
 ```
 
 Leave `NOA_MAS_ID` empty until you onboard the MAS through your own Management
 instance, then fill in the returned ID before starting NOA. Template CE can
 start before that onboarding and does not need the Go Demo CE policy file.
 
-`NOA_MODE` accepts `source` or `published`; `NOA_ENFORCEMENT_MODE` accepts `direct`
-or `proxy`. Proxy mode requires source NOA. Direct mode still calls CFN before
-tool execution, while proxy mode sends tool HTTP requests through Envoy.
+`NOA_MODE` accepts `source` or `published`. Published/proxy selects the native
+NOA A2A image with the maintained Envoy controller; source/direct keeps the
+copied application's direct CFN adapter. Source/proxy is rejected. The existing
+published/direct option runs the standalone deployment sample without attaching
+the proxy; it does not provide the source adapter's direct CFN enforcement.
 
 ## Start infrastructure and services
 
@@ -142,12 +149,11 @@ For notification tests, set `ENABLE_NOTIFICATIONS=true` in the root `.env`.
 | CFN HTTP / gRPC | `9002` / `9003` |
 | Template CE gRPC / health / notifications | `50051` / `8082` / `8080` |
 | Go Demo CE HTTP / gRPC | `18000` / `18001` |
-| NOA / source tools | `8125` / `8126` |
-| Envoy | `9010` |
+| NOA API | `8125` |
+| A2A / MCP / Envoy | Internal to the MAS Compose project |
 | OXP API / OTel HTTP collector | `8081` / `4318` |
 
-Source listeners default to host loopback, except the source tool server, which
-must be reachable from Docker. `LOCAL_CF_BIND_HOST=0.0.0.0` is an explicit option
+Source listeners and the NOA API default to host loopback. `LOCAL_CF_BIND_HOST=0.0.0.0` is an explicit option
 for native Linux mixed source/image operation. Docker Desktop uses
 `host.docker.internal`; CE registration advertises an address appropriate to
 whether CFN is running from source or an image. The Template task synchronizes
@@ -224,39 +230,76 @@ Management database. Shell overrides take precedence over root Task dotenv.
 
 ## NOA onboarding and proxy mode
 
-Register the declaration through Management using
-[the NOA onboarding guide](../samples/noa-trip-planner/mas/README.md), select the
-enabled/online CE started above, and set root `NOA_MAS_ID` to the canonical ID
-returned by your Management instance. On a fresh database, Management creates
-the admin's default workspace and CFN registration assigns the local node to it;
-use that workspace for onboarding. A different workspace needs its own CFN
-assignment. The source runner uses the new MAS ID for telemetry and enforcement.
-The published NOA container must be stopped before the source runner starts.
+The native workflow uses our existing CFN, Management, UI, OXP and selected Go
+Demo or Python Template CE. Its separate Compose project contains the MAS and
+its proxy; it does not deploy another CF platform.
 
-```bash
-task run:full-mas
-```
+1. Configure root `.env` with `NOA_MODE=published` and
+   `NOA_ENFORCEMENT_MODE=proxy`. Leave MAS IDs empty initially. Start infrastructure
+   and our CF/CE tasks as described above. `infra:up` requires no MAS and does not
+   start the proxy.
+2. In Management UI, create a MAS using **JSON** mode and paste
+   [`noa-a2a-mas.json`](../samples/noa-trip-planner/mas/noa-a2a-mas.json).
+   Select the existing enabled, online CE before saving. Use a workspace assigned
+   to this CFN. See [onboarding](../samples/noa-trip-planner/mas/README.md).
+3. Read back that MAS. Set root `NOA_MAS_ID` to its canonical ID and
+   `NOA_MCP_SERVER_ID` to `mcp_servers[0].id`. Keep the declaration's agent IDs.
+   Custom identities can instead be supplied as upstream canonical JSON through
+   `NOA_IDENTITY_FILE`; workload references must use this runtime's project and
+   service names.
+4. For Go Demo CE, copy [`noa-demo-ce.example.json`](noa-demo-ce.example.json) into
+   ignored local configuration, replace both ID placeholders, set `CE_CONFIG_FILE`
+   to that copy and restart only your Demo CE task. Template CE needs no policy
+   file. CE selection still comes from Management associations.
+5. Wait until CFN exposes the assigned MAS at
+   `http://localhost:9002/api/multi-agentic-systems/<MAS_ID>`. Check that its
+   enabled, online CE associations select the CE you intend to use, including
+   after switching or restarting CEs. Then run:
 
-In proxy mode, `infra:up` starts Envoy and mediation support. `run:full-mas`
-generates exact MAS/tool routes, reloads Envoy, then supervises NOA and its source
-HTTP tool server in one foreground process. Ctrl+C stops both source processes.
-Generated files live in ignored root `.local/enforcement/`.
+   ```bash
+   task run:full-mas
+   ```
+
+The task pulls the selected images, starts the native application helpers, and
+lets the upstream controller generate routes, client credentials and activation.
+It waits for controller qualification, then remains in the foreground showing
+controller logs. Ctrl+C retires the MAS/proxy and stops its Compose services,
+retaining state and volumes. The upstream controller remains available for
+enrollment. No application or proxy image is built locally.
 
 ```text
-Source NOA -> Envoy :9010 -> CFN :9003 -> associated CE
-                    |
-                    +-- ALLOW -> source tools :8126
-                    +-- BLOCK / unavailable -> tool error to NOA
+Client -> NOA API :8125 -> moderator
+                            |
+                     Envoy -> CFN :9003 -> selected CE
+                       |
+                       +-- allowed A2A / MCP / LLM requests -> real upstream
 ```
 
-There is one proxy POST per proposed tool call and no direct/local execution
-fallback or automatic retry. Traceparent and session identity accompany each
-protected call. This protects tools, not every MAS/A2A/LLM interaction, and does
-not establish the separate content-sensitive pre-call evidence pipeline.
-Inspect existing proxy/mediation logs with `task proxy:logs`. After dependency
-changes, stop NOA and rerun its locked `uv sync`; its launcher uses `--no-sync`.
-See the [NOA guide](../samples/noa-trip-planner/README.md) for fake-LLM regression
-checks and experiments.
+The API ingress is unmediated, as in the upstream Envoy demo. Agent networks are
+internal. The MCP server and Envoy share a guarded namespace; only the guard
+initializer receives BPF/NET_ADMIN. Docker Desktop/Linux kernel support is
+required. A small OTLP relay forwards telemetry to our existing collector.
+The maintained proxy sends audit directly to CFN; this path uses no mediation
+service or source NOA tool server.
+
+Custom NOA/proxy images default to `latest`. Each explicit start pulls the
+selected references once, then starts them without a second pull. Use
+`NOA_A2A_TAG`, the `NOA_PROXY_*_TAG` selectors or full image overrides to select
+another compatible build. Envoy keeps the upstream ABI-compatible version.
+Changing image versions can require matching configuration changes, as with CF
+images. Ordinary starts require the previous MAS runtime to be retired/stopped.
+
+```bash
+task noa:status
+task proxy:logs
+task noa:down
+```
+
+Private installation inputs live in `.local/noa-a2a/`; downloaded upstream files
+live in `.local/proxy-runtime/`. Do not edit generated routes, credentials or
+activation files. If startup fails, inspect `noa:status` and controller logs,
+then use `noa:down` before retrying. Existing standalone deployments from another
+workflow must be stopped by their owner; these tasks do not adopt them.
 
 ## Checks and shutdown
 
@@ -282,12 +325,10 @@ without starting services or migrating a real database.
 uses its supplied isolated database with `INTEGRATION_SKIP_DB=true`.
 
 Stop foreground tasks with Ctrl+C. `task infra:down` stops only owned local CF
-images, the local proxy and infrastructure; it keeps volumes. It refuses to stop
+images, the native MAS/proxy and infrastructure; it keeps volumes. It refuses to stop
 unowned services from the standalone published Deployment workflow.
 
-## Use Envoy with source NOA
+## Enforcement setup
 
-The [NOA onboarding and proxy mode](#noa-onboarding-and-proxy-mode) section describes
-root tasks and the required source/proxy settings. The launcher renders local
-routes and enforces ownership of its Envoy bind mount; do not bypass that guard
-when another checkout's proxy container is already present.
+Use the [published NOA A2A workflow](#noa-onboarding-and-proxy-mode) for network
+proxy enforcement. Source NOA runs with `NOA_ENFORCEMENT_MODE=direct`.

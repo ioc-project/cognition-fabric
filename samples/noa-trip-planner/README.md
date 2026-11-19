@@ -19,11 +19,14 @@ A2A and SLIM transports and dependencies belong to the separate
 Observe SDK 1.1.1 requires protobuf 7.36.2 or newer. The local protobuf constraint
 allows version 7; the existing generated CFN bindings use the supported
 [older Python gencode with a newer runtime](https://protobuf.dev/support/cross-version-runtime-guarantee/#python-specific-guarantees).
-The local CF workflow runs this copy; it does not require an `oxp-sample-apps`
-checkout.
+The source/direct workflow runs this copy without an `oxp-sample-apps` checkout.
+The root proxy workflow uses the published native NOA A2A image instead; see the
+[local guide](../../dev/README.md#noa-onboarding-and-proxy-mode).
 
-The local variant supports `NOA_ENFORCEMENT_MODE=direct` (default) and `proxy`.
-Direct mode adds a synchronous CFN `GetDisposition` call before
+The root tasks support this copy with `NOA_MODE=source` and
+`NOA_ENFORCEMENT_MODE=direct`. Its low-level proxy fixture remains covered by
+regression tests; root proxy tasks use the published A2A runtime. Direct mode adds
+a synchronous CFN `GetDisposition` call before
 each LangGraph tool invocation. For every proposed tool call it emits a short
 span containing the tool name and arguments, then sends its trace and span IDs
 to CFN. `ACTION_ALLOW` executes the tool; `ACTION_BLOCK`, unsupported actions,
@@ -87,37 +90,11 @@ root. `task proto` generates the sample Python binding directly from that canoni
 source with protoc 35.1; `task proto:check` compares temporary output without
 rewriting the reviewed tree. See the [API tool setup](../../api/README.md).
 
-## Proxy mode
+## Published NOA A2A and Enforcement Proxy
 
-Set these in the root `.env` before `task infra:up`:
-
-```dotenv
-NOA_MODE=source
-NOA_ENFORCEMENT_MODE=proxy
-```
-
-`infra:up` includes Envoy and its audit support, using the deployment repo's
-overlay with CFN-owned configuration. It can run before CFN, NOA, or a MAS exists.
-After the CF source services and CE are running and `NOA_MAS_ID` is configured,
-`task run:full-mas` loads the MAS-specific routes and supervises both NOA and
-its HTTP tool service. Ctrl+C stops both processes.
-
-In this mode, each LangGraph tool call becomes one HTTP POST through Envoy to
-an exact `/tools/<agent>/<tool>` route. Envoy calls CFN and forwards only allowed
-requests to the tool service. The service invokes the same registered Python
-tools and returns their results as LangGraph tool messages. There is no direct
-CFN call or local execution fallback in this path, and no automatic POST retry.
-
-The shared registry preserves `schedule_agent`, `itinerary_agent`,
-`concierge_agent`, and their existing tool names, so the same identity policy
-can be used. The HTTP request carries the proposed-action span's `traceparent`,
-captured before that span closes, plus the session ID when available. The tool
-service emits a child span in that context. This does not establish the
-pre-call event pipeline required for content-sensitive enforcement.
-
-The tool service binds to `NOA_TOOLS_HOST` (default `0.0.0.0`) on
-`NOA_TOOLS_PORT` (default 8126), uses only allowlisted agent/tool pairs, and
-requires a token inserted by Envoy. Generated configuration is under the monorepo
-root's ignored `.local/enforcement/`. Use `task proxy:logs` for the proxy-side
-requests and audit logs. See the [CF local guide](../../dev/README.md#noa-onboarding-and-proxy-mode)
-for ports, configuration, limitations, and shutdown.
+For network proxy enforcement, follow the
+[local A2A setup](../../dev/README.md#noa-onboarding-and-proxy-mode) with
+`NOA_MODE=published` and `NOA_ENFORCEMENT_MODE=proxy`. Onboard the separate
+[`noa-a2a-mas.json`](mas/noa-a2a-mas.json) declaration. That workflow uses native
+HTTP A2A/MCP/LLM connections and the upstream controller; it does not run this
+copy's custom HTTP tool server or generated tool-route fixture.

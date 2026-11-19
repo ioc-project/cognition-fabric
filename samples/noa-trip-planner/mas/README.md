@@ -11,6 +11,18 @@ The same JSON can be sent directly to
 canonical ID. Existing MAS edits use `PUT` on that ID; duplicate names conflict,
 and optional tags are not upsert keys.
 
+## Published A2A image
+
+For `NOA_MODE=published` / `NOA_ENFORCEMENT_MODE=proxy`, paste
+[`noa-a2a-mas.json`](noa-a2a-mas.json) instead. It declares four networked agents,
+the model destination, the native MCP server/tools and a provided partial topology
+with entry/exit markers, specialist delegations/returns and MCP-bound tool IDs.
+The model destination is outside this capability graph. After saving, copy the
+returned MAS ID and `mcp_servers[0].id` into root `NOA_MAS_ID` and
+`NOA_MCP_SERVER_ID`. The source declarations above describe a different tool
+transport and cannot be substituted. See the
+[complete local setup](../../../dev/README.md#noa-onboarding-and-proxy-mode).
+
 ## Topology and editing
 
 Management now persists `topologies` and runtime `tools`. Form create has a

@@ -312,87 +312,15 @@ validate_noa_modes() {
   export NOA_ENFORCEMENT_MODE="${NOA_ENFORCEMENT_MODE:-direct}"
   [[ "$NOA_MODE" = published || "$NOA_MODE" = source ]] || fail "Invalid NOA_MODE '$NOA_MODE'. Use published or source."
   [[ "$NOA_ENFORCEMENT_MODE" = direct || "$NOA_ENFORCEMENT_MODE" = proxy ]] || fail "Invalid NOA_ENFORCEMENT_MODE '$NOA_ENFORCEMENT_MODE'. Use direct or proxy."
-  [[ "$NOA_MODE:$NOA_ENFORCEMENT_MODE" != published:proxy ]] || fail "Proxy enforcement requires NOA_MODE=source in the root .env."
+  [[ "$NOA_MODE:$NOA_ENFORCEMENT_MODE" != source:proxy ]] || fail "The current proxy requires native NOA A2A. Set NOA_MODE=published for proxy mode, or use NOA_ENFORCEMENT_MODE=direct with source NOA."
 }
 
-proxy_settings() {
-  export CFN_PROXY_CONFIG_DIR="$local_dir/enforcement"
-  export NOA_TOOLS_PORT="${NOA_TOOLS_PORT:-8126}"
-  export NOA_TOOLS_HOST="${NOA_TOOLS_HOST:-0.0.0.0}"
-  export NOA_ENFORCEMENT_PROXY_URL="${NOA_ENFORCEMENT_PROXY_URL:-http://127.0.0.1:${ENVOY_HTTP_PORT:-9010}}"
-  export NOA_TOOL_TOKEN_FILE="$CFN_PROXY_CONFIG_DIR/tool-token"
-}
-
-proxy_compose() {
-  compose -f "$deployment_dir/enforcement/envoy/compose.yaml" \
-    -f "$dev_dir/compose/enforcement.override.yaml" "$@"
-}
-
-require_proxy_ownership() {
-  local mounted
-  if mounted="$(docker inspect --format '{{range .Mounts}}{{if eq .Destination "/etc/envoy/envoy.yaml"}}{{.Source}}{{end}}{{end}}' ioc-scale-enforcement-proxy-envoy 2>/dev/null)"; then
-    [[ "$mounted" = "$CFN_PROXY_CONFIG_DIR/envoy.json" ]] || fail "An Envoy container from another workflow exists. Stop/remove it before starting the CFN source proxy."
-  fi
-}
-
-render_proxy_config() {
-  require_tool python3
-  PYTHONPATH="$samples_dir/noa-trip-planner/src" python3 -m noa_trip_planner.proxy_config \
-    --directory "$CFN_PROXY_CONFIG_DIR" --mas-id "${NOA_MAS_ID:-}" --tools-port "$NOA_TOOLS_PORT"
-}
-
-wait_for_local_proxy() {
-  local attempt
-  require_tool curl
-  for ((attempt=0; attempt<30; attempt++)); do
-    if curl --noproxy '*' --fail --silent --max-time 1 "http://127.0.0.1:${ENVOY_HTTP_PORT:-9010}/healthz" >/dev/null; then
-      return
-    fi
-    sleep 1
-  done
-  fail "Local Envoy did not become ready. Inspect it with 'task proxy:logs'."
-}
-
-start_local_proxy() {
-  local other
-  proxy_settings
-  require_local_cf_containers
-  require_proxy_ownership
-  other="$(docker ps -a --filter 'name=^/ioc-scale-enforcement-proxy-shadi-verifier$' --format '{{.Names}}')"
-  [[ -z "$other" ]] || fail "A SHADi enforcement container exists. Stop/remove it before using the local Envoy workflow."
-  render_proxy_config
-  # CFN and source NOA may be started later. No published CF dependencies or
-  # example echo upstream are started by these explicit --no-deps calls.
-  proxy_compose stop ioc-scale-enforcement-proxy-envoy
-  proxy_compose up -d --no-deps ioc-scale-enforcement-proxy-mediation
-  proxy_compose up --no-deps --abort-on-container-exit --exit-code-from ioc-scale-enforcement-proxy-sidecar-installer ioc-scale-enforcement-proxy-sidecar-installer
-  proxy_compose up --no-deps --abort-on-container-exit --exit-code-from ioc-scale-enforcement-proxy-wasm-installer ioc-scale-enforcement-proxy-wasm-installer
-  proxy_compose up -d --no-deps --force-recreate ioc-scale-enforcement-proxy-envoy
-  wait_for_local_proxy
-  printf 'Local proxy ready on port %s; source/image CFN and source NOA may be started next.\n' "${ENVOY_HTTP_PORT:-9010}"
-}
-
-stop_local_proxy() {
-  proxy_settings
-  if [[ -f "$CFN_PROXY_CONFIG_DIR/state.json" ]]; then
-    require_proxy_ownership
-    proxy_compose stop ioc-scale-enforcement-proxy-envoy \
-      ioc-scale-enforcement-proxy-sidecar-installer ioc-scale-enforcement-proxy-wasm-installer \
-      ioc-scale-enforcement-proxy-mediation
-  fi
-}
-
-prepare_noa_proxy() {
-  local running
-  proxy_settings
-  require_proxy_ownership
-  running="$(proxy_compose ps --status running --services ioc-scale-enforcement-proxy-envoy)"
-  [[ "$running" = ioc-scale-enforcement-proxy-envoy ]] || fail "Proxy mode is selected but Envoy is not running. Run 'task infra:up' with the same root .env first."
-  # The MAS may have been created after infra:up. Recreate Envoy to load the
-  # exact generated routes and new file mounts; no infrastructure is started.
-  render_proxy_config
-  proxy_compose up -d --no-deps --force-recreate ioc-scale-enforcement-proxy-envoy
-  wait_for_local_proxy
+native_noa() {
+  require_tool uv
+  # Upstream parses RFC3339 nanoseconds, which macOS's system Python 3.9 rejects.
+  # uv also puts the selected interpreter on PATH for the upstream Bash launcher.
+  uv run --quiet --no-project --python '>=3.11' --no-python-downloads \
+    python3 "$dev_dir/tools/noa_a2a.py" "$@"
 }
 
 case "${1:-}" in
@@ -409,20 +337,19 @@ case "${1:-}" in
     require_local_cf_containers
     compose up -d "${infra_services[@]}"
     ensure_local_databases
-    if [[ "$NOA_ENFORCEMENT_MODE" = proxy ]]; then
-      start_local_proxy
-    fi
     ;;
   infra-down)
     require_local_env
     require_docker_compose
     require_local_cf_containers
+    if [[ -f "$local_dir/noa-a2a/installation.env" ]]; then
+      native_noa down
+    fi
     running="$(running_cf_services)" || fail "Could not inspect local CF images."
     if [[ -n "$running" ]]; then
       # Only stop owned services; the standalone image file has no infra services.
       image_compose stop "${cf_services[@]}"
     fi
-    stop_local_proxy
     compose stop "${infra_services[@]}"
     ;;
   run-cfn-mgmt-image)
@@ -440,8 +367,12 @@ case "${1:-}" in
   proxy-logs)
     require_local_env
     require_docker_compose
-    proxy_settings
-    proxy_compose logs -f --tail=100 ioc-scale-enforcement-proxy-envoy ioc-scale-enforcement-proxy-mediation
+    native_noa logs
+    ;;
+  noa-down|noa-status)
+    require_local_env
+    require_docker_compose
+    native_noa "${1#noa-}"
     ;;
   run-cfn-mgmt)
     require_local_env
@@ -518,7 +449,12 @@ case "${1:-}" in
     mode="$NOA_MODE"
     require_docker_compose
     require_local_cf_containers
-    if [[ "$mode" = published ]]; then
+    if [[ "$mode:$NOA_ENFORCEMENT_MODE" = published:proxy ]]; then
+      require_env NOA_MAS_ID AI_GATEWAY_BASE_URL AI_GATEWAY_API_KEY
+      require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
+      require_service "http://localhost:9002/api/multi-agentic-systems/$NOA_MAS_ID" 'Assigned NOA MAS (onboard it and wait for the CFN heartbeat)'
+      native_noa up
+    elif [[ "$mode" = published ]]; then
       compose --profile full-mas up --no-build --no-deps noa-trip-planner
     else
       repo="$samples_dir/noa-trip-planner"
@@ -536,11 +472,6 @@ case "${1:-}" in
       export NOA_API_PORT="${NOA_API_PORT:-8125}"
       export NOA_CFN_GRPC_TARGET=127.0.0.1:9003
       export OTLP_HTTP_ENDPOINT=http://localhost:4318
-      if [[ "$NOA_ENFORCEMENT_MODE" = proxy ]]; then
-        prepare_noa_proxy
-        cd "$repo"
-        exec uv run --no-sync python -m noa_trip_planner.proxy_runtime
-      fi
       cd "$repo"
       exec uv run --no-sync main
     fi

@@ -1,0 +1,49 @@
+{
+  "mas": [
+    {
+      "mas_id": "REPLACE_WITH_NOA_MAS_ID",
+      "rules": [
+        {
+          "id": "A2A",
+          "effect": "ALLOW",
+          "reason": "Moderator may delegate to the three specialists",
+          "sources": [
+            "noa-moderator"
+          ],
+          "destinations": [
+            "noa-schedule-agent",
+            "noa-itinerary-agent",
+            "noa-concierge-agent"
+          ]
+        },
+        {
+          "id": "MCP",
+          "effect": "ALLOW",
+          "reason": "Specialists may use the registered MCP server",
+          "sources": [
+            "noa-schedule-agent",
+            "noa-itinerary-agent",
+            "noa-concierge-agent"
+          ],
+          "destinations": [
+            "REPLACE_WITH_NOA_MCP_SERVER_ID"
+          ]
+        },
+        {
+          "id": "LLM",
+          "effect": "ALLOW",
+          "reason": "NOA agents may use the model gateway",
+          "sources": [
+            "noa-moderator",
+            "noa-schedule-agent",
+            "noa-itinerary-agent",
+            "noa-concierge-agent"
+          ],
+          "destinations": [
+            "noa-llm"
+          ]
+        }
+      ]
+    }
+  ]
+}
