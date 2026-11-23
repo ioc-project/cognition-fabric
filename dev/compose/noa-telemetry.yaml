@@ -1,0 +1,23 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+exporters:
+  otlphttp/platform:
+    endpoint: ${env:OTLP_UPSTREAM}
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlphttp/platform]
+    metrics:
+      receivers: [otlp]
+      exporters: [otlphttp/platform]
+    logs:
+      receivers: [otlp]
+      exporters: [otlphttp/platform]

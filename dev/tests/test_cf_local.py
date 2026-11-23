@@ -39,10 +39,7 @@ with open(os.environ["MOCK_LOG"], "a") as log:
                          "env": {key: os.environ.get(key) for key in keys}}) + "\n")
 if name == "docker":
     if args[0] == "inspect":
-        if ".Mounts" in args[2]:
-            print(os.environ.get("MOCK_PROXY_MOUNT", os.environ["MOCK_CFN"] + "/.local/enforcement/envoy.json"))
-        else:
-            print("false" if args[-1] == os.environ.get("MOCK_UNOWNED") else "true")
+        print("false" if args[-1] == os.environ.get("MOCK_UNOWNED") else "true")
     elif "ps" in args and "--services" in args:
         if os.environ.get("MOCK_PS_FAIL"):
             sys.exit(1)
@@ -78,7 +75,7 @@ class LocalLauncherTests(unittest.TestCase):
         self.runner = self.cfn / "dev/cf-local.sh"
         self.runner.parent.mkdir(parents=True)
         shutil.copyfile(RUNNER, self.runner)
-        for helper in ("check_ports.py", "check_mgmt_migrations.py"):
+        for helper in ("check_ports.py", "check_mgmt_migrations.py", "noa_a2a.py"):
             (self.runner.parent / "tools").mkdir(exist_ok=True)
             shutil.copyfile(RUNNER.parent / "tools" / helper, self.runner.parent / "tools" / helper)
         shutil.copyfile(ROOT_DIR / "Taskfile.yml", self.cfn / "Taskfile.yml")
@@ -124,7 +121,6 @@ class LocalLauncherTests(unittest.TestCase):
         self.env.update(
             PATH=f"{binaries}:{os.environ['PATH']}",
             MOCK_LOG=str(self.log),
-            MOCK_CFN=str(self.cfn),
             MOCK_RUNNING="ioc-scale-db,otel-collector",
             IOC_SCALE_DB_USER="test",
             IOC_SCALE_DB_PASSWORD="test",
@@ -143,7 +139,7 @@ class LocalLauncherTests(unittest.TestCase):
         )
 
     def commands(self):
-        return [json.loads(line) for line in self.log.read_text().splitlines()]
+        return [json.loads(line) for line in self.log.read_text().splitlines()] if self.log.exists() else []
 
     def last_up(self):
         return next(command for command in reversed(self.commands())
@@ -284,15 +280,38 @@ class LocalLauncherTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(self.commands()[-1]["env"][key], expected)
 
-    def test_source_noa_proxy_accepts_local_cfn_image(self):
+    def test_published_noa_proxy_accepts_local_cfn_image(self):
         result = self.run_task(
-            "run-full-mas", NOA_MODE="source", NOA_ENFORCEMENT_MODE="proxy",
-            MOCK_RUNNING="ioc-scale-cfn-svc,otel-collector,ioc-scale-enforcement-proxy-envoy",
+            "run-full-mas", NOA_MODE="published", NOA_ENFORCEMENT_MODE="proxy",
+            MOCK_RUNNING="ioc-scale-cfn-svc,otel-collector",
         )
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertEqual(self.last_up()["args"][-1], "ioc-scale-enforcement-proxy-envoy")
-        self.assertEqual(self.commands()[-1]["tool"], "uv")
-        self.assertIn("noa_trip_planner.proxy_runtime", self.commands()[-1]["args"])
+        command = self.commands()[-1]
+        self.assertEqual(command["tool"], "uv")
+        args = command["args"]
+        self.assertEqual(args[-1], "up")
+        self.assertEqual(args[args.index("--python") + 1], ">=3.11")
+        self.assertIn("--no-project", args)
+        self.assertIn("--no-python-downloads", args)
+        self.assertTrue(args[args.index("python3") + 1].endswith("tools/noa_a2a.py"))
+        self.assertFalse(any("up" in c["args"] for c in self.commands() if c["tool"] == "docker"))
+
+    def test_published_direct_keeps_legacy_start_without_explicit_pull(self):
+        result = self.run_task("run-full-mas", NOA_MODE="published", NOA_ENFORCEMENT_MODE="direct")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        commands = self.commands()
+        self.assertFalse(any("pull" in command["args"] for command in commands))
+        starts = [command for command in commands if "up" in command["args"]]
+        self.assertEqual(len(starts), 1)
+        self.assertEqual(starts[0]["args"][-6:],
+                         ["--profile", "full-mas", "up", "--no-build", "--no-deps", "noa-trip-planner"])
+
+    def test_infra_proxy_mode_bootstraps_before_mas_onboarding(self):
+        result = self.run_task("infra-up", NOA_MODE="published",
+                               NOA_ENFORCEMENT_MODE="proxy", NOA_MAS_ID="")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertFalse(any("noa_a2a.py" in " ".join(c["args"]) for c in self.commands()))
+        self.assertFalse(any("enforcement-proxy" in " ".join(c["args"]) for c in self.commands()))
 
     def test_down_stops_owned_images_before_infrastructure(self):
         result = self.run_task("infra-down", MOCK_RUNNING="ioc-scale-cfn-svc")
@@ -302,18 +321,18 @@ class LocalLauncherTests(unittest.TestCase):
         self.assertIn("ioc-scale-cfn-svc", stops[0]["args"])
         self.assertIn("ioc-scale-db", stops[1]["args"])
 
-    def test_down_stops_local_proxy_even_after_switching_to_direct_mode(self):
-        directory = self.cfn / ".local/enforcement"
+    def test_down_retires_native_mas_before_cf_even_after_switching_mode(self):
+        directory = self.cfn / ".local/noa-a2a"
         directory.mkdir(parents=True)
-        (directory / "state.json").write_text("{}")
+        (directory / "installation.env").touch()
         result = self.run_task("infra-down", MOCK_RUNNING="ioc-scale-cfn-svc",
                                NOA_ENFORCEMENT_MODE="direct")
         self.assertEqual(result.returncode, 0, result.stderr)
-        stops = [command for command in self.commands() if "stop" in command["args"]]
-        self.assertEqual(len(stops), 3)
-        self.assertIn("ioc-scale-cfn-svc", stops[0]["args"])
-        self.assertIn("ioc-scale-enforcement-proxy-envoy", stops[1]["args"])
-        self.assertIn("ioc-scale-db", stops[2]["args"])
+        commands = self.commands()
+        retire = next(i for i, c in enumerate(commands)
+                      if c["tool"] == "uv" and c["args"][-1] == "down")
+        stop = next(i for i, c in enumerate(commands) if "stop" in c["args"])
+        self.assertLess(retire, stop)
 
     def test_docker_failures_propagate(self):
         for settings in ({"MOCK_PS_FAIL": "1"}, {"MOCK_UP_EXIT": "17"}):
@@ -340,14 +359,11 @@ class LocalLauncherTests(unittest.TestCase):
         self.assertEqual([x["args"][0] for x in go_commands], ["build"])
         self.assertFalse(any("-modfile" in arg for x in go_commands for arg in x["args"]))
 
-    def test_new_checkout_rejects_existing_proxy_mount_before_reconfiguration(self):
-        result = self.run_task(
-            "run-full-mas", NOA_ENFORCEMENT_MODE="proxy",
-            MOCK_PROXY_MOUNT="/old-checkout/.local/enforcement/envoy.json",
-        )
+    def test_source_proxy_is_rejected_before_starting_services(self):
+        result = self.run_task("run-full-mas", NOA_MODE="source", NOA_ENFORCEMENT_MODE="proxy")
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("another workflow", result.stderr)
-        self.assertFalse(any("up" in x["args"] or "stop" in x["args"] for x in self.commands()))
+        self.assertIn("NOA_MODE=published", result.stderr)
+        self.assertFalse(any("up" in c["args"] or "pull" in c["args"] for c in self.commands()))
 
     def test_all_eight_suites_are_in_aggregate_and_test_database_is_isolated(self):
         for action in ("test", "check"):

@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 version: "3"
 
 dotenv:
@@ -78,22 +82,34 @@ tasks:
       - bash dev/cf-local.sh check
 
   infra:up:
-    desc: Start local infrastructure, including Envoy when NOA_ENFORCEMENT_MODE=proxy
+    desc: Start Postgres and OXP infrastructure; start the MAS/proxy after onboarding
     silent: true
     cmds:
       - bash dev/cf-local.sh infra-up
 
   infra:down:
-    desc: Stop local CF images, infrastructure, and local Envoy without deleting volumes
+    desc: Stop the local MAS/proxy, CF images and infrastructure without deleting volumes
     silent: true
     cmds:
       - bash dev/cf-local.sh infra-down
 
   proxy:logs:
-    desc: Follow the local Envoy and mediation service logs
+    desc: Follow the upstream local proxy controller logs
     silent: true
     cmds:
       - bash dev/cf-local.sh proxy-logs
+
+  noa:status:
+    desc: Show the local published NOA A2A and proxy status
+    silent: true
+    cmds:
+      - bash dev/cf-local.sh noa-status
+
+  noa:down:
+    desc: Retire the local NOA A2A proxy and stop its MAS containers
+    silent: true
+    cmds:
+      - bash dev/cf-local.sh noa-down
 
   run:cfn-mgmt:
     desc: Migrate the local management database and run management from source
