@@ -158,7 +158,7 @@ jobs:
         working-directory: samples/template-ce
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           python-version: '3.11'
           version: '0.13.7'
@@ -197,7 +197,7 @@ jobs:
         working-directory: samples/noa-trip-planner
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           python-version: '3.11'
           version: '0.13.7'
@@ -224,7 +224,7 @@ jobs:
           go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.12
           go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.6.2
           go install github.com/swaggo/swag/cmd/swag@v1.16.6
-      - uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5.4.2
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           python-version: '3.11'
           version: '0.13.7'
