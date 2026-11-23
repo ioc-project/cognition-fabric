@@ -1,21 +1,25 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Envoy enforcement flavor: Envoy + Go sidecar filter + traceparent Wasm filter,
 # in front of an upstream. Overlay for the main stack; run from the repo root:
-#   make up enforcement=envoy
-# or: docker compose -f docker-compose.yml -f enforcement/envoy/compose.yaml up -d
+#   make -C deploy up enforcement=envoy
+# Run doctor first to prepare the bootstrap before using Compose directly.
 # Needs enforcement/envoy/sidecar-spec.yaml (copy sidecar-spec.example.yaml).
 # ENFORCEMENT_PLATFORM pins every service here to one architecture: the Go plugin
 # the installer copies must match Envoy's. Set linux/amd64 on an Intel host.
-# CF and ioc-scale-enforcement-proxy-mediation are already in the main file and share its network.
+# The adapter uses CFN directly for decisions and audit delivery.
 services:
   ioc-scale-enforcement-proxy-sidecar-installer:
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-sidecar:${ENFORCEMENT_SIDECAR_TAG:-0.0.1-alpha}
+    image: ${ENFORCEMENT_SIDECAR_IMAGE:-${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-sidecar:${ENFORCEMENT_SIDECAR_TAG:-latest}}
     platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-enforcement-proxy-sidecar-installer
     volumes:
       - enforcement_sidecar_plugin:/etc/sidecar/plugins
 
   ioc-scale-enforcement-proxy-wasm-installer:
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-wasm:${ENFORCEMENT_WASM_TAG:-0.0.1-alpha}
+    image: ${ENFORCEMENT_WASM_IMAGE:-${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-wasm:${ENFORCEMENT_WASM_TAG:-latest}}
     platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-enforcement-proxy-wasm-installer
     volumes:
@@ -35,13 +39,16 @@ services:
     platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-enforcement-proxy-envoy
     restart: on-failure
+    labels:
+      # Bind prepared content to container configuration, including after doctor.
+      io.cognition-fabric.envoy.config-sha256: ${CF_DEPLOY_ENVOY_CONFIG_SHA256:-unprepared}
     depends_on:
-      ioc-scale-enforcement-proxy-mediation:
-        condition: service_started
       ioc-scale-enforcement-proxy-sidecar-installer:
         condition: service_completed_successfully
+        restart: true
       ioc-scale-enforcement-proxy-wasm-installer:
         condition: service_completed_successfully
+        restart: true
       ioc-scale-enforcement-proxy-upstream:
         condition: service_started
     environment:
@@ -50,12 +57,8 @@ services:
       CF_ENFORCEMENT_TIMEOUT: ${CF_ENFORCEMENT_TIMEOUT:-2s}
       CF_ENFORCEMENT_ALLOW_PLAINTEXT: ${CF_ENFORCEMENT_ALLOW_PLAINTEXT:-true}
       ENFORCEMENT_FAILURE_POSTURE: ${ENFORCEMENT_FAILURE_POSTURE:-fail_closed}
-      AUDIT_JOURNAL_ADDRESS: ${AUDIT_JOURNAL_ADDRESS:-ioc-scale-enforcement-proxy-mediation:8081}
-      AUDIT_JOURNAL_QUEUE_CAPACITY: ${AUDIT_JOURNAL_QUEUE_CAPACITY:-256}
-      AUDIT_JOURNAL_RPC_TIMEOUT: ${AUDIT_JOURNAL_RPC_TIMEOUT:-2s}
-      # Local development only. ioc-scale-enforcement-proxy-mediation must allow plaintext too
-      # (BFF_GRPC_ALLOW_INSECURE_LOCAL).
-      AUDIT_JOURNAL_ALLOW_INSECURE_LOCAL: ${AUDIT_JOURNAL_ALLOW_INSECURE_LOCAL:-true}
+      AUDIT_QUEUE_CAPACITY: ${AUDIT_QUEUE_CAPACITY:-256}
+      AUDIT_RPC_TIMEOUT: ${AUDIT_RPC_TIMEOUT:-2s}
       MAX_MEDIATED_BODY_BYTES: ${MAX_MEDIATED_BODY_BYTES:-1048576}
       AUDIT_CAPTURE_MAX_BYTES: ${AUDIT_CAPTURE_MAX_BYTES:-65536}
       AUDIT_REDACT_PATTERNS: ${AUDIT_REDACT_PATTERNS:-["(?i)token=[^&\\s]+","(?i)\"token\"\\s*:\\s*\"[^\"]+\""]}
@@ -72,7 +75,25 @@ services:
       - "127.0.0.1:${ENVOY_OUTBOUND_HTTP_PORT:-9011}:18081"
       - "127.0.0.1:${ENVOY_ADMIN_PORT:-9012}:19000"
     volumes:
-      - ./enforcement/envoy/envoy.yaml:/etc/envoy/envoy.yaml:ro
+      # Resolve the template input with the same Compose path/env rules as mounts.
+      - type: bind
+        source: ${ENVOY_BOOTSTRAP_TEMPLATE:-./enforcement/envoy/envoy.yaml}
+        target: /etc/envoy-template/envoy.yaml
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ../.local/deploy-envoy/generated
+        target: /etc/envoy
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${ENVOY_ACTIVATION_DIR:-../.local/deploy-envoy/activation}
+        target: /etc/sidecar/activation
+        read_only: true
+        bind:
+          create_host_path: false
       - type: bind
         source: ${SIDECAR_SPEC:-./enforcement/envoy/sidecar-spec.yaml}
         target: /etc/sidecar/sidecar-spec.yaml

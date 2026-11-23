@@ -4,7 +4,8 @@ Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
 
 ## Quick Start
 
-Run these commands from the monorepo root.
+Run these commands from the monorepo root. Install Docker with Compose 2.24.4+
+and Python 3; the launcher uses Python for preflight and readiness checks.
 
 1. Copy the root environment template and fill in your credentials:
    ```bash
@@ -28,7 +29,7 @@ service is running, healthy or finished:
 make -C deploy status                  # list containers
 make -C deploy logs service=oxp-api    # follow one service (omit service= for all)
 make -C deploy pull                    # pull the configured images
-make -C deploy up enforcement=envoy    # add an optional enforcement flavor (or shadi)
+make -C deploy up enforcement=envoy    # after the selected flavor's setup below
 make -C deploy down                    # stop the stack, volumes are preserved
 ```
 
@@ -46,20 +47,21 @@ cause. The Compose project name is pinned to `ioc-scale-cf-deployment`, so the
 stack and its default network keep the same names from any checkout.
 See [`scripts/run-stack.sh`](scripts/run-stack.sh).
 
-All images are pulled from GHCR; nothing is built locally. The sample app is
+The stack uses published images; nothing is built locally. CF/OXP/proxy images
+come from GHCR; Envoy and Nginx use their published Docker Hub images. The sample app is
 the only profiled service; the Go Demo CE starts by default.
 
-Every image is composed as `${REGISTRY}/<image>:${TAG}`, so registry and tag
-can be overridden in root `.env` without editing the compose file:
+Service registry/tag selectors can be overridden in root `.env` without editing
+Compose. Proxy components also accept full `image@sha256:...` references:
 
 - CF and enforcement proxy services (`ioc-scale-db`, `ioc-scale-cf-mgmt-svc`,
   `ioc-scale-cf-mgmt-plane-ui`, `ioc-scale-cfn-svc`, `ioc-scale-cf-demo-ce`,
   `ioc-scale-enforcement-proxy-mediation`):
   `CF_REGISTRY` plus `IOC_SCALE_DB_TAG`, `CF_MGMT_SVC_TAG`, `CF_UI_TAG`,
   `CFN_SVC_TAG`, `CF_DEMO_CE_TAG`, `ENFORCEMENT_PROXY_MEDIATION_TAG`.
-  Enforcement proxy images default to `0.0.1-alpha`; the database stays pinned
-  to `0.2.0`. Other CF image tags retain `latest`. Existing `.env` tag overrides
-  remain supported.
+  All four proxy components default to `latest`; the database stays pinned
+  to `0.2.0`. Other CF tags retain `latest`. Existing explicit `.env` tag values
+  still win. See [proxy image overrides and rollback](enforcement/README.md#images-and-rollback).
 - OXP workers: `OXP_REGISTRY` plus `OXP_IMG_TAG`.
 - `oxp-api`: `OXP_REGISTRY` plus `OXP_API_IMG_TAG`. The API is versioned
   separately from the workers. Set `OXP_API_IMAGE` only to override the full
@@ -109,7 +111,11 @@ for the file format.
 Go sidecar and Wasm filters) and `shadi` (the sender-authorization verifier), each
 with an overlay compose file and example configs. They are not part of the base
 stack; start one with `make -C deploy up enforcement=envoy` or `enforcement=shadi`. Setup
-for each is in [`enforcement/README.md`](enforcement/README.md).
+for each is in [`enforcement/README.md`](enforcement/README.md). Both adapters
+use CFN directly for decisions and audits. Their default examples start
+unprovisioned and reject protected traffic. Attaching/activating a MAS is a
+separate developer workflow; adding `profile=full-mas` preserves the existing
+NOA image and does not wire it to the proxy.
 
 ## Services
 
@@ -120,7 +126,7 @@ for each is in [`enforcement/README.md`](enforcement/README.md).
 | `ioc-scale-cf-mgmt-plane-ui` | 9001 | Management plane UI (Next.js) |
 | `ioc-scale-cfn-svc` | 9002 (HTTP), 9003 (gRPC) | Cognition Fabric Node |
 | `ioc-scale-cf-demo-ce` | 18001 (gRPC), 18000 (HTTP), loopback only | Go Demo CE with JSON configuration; default. See [Demo CE](#demo-ce) |
-| `ioc-scale-enforcement-proxy-mediation` | 9006 (gRPC), 9005 (HTTP) | Enforcement proxy mediation core. Audit destination is CFN; no internal database configured. Bound to 127.0.0.1 |
+| `ioc-scale-enforcement-proxy-mediation` | 9006 (gRPC), 9005 (HTTP) | Mediation compatibility service; adapters audit directly to CFN. Its own audit destination is CFN; no internal database configured. Bound to 127.0.0.1 |
 
 ### OXP infrastructure
 
@@ -204,8 +210,9 @@ See the root [`.env.example`](../.env.example) for all available configuration o
 - `BFF_GRPC_ALLOW_INSECURE_LOCAL` - Defaults to `true` so the core starts without
   mTLS. Local development only; set it to `false` and configure TLS elsewhere.
 - Audit persistence in `ioc-scale-enforcement-proxy-mediation` is fixed to `AUDIT_PERSISTENCE_MODE_CFN`
-  at startup in Compose. CFN audit ingestion is not implemented yet, so this mode
-  currently stores no new audit records.
+  at startup in Compose. That service forwards journal records to CFN's
+  `AppendAuditRecord` API for committed storage. Current Envoy and SHADi adapters
+  submit finalized audit records directly to CFN.
 - `CF_ENFORCEMENT_ADDRESS`, `CF_ENFORCEMENT_TIMEOUT`, `CF_ENFORCEMENT_ALLOW_PLAINTEXT` -
   CFN gRPC connection settings passed to mediation and enforcement adapters.
   Defaults are `ioc-scale-cfn-svc:9003`, `2s` and `true` for the local stack.

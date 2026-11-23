@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 name: ioc-scale-cf-deployment
 
 # ---------------------------------------------------------------------------
@@ -657,7 +661,7 @@ services:
   # Port Mapping: 9006:8081 (gRPC), 9005:8082 (HTTP). Host 8081 is oxp-api.
   # Image Link: https://github.com/cisco-eti/ioc-scaling-enforcement-proxy/pkgs/container/ioc-scaling-enforcement-mediation
   ioc-scale-enforcement-proxy-mediation:
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-mediation:${ENFORCEMENT_PROXY_MEDIATION_TAG:-0.0.1-alpha}
+    image: ${ENFORCEMENT_PROXY_MEDIATION_IMAGE:-${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-mediation:${ENFORCEMENT_PROXY_MEDIATION_TAG:-latest}}
     container_name: ioc-scale-enforcement-proxy-mediation
     environment:
       AUDIT_PERSISTENCE_MODE: AUDIT_PERSISTENCE_MODE_CFN

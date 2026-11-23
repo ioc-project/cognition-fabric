@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Boot, inspect and stop the whole CF + OXP + enforcement proxy stack.
 # Driven by the Makefile; run `make help` for the user-facing interface.
 set -euo pipefail
@@ -89,23 +93,41 @@ preflight() {
   if [[ "${profile}" == "full-mas" ]]; then
     require_value AI_GATEWAY_API_KEY
   fi
-  local config="${DEMO_CE_CONFIG_FILE:-$(env_value DEMO_CE_CONFIG_FILE)}"
-  config="${config:-demo-ce/config/config.json}"
-  [[ "${config}" == /* ]] || config="${root}/${config}"
-  [[ -f "${config}" ]] || die "missing ${config}; see README.md#demo-ce"
-  case "${enforcement}" in
-    envoy)
-      local spec="${SIDECAR_SPEC:-${root}/enforcement/envoy/sidecar-spec.yaml}"
-      [[ -f "${spec}" ]] || die "missing ${spec}; copy enforcement/envoy/sidecar-spec.example.yaml and edit it"
-      ;;
-    shadi)
-      local dir="${SHADI_VERIFIER_CONFIG_DIR:-${root}/enforcement/shadi/config}" f
-      for f in config.json ca.crt server.crt server.key; do
-        [[ -f "${dir}/${f}" ]] || die "missing ${dir}/${f}; see enforcement/shadi/README.md"
-      done
-      ;;
-  esac
-  "${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} config -q
+  command -v python3 >/dev/null || die "python3 is required"
+  local rendered
+  rendered="$("${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} config --format json)"
+  # Use Compose's resolved mounts rather than parsing dotenv path settings again.
+  python3 -c '
+import json, pathlib, sys
+try:
+    services = json.load(sys.stdin)["services"]
+    def mount(service, target):
+        return pathlib.Path(next(v["source"] for v in services[service]["volumes"]
+                                 if v["target"] == target))
+    files = [mount("ioc-scale-cf-demo-ce", "/etc/demo-ce/config.json")]
+    if sys.argv[1] == "shadi":
+        directory = mount("ioc-scale-enforcement-proxy-shadi-verifier", "/run/shadi-verifier")
+        files += [directory / name for name in ("config.json", "ca.crt", "server.crt", "server.key")]
+    for path in files:
+        if not path.is_file():
+            raise ValueError("missing %s; see deploy/README.md and the selected enforcement README" % path)
+    if sys.argv[1] == "shadi":
+        activation = json.loads((directory / "config.json").read_text()).get("activation")
+        if not isinstance(activation, dict) or not activation:
+            raise ValueError("SHADi config requires an activation reference; see enforcement/shadi/README.md")
+except (OSError, ValueError, KeyError, TypeError, StopIteration) as error:
+    print("stack configuration: %s" % error, file=sys.stderr)
+    sys.exit(2)
+' "${enforcement}" <<< "${rendered}"
+  if [[ "${enforcement}" == "envoy" ]]; then
+    CF_DEPLOY_ENVOY_CONFIG_SHA256="$(python3 "${root}/scripts/prepare-envoy.py" <<< "${rendered}")"
+    export CF_DEPLOY_ENVOY_CONFIG_SHA256
+  fi
+}
+
+activation_note() {
+  [[ -n "${enforcement}" ]] || return 0
+  echo "${enforcement}: component startup does not attach a MAS; example activation is unprovisioned."
 }
 
 # Services an enforcement overlay adds on top of the base file.
@@ -179,6 +201,7 @@ case "${action}" in
     while IFS= read -r service; do up_services+=("${service}"); done < <(selected_services)
     "${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} up -d "${up_services[@]}"
     wait_for_stack
+    activation_note
     ;;
   down)
     require_env
@@ -206,6 +229,7 @@ case "${action}" in
     echo "docker: ok"
     echo "env file: ${stack_env}"
     echo "compose config: ok"
+    activation_note
     echo "images:"
     "${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} config --images | sort -u | sed 's/^/  /'
     ;;

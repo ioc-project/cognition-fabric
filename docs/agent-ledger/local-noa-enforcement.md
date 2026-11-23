@@ -7,6 +7,12 @@ for `NOA_MODE=published` / `NOA_ENFORCEMENT_MODE=proxy`. Source/direct retains t
 copied NOA's direct CFN adapter. Source/proxy is rejected; it cannot drive the
 new controller through the old host tool-service fixture.
 
+The [deployment Makefile](../../deploy/enforcement/README.md) is a separate
+workflow: it retains the existing non-A2A NOA image and can start optional proxy
+components with unprovisioned activation. MAS attachment and controller-owned
+activation remain the MAS developer's responsibility. Do not copy this local
+Task workflow's native NOA enrollment into platform deployment to update images.
+
 `infra:up` starts platform dependencies without requiring a MAS. Start our CFN,
 Management, UI and chosen Demo/Template CE, onboard the separate A2A declaration,
 then set its canonical MAS and generated MCP server IDs before `run:full-mas`.
