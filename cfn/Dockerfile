@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Build from the repository root: docker build -f cfn/Dockerfile .
-FROM golang:1.25-alpine AS builder
+FROM golang:1.27-alpine AS builder
 WORKDIR /src
 ENV GOWORK=off
 RUN apk add --no-cache ca-certificates
