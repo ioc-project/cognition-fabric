@@ -11,34 +11,38 @@ a fabric to route those signals to Cognition Engines (CEs) that act on them. CF 
 
 CF provides:
 
-- **Two-tier API surface** — Active (MAS engagement) and Enforcing (block/modify/inject). Analytics APIs and the Cognition Store are owned by OXP.
-- **CE routing and chaining** — compose and sequence Cognition Engines across the fabric
+- **Two-tier CF API surface** — Enforcing (runtime decisions) and Active (planned MAS engagement). Analytics APIs and the Cognition Store are currently owned by OXP.
+- **CE routing** — route enforcement evaluations; CE chaining is planned
 - **OXP integration** — trajectories and cognitive enrichment as first-class fabric signals
 
 ## Architecture
 
 ![CF High Level Architecture](../docs/assets/CF_high_level_architecture.png)
 
+This historical concept diagram uses older API labels. CF owns two API tiers:
+Active (planned) and Enforcing. Analytics APIs and the Cognition Store are
+currently owned by OXP; CEs access OXP directly.
+
 ## Key contracts
 
 | Contract | Direction | Purpose |
 |----------|-----------|---------|
 | `ioc.cf.enforcement.v1.Enforcement/GetDisposition` | Enforcement Proxy → CF | Enforcing API — dispositions (allow/block) |
-| Active API | CEs → CF | Direct MAS engagement |
+| Active API (planned) | CEs → CF | Direct MAS engagement |
 
 ## Focus areas
 
 | Area | Description |
 |------|-------------|
 | **OXP core integration** | Refactor CF to integrate OXP as a first-class source of cognitive signal |
-| **Two-tier CF API surface** | Active and Enforcing APIs. Analytics APIs and Cognition Store are OXP-owned. |
-| **CE support** | Routing and chaining of Cognition Engines across the fabric |
+| **Two-tier CF API surface** | Enforcing APIs and planned Active APIs. Analytics APIs and Cognition Store are OXP-owned. |
+| **CE support** | Routing of Cognition Engines across the fabric; CE chaining is planned |
 | **L9 interaction with MAS** | Active and enforcing modes of L9 interaction |
 
 ## Consumers
 
 - **CASA CE** — publishes/consumes findings via OXP's Cognition Store
-- **Detective Investigations CE** — CE chaining, findings access
+- **Detective Investigations CE** — findings via OXP's Cognition Store; Active APIs and CE chaining planned
 - **GATS CEs** — Enforcing tier dispositions
 - **Security Detections CE** — queries OXP's Analytics APIs directly
 - **Enforcement Proxy** — executes enforcement in-path via `ioc.cf.enforcement.v1`

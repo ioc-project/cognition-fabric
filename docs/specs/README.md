@@ -25,4 +25,4 @@ The following are under discussion and will become specs once finalized:
 
 - [Discussions](../discussions/README.md) — open questions and in-progress API designs
 - [Decisions](../decisions/README.md) — rationale behind architectural choices
-- [Target architecture](../target-architecture.md) — planned three-tier API surface
+- [Target architecture](../target-architecture.md) — two CF API tiers and OXP-owned Analytics APIs

@@ -3,6 +3,10 @@
 **Status:** Accepted
 **Date:** 2026-11-13
 
+**Follow-up:** [ADR 0004](0004-include-deployment-in-monorepo.md), accepted on
+2026-11-18, supersedes only the separate-Deployment boundary below. Deployment
+assets now live in `deploy/`; OXP remains external.
+
 ## Context
 
 CFN, Management, UI and CE sources were maintained in separate repositories.

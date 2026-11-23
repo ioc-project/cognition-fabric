@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Generate throwaway development certificates for the SHADi verifier: a CA, the
 # server certificate, and one client certificate per host URI SAN given as an
 # argument. Local development only; never use these anywhere else.

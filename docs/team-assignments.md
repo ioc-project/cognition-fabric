@@ -23,9 +23,9 @@ Not team members, but the teams whose contracts CF owns or depends on — see [`
 
 | T3                        | What they own                                                          | Our relationship                                                                          |
 | ------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| **Cognition Fabric (CF)** | Cognition Store, API surface, CE routing and chaining, OXP integration | N/A                                                                                       |
+| **Cognition Fabric (CF)** | Two-tier CF API surface, CE routing and planned chaining, OXP integration | N/A                                                                                       |
 | **Enforcement Proxy**     | In-path enforcement sidecar, Envoy/Cilium filters, audit surface       | Depends on CF: the Enforcement contract and Tracing contract are CF's to define and serve |
-| **OXP**                   | Cognitive observability, integration & enrichment                      | Integrates with CF for trace ingestion and trajectory reconstruction                      |
+| **OXP**                   | Cognitive observability, Analytics APIs, Cognition Store and enrichment | CF depends on OXP for traces and trajectories; CEs use OXP's Analytics APIs and Cognition Store directly |
 
 <br />
 
