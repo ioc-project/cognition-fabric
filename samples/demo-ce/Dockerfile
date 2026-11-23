@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 # Build from the repository root; the API module is a local dependency.
-FROM golang:1.25-alpine AS build
+FROM golang:1.27-alpine AS build
 WORKDIR /src
 ENV GOWORK=off
 COPY api/go.mod api/go.sum ./api/
