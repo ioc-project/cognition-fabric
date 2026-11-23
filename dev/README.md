@@ -219,14 +219,17 @@ task run:cfn-mgmt:image
 task run:cfn:image
 task run:cf-ui:image
 task run:demo-ce:image
+task run:template-ce:image
 ```
 
 Choose source or image independently for each service, stopping its current
 foreground task before switching. Restart the chosen CE task after switching
-CFN source/image mode so its registered addresses match reachability. Tags remain
-`CF_MGMT_SVC_TAG`, `CFN_SVC_TAG`, `CF_UI_TAG`, and `CF_DEMO_CE_TAG` with default
-`latest`; `LOCAL_CF_MGMT_DB` deliberately selects another compatible local
-Management database. Shell overrides take precedence over root Task dotenv.
+CFN source/image mode so its registered addresses match reachability. Both
+Template CE tasks serve and register health on `8082` so OXP can keep `8081`.
+Tags default to `latest` and can be set with `CF_MGMT_SVC_TAG`, `CFN_SVC_TAG`,
+`CF_UI_TAG`, `CF_DEMO_CE_TAG`, and `CF_TEMPLATE_CE_TAG`. `LOCAL_CF_MGMT_DB`
+selects another compatible local Management database. Shell overrides take
+precedence over root Task dotenv.
 
 ## NOA onboarding and proxy mode
 
@@ -266,6 +269,16 @@ It waits for controller qualification, then remains in the foreground showing
 controller logs. Ctrl+C retires the MAS/proxy and stops its Compose services,
 retaining state and volumes. The upstream controller remains available for
 enrollment. No application or proxy image is built locally.
+
+Once NOA is ready, send a request from another terminal. Use your configured
+`NOA_API_PORT` if it differs from `8125`.
+
+```bash
+curl --noproxy '*' --max-time 600 --fail-with-body \
+  -X POST http://127.0.0.1:8125/ask \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"Plan a one-day trip to Celestia using the available data. Include train schedules and attractions, a feasible route with travel times, and train fares. Don’t ask follow-up questions; make reasonable assumptions and flag missing information."}'
+```
 
 ```text
 Client -> NOA API :8125 -> moderator

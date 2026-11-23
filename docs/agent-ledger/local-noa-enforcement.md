@@ -43,11 +43,12 @@ read timeout with ports on the moderator; a separate API forwarder permitted
 activation. Its DNS must follow moderator replacements and its timeout must
 cover the full MAS request. API ingress remains unmediated.
 
-CF source tasks have `:image` counterparts for management, CFN, UI, and Go Demo
-CE. These images share the source workflow's `cfn_mgmt_local` / `cfn_audit_local`
-databases, carry the `io.cisco.cf.local=true` ownership label, and run on the
-existing infrastructure network. NOA/proxy tasks accept these owned images but
-reject unrelated running CF containers from the standalone deployment. The
+CF source tasks have `:image` counterparts for Management, CFN, UI, Go Demo CE,
+and Python Template CE. These images carry the `io.cisco.cf.local=true` ownership
+label and run on the existing infrastructure network. Management and CFN use the
+source workflow's `cfn_mgmt_local` and `cfn_audit_local` databases, respectively.
+NOA/proxy tasks accept these owned images and reject unrelated running CF
+containers from the standalone deployment. The
 published A2A application uses different transports/identities from the copied
 source sample. Its Observe session prefix is the fixed application name, not the
 onboarded MAS UUID. Treat that session ID as opaque; join application trace/span
@@ -85,9 +86,9 @@ application's checkpoint message history in `/ask` responses so the experiment
 runner can count the actual messages.
 
 Both template and demo CEs answer CFN's `Evaluate` calls for either the direct
-source adapter or native A2A/proxy runtime. The local
-template task assigns health port 8082 separately from its fixed notification port
-8080, and runs `uv run --frozen` to synchronize locked dependencies after source
+source adapter or native A2A/proxy runtime. The local Template CE source and image
+tasks use health port 8082 separately from notification port 8080. The source
+task runs `uv run --frozen` to synchronize locked dependencies after source
 updates. When switching CEs, the chosen CE must be associated, enabled, and
 online; CFN does not select a CE based on which local task was started last.
 
@@ -99,9 +100,9 @@ overrides are `DEMO_CE_NAME` and `TEMPLATE_CE_NAME`, forwarded to native
 `CE_NAME` only when explicitly configured. Names, versions and CE types
 otherwise come from each CE's own registration defaults. Remove obsolete
 policy-CE aliases from the launcher, examples and local configuration. The
-shared Compose project now contains
-only `ioc-scale-cf-demo-ce`; do not query the removed policy CE service in the
-source-workflow container guard.
+deployment Compose file declares the Go Demo CE. The local image Compose file
+also declares `ioc-scale-cf-template-ce` for `run:template-ce:image` on the same
+Compose project. Query both CE image services through the local image file.
 
 The Go CE registers a base `health_url` plus a separate `health_endpoint=/healthz`.
 Set `ADVERTISED_HEALTH_URL=http://<reachable-host>:18000` in the local runner, without the

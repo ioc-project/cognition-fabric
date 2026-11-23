@@ -31,7 +31,7 @@ keys = (
     "POSTGRES_DB", "POSTGRES_AUDIT_DB", "COGNITION_ENGINE_HOST",
     "ADVERTISED_GRPC_ADDRESS", "ADVERTISED_HEALTH_URL", "CF_LOCAL_CE_HOST",
     "CF_LOCAL_CE_CONFIG_FILE", "CF_LOCAL_CE_MAS_FILE", "CFN_SVC_TAG",
-    "CF_MGMT_SVC_TAG", "CF_UI_TAG", "CF_DEMO_CE_TAG", "NOA_CFN_GRPC_TARGET",
+    "CF_MGMT_SVC_TAG", "CF_UI_TAG", "CF_DEMO_CE_TAG", "CF_TEMPLATE_CE_TAG", "NOA_CFN_GRPC_TARGET",
     "GRPC_LISTEN_ADDRESS", "HTTP_LISTEN_ADDRESS", "LOCAL_CF_MGMT_DB", "GOWORK", "CF_LOCAL_ENV_FILE",
 )
 with open(os.environ["MOCK_LOG"], "a") as log:
@@ -147,14 +147,22 @@ class LocalLauncherTests(unittest.TestCase):
 
     def test_deployment_is_bundled_in_the_monorepo(self):
         deployment = self.cfn / "deploy"
-        result = self.run_task("infra-up")
+        project = "test-cf-local"
+        result = self.run_task("infra-up", COMPOSE_PROJECT_NAME=project)
         self.assertEqual(result.returncode, 0, result.stderr)
         commands = [x for x in self.commands() if "--project-directory" in x["args"]]
-        self.assertTrue(commands)
+        image_status = [x for x in commands if "ps" in x["args"] and "ioc-scale-cfn-svc" in x["args"]]
+        self.assertEqual(len(image_status), 1)
+        self.assertIn("ioc-scale-cf-template-ce", image_status[0]["args"])
         for command in commands:
             args = command["args"]
-            self.assertEqual(args[args.index("--project-directory") + 1], str(deployment))
-            self.assertIn(str(deployment / "docker-compose.yml"), args)
+            self.assertEqual(args[args.index("-p") + 1], project)
+            directory, compose_file = (
+                (self.cfn, self.cfn / "dev/compose/images.yaml") if command in image_status
+                else (deployment, deployment / "docker-compose.yml")
+            )
+            self.assertEqual(args[args.index("--project-directory") + 1], str(directory))
+            self.assertIn(str(compose_file), args)
             self.assertEqual(command["cwd"], str(deployment))
 
     def test_missing_bundled_compose_fails_before_docker(self):
@@ -171,6 +179,7 @@ class LocalLauncherTests(unittest.TestCase):
             ("cfn", "ioc-scale-cfn-svc", "CFN_SVC_TAG"),
             ("cf-ui", "ioc-scale-cf-mgmt-plane-ui", "CF_UI_TAG"),
             ("demo-ce", "ioc-scale-cf-demo-ce", "CF_DEMO_CE_TAG"),
+            ("template-ce", "ioc-scale-cf-template-ce", "CF_TEMPLATE_CE_TAG"),
         ]:
             with self.subTest(task=task):
                 result = self.run_task(f"run-{task}-image", **{tag: "123"})
@@ -191,11 +200,30 @@ class LocalLauncherTests(unittest.TestCase):
         self.assertFalse(any("up" in command["args"] for command in self.commands()))
 
     def test_refuses_running_counterpart(self):
-        for task in ("run-cfn", "run-cfn-image"):
-            with self.subTest(task=task):
-                result = self.run_task(task, MOCK_RUNNING="ioc-scale-cfn-svc")
+        for task, service in [
+            ("run-cfn", "ioc-scale-cfn-svc"),
+            ("run-cfn-image", "ioc-scale-cfn-svc"),
+            ("run-template-ce", "ioc-scale-cf-template-ce"),
+            ("run-template-ce-image", "ioc-scale-cf-template-ce"),
+            ("run-template-ce", "ioc-scale-cf-demo-ce"),
+        ]:
+            with self.subTest(task=task, running=service):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task(task, MOCK_RUNNING=service)
                 self.assertNotEqual(result.returncode, 0)
-                self.assertIn("already running", result.stderr)
+                self.assertIn(f"{service} is already running", result.stderr)
+                self.assertFalse(any(command["tool"] == "uv" or "pull" in command["args"]
+                                     or "up" in command["args"] for command in self.commands()))
+
+    def test_template_ce_image_refuses_busy_source_ports_before_pulling(self):
+        for port in ("50051", "8080", "8082"):
+            with self.subTest(port=port):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task("run-template-ce-image", MOCK_BUSY_PORT=port)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("in use", result.stderr)
+                self.assertFalse(any("pull" in command["args"] or "up" in command["args"]
+                                     for command in self.commands()))
 
     def test_rejects_unowned_deployment_before_shutdown(self):
         result = self.run_task("infra-down", MOCK_RUNNING="ioc-scale-cfn-svc",
@@ -270,6 +298,21 @@ class LocalLauncherTests(unittest.TestCase):
                 self.assertEqual(env["CF_LOCAL_CE_HOST"], host)
                 self.assertEqual(env["CF_LOCAL_CE_CONFIG_FILE"], str(self.cfn / "policy.json"))
 
+    def test_template_ce_image_advertises_for_active_cfn_without_demo_config(self):
+        for running, host in [("ioc-scale-db", "127.0.0.1"),
+                              ("ioc-scale-db,ioc-scale-cfn-svc", "ioc-scale-cf-template-ce")]:
+            with self.subTest(host=host):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task("run-template-ce-image", MOCK_RUNNING=running,
+                                       CE_CONFIG_FILE="", CE_MAS_FILE="missing-mas")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(self.last_up()["env"]["CF_LOCAL_CE_HOST"], host)
+                self.assertEqual([command["args"][-1] for command in self.commands()
+                                  if command["tool"] == "curl"], [
+                    "http://localhost:9002/api/internal/diagnostics/health",
+                    "http://localhost:8081/healthz",
+                ])
+
     def test_source_ce_advertises_for_image_cfn(self):
         for action, key, expected in [
             ("run-template-ce", "COGNITION_ENGINE_HOST", "host.docker.internal"),
@@ -314,11 +357,12 @@ class LocalLauncherTests(unittest.TestCase):
         self.assertFalse(any("enforcement-proxy" in " ".join(c["args"]) for c in self.commands()))
 
     def test_down_stops_owned_images_before_infrastructure(self):
-        result = self.run_task("infra-down", MOCK_RUNNING="ioc-scale-cfn-svc")
+        result = self.run_task("infra-down", MOCK_RUNNING="ioc-scale-cf-template-ce")
         self.assertEqual(result.returncode, 0, result.stderr)
         stops = [command for command in self.commands() if "stop" in command["args"]]
         self.assertEqual(len(stops), 2)
         self.assertIn("ioc-scale-cfn-svc", stops[0]["args"])
+        self.assertIn("ioc-scale-cf-template-ce", stops[0]["args"])
         self.assertIn("ioc-scale-db", stops[1]["args"])
 
     def test_down_retires_native_mas_before_cf_even_after_switching_mode(self):
@@ -508,10 +552,11 @@ class ImageComposeTests(unittest.TestCase):
                 "ADMIN_USER_PASSWORD=test\nIOC_SCALE_DB_USER=test\n"
                 "IOC_SCALE_DB_PASSWORD=test\nNEXTAUTH_SECRET=test\n"
                 "CF_MGMT_SVC_TAG=mgmt-test\nCFN_SVC_TAG=cfn-test\n"
-                "CF_UI_TAG=ui-test\nCF_DEMO_CE_TAG=ce-test\n"
+                "CF_UI_TAG=ui-test\nCF_DEMO_CE_TAG=ce-test\nCF_TEMPLATE_CE_TAG=template-test\n"
             )
             env = {key: value for key, value in os.environ.items()
-                   if not key.startswith(("CF_", "CFN_", "COMPOSE_"))}
+                   if not key.startswith(("CF_", "CFN_", "COMPOSE_", "TEMPLATE_CE_"))
+                   and key != "ENABLE_NOTIFICATIONS"}
             env.update(CF_LOCAL_CE_CONFIG_FILE=str(Path(temporary) / "policy.json"),
                        CF_LOCAL_CE_MAS_FILE=str(Path(temporary) / "mas-id"))
             result = subprocess.run(
@@ -523,12 +568,13 @@ class ImageComposeTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             config = json.loads(result.stdout)
             services = config["services"]
-            self.assertEqual(len(services), 4)
+            self.assertEqual(len(services), 5)
             for name, tag in [
                 ("ioc-scale-cf-mgmt-svc", "mgmt-test"),
                 ("ioc-scale-cfn-svc", "cfn-test"),
                 ("ioc-scale-cf-mgmt-plane-ui", "ui-test"),
                 ("ioc-scale-cf-demo-ce", "ce-test"),
+                ("ioc-scale-cf-template-ce", "template-test"),
             ]:
                 service = services[name]
                 self.assertTrue(service["image"].endswith(":" + tag))
@@ -539,14 +585,38 @@ class ImageComposeTests(unittest.TestCase):
                              "cfn_mgmt_local")
             self.assertEqual(services["ioc-scale-cfn-svc"]["environment"]["POSTGRES_AUDIT_DB"],
                              "cfn_audit_local")
+            template = services["ioc-scale-cf-template-ce"]
+            self.assertEqual(template["image"], "ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/template-ce:template-test")
+            self.assertEqual(template["container_name"], "ioc-scale-cf-template-ce")
+            self.assertEqual(template["environment"], {
+                "CFN_URL": "http://host.docker.internal:9002",
+                "COGNITION_STORE_URL": "http://oxp-api:8000",
+                "COGNITION_ENGINE_HOST": "127.0.0.1",
+                "GRPC_PORT": "50051",
+                "HTTP_PORT": "8080",
+                "HEALTH_PORT": "8082",
+                "CE_NAME": "template-ce",
+                "TEMPLATE_CE_DECISION": "allow",
+                "ENABLE_NOTIFICATIONS": "true",
+            })
+            self.assertCountEqual(
+                [(port["host_ip"], port["published"], port["target"]) for port in template["ports"]],
+                [("127.0.0.1", str(port), port) for port in (50051, 8080, 8082)],
+            )
             self.assertTrue(config["networks"]["default"]["external"])
-            env["LOCAL_CF_MGMT_DB"] = "cfn_mgmt_image"
+            env.update(LOCAL_CF_MGMT_DB="cfn_mgmt_image", TEMPLATE_CE_NAME="local-template",
+                       TEMPLATE_CE_DECISION="deny", ENABLE_NOTIFICATIONS="false")
             result = subprocess.run(result.args, env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
+            services = json.loads(result.stdout)["services"]
             self.assertEqual(
-                json.loads(result.stdout)["services"]["ioc-scale-cf-mgmt-svc"]["environment"]["POSTGRES_DB"],
+                services["ioc-scale-cf-mgmt-svc"]["environment"]["POSTGRES_DB"],
                 "cfn_mgmt_image",
             )
+            template_env = services["ioc-scale-cf-template-ce"]["environment"]
+            self.assertEqual(template_env["CE_NAME"], "local-template")
+            self.assertEqual(template_env["TEMPLATE_CE_DECISION"], "deny")
+            self.assertEqual(template_env["ENABLE_NOTIFICATIONS"], "false")
 
 
 if __name__ == "__main__":

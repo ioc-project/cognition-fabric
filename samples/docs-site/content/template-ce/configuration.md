@@ -11,7 +11,7 @@ title: Configure Template CE
 | `CFN_URL` | Empty | CFN base URL; empty skips registration |
 | `COGNITION_ENGINE_HOST` | `localhost` | Host advertised to CFN |
 | `GRPC_PORT` | `50051` | gRPC listener and advertised port |
-| `HEALTH_PORT` | `8081` | Health listener. The published image uses 8081; `task run:template-ce` sets 8082 because OXP occupies 8081 |
+| `HEALTH_PORT` | `8081` | Health listener. Both `task run:template-ce` and `task run:template-ce:image` set 8082 because OXP occupies 8081 |
 | `COGNITION_STORE_URL` | Empty | OXP base URL; empty skips findings I/O |
 | `HTTP_PORT` | `8080` | Notification listener and advertised `notification_url` port |
 | `ENABLE_NOTIFICATIONS` | `true` | Controls notification metadata included in registration |

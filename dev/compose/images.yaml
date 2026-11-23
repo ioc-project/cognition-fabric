@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # CF images in the local source workflow. Infrastructure is started separately
 # through deploy/; these services share its existing network.
 x-local-cf: &local-cf
@@ -102,6 +106,25 @@ services:
         read_only: true
         bind:
           create_host_path: false
+
+  ioc-scale-cf-template-ce:
+    <<: *local-cf
+    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-demo-ce/template-ce:${CF_TEMPLATE_CE_TAG:-latest}
+    container_name: ioc-scale-cf-template-ce
+    ports:
+      - "127.0.0.1:50051:50051"
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:8082:8082"
+    environment:
+      CFN_URL: http://host.docker.internal:9002
+      COGNITION_STORE_URL: http://oxp-api:8000
+      COGNITION_ENGINE_HOST: ${CF_LOCAL_CE_HOST:-127.0.0.1}
+      GRPC_PORT: "50051"
+      HTTP_PORT: "8080"
+      HEALTH_PORT: "8082"
+      CE_NAME: ${TEMPLATE_CE_NAME:-template-ce}
+      TEMPLATE_CE_DECISION: ${TEMPLATE_CE_DECISION-allow}
+      ENABLE_NOTIFICATIONS: ${ENABLE_NOTIFICATIONS-true}
 
 networks:
   default:
