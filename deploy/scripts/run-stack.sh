@@ -1,4 +1,9 @@
 #!/usr/bin/env bash
+
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Boot, inspect and stop the whole CF + OXP + enforcement proxy stack.
 # Driven by the Makefile; run `make help` for the user-facing interface.
 set -euo pipefail

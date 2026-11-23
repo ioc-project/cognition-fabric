@@ -1,4 +1,9 @@
 #!/bin/sh
+
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 set -eu
 
 sleep "${OXP_INIT_DELAY_SECONDS:-5}"
