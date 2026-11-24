@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 name: CI
 
 on:
@@ -280,19 +284,19 @@ jobs:
       matrix:
         include:
           - component: cfn
-            image: ghcr.io/cisco-eti/ioc-scale-cfn-svc
+            image: ghcr.io/ioc-project/ioc-scale-cfn-svc
             dockerfile: cfn/Dockerfile
           - component: cf-mgmt
-            image: ghcr.io/cisco-eti/ioc-scale-cf-mgmt-svc
+            image: ghcr.io/ioc-project/ioc-scale-cf-mgmt-svc
             dockerfile: cf-mgmt/Dockerfile
           - component: cf-ui
-            image: ghcr.io/cisco-eti/ioc-scale-cf-ui
+            image: ghcr.io/ioc-project/ioc-scale-cf-ui
             dockerfile: cf-ui/ci/docker/Dockerfile.next
           - component: demo-ce
-            image: ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce
+            image: ghcr.io/ioc-project/ioc-scale-cf-demo-ce/demo-ce
             dockerfile: samples/demo-ce/Dockerfile
           - component: template-ce
-            image: ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/template-ce
+            image: ghcr.io/ioc-project/ioc-scale-cf-demo-ce/template-ce
             dockerfile: samples/template-ce/Dockerfile
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0

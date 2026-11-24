@@ -45,7 +45,21 @@ The release workflow uses `GITHUB_TOKEN` to publish images. The target GHCR
 package must allow the repository's Actions access. UI image builds use the
 repository variable `CFN_UI_API_BASE_URL`, defaulting to `http://localhost:9000`.
 Main-branch CI publishes its configured image aliases separately from component
-tags.
+tags. Both workflows target these packages under `ghcr.io/ioc-project`:
+
+| Component | Image |
+| --- | --- |
+| CFN | `ghcr.io/ioc-project/ioc-scale-cfn-svc` |
+| Management | `ghcr.io/ioc-project/ioc-scale-cf-mgmt-svc` |
+| UI | `ghcr.io/ioc-project/ioc-scale-cf-ui` |
+| Go Demo CE | `ghcr.io/ioc-project/ioc-scale-cf-demo-ce/demo-ce` |
+| Python Template CE | `ghcr.io/ioc-project/ioc-scale-cf-demo-ce/template-ce` |
+
+A successful push to `main` publishes `latest` and a dated commit tag for each
+image, plus `main` for Management and UI. Component releases publish only the
+selected image's `vX.Y.Z` tag. Both publishing paths build `linux/amd64` and
+`linux/arm64`; pull requests and manual CI dispatches build without publishing.
+Package visibility is set manually in GitHub; these workflows do not change it.
 
 ## Validate an ARM64 UI build
 
@@ -53,7 +67,7 @@ To validate a published PR branch before merging, manually dispatch CI with the
 `ui-arm64` input:
 
 ```bash
-gh workflow run ci.yaml --repo cisco-eti/cognition-fabric \
+gh workflow run ci.yaml --repo ioc-project/cognition-fabric \
   --ref <published-pr-branch> -F ui-arm64=true
 ```
 
