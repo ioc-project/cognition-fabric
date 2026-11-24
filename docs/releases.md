@@ -36,6 +36,10 @@ with the five-image validation matrix disabled, and builds and publishes only th
 selected component's image to GHCR. For example, `cfn/v1.0.0`
 publishes image tag `v1.0.0`; the folder prefix belongs only to the Git tag.
 The API is released by its Go module tag and has no container image.
+Its module path is `github.com/ioc-project/cognition-fabric/api`. The `1.0.0`
+version metadata does not itself publish `api/v1.0.0`; that tag must point to a
+commit with the matching module declaration before external consumers can fetch
+that version. Local CFN and Demo CE builds use relative API replacements.
 
 The release workflow uses `GITHUB_TOKEN` to publish images. The target GHCR
 package must allow the repository's Actions access. UI image builds use the

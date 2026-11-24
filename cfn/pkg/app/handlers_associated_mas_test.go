@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/easyhttp"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/tools/easyhttp"
 )
 
 func associatedMASRouter() http.Handler {

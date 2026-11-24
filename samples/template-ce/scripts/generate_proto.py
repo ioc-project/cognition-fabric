@@ -9,6 +9,20 @@ import tempfile
 import grpc_tools
 from grpc_tools import protoc
 
+PYTHON_HEADER = (
+    "# Copyright 2026 Cisco Systems, Inc. and its affiliates\n"
+    "#\n"
+    "# SPDX-License-Identifier: Apache-2.0\n\n"
+)
+
+
+def add_python_header(source):
+    if source.startswith("# -*- coding:"):
+        encoding, _, source = source.partition("\n")
+        return encoding + "\n" + PYTHON_HEADER + source
+    return PYTHON_HEADER + source
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--check", action="store_true")
 args = parser.parse_args()
@@ -24,7 +38,7 @@ with tempfile.TemporaryDirectory() as temporary:
     if result:
         raise SystemExit(result)
     for generated in output.glob("*.py"):
-        text = generated.read_text().replace("import ce_pb2 as ce__pb2", "from . import ce_pb2 as ce__pb2")
+        text = add_python_header(generated.read_text().replace("import ce_pb2 as ce__pb2", "from . import ce_pb2 as ce__pb2"))
         target = root / "src/generated" / generated.name
         if args.check:
             if not target.exists() or target.read_text() != text:

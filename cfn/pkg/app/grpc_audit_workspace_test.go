@@ -13,8 +13,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/audit"
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/client/database"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/audit"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/client/database"
 	"gorm.io/datatypes"
 )
 

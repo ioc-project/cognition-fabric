@@ -12,8 +12,8 @@ import (
 	"net"
 	"strings"
 
-	api "github.com/cisco-eti/cognition-fabric/api/enforcement/v1"
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/audit"
+	api "github.com/ioc-project/cognition-fabric/api/enforcement/v1"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/audit"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"

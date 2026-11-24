@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/audit"
 	"github.com/google/uuid"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/audit"
 )
 
 // MockDatabase is an in-memory Store for tests that don't need a real Postgres.

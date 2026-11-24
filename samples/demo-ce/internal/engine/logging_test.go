@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/oxp"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/pkg/config"
+	cev1 "github.com/ioc-project/cognition-fabric/api/ce/v1"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/oxp"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/pkg/config"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

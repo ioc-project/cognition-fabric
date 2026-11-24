@@ -13,7 +13,7 @@ syntax = "proto3";
 
 package ioc.ce.v1;
 
-option go_package = "github.com/cisco-eti/cognition-fabric/api/ce/v1;cev1";
+option go_package = "github.com/ioc-project/cognition-fabric/api/ce/v1;cev1";
 
 import "google/protobuf/struct.proto";
 

@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/audit"
-	eh "github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/easyhttp"
 	"github.com/google/uuid"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/audit"
+	eh "github.com/ioc-project/cognition-fabric/cfn/pkg/tools/easyhttp"
 )
 
 // getAuditEventHandler retrieves a single audit event by ID.

@@ -16,11 +16,11 @@ import (
 	"encoding/json"
 	"time"
 
-	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence/events"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/inbox"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/pkg/config"
+	cev1 "github.com/ioc-project/cognition-fabric/api/ce/v1"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/engine/evidence"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/engine/evidence/events"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/inbox"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/pkg/config"
 )
 
 // New returns the judge of a2a_message_input evidence.

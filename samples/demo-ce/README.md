@@ -4,7 +4,7 @@ A demonstration Cognition Engine (`ioc.ce.v1.CognitionEngine`) for the IOC platf
 application: it loads identity and content rules per MAS from a JSON file and answers `Evaluate` from them.
 The JSON config supplies the demo rules.
 
-CFN calls the CE over gRPC (`:18001`, `ce.v1`, the contract comes from the local `github.com/cisco-eti/cognition-fabric/api` Go module).
+CFN calls the CE over gRPC (`:18001`, `ce.v1`, the contract comes from the local `github.com/ioc-project/cognition-fabric/api` Go module).
 The CE registers itself with CFN over REST (`POST /api/cognition-engine`, conflict recovery by `PATCH`),
 attempting registration immediately and retrying once per second until it succeeds. It declares a
 `health_url` (its `GET /healthz`) and a `notification_url` on the same HTTP listener (`POST /notification`).

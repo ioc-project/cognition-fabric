@@ -10,14 +10,14 @@ import (
 	"strings"
 	"time"
 
-	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence/correlation"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/identity"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/inbox"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/logging"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/oxp"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/pkg/config"
+	cev1 "github.com/ioc-project/cognition-fabric/api/ce/v1"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/engine/evidence"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/engine/evidence/correlation"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/engine/identity"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/inbox"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/logging"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/oxp"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/pkg/config"
 )
 
 // contentEngine is one MAS: the identity decision first, then, for a route that a content rule covers, the

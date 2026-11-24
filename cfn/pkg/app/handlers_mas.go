@@ -13,8 +13,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/client/mgmt"
-	eh "github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/easyhttp"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/client/mgmt"
+	eh "github.com/ioc-project/cognition-fabric/cfn/pkg/tools/easyhttp"
 )
 
 // getMASHandler handles GET /api/multi-agentic-systems/{masId}

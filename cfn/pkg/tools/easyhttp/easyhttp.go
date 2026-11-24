@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/logger"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/tools/logger"
 	"go.uber.org/zap"
 )
 
