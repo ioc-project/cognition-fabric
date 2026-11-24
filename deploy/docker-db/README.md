@@ -3,10 +3,12 @@
 Source for `ghcr.io/ioc-project/ioc-scale-db`, the shared database image for
 the `ioc-scale-db` service in `deploy/docker-compose.yml`.
 
-The stack selects its image through `CF_REGISTRY` and `IOC_SCALE_DB_TAG`.
-Its current registry default is still `ghcr.io/cisco-eti`; publishing to the new
-organization does not switch that default. `CF_REGISTRY` also selects other CF
-and Proxy images, so its migration must be coordinated with those packages.
+The stack selects its image through `CF_REGISTRY` and `IOC_SCALE_DB_TAG`, defaulting
+to `ghcr.io/ioc-project/ioc-scale-db:0.2.0`. `CF_REGISTRY` also selects the CF
+application images. Proxy images use the independent `PROXY_REGISTRY` setting,
+which remains `ghcr.io/cisco-eti` until those packages migrate. Existing `.env`
+registry values override the defaults; update `CF_REGISTRY` explicitly when
+adopting the new CF and DB registry in an existing configuration.
 
 It is a multi-stage build on `postgres:16-bookworm` that compiles
 [AgensGraph](https://github.com/skaiworldwide-oss/agensgraph) — a PostgreSQL 16

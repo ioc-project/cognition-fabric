@@ -87,7 +87,10 @@ CF_REGISTRY=ghcr.io/ioc-project CFN_SVC_TAG=ci-0123456 task run:cfn:image
 
 Replace `ci-0123456` with the tag from the run. See the
 [local image workflow](../dev/README.md#published-cf-images-with-the-local-databases)
-for the other service tag selectors. Command-specific overrides leave `.env`
+for the other service tag selectors. CF/DB images default to
+`CF_REGISTRY=ghcr.io/ioc-project`; an existing `.env` that selects the old registry
+must be updated explicitly, or overridden for the command. Proxy images use
+`PROXY_REGISTRY` independently. Command-specific overrides leave `.env`
 unchanged. An AMD64-only PR build does not validate ARM64; record the ARM64 UI
 `npm ci` and Next.js build durations from the manual run's Buildx logs, plus
 the total image-job duration.

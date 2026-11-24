@@ -52,20 +52,26 @@ the only profiled service; the Go Demo CE starts by default.
 Every image is composed as `${REGISTRY}/<image>:${TAG}`, so registry and tag
 can be overridden in root `.env` without editing the compose file:
 
-- CF and enforcement proxy services (`ioc-scale-db`, `ioc-scale-cf-mgmt-svc`,
-  `ioc-scale-cf-mgmt-plane-ui`, `ioc-scale-cfn-svc`, `ioc-scale-cf-demo-ce`,
-  `ioc-scale-enforcement-proxy-mediation`):
+- CF and database services (`ioc-scale-db`, `ioc-scale-cf-mgmt-svc`,
+  `ioc-scale-cf-mgmt-plane-ui`, `ioc-scale-cfn-svc`, `ioc-scale-cf-demo-ce`):
   `CF_REGISTRY` plus `IOC_SCALE_DB_TAG`, `CF_MGMT_SVC_TAG`, `CF_UI_TAG`,
-  `CFN_SVC_TAG`, `CF_DEMO_CE_TAG`, `ENFORCEMENT_PROXY_MEDIATION_TAG`.
-  Enforcement proxy images default to `0.0.1-alpha`; the database stays pinned
-  to `0.2.0`. Other CF image tags retain `latest`. Existing `.env` tag overrides
-  remain supported.
+  `CFN_SVC_TAG`, `CF_DEMO_CE_TAG`. The registry defaults to `ghcr.io/ioc-project`;
+  the database stays pinned to `0.2.0` and CF application tags default to `latest`.
+- Enforcement Proxy services: `PROXY_REGISTRY` defaults to `ghcr.io/cisco-eti`,
+  independently of CF. The mediation image uses `ENFORCEMENT_PROXY_MEDIATION_TAG`;
+  Envoy and SHADi overlays use their respective `ENFORCEMENT_*_TAG` settings.
+  These deployment tags remain `0.0.1-alpha`.
 - OXP workers: `OXP_REGISTRY` plus `OXP_IMG_TAG`.
 - `oxp-api`: `OXP_REGISTRY` plus `OXP_API_IMG_TAG`. The API is versioned
   separately from the workers. Set `OXP_API_IMAGE` only to override the full
   image reference.
 - NOA sample app: `CLARIS_REGISTRY` plus `NOA_IMAGE_TAG`.
 
+Existing `.env` values take precedence over these defaults. To adopt the new CF
+images in an existing configuration, change `CF_REGISTRY` to
+`ghcr.io/ioc-project`. If Proxy images previously used a custom `CF_REGISTRY`,
+set that location explicitly through `PROXY_REGISTRY`. OXP and NOA keep their
+existing registry defaults. Existing tag overrides remain supported.
 
 The database image source is in this directory. See
 [`docker-db/`](docker-db/) for the Dockerfile and how to publish a new tag.
@@ -210,6 +216,7 @@ See the root [`.env.example`](../.env.example) for all available configuration o
   CFN gRPC connection settings passed to mediation and enforcement adapters.
   Defaults are `ioc-scale-cfn-svc:9003`, `2s` and `true` for the local stack.
 - `CF_REGISTRY`, `*_TAG` - Source and version of the CF service images (see above)
+- `PROXY_REGISTRY`, `ENFORCEMENT_*_TAG` - Source and version of the enforcement images
 - `OXP_REGISTRY`, `OXP_IMG_TAG`, `OXP_API_IMG_TAG` - Source and version of the OXP worker and API images
 - `AI_GATEWAY_API_KEY`, `OPENAI_API_KEY` - Required by `embedding`, `mce`, and
   `analysis`. Without them those workers exit on startup and restart in a loop.

@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # CF images in the local source workflow. Infrastructure is started separately
 # through deploy/; these services share its existing network.
 x-local-cf: &local-cf
@@ -11,7 +15,7 @@ x-local-cf: &local-cf
 services:
   ioc-scale-cf-mgmt-svc:
     <<: *local-cf
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-mgmt-svc:${CF_MGMT_SVC_TAG:-latest}
+    image: ${CF_REGISTRY:-ghcr.io/ioc-project}/ioc-scale-cf-mgmt-svc:${CF_MGMT_SVC_TAG:-latest}
     container_name: ioc-scale-cf-mgmt-svc
     ports:
       - "9000:9000"
@@ -33,7 +37,7 @@ services:
 
   ioc-scale-cfn-svc:
     <<: *local-cf
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cfn-svc:${CFN_SVC_TAG:-latest}
+    image: ${CF_REGISTRY:-ghcr.io/ioc-project}/ioc-scale-cfn-svc:${CFN_SVC_TAG:-latest}
     container_name: ioc-scale-cfn-svc
     ports:
       - "9002:9002"
@@ -55,7 +59,7 @@ services:
 
   ioc-scale-cf-mgmt-plane-ui:
     <<: *local-cf
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-ui:${CF_UI_TAG:-latest}
+    image: ${CF_REGISTRY:-ghcr.io/ioc-project}/ioc-scale-cf-ui:${CF_UI_TAG:-latest}
     container_name: ioc-scale-cf-mgmt-plane-ui
     ports:
       - "9001:9001"
@@ -69,7 +73,7 @@ services:
 
   ioc-scale-cf-demo-ce:
     <<: *local-cf
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-demo-ce/demo-ce:${CF_DEMO_CE_TAG:-latest}
+    image: ${CF_REGISTRY:-ghcr.io/ioc-project}/ioc-scale-cf-demo-ce/demo-ce:${CF_DEMO_CE_TAG:-latest}
     container_name: ioc-scale-cf-demo-ce
     ports:
       - "127.0.0.1:18000:18000"
