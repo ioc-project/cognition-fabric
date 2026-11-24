@@ -7,7 +7,7 @@ package events
 import (
 	"encoding/json"
 
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/engine/evidence"
 )
 
 type toolStartedEvent struct {

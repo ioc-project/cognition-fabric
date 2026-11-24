@@ -1107,7 +1107,7 @@ const file_ce_proto_ce_v1_ce_proto_rawDesc = "" +
 	"#CONTEXT_SUFFICIENCY_DEGRADED_ATOMIC\x10\x022\x98\x01\n" +
 	"\x0fCognitionEngine\x12C\n" +
 	"\bEvaluate\x12\x1a.ioc.ce.v1.EvaluateRequest\x1a\x1b.ioc.ce.v1.EvaluateResponse\x12@\n" +
-	"\aGetInfo\x12\x19.ioc.ce.v1.GetInfoRequest\x1a\x1a.ioc.ce.v1.GetInfoResponseB6Z4github.com/cisco-eti/cognition-fabric/api/ce/v1;cev1b\x06proto3"
+	"\aGetInfo\x12\x19.ioc.ce.v1.GetInfoRequest\x1a\x1a.ioc.ce.v1.GetInfoResponseB8Z6github.com/ioc-project/cognition-fabric/api/ce/v1;cev1b\x06proto3"
 
 var (
 	file_ce_proto_ce_v1_ce_proto_rawDescOnce sync.Once

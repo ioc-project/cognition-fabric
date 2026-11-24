@@ -17,10 +17,10 @@ import (
 	"testing"
 	"time"
 
-	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
-	enforcementv1 "github.com/cisco-eti/cognition-fabric/api/enforcement/v1"
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/audit"
 	"github.com/google/uuid"
+	cev1 "github.com/ioc-project/cognition-fabric/api/ce/v1"
+	enforcementv1 "github.com/ioc-project/cognition-fabric/api/enforcement/v1"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/audit"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

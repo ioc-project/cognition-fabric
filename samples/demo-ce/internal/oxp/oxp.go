@@ -15,9 +15,9 @@ import (
 	"net/url"
 	"time"
 
-	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/httpjson"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/logging"
+	cev1 "github.com/ioc-project/cognition-fabric/api/ce/v1"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/httpjson"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/logging"
 )
 
 // Client reads session span context.

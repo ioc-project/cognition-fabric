@@ -16,8 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/logger"
 	"github.com/google/uuid"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/tools/logger"
 	"go.uber.org/zap"
 	"gorm.io/datatypes"
 	"gorm.io/gorm"

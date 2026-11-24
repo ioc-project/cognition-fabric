@@ -53,23 +53,37 @@ class NativeNoaTests(unittest.TestCase):
 
     def test_image_defaults_and_explicit_reference_precedence(self):
         values = self.values()
-        for key, _, _ in NOA.IMAGE_SELECTORS:
-            self.assertTrue(values[key].endswith(":latest"))
+        for key, _, repository in NOA.IMAGE_SELECTORS:
+            self.assertEqual(values[key], f"ghcr.io/cisco-eti/{repository}:latest")
         self.assertTrue(values["NOA_A2A_IMAGE"].endswith("/noa-trip-planner-a2a:latest"))
         values = self.values(
-            CF_REGISTRY="registry.example.invalid/cf/",
+            PROXY_REGISTRY="registry.example.invalid/proxy/",
             NOA_PROXY_SIDECAR_TAG="older",
             NOA_PROXY_WASM_TAG="overridden-by-full-reference",
             TRACEPARENT_WASM_IMAGE="custom/wasm@sha256:" + "a" * 64,
             NOA_A2A_TAG="trip-version",
         )
         self.assertEqual(values["SIDECAR_IMAGE"],
-                         "registry.example.invalid/cf/ioc-scaling-enforcement-proxy-sidecar:older")
+                         "registry.example.invalid/proxy/ioc-scaling-enforcement-proxy-sidecar:older")
         self.assertEqual(values["TRACEPARENT_WASM_IMAGE"], "custom/wasm@sha256:" + "a" * 64)
         self.assertTrue(values["NOA_A2A_IMAGE"].endswith(":trip-version"))
         self.assertEqual(values["RUNTIME_IMAGES"], "local")
         self.assertEqual(values["RUNTIME_STATE_DIRECTORY"], str(self.state / ".ioc-runtime"))
         self.assertEqual(values["CF_ENFORCEMENT_ADDRESS"], "host.docker.internal:9003")
+
+    def test_cf_registry_does_not_select_proxy_or_noa_images(self):
+        values = self.values(CF_REGISTRY="ghcr.io/ioc-project")
+        for key, _, repository in NOA.IMAGE_SELECTORS:
+            self.assertEqual(values[key], f"ghcr.io/cisco-eti/{repository}:latest")
+        self.assertEqual(values["NOA_A2A_IMAGE"],
+                         "ghcr.io/cisco-eti/oxp/container-images/noa-trip-planner-a2a:latest")
+        values = self.values(CF_REGISTRY="registry.example.invalid/cf",
+                             PROXY_REGISTRY="registry.example.invalid/proxy",
+                             OXP_REGISTRY="registry.example.invalid/oxp")
+        for key, _, repository in NOA.IMAGE_SELECTORS:
+            self.assertEqual(values[key], f"registry.example.invalid/proxy/{repository}:latest")
+        self.assertEqual(values["NOA_A2A_IMAGE"],
+                         "registry.example.invalid/oxp/noa-trip-planner-a2a:latest")
 
     def test_legacy_deployment_tags_do_not_select_native_proxy_images(self):
         values = self.values(ENFORCEMENT_SIDECAR_TAG="0.0.1-alpha",

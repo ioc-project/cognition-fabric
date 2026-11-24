@@ -13,9 +13,21 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 API = ROOT / "api"
-MODULE = "github.com/cisco-eti/cognition-fabric/api"
+MODULE = "github.com/ioc-project/cognition-fabric/api"
 PROTOC = os.environ.get("PROTOC", "protoc")
 PROTOS = [API / "ce/proto/ce/v1/ce.proto", API / "enforcement/proto/enforcement/v1/enforcement.proto"]
+PYTHON_HEADER = (
+    "# Copyright 2026 Cisco Systems, Inc. and its affiliates\n"
+    "#\n"
+    "# SPDX-License-Identifier: Apache-2.0\n\n"
+)
+
+
+def add_python_header(source):
+    if source.startswith("# -*- coding:"):
+        encoding, _, source = source.partition("\n")
+        return encoding + "\n" + PYTHON_HEADER + source
+    return PYTHON_HEADER + source
 
 
 def check_tool(command, expected):
@@ -61,7 +73,7 @@ def main():
         subprocess.run([PROTOC, "-I", str(enforcement.parent), "--python_out=" + str(python_output), str(enforcement)], check=True)
         binding = (python_output / "enforcement_pb2.py").read_text().replace("'enforcement_pb2'", "'noa_trip_planner.generated.enforcement_pb2'")
         target = ROOT / "samples/noa-trip-planner/src/noa_trip_planner/generated/enforcement_pb2.py"
-        synchronize(target, binding.encode(), args.check)
+        synchronize(target, add_python_header(binding).encode(), args.check)
     print("Canonical Go and NOA bindings are current." if args.check else "Generated canonical Go and NOA bindings.")
 
 

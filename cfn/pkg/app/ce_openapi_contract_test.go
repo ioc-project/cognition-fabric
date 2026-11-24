@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/easyhttp"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/tools/easyhttp"
 	"go.yaml.in/yaml/v3"
 )
 

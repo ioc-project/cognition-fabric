@@ -5,6 +5,7 @@
 import importlib.util
 import json
 import os
+import re
 import subprocess
 from pathlib import Path
 import tempfile
@@ -48,6 +49,16 @@ class ReleaseTests(unittest.TestCase):
                 self.assertEqual(target["dockerfile"], dockerfile)
                 self.assertEqual(target["publish_image"], component != "api")
                 self.assertEqual(target["image_tag"], "v1.0.0")
+                if component != "api":
+                    self.assertTrue(target["image"].startswith("ghcr.io/ioc-project/"))
+
+    def test_main_and_component_releases_use_the_same_images(self):
+        source = (Path(__file__).resolve().parents[1] / "workflows/ci.yaml").read_text()
+        matrix = re.findall(r"(?m)^          - component: (\S+)\n            image: (\S+)$", source)
+        expected = {component.removeprefix("samples/"): image
+                    for component, (image, _, _) in release.COMPONENTS.items() if image}
+        self.assertEqual(len(matrix), len(expected))
+        self.assertEqual(dict(matrix), expected)
 
     def test_invalid_tags_and_versions(self):
         for tag in ["v1.0.0", "other/v1.0.0", "samples/v1.0.0", "cfn/v01.0.0", "cfn/v1.0.0-01", "cfn/v1.0.0+build", "cfn/v1.0.1", "cfn/v1.0.0\nevil=true", "cfn/v1.0.0-" + "a" * 128]:

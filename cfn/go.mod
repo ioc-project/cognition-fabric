@@ -1,9 +1,13 @@
-module github.com/cisco-eti/cognition-fabric/cfn
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
+module github.com/ioc-project/cognition-fabric/cfn
 
 go 1.25.0
 
 require (
-	github.com/cisco-eti/cognition-fabric/api v1.0.0
+	github.com/ioc-project/cognition-fabric/api v1.0.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
 	github.com/onsi/ginkgo/v2 v2.34.0
@@ -54,4 +58,4 @@ require (
 	gorm.io/driver/mysql v1.5.6 // indirect
 )
 
-replace github.com/cisco-eti/cognition-fabric/api => ../api
+replace github.com/ioc-project/cognition-fabric/api => ../api

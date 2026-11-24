@@ -1,4 +1,8 @@
-module github.com/cisco-eti/cognition-fabric/api
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
+module github.com/ioc-project/cognition-fabric/api
 
 go 1.25.0
 
