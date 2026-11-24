@@ -57,25 +57,40 @@ tags. Both workflows target these packages under `ghcr.io/ioc-project`:
 
 A successful push to `main` publishes `latest` and a dated commit tag for each
 image, plus `main` for Management and UI. Component releases publish only the
-selected image's `vX.Y.Z` tag. Both publishing paths build `linux/amd64` and
-`linux/arm64`; pull requests and manual CI dispatches build without publishing.
+selected image's `vX.Y.Z` tag. Main pushes, component releases and manual CI
+dispatches build `linux/amd64` and `linux/arm64`. Pull requests build without
+publishing; manual CI dispatches publish `ci-<first-seven-commit-characters>`
+tags as described below.
 Package visibility is set manually in GitHub; these workflows do not change it.
 
-## Validate an ARM64 UI build
+## Publish branch images manually
 
-To validate a published PR branch before merging, manually dispatch CI with the
-`ui-arm64` input:
+The selected branch must include the CI workflow changes that enable manual
+publishing. To publish from a pushed branch before merging, select it under
+**Actions → CI → Run workflow**, or dispatch CI from the command line:
 
 ```bash
 gh workflow run ci.yaml --repo ioc-project/cognition-fabric \
-  --ref <published-pr-branch> -F ui-arm64=true
+  --ref your-branch
 ```
 
-This runs all test suites and the five validation image builds. The UI targets
-both `linux/amd64` and `linux/arm64`; the other images target `linux/amd64`.
-Manual dispatch does not publish images, including when the selected branch is
-`main`. Record the ARM64 `npm ci` and Next.js build durations from the Buildx
-logs, plus the total image-job duration.
+This runs all test suites, then builds and publishes all five images for
+`linux/amd64` and `linux/arm64` using the selected commit's `ci-<sha>` tag.
+Manual runs use that tag even when selecting `main`; only main-push runs update
+`latest`, dated commit tags and the Management/UI `main` aliases.
+
+Use the published tag with the existing local image tasks, for example:
+
+```bash
+CF_REGISTRY=ghcr.io/ioc-project CFN_SVC_TAG=ci-0123456 task run:cfn:image
+```
+
+Replace `ci-0123456` with the tag from the run. See the
+[local image workflow](../dev/README.md#published-cf-images-with-the-local-databases)
+for the other service tag selectors. Command-specific overrides leave `.env`
+unchanged. An AMD64-only PR build does not validate ARM64; record the ARM64 UI
+`npm ci` and Next.js build durations from the manual run's Buildx logs, plus
+the total image-job duration.
 
 ## Documentation deployment
 

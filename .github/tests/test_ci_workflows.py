@@ -2,11 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import ast
 import json
 import os
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 import textwrap
 import unittest
 
@@ -86,6 +88,79 @@ class CIStatusTests(unittest.TestCase):
                 result = self.check_status(results, False)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("Missing required job results", result.stderr)
+
+
+class ImagePublishingTests(unittest.TestCase):
+    cases = (
+        ("push", "refs/heads/main", True),
+        ("workflow_dispatch", "refs/heads/main", True),
+        ("workflow_dispatch", "refs/heads/chore/test-images", True),
+        ("pull_request", "refs/pull/135/merge", False),
+        ("pull_request", "refs/heads/main", False),
+        ("pull_request_target", "refs/heads/main", False),
+        ("push", "refs/heads/chore/test-images", False),
+        ("push", "refs/tags/cfn/v1.0.0", False),
+    )
+
+    @classmethod
+    def setUpClass(cls):
+        source = (WORKFLOWS / "ci.yaml").read_text()
+        job = source.split("\n  images:\n", 1)[1].split("\n  ci-status:\n", 1)[0]
+        cls.login = re.search(r"docker/login-action@[^\n]+\n        if: ([^\n]+)", job)[1]
+        cls.push = re.search(r"(?m)^          push: (.+)$", job)[1]
+        cls.platforms = re.search(r"(?m)^          platforms: >-\n((?:            .*\n)+)", job)[1]
+        cls.tags_script = textwrap.dedent(re.search(
+            r"(?m)^        run: \|\n((?:          [^\n]*\n|\n)+)", job
+        )[1])
+
+    def expression_value(self, expression, event, ref):
+        # These workflow expressions use string equality and boolean operators.
+        # Evaluate that subset with Python's equivalent short-circuit semantics.
+        expression = expression.strip().removeprefix("${{").removesuffix("}}").strip()
+        expression = " ".join(expression.split())
+        expression = expression.replace("github.event_name", "event").replace("github.ref", "ref")
+        expression = expression.replace("&&", " and ").replace("||", " or ")
+        tree = ast.parse(expression, mode="eval")
+        allowed = (ast.Expression, ast.BoolOp, ast.And, ast.Or, ast.Compare,
+                   ast.Eq, ast.Constant, ast.Name, ast.Load)
+        self.assertTrue(all(isinstance(node, allowed) for node in ast.walk(tree)))
+        return eval(compile(tree, "<workflow expression>", "eval"),
+                    {"__builtins__": {}}, {"event": event, "ref": ref})
+
+    def test_login_and_push_only_for_main_pushes_or_manual_runs(self):
+        for event, ref, publish in self.cases:
+            with self.subTest(event=event, ref=ref):
+                self.assertIs(self.expression_value(self.login, event, ref), publish)
+                self.assertIs(self.expression_value(self.push, event, ref), publish)
+
+    def test_published_images_build_both_architectures(self):
+        for event, ref, publish in self.cases:
+            with self.subTest(event=event, ref=ref):
+                expected = "linux/amd64,linux/arm64" if publish else "linux/amd64"
+                self.assertEqual(self.expression_value(self.platforms, event, ref), expected)
+
+    def test_manual_and_pr_runs_never_select_main_aliases(self):
+        image = "ghcr.io/ioc-project/test-image"
+        sha = "0123456789abcdef0123456789abcdef01234567"
+        for event, ref, _ in self.cases:
+            for component in ("cfn", "cf-mgmt", "cf-ui", "demo-ce", "template-ce"):
+                with self.subTest(event=event, ref=ref, component=component), tempfile.TemporaryDirectory() as temporary:
+                    output = Path(temporary) / "output"
+                    env = dict(os.environ, GITHUB_EVENT_NAME=event, GITHUB_REF=ref,
+                               GITHUB_SHA=sha, GITHUB_OUTPUT=str(output), IMAGE=image,
+                               COMPONENT=component)
+                    subprocess.run(["bash", "-c", self.tags_script], env=env,
+                                   capture_output=True, text=True, check=True, timeout=10)
+                    lines = output.read_text().splitlines()
+                    self.assertEqual(lines[0], "tags<<EOF")
+                    self.assertEqual(lines[-1], "EOF")
+                    tags = lines[1:-1]
+                    if event == "push" and ref == "refs/heads/main":
+                        self.assertEqual(tags[0], image + ":latest")
+                        self.assertRegex(tags[1], re.escape(image) + r":\d{4}-\d{2}-\d{2}-0123456$")
+                        self.assertEqual(tags[2:], [image + ":main"] if component in ("cf-mgmt", "cf-ui") else [])
+                    else:
+                        self.assertEqual(tags, [image + ":ci-0123456"])
 
 
 class ActionPinTests(unittest.TestCase):
