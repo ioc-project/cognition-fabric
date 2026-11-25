@@ -26,9 +26,9 @@ app --OTLP--> otel-collector --> ClickHouse.otel_traces
 The stack configures the ClickHouse-to-RabbitMQ path automatically. Two
 one-shot services appear as `Exited (0)` after successful initialization:
 
-- `oxp-clickhouse-init` waits five seconds, polls for the collector-created
-  `otel_traces` table, and applies [`init-oxp-clickhouse.sql`](init-oxp-clickhouse.sql).
-- `oxp-rabbitmq-init` waits for `norm` to declare `new_session_in`, then binds
+- `scope-clickhouse-init` waits five seconds, polls for the collector-created
+  `otel_traces` table, and applies [`init-scope-clickhouse.sql`](init-scope-clickhouse.sql).
+- `scope-rabbitmq-init` waits for `norm` to declare `new_session_in`, then binds
   that queue to the `claris` exchange.
 
 ## 1. Start the stack
@@ -41,14 +41,14 @@ docker compose --env-file ../.env --profile full-mas up -d
 ```
 
 The profile adds the NOA trip planner, which needs `AI_GATEWAY_API_KEY` in
-the root `.env` with the chat model on its allow-list. The other 15 containers start
+the root `.env` with the chat model on its allow-list. The remaining containers start
 either way — leave the profile off if you are pointing your own instrumented
 app at `http://localhost:4318` instead.
 
 Having the app up now is fine — it starts tracing on its first request, not at
 startup, so it emits nothing until step 4.
 
-Wait until `ioc-scale-oxp-clickhouse` and `ioc-scale-oxp-rabbitmq` are healthy
+Wait until `ioc-scale-scope-clickhouse` and `ioc-scale-scope-rabbitmq` are healthy
 and both initializer services have exited successfully. The workers restart a
 few times while RabbitMQ comes up; that is expected.
 
@@ -58,15 +58,15 @@ as the stack is up — you do not need to send a span first.
 Check initialization status:
 
 ```bash
-docker compose --env-file ../.env ps -a oxp-clickhouse-init oxp-rabbitmq-init
-docker compose --env-file ../.env logs oxp-clickhouse-init oxp-rabbitmq-init
+docker compose --env-file ../.env ps -a scope-clickhouse-init scope-rabbitmq-init
+docker compose --env-file ../.env logs scope-clickhouse-init scope-rabbitmq-init
 ```
 
 Both scripts are idempotent. If either service fails because a dependency took
 longer than its retry window, rerun them after the stack settles:
 
 ```bash
-docker compose --env-file ../.env up oxp-clickhouse-init oxp-rabbitmq-init
+docker compose --env-file ../.env up scope-clickhouse-init scope-rabbitmq-init
 ```
 
 ## 2. Ask the app something
@@ -99,7 +99,7 @@ docker stop ioc-scale-noa-trip-planner
 ```
 
 To run from a local checkout instead, skip the profile and start it by hand
-from `claris-sample-apps/noa-trip-planner`, with `OTLP_HTTP_ENDPOINT` set to
+from the repo's `samples/noa-trip-planner/`, with `OTLP_HTTP_ENDPOINT` set to
 `http://localhost:4318`:
 
 ```bash
@@ -123,7 +123,7 @@ Messages moved — `new_session_in` should have a consumer, and
 `default_otel_traces_end_rmq` should not be piling up:
 
 ```bash
-docker exec ioc-scale-oxp-rabbitmq rabbitmqctl list_queues \
+docker exec ioc-scale-scope-rabbitmq rabbitmqctl list_queues \
   name messages consumers
 ```
 
@@ -131,13 +131,13 @@ Worker picked it up — look for `Processing session_id:`, then `Normalized
 run_id=... -> N nodes, M edges`, then `Neo4j push complete`:
 
 ```bash
-docker logs ioc-scale-oxp-norm --tail 20
+docker logs ioc-scale-scope-norm --tail 20
 ```
 
 Graph populated:
 
 ```bash
-docker exec ioc-scale-oxp-neo4j cypher-shell -u neo4j -p "$NEO4J_PASSWORD" \
+docker exec ioc-scale-scope-neo4j cypher-shell -u neo4j -p "$NEO4J_PASSWORD" \
   "MATCH (n) RETURN labels(n)[0] AS label, count(*) AS count ORDER BY count DESC;"
 ```
 
