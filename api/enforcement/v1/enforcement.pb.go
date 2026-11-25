@@ -1547,7 +1547,7 @@ const file_enforcement_proto_enforcement_v1_enforcement_proto_rawDesc = "" +
 	"#UPSTREAM_INVOCATION_STATE_COMPLETED\x10\x032\xf4\x01\n" +
 	"\vEnforcement\x12m\n" +
 	"\x0eGetDisposition\x12,.ioc.cf.enforcement.v1.GetDispositionRequest\x1a-.ioc.cf.enforcement.v1.GetDispositionResponse\x12v\n" +
-	"\x11AppendAuditRecord\x12/.ioc.cf.enforcement.v1.AppendAuditRecordRequest\x1a0.ioc.cf.enforcement.v1.AppendAuditRecordResponseBHZFgithub.com/cisco-eti/cognition-fabric/api/enforcement/v1;enforcementv1b\x06proto3"
+	"\x11AppendAuditRecord\x12/.ioc.cf.enforcement.v1.AppendAuditRecordRequest\x1a0.ioc.cf.enforcement.v1.AppendAuditRecordResponseBJZHgithub.com/ioc-project/cognition-fabric/api/enforcement/v1;enforcementv1b\x06proto3"
 
 var (
 	file_enforcement_proto_enforcement_v1_enforcement_proto_rawDescOnce sync.Once

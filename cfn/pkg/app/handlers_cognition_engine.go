@@ -17,10 +17,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/app/httpapi/cognitionengine"
-	httpclient "github.com/cisco-eti/cognition-fabric/cfn/pkg/client/http"
-	eh "github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/easyhttp"
 	"github.com/google/uuid"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/app/httpapi/cognitionengine"
+	httpclient "github.com/ioc-project/cognition-fabric/cfn/pkg/client/http"
+	eh "github.com/ioc-project/cognition-fabric/cfn/pkg/tools/easyhttp"
 )
 
 // Valid CE types

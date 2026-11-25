@@ -7,8 +7,8 @@ package database
 import (
 	"context"
 
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/audit"
 	"github.com/google/uuid"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/audit"
 )
 
 // Store is the audit persistence interface consumed by the app and enforcement

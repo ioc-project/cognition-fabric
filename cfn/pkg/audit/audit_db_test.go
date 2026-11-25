@@ -10,8 +10,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/config"
 	"github.com/google/uuid"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/config"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )

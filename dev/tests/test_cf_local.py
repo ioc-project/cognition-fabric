@@ -483,11 +483,86 @@ class ImageComposeTests(unittest.TestCase):
                     self.assertEqual(config["volumes"]["ioc_scale_db_data"]["name"],
                                      "ioc-scale-cf-deployment_ioc_scale_db_data")
                     services = config["services"]
+                    for name in ("ioc-scale-db", "ioc-scale-cf-mgmt-svc", "ioc-scale-cf-mgmt-plane-ui",
+                                 "ioc-scale-cfn-svc", "ioc-scale-cf-demo-ce"):
+                        self.assertTrue(services[name]["image"].startswith("ghcr.io/ioc-project/"))
+                    self.assertEqual(services["ioc-scale-db"]["image"],
+                                     "ghcr.io/ioc-project/ioc-scale-db:0.2.0")
+                    for name in ("ioc-scale-enforcement-proxy-mediation",
+                                 "ioc-scale-enforcement-proxy-sidecar-installer",
+                                 "ioc-scale-enforcement-proxy-wasm-installer",
+                                 "ioc-scale-enforcement-proxy-shadi-verifier"):
+                        if name in services:
+                            self.assertTrue(services[name]["image"].startswith("ghcr.io/cisco-eti/"))
                     self.assertEqual(services["oxp-api"]["environment"]["POSTGRES_PORT"], "5432")
                     self.assertEqual(services["ioc-scale-db"]["environment"]["POSTGRES_USER"],
                                      "postgresUser")
                     self.assertNotIn("DEPLOYMENT_ONLY", services["oxp-api"]["environment"])
                     self.assertNotIn("DEPLOYMENT_ONLY", services["norm"]["environment"])
+
+    def test_cf_and_proxy_registry_fallbacks_and_overrides_are_independent(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            deployment = root / "deploy"
+            deployment.mkdir()
+            shutil.copyfile(ROOT_DIR / "deploy/docker-compose.yml", deployment / "docker-compose.yml")
+            # Exercise Compose fallbacks independently of .env.example's registry values.
+            template = (ROOT_DIR / ".env.example").read_text().splitlines()
+            envfile = root / ".env"
+            envfile.write_text("\n".join(line for line in template
+                                         if not line.startswith(("CF_REGISTRY=", "PROXY_REGISTRY="))))
+            base_env = {key: os.environ[key] for key in ("PATH", "HOME", "DOCKER_CONFIG")
+                        if key in os.environ}
+            cases = (
+                ({}, "ghcr.io/ioc-project", "ghcr.io/cisco-eti"),
+                ({"CF_REGISTRY": "registry.example.invalid/cf"},
+                 "registry.example.invalid/cf", "ghcr.io/cisco-eti"),
+                ({"PROXY_REGISTRY": "registry.example.invalid/proxy"},
+                 "ghcr.io/ioc-project", "registry.example.invalid/proxy"),
+                ({"CF_REGISTRY": "registry.example.invalid/cf",
+                  "PROXY_REGISTRY": "registry.example.invalid/proxy"},
+                 "registry.example.invalid/cf", "registry.example.invalid/proxy"),
+            )
+            cf_images = {
+                "ioc-scale-db": "ioc-scale-db:0.2.0",
+                "ioc-scale-cf-mgmt-svc": "ioc-scale-cf-mgmt-svc:latest",
+                "ioc-scale-cf-mgmt-plane-ui": "ioc-scale-cf-ui:latest",
+                "ioc-scale-cfn-svc": "ioc-scale-cfn-svc:latest",
+                "ioc-scale-cf-demo-ce": "ioc-scale-cf-demo-ce/demo-ce:latest",
+            }
+            for flavor in ("envoy", "shadi"):
+                overlay = deployment / "enforcement" / flavor / "compose.yaml"
+                overlay.parent.mkdir(parents=True)
+                shutil.copyfile(ROOT_DIR / "deploy/enforcement" / flavor / "compose.yaml", overlay)
+                for overrides, cf_registry, proxy_registry in cases:
+                    with self.subTest(flavor=flavor, overrides=overrides):
+                        result = subprocess.run(
+                            ["docker", "compose", "--env-file", str(envfile),
+                             "-f", str(deployment / "docker-compose.yml"), "-f", str(overlay),
+                             "--profile", "full-mas", "config", "--format", "json"],
+                            env=base_env | overrides, capture_output=True, text=True,
+                        )
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                        services = json.loads(result.stdout)["services"]
+                        for name, suffix in cf_images.items():
+                            self.assertEqual(services[name]["image"], f"{cf_registry}/{suffix}")
+                        proxy_images = {
+                            "ioc-scale-enforcement-proxy-mediation": "ioc-scaling-enforcement-mediation",
+                        }
+                        if flavor == "envoy":
+                            proxy_images.update({
+                                "ioc-scale-enforcement-proxy-sidecar-installer": "ioc-scaling-enforcement-proxy-sidecar",
+                                "ioc-scale-enforcement-proxy-wasm-installer": "ioc-scaling-enforcement-proxy-wasm",
+                            })
+                        else:
+                            proxy_images["ioc-scale-enforcement-proxy-shadi-verifier"] = "ioc-scaling-enforcement-proxy-shadi-verifier"
+                        for name, repository in proxy_images.items():
+                            self.assertEqual(services[name]["image"],
+                                             f"{proxy_registry}/{repository}:0.0.1-alpha")
+                        self.assertTrue(services["oxp-api"]["image"].startswith(
+                            "ghcr.io/cisco-eti/oxp/container-images/"))
+                        self.assertTrue(services["noa-trip-planner"]["image"].startswith(
+                            "ghcr.io/cisco-eti/claris/container-images/"))
 
     def test_infrastructure_reads_root_env_and_ignores_deployment_private_env(self):
         services = (
@@ -578,6 +653,7 @@ class ImageComposeTests(unittest.TestCase):
             ]:
                 service = services[name]
                 self.assertTrue(service["image"].endswith(":" + tag))
+                self.assertTrue(service["image"].startswith("ghcr.io/ioc-project/"))
                 self.assertEqual(service["labels"]["io.cisco.cf.local"], "true")
                 self.assertNotIn("depends_on", service)
                 self.assertNotIn("build", service)
@@ -586,7 +662,7 @@ class ImageComposeTests(unittest.TestCase):
             self.assertEqual(services["ioc-scale-cfn-svc"]["environment"]["POSTGRES_AUDIT_DB"],
                              "cfn_audit_local")
             template = services["ioc-scale-cf-template-ce"]
-            self.assertEqual(template["image"], "ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/template-ce:template-test")
+            self.assertEqual(template["image"], "ghcr.io/ioc-project/ioc-scale-cf-demo-ce/template-ce:template-test")
             self.assertEqual(template["container_name"], "ioc-scale-cf-template-ce")
             self.assertEqual(template["environment"], {
                 "CFN_URL": "http://host.docker.internal:9002",
@@ -604,8 +680,13 @@ class ImageComposeTests(unittest.TestCase):
                 [("127.0.0.1", str(port), port) for port in (50051, 8080, 8082)],
             )
             self.assertTrue(config["networks"]["default"]["external"])
-            env.update(LOCAL_CF_MGMT_DB="cfn_mgmt_image", TEMPLATE_CE_NAME="local-template",
-                       TEMPLATE_CE_DECISION="deny", ENABLE_NOTIFICATIONS="false")
+            env.update(
+                LOCAL_CF_MGMT_DB="cfn_mgmt_image",
+                CF_REGISTRY="registry.example.invalid/cf",
+                TEMPLATE_CE_NAME="local-template",
+                TEMPLATE_CE_DECISION="deny",
+                ENABLE_NOTIFICATIONS="false",
+            )
             result = subprocess.run(result.args, env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
             services = json.loads(result.stdout)["services"]
@@ -617,6 +698,8 @@ class ImageComposeTests(unittest.TestCase):
             self.assertEqual(template_env["CE_NAME"], "local-template")
             self.assertEqual(template_env["TEMPLATE_CE_DECISION"], "deny")
             self.assertEqual(template_env["ENABLE_NOTIFICATIONS"], "false")
+            self.assertTrue(all(service["image"].startswith("registry.example.invalid/cf/")
+                                for service in services.values()))
 
 
 if __name__ == "__main__":

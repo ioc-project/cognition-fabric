@@ -8,7 +8,7 @@ package ioc.cf.enforcement.v1;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/cisco-eti/cognition-fabric/api/enforcement/v1;enforcementv1";
+option go_package = "github.com/ioc-project/cognition-fabric/api/enforcement/v1;enforcementv1";
 
 // Enforcement provides disposition decisions for L9 interactions.
 // CF owns CE selection, fan-out, ordering, and aggregation — the proxy

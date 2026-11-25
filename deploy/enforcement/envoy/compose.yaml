@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Envoy enforcement flavor: Envoy + Go sidecar filter + traceparent Wasm filter,
 # in front of an upstream. Overlay for the main stack; run from the repo root:
 #   make up enforcement=envoy
@@ -8,14 +12,14 @@
 # CF and ioc-scale-enforcement-proxy-mediation are already in the main file and share its network.
 services:
   ioc-scale-enforcement-proxy-sidecar-installer:
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-sidecar:${ENFORCEMENT_SIDECAR_TAG:-0.0.1-alpha}
+    image: ${PROXY_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-sidecar:${ENFORCEMENT_SIDECAR_TAG:-0.0.1-alpha}
     platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-enforcement-proxy-sidecar-installer
     volumes:
       - enforcement_sidecar_plugin:/etc/sidecar/plugins
 
   ioc-scale-enforcement-proxy-wasm-installer:
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-wasm:${ENFORCEMENT_WASM_TAG:-0.0.1-alpha}
+    image: ${PROXY_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-wasm:${ENFORCEMENT_WASM_TAG:-0.0.1-alpha}
     platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-enforcement-proxy-wasm-installer
     volumes:

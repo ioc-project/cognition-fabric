@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"time"
 
-	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
+	cev1 "github.com/ioc-project/cognition-fabric/api/ce/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 )

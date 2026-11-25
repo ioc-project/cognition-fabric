@@ -15,7 +15,7 @@ x-local-cf: &local-cf
 services:
   ioc-scale-cf-mgmt-svc:
     <<: *local-cf
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-mgmt-svc:${CF_MGMT_SVC_TAG:-latest}
+    image: ${CF_REGISTRY:-ghcr.io/ioc-project}/ioc-scale-cf-mgmt-svc:${CF_MGMT_SVC_TAG:-latest}
     container_name: ioc-scale-cf-mgmt-svc
     ports:
       - "9000:9000"
@@ -37,7 +37,7 @@ services:
 
   ioc-scale-cfn-svc:
     <<: *local-cf
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cfn-svc:${CFN_SVC_TAG:-latest}
+    image: ${CF_REGISTRY:-ghcr.io/ioc-project}/ioc-scale-cfn-svc:${CFN_SVC_TAG:-latest}
     container_name: ioc-scale-cfn-svc
     ports:
       - "9002:9002"
@@ -59,7 +59,7 @@ services:
 
   ioc-scale-cf-mgmt-plane-ui:
     <<: *local-cf
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-ui:${CF_UI_TAG:-latest}
+    image: ${CF_REGISTRY:-ghcr.io/ioc-project}/ioc-scale-cf-ui:${CF_UI_TAG:-latest}
     container_name: ioc-scale-cf-mgmt-plane-ui
     ports:
       - "9001:9001"
@@ -73,7 +73,7 @@ services:
 
   ioc-scale-cf-demo-ce:
     <<: *local-cf
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-demo-ce/demo-ce:${CF_DEMO_CE_TAG:-latest}
+    image: ${CF_REGISTRY:-ghcr.io/ioc-project}/ioc-scale-cf-demo-ce/demo-ce:${CF_DEMO_CE_TAG:-latest}
     container_name: ioc-scale-cf-demo-ce
     ports:
       - "127.0.0.1:18000:18000"
@@ -109,7 +109,7 @@ services:
 
   ioc-scale-cf-template-ce:
     <<: *local-cf
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-demo-ce/template-ce:${CF_TEMPLATE_CE_TAG:-latest}
+    image: ${CF_REGISTRY:-ghcr.io/ioc-project}/ioc-scale-cf-demo-ce/template-ce:${CF_TEMPLATE_CE_TAG:-latest}
     container_name: ioc-scale-cf-template-ce
     ports:
       - "127.0.0.1:50051:50051"

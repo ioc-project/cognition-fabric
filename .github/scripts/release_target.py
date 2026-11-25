@@ -12,11 +12,11 @@ import re
 import tomllib
 
 COMPONENTS = {
-    "cfn": ("ghcr.io/cisco-eti/ioc-scale-cfn-svc", "cfn/Dockerfile", "VERSION"),
-    "cf-mgmt": ("ghcr.io/cisco-eti/ioc-scale-cf-mgmt-svc", "cf-mgmt/Dockerfile", "pyproject.toml"),
-    "cf-ui": ("ghcr.io/cisco-eti/ioc-scale-cf-ui", "cf-ui/ci/docker/Dockerfile.next", "package.json"),
-    "samples/demo-ce": ("ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/demo-ce", "samples/demo-ce/Dockerfile", "VERSION"),
-    "samples/template-ce": ("ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/template-ce", "samples/template-ce/Dockerfile", "pyproject.toml"),
+    "cfn": ("ghcr.io/ioc-project/ioc-scale-cfn-svc", "cfn/Dockerfile", "VERSION"),
+    "cf-mgmt": ("ghcr.io/ioc-project/ioc-scale-cf-mgmt-svc", "cf-mgmt/Dockerfile", "pyproject.toml"),
+    "cf-ui": ("ghcr.io/ioc-project/ioc-scale-cf-ui", "cf-ui/ci/docker/Dockerfile.next", "package.json"),
+    "samples/demo-ce": ("ghcr.io/ioc-project/ioc-scale-cf-demo-ce/demo-ce", "samples/demo-ce/Dockerfile", "VERSION"),
+    "samples/template-ce": ("ghcr.io/ioc-project/ioc-scale-cf-demo-ce/template-ce", "samples/template-ce/Dockerfile", "pyproject.toml"),
     "api": ("", "", "VERSION"),
 }
 LEGACY_TAGS = {"cf-ui/v0.0.1-rc0", "cf-ui/v0.0.1-rc1", "cf-ui/v0.2.0", "cf-ui/v0.2.1"}

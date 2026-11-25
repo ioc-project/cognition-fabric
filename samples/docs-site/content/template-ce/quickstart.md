@@ -57,7 +57,7 @@ uv run pytest -v
 
 Install the test extra as shown above before running the suite.
 The template has its own Dockerfile. CI publishes
-`ghcr.io/cisco-eti/ioc-scale-cf-demo-ce/template-ce:latest` from `main`; a Git tag
+`ghcr.io/ioc-project/ioc-scale-cf-demo-ce/template-ce:latest` from `main`; a Git tag
 publishes the same name with that tag and does not move `latest`.
 The image exposes 50051, 8080 and 8081. Override `HEALTH_PORT` only when those
 host ports are already taken, such as the CF local stack.

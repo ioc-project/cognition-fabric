@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/inbox"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/pkg/config"
+	cev1 "github.com/ioc-project/cognition-fabric/api/ce/v1"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/inbox"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/pkg/config"
 )
 
 func llmRealtimeEngine(t *testing.T, f http.Handler, in *inbox.Inbox) *Router {

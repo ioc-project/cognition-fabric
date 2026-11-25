@@ -10,8 +10,8 @@ import (
 	"reflect"
 	"testing"
 
-	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
 	"github.com/google/uuid"
+	cev1 "github.com/ioc-project/cognition-fabric/api/ce/v1"
 	"gorm.io/datatypes"
 )
 

@@ -231,6 +231,13 @@ Tags default to `latest` and can be set with `CF_MGMT_SVC_TAG`, `CFN_SVC_TAG`,
 selects another compatible local Management database. Shell overrides take
 precedence over root Task dotenv.
 
+`CF_REGISTRY` defaults to `ghcr.io/ioc-project` for CF images and the shared DB
+started by `infra:up`; the DB tag remains `0.2.0`. Existing `.env` values override
+the defaults, so change `CF_REGISTRY` explicitly to adopt the new registry in an
+existing configuration. Proxy images use `PROXY_REGISTRY` independently, defaulting
+to `ghcr.io/cisco-eti`. If a custom CF registry previously also hosted your Proxy
+images, set that location in `PROXY_REGISTRY`.
+
 ## NOA onboarding and proxy mode
 
 The native workflow uses our existing CFN, Management, UI, OXP and selected Go
@@ -270,16 +277,6 @@ controller logs. Ctrl+C retires the MAS/proxy and stops its Compose services,
 retaining state and volumes. The upstream controller remains available for
 enrollment. No application or proxy image is built locally.
 
-Once NOA is ready, send a request from another terminal. Use your configured
-`NOA_API_PORT` if it differs from `8125`.
-
-```bash
-curl --noproxy '*' --max-time 600 --fail-with-body \
-  -X POST http://127.0.0.1:8125/ask \
-  -H 'Content-Type: application/json' \
-  -d '{"question":"Plan a one-day trip to Celestia using the available data. Include train schedules and attractions, a feasible route with travel times, and train fares. Don’t ask follow-up questions; make reasonable assumptions and flag missing information."}'
-```
-
 ```text
 Client -> NOA API :8125 -> moderator
                             |
@@ -296,8 +293,9 @@ The maintained proxy sends audit directly to CFN; this path uses no mediation
 service or source NOA tool server.
 
 Custom NOA/proxy images default to `latest`. Each explicit start pulls the
-selected references once, then starts them without a second pull. Use
-`NOA_A2A_TAG`, the `NOA_PROXY_*_TAG` selectors or full image overrides to select
+selected references once, then starts them without a second pull. Proxy images
+use `PROXY_REGISTRY`; native NOA A2A keeps its existing `OXP_REGISTRY` default.
+Use `NOA_A2A_TAG`, the `NOA_PROXY_*_TAG` selectors or full image overrides to select
 another compatible build. Envoy keeps the upstream ABI-compatible version.
 Changing image versions can require matching configuration changes, as with CF
 images. Ordinary starts require the previous MAS runtime to be retired/stopped.

@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # SHADi enforcement flavor: the Go sender-authorization API (verifier). Trusted
 # SHADi hosts reach it over mTLS and talk to each other directly over SLIM; deploy
 # those separately. Overlay for the main stack; run from the repo root:
@@ -7,7 +11,7 @@
 # (see enforcement/shadi/README.md).
 services:
   ioc-scale-enforcement-proxy-shadi-verifier:
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-shadi-verifier:${ENFORCEMENT_SHADI_TAG:-0.0.1-alpha}
+    image: ${PROXY_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-shadi-verifier:${ENFORCEMENT_SHADI_TAG:-0.0.1-alpha}
     platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-enforcement-proxy-shadi-verifier
     depends_on:

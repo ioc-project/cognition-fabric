@@ -2,7 +2,11 @@
 
 Every interface crossing the CF boundary lives here, grouped by audience.
 The api/ Go module is versioned independently with api/vX.Y.Z tags; its current
-version is 1.0.0. Existing protobuf packages and wire contracts are unchanged.
+version metadata is 1.0.0. The Go module path is
+`github.com/ioc-project/cognition-fabric/api`. Existing protobuf packages and
+wire contracts are unchanged. Local CFN and Demo CE builds use the API module in
+this checkout. See [component releases](../docs/releases.md) for version metadata
+and tagging.
 
 | Contract | Implementer | Caller | Stability and audience |
 | --- | --- | --- | --- |
@@ -39,7 +43,8 @@ check the CE REST and callback specifications against existing handlers.
 Run `make -C api openapi-check` for structural validation of both public CE
 OpenAPI documents with the pinned isolated validator.
 
-The historical CE descriptors and binaries under `ce/v1/testdata/legacy/` and
-Template CE `tests/fixtures/` are frozen compatibility evidence. Never regenerate
-or modify them when refreshing current bindings. Their old source paths and
-module options are intentional provenance.
+The historical CE descriptors and binaries under `ce/v1/testdata/legacy/`,
+Template CE `tests/fixtures/legacy-ce.protoset`, and Demo CE
+`internal/engine/testdata/legacy-ce.protoset` are frozen compatibility evidence.
+Never regenerate or modify them when refreshing current bindings. Their old
+source paths and module options are intentional provenance.
