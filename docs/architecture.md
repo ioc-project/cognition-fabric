@@ -24,8 +24,9 @@ delivered as separate application container images. Two example CE images, **Go 
 Although these examples are maintained in the monorepo, they interact with CF as
 separate CE processes through the same contracts as other engines.
 
-The MAS runtime, Enforcement Proxy, SCOPE and production CEs sit outside CF's
-service boundary.
+The standard CF deployment runs SCOPE alongside CF Management, CF UI and CFN.
+The MAS runtime, Enforcement Proxy and production CEs sit outside CF's service
+boundary.
 
 The monorepo builds the PostgreSQL-based **`ioc-scale-db`** image and deploys it
 as the shared database server for CF and SCOPE. The server hosts separate databases

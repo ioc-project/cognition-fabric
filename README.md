@@ -4,9 +4,10 @@ Cognition Fabric (CF) connects multi-agent systems (MAS) to Cognition Engines
 (CEs) for governance and enforcement. The Enforcement Proxy mediates configured
 interactions and calls CF's Enforcement API for runtime decisions. Active APIs
 for direct MAS engagement are planned.
-The **System for Cognitive Observability, Provenance and Explainability (SCOPE)**
-processes MAS telemetry and owns the Cognition Store and Analytics APIs that CEs
-call directly.
+
+The standard CF deployment includes the **System for Cognitive Observability,
+Provenance and Explainability (SCOPE)**. SCOPE processes MAS telemetry, owns the
+Cognition Store and serves the Analytics APIs that CEs call directly.
 
 Read the [Cognition Fabric architecture](docs/architecture.md) for the component
 diagram, API boundaries, and runtime flows.

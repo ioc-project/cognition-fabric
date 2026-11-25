@@ -104,7 +104,8 @@ CF deploys as a set of microservices:
 - **Cognition Fabric Node** — API gateway, CE routing
 - **Audit service** — compliance logging
 
-The Cognition Store and Analytics APIs are external SCOPE-owned dependencies.
+The Cognition Store and Analytics APIs belong to SCOPE, which runs alongside the
+CF services in the [standard CF deployment](architecture.md#purpose-and-boundary).
 
 ## Related documents
 
