@@ -4,8 +4,9 @@ Cognition Fabric (CF) connects multi-agent systems (MAS) to Cognition Engines
 (CEs) for governance and enforcement. The Enforcement Proxy mediates configured
 interactions and calls CF's Enforcement API for runtime decisions. Active APIs
 for direct MAS engagement are planned.
-The **Observability & Explainability Platform (OXP)** processes MAS telemetry
-and owns the Cognition Store and Analytics APIs that CEs call directly.
+The **System for Cognitive Observability, Provenance and Explainability (SCOPE)**
+processes MAS telemetry and owns the Cognition Store and Analytics APIs that CEs
+call directly.
 
 Read the [Cognition Fabric architecture](docs/architecture.md) for the component
 diagram, API boundaries, and runtime flows.
@@ -21,7 +22,7 @@ have an application image. The [Go Demo CE](samples/demo-ce/README.md) shows a
 working policy engine, and the [Python Template CE](samples/template-ce/README.md)
 provides a starting point for a new CE. The sixth image,
 [`ioc-scale-db`](deploy/docker-db/README.md), provides the shared PostgreSQL
-database server for CF and OXP in the [deployment stack](deploy/README.md).
+database server for CF and SCOPE in the [deployment stack](deploy/README.md).
 
 ## Repository layout
 

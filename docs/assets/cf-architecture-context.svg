@@ -3,7 +3,7 @@
      SPDX-License-Identifier: Apache-2.0 -->
 <svg xmlns="http://www.w3.org/2000/svg" class="cf-architecture" viewBox="-50 -50 1490 1070" role="img" aria-labelledby="cf-title cf-desc">
 <title id="cf-title">Cognition Fabric components and API boundaries</title>
-<desc id="cf-desc">MAS runtime is above Enforcement Proxy inside one external deployment. CF and OXP share the middle layer, with Cognition Engines below. Within CF, UI, Management and CFN share one horizontal row. Management storage is directly below Management; Audit storage is directly below CFN on the same storage row. Labeled arrows identify CFN's interfaces with the Enforcement Proxy and Cognition Engines, along with the other API calls and SQL access.</desc>
+<desc id="cf-desc">MAS runtime is above Enforcement Proxy inside one external deployment. SCOPE, CFN, Management and CF UI share a row inside the Cognition Fabric deployment, with Cognition Engines below the deployment. The Cognition Store, Audit storage and Management storage sit directly below SCOPE, CFN and Management, respectively. Labeled arrows at the deployment boundary identify CFN and SCOPE interfaces.</desc>
 <style>
 .cf-architecture { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
 .cf-architecture .canvas { fill: #0b0b12; }
@@ -19,7 +19,7 @@
 }
 .cf-architecture .mas-card { stroke: #596176; }
 .cf-architecture .cf-card, .cf-architecture .database { stroke: #f0a020; }
-.cf-architecture .oxp-card { fill: #111c2f; stroke: #5d9eee; }
+.cf-architecture .scope-card, .cf-architecture .scope-database { fill: #111c2f; stroke: #5d9eee; }
 .cf-architecture .ce-card { fill: #241430; stroke: #b562d0; }
 .cf-architecture .edge {
   fill: none;
@@ -31,13 +31,13 @@
 .cf-architecture .internal-flow { color: #98a2b4; }
 .cf-architecture .cf-flow { color: #f0a020; }
 .cf-architecture .ce-flow { color: #b562d0; }
-.cf-architecture .oxp-flow { color: #5d9eee; }
+.cf-architecture .scope-flow { color: #5d9eee; }
 .cf-architecture text { fill: #e9edf4; font-size: 18px; font-weight: 600; text-anchor: middle; }
 .cf-architecture .heading { font-size: 15px; font-weight: 700; letter-spacing: 1.1px; text-anchor: start; }
 .cf-architecture .mas-heading { fill: #fff; }
 .cf-architecture .cf-heading { fill: #0b0b12; }
 .cf-architecture .cf-text { fill: #f7dcae; }
-.cf-architecture .oxp-text { fill: #cfe2fa; }
+.cf-architecture .scope-text { fill: #cfe2fa; }
 .cf-architecture .ce-text { fill: #ead2f5; }
 .cf-architecture .api-label { font-size: 16px; }
 .cf-architecture .actor-label { font-size: 24px; }
@@ -61,12 +61,12 @@
 <rect class="mas-tab" x="380" y="4" width="292" height="29" rx="6"/>
 <rect id="mas-boundary" class="boundary external-boundary" x="380" y="42" width="650" height="168" rx="10"/>
 <text x="393" y="24" class="heading mas-heading">MAS DEPLOYMENT (EXTERNAL)</text>
-<rect class="cf-tab" x="350" y="280" width="231" height="24" rx="6"/>
-<rect id="cf-boundary" class="boundary" x="350" y="310" width="1040" height="420" rx="10"/>
-<text x="363" y="297" class="heading cf-heading">COGNITION FABRIC (CF)</text>
-<path class="edge oxp-flow" d="M 590 86 H 145 V 467.5" marker-end="url(#cf-arrow-blue)" id="telemetry"/>
-<text x="239" y="285" class="api-label">
-<tspan x="239" dy="0">OTel telemetry</tspan>
+<rect class="cf-tab" x="350" y="280" width="310" height="24" rx="6"/>
+<rect id="cf-boundary" class="boundary" x="-30" y="310" width="1420" height="420" rx="10"/>
+<text x="363" y="297" class="heading cf-heading">COGNITION FABRIC DEPLOYMENT</text>
+<path class="edge scope-flow" d="M 590 86 H 145 V 310" marker-end="url(#cf-arrow-blue)" id="telemetry"/>
+<text x="247" y="285" class="api-label">
+<tspan x="247" dy="0">SCOPE: OTel telemetry</tspan>
 </text>
 <path class="edge cf-flow" d="M 670 189 V 310" marker-end="url(#cf-arrow-amber)" id="disposition"/>
 <text x="560" y="252" class="api-label">
@@ -104,36 +104,32 @@
 <tspan x="1325" dy="0">CFN: Health probe</tspan>
 <tspan x="1325" dy="21">HTTP GET</tspan>
 </text>
-<path class="edge oxp-flow" d="M 145 602.5 V 937 H 615" marker-start="url(#cf-arrow-blue)" marker-end="url(#cf-arrow-blue)" id="oxp-evidence"/>
-<text x="410" y="903" class="api-label">
-<tspan x="410" dy="0">Evidence reads / findings</tspan>
+<path class="edge scope-flow" d="M 145 730 V 937 H 615" marker-start="url(#cf-arrow-blue)" marker-end="url(#cf-arrow-blue)" id="scope-evidence"/>
+<text x="380" y="903" class="api-label">
+<tspan x="380" dy="0">SCOPE: Evidence reads / findings</tspan>
 </text>
-<path class="edge internal-flow" d="M 585 440 H 740" marker-end="url(#cf-arrow)" id="ui-management"/>
-<text x="662" y="399" class="api-label">
-<tspan x="662" dy="0">Management API</tspan>
+<path class="edge internal-flow" d="M 1085 440 H 920" marker-end="url(#cf-arrow)" id="ui-management"/>
+<text x="1003" y="399" class="api-label">
+<tspan x="1003" dy="0">Management API</tspan>
+<tspan x="1003" dy="21">HTTP</tspan>
+</text>
+<path class="edge internal-flow" d="M 740 426 H 585" marker-end="url(#cf-arrow)" id="management-cfn"/>
+<text x="662" y="388" class="api-label">
+<tspan x="662" dy="0">CE probes / audit reads</tspan>
 <tspan x="662" dy="21">HTTP</tspan>
 </text>
-<path class="edge internal-flow" d="M 920 426 H 1085" marker-end="url(#cf-arrow)" id="management-cfn"/>
-<text x="1003" y="388" class="api-label">
-<tspan x="1003" dy="0">CE probes / audit reads</tspan>
-<tspan x="1003" dy="21">HTTP</tspan>
+<path class="edge internal-flow" d="M 585 454 H 740" marker-end="url(#cf-arrow)" id="cfn-management"/>
+<text x="662" y="492" class="api-label">
+<tspan x="662" dy="0">Registration / heartbeat</tspan>
+<tspan x="662" dy="21">Config / MAS reads</tspan>
+<tspan x="662" dy="21">HTTP</tspan>
 </text>
-<path class="edge internal-flow" d="M 1085 454 H 920" marker-end="url(#cf-arrow)" id="cfn-management"/>
-<text x="1003" y="492" class="api-label">
-<tspan x="1003" dy="0">Registration / heartbeat</tspan>
-<tspan x="1003" dy="21">Config / MAS reads</tspan>
-<tspan x="1003" dy="21">HTTP</tspan>
-</text>
-<path class="edge internal-flow" d="M 830 467 V 605" marker-end="url(#cf-arrow)" id="management-sql"/>
-<text x="754" y="544" class="api-label">
-<tspan x="754" dy="0">Read / write</tspan>
-<tspan x="754" dy="21">SQL</tspan>
-</text>
-<path class="edge internal-flow" d="M 1160 467 V 605" marker-end="url(#cf-arrow)" id="audit-sql"/>
-<text x="1234" y="544" class="api-label">
-<tspan x="1234" dy="0">Read / write</tspan>
-<tspan x="1234" dy="21">SQL</tspan>
-</text>
+<path class="edge scope-flow" d="M 145 467 V 605" marker-end="url(#cf-arrow-blue)" id="scope-store-access"/>
+<text x="69" y="542" class="api-label">Read / write</text>
+<path class="edge internal-flow" d="M 830 467 V 605" marker-end="url(#cf-arrow)" id="management-storage-access"/>
+<text x="904" y="542" class="api-label">Read / write</text>
+<path class="edge internal-flow" d="M 510 467 V 605" marker-end="url(#cf-arrow)" id="audit-storage-access"/>
+<text x="436" y="542" class="api-label">Read / write</text>
 <g id="mas-runtime" data-center-x="710.0" data-center-y="86.0"><rect class="component mas-card" x="590" y="63" width="240" height="46" rx="7"/>
 <text x="710.0" y="92.0">
 <tspan x="710.0" dy="0">MAS runtime</tspan>
@@ -148,15 +144,12 @@
 <circle class="boundary external-boundary" cx="1220" cy="126" r="84"/>
 <text x="1220" y="134" class="actor-label">Operator</text>
 </g>
-<g id="oxp" data-center-x="145.0" data-center-y="535.0" transform="translate(145.0 535.0) scale(1.5) translate(-145.0 -535.0)"><rect class="component oxp-card" x="40" y="490" width="210" height="90" rx="8"/>
-<text x="145.0" y="530" class="oxp-text">
-<tspan x="145.0" dy="0">Observability &amp;</tspan>
-<tspan x="145.0" dy="22">Explainability (OXP)</tspan>
-</text>
+<g id="scope" data-center-x="145.0" data-center-y="440.0"><rect class="component scope-card" x="55" y="413" width="180" height="54" rx="7"/>
+<text x="145.0" y="446.0" class="scope-text">SCOPE</text>
 </g>
-<g id="cf-ui" data-center-x="510.0" data-center-y="440.0"><rect class="component cf-card" x="435" y="413" width="150" height="54" rx="7"/>
+<g id="cfn" data-center-x="510.0" data-center-y="440.0"><rect class="component cf-card" x="435" y="413" width="150" height="54" rx="7"/>
 <text x="510.0" y="446.0" class="cf-text">
-<tspan x="510.0" dy="0">CF UI</tspan>
+<tspan x="510.0" dy="0">CFN</tspan>
 </text>
 </g>
 <g id="cf-management" data-center-x="830.0" data-center-y="440.0"><rect class="component cf-card" x="740" y="413" width="180" height="54" rx="7"/>
@@ -164,9 +157,25 @@
 <tspan x="830.0" dy="0">CF Management</tspan>
 </text>
 </g>
-<g id="cfn" data-center-x="1160.0" data-center-y="440.0"><rect class="component cf-card" x="1085" y="413" width="150" height="54" rx="7"/>
+<g id="cf-ui" data-center-x="1160.0" data-center-y="440.0"><rect class="component cf-card" x="1085" y="413" width="150" height="54" rx="7"/>
 <text x="1160.0" y="446.0" class="cf-text">
-<tspan x="1160.0" dy="0">CFN</tspan>
+<tspan x="1160.0" dy="0">CF UI</tspan>
+</text>
+</g>
+<g id="cognition-store" data-center-x="145" data-center-y="650">
+<path class="database scope-database" d="M 70 620 V 680 C 70 700, 220 700, 220 680 V 620"/>
+<ellipse class="database scope-database" cx="145" cy="620" rx="75" ry="15"/>
+<text x="145" y="654" class="scope-text">
+<tspan x="145" dy="0">Cognition</tspan>
+<tspan x="145" dy="21">Store</tspan>
+</text>
+</g>
+<g id="audit-storage" data-center-x="510" data-center-y="650">
+<path class="database" d="M 435 620 V 680 C 435 700, 585 700, 585 680 V 620"/>
+<ellipse class="database" cx="510" cy="620" rx="75" ry="15"/>
+<text x="510" y="654" class="cf-text">
+<tspan x="510" dy="0">Audit</tspan>
+<tspan x="510" dy="21">storage</tspan>
 </text>
 </g>
 <g id="management-storage" data-center-x="830" data-center-y="650">
@@ -175,14 +184,6 @@
 <text x="830" y="654" class="cf-text">
 <tspan x="830" dy="0">Management</tspan>
 <tspan x="830" dy="21">storage</tspan>
-</text>
-</g>
-<g id="audit-storage" data-center-x="1160" data-center-y="650">
-<path class="database" d="M 1085 620 V 680 C 1085 700, 1235 700, 1235 680 V 620"/>
-<ellipse class="database" cx="1160" cy="620" rx="75" ry="15"/>
-<text x="1160" y="654" class="cf-text">
-<tspan x="1160" dy="0">Audit</tspan>
-<tspan x="1160" dy="21">storage</tspan>
 </text>
 </g>
 <g id="cognition-engines" data-center-x="870.0" data-center-y="937.0" transform="translate(870.0 937.0) scale(1.5) translate(-870.0 -937.0)"><rect class="component ce-card" x="700" y="900" width="340" height="74" rx="8"/>

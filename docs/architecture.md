@@ -10,9 +10,9 @@ Cognition Fabric (CF) connects multi-agent systems (MAS) to Cognition Engines
 (CEs) that evaluate policy or analyze evidence. The Enforcement Proxy mediates
 configured interactions and asks the Cognition Fabric Node (CFN) for a
 disposition. CFN routes the request to one eligible CE and records audit
-evidence. The **Observability & Explainability Platform (OXP)** processes MAS
-telemetry, owns the Cognition Store and serves Analytics APIs that CEs call
-directly.
+evidence. The **System for Cognitive Observability, Provenance and Explainability
+(SCOPE)** processes MAS telemetry, owns the Cognition Store and serves Analytics
+APIs that CEs call directly.
 
 CF manages workspaces, CFN and CE registrations, and MAS definitions, including
 declared agents, tools, configuration and assignments. It tracks component
@@ -24,13 +24,13 @@ delivered as separate application container images. Two example CE images, **Go 
 Although these examples are maintained in the monorepo, they interact with CF as
 separate CE processes through the same contracts as other engines.
 
-The MAS runtime, Enforcement Proxy, OXP and production CEs sit outside CF's
+The MAS runtime, Enforcement Proxy, SCOPE and production CEs sit outside CF's
 service boundary.
 
 The monorepo builds the PostgreSQL-based **`ioc-scale-db`** image and deploys it
-as the shared database server for CF and OXP. The server hosts separate databases
+as the shared database server for CF and SCOPE. The server hosts separate databases
 for CF Management inventory and configuration, CFN audit records, and the
-OXP-owned Cognition Store. The deployment stack and enforcement overlays live in
+SCOPE-owned Cognition Store. The deployment stack and enforcement overlays live in
 [`deploy/`](../deploy/README.md).
 
 ## Internal components
@@ -130,7 +130,7 @@ should set an end-to-end deadline.
 ### Audit ingestion API — Proxy to CFN
 
 `ioc.cf.enforcement.v1.Enforcement/AppendAuditRecord` accepts a finalized Proxy
-evidence record independently of disposition evaluation. OXP handles MAS
+evidence record independently of disposition evaluation. SCOPE handles MAS
 telemetry ingestion and Cognition Store findings through its own interfaces.
 
 The producer supplies a stable `audit_record_id` and correlation identifiers.
@@ -196,7 +196,7 @@ Delivery is asynchronous and best effort, with bounded HTTP retries that can
 repeat a payload. There is no durable event queue, replay-on-registration or
 exactly-once guarantee. An update uses the post-change CE associations; a CE
 removed from a still-existing MAS does not currently receive a dedicated
-`mas.disassociated` event. OXP telemetry and event delivery use their own
+`mas.disassociated` event. SCOPE telemetry and event delivery use their own
 interfaces.
 
 ### Internal coordination and audit reads
@@ -348,7 +348,7 @@ client requests to the moderator agent. The Envoy Enforcement Proxy mediates
 configured Agent2Agent (A2A) messages, MCP tool calls and large language model
 (LLM) requests. The Proxy calls CFN for dispositions (`GetDisposition`) and
 submits finalized audit records (`AppendAuditRecord`). NOA sends OpenTelemetry
-traces through the collector to OXP, with trace and span IDs linking them to
+traces through the collector to SCOPE, with trace and span IDs linking them to
 Proxy and CFN records carrying the canonical MAS ID.
 
 [NOA A2A deployment guide](../dev/README.md#noa-onboarding-and-proxy-mode)
