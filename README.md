@@ -1,8 +1,29 @@
 # Cognition Fabric
 
-Cognition Fabric provides the management plane, node runtime, and CE/enforcement
-contracts used to govern multi-agent systems. The shared stack is configured in
-`deploy/`; OXP remains an external integration.
+Cognition Fabric (CF) connects multi-agent systems (MAS) to Cognition Engines
+(CEs) for governance and enforcement. The Enforcement Proxy mediates configured
+interactions and calls CF's Enforcement API for runtime decisions. Active APIs
+for direct MAS engagement are planned.
+The **Observability & Explainability Platform (OXP)** processes MAS telemetry
+and owns the Cognition Store and Analytics APIs that CEs call directly.
+
+Read the [Cognition Fabric architecture](docs/architecture.md) for the component
+diagram, API boundaries, and runtime flows.
+
+- **CF Management** manages workspaces, MAS definitions, CE registrations, and
+  configuration.
+- **CF UI** provides the web interface for administration and audit inspection.
+- **Cognition Fabric Node (CFN)** exposes runtime APIs, routes enforcement
+  requests to CEs, probes their health, and sends MAS lifecycle notifications.
+
+The monorepo builds six container images. CF Management, CF UI, and CFN each
+have an application image. The [Go Demo CE](samples/demo-ce/README.md) shows a
+working policy engine, and the [Python Template CE](samples/template-ce/README.md)
+provides a starting point for a new CE. The sixth image,
+[`ioc-scale-db`](deploy/docker-db/README.md), provides the shared PostgreSQL
+database server for CF and OXP in the [deployment stack](deploy/README.md).
+
+## Repository layout
 
 | Folder | Purpose |
 | --- | --- |
@@ -27,7 +48,7 @@ Do not run a second copy of an already-running service.
 Components are versioned independently with folder-prefixed tags. See the
 [release procedure](docs/releases.md) and [API audience guide](api/README.md).
 
-Track issues in the [CF issue tracker](https://github.com/cisco-eti/ioc-scale-cfn-svc/issues).
+Track issues in the [CF issue tracker](https://github.com/ioc-project/cognition-fabric/issues).
 
 ## License and attribution
 

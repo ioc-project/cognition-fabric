@@ -1,10 +1,9 @@
 # Longer-term target architecture
 
-This document describes the broader CF target and planned API surface. For the Releases 1–3 architecture and current integration boundaries, see [architecture.md](architecture.md).
+This document describes the broader CF target and planned API surface. See
+[architecture.md](architecture.md) for the current implementation.
 
 <!-- kind: source · source of truth: GitHub (this file) -->
-
-This describes a longer-term Cognition Fabric (CF) target and does not define the current Releases 1–3 deployment.
 
 ## High-level architecture
 
