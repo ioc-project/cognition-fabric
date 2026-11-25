@@ -97,7 +97,7 @@ def installation(settings, state, source, root=ROOT):
     project = (settings.get("COMPOSE_PROJECT_NAME") or "ioc-scale-cf-deployment") + "-noa-a2a"
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", project):
         raise ValueError("COMPOSE_PROJECT_NAME must be a valid Compose project name")
-    registry = settings.get("CF_REGISTRY") or "ghcr.io/cisco-eti"
+    registry = settings.get("PROXY_REGISTRY") or "ghcr.io/cisco-eti"
     values = {key: reference(settings, key, tag, repository, registry)
               for key, tag, repository in IMAGE_SELECTORS}
     values.update(

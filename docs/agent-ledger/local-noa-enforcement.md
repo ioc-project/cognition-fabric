@@ -60,6 +60,13 @@ onboarded MAS UUID. Treat that session ID as opaque; join application trace/span
 IDs to Proxy/CFN records carrying the controller's canonical MAS identity.
 Selecting a CF image must not implicitly switch NOA modes.
 
+CF and DB images default to `ghcr.io/ioc-project` through `CF_REGISTRY`.
+Proxy image selection uses `PROXY_REGISTRY` independently and defaults to
+`ghcr.io/cisco-eti` in both deployment overlays and the native NOA helper. OXP
+and NOA keep their existing separate registry selectors. Preserve tag/full-image
+overrides; moving CF must not implicitly move the Proxy or change its versions.
+Existing `.env` entries still override defaults and are migrated manually.
+
 CE advertised addresses depend on whether CFN runs on the host or in a
 container. Restart CEs after changing CFN's implementation so they re-register
 the appropriate addresses. The local image Compose file uses host-facing CF

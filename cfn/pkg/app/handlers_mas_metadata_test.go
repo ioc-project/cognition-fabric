@@ -1,4 +1,5 @@
 // Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
 // SPDX-License-Identifier: Apache-2.0
 
 package app
@@ -10,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/easyhttp"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/tools/easyhttp"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )

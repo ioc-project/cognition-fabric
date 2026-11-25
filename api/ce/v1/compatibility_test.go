@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
+	cev1 "github.com/ioc-project/cognition-fabric/api/ce/v1"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"

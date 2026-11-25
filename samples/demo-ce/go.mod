@@ -1,9 +1,13 @@
-module github.com/cisco-eti/cognition-fabric/samples/demo-ce
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
+module github.com/ioc-project/cognition-fabric/samples/demo-ce
 
 go 1.25.9
 
 require (
-	github.com/cisco-eti/cognition-fabric/api v1.0.0
+	github.com/ioc-project/cognition-fabric/api v1.0.0
 	github.com/lmittmann/tint v1.2.1
 	google.golang.org/grpc v1.83.2
 	google.golang.org/protobuf v1.36.12
@@ -16,4 +20,4 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa // indirect
 )
 
-replace github.com/cisco-eti/cognition-fabric/api => ../../api
+replace github.com/ioc-project/cognition-fabric/api => ../../api

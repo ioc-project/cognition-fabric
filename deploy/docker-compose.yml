@@ -57,7 +57,7 @@ services:
   # Database - AgensGraph + PgVector + Postgres
   # Port Mapping: 5456:5432
   ioc-scale-db:
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-db:${IOC_SCALE_DB_TAG:-0.2.0}
+    image: ${CF_REGISTRY:-ghcr.io/ioc-project}/ioc-scale-db:${IOC_SCALE_DB_TAG:-0.2.0}
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-db
     environment:
@@ -104,7 +104,7 @@ services:
   # Port Mapping: 9000:9000
   ioc-scale-cf-mgmt-svc:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-mgmt-svc/pkgs/container/ioc-scale-cf-mgmt-svc
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-mgmt-svc:${CF_MGMT_SVC_TAG:-latest}
+    image: ${CF_REGISTRY:-ghcr.io/ioc-project}/ioc-scale-cf-mgmt-svc:${CF_MGMT_SVC_TAG:-latest}
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-mgmt-svc
     ports:
@@ -152,7 +152,7 @@ services:
   # Port Mapping: 9001:9001
   ioc-scale-cf-mgmt-plane-ui:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-ui/pkgs/container/ioc-scale-cf-ui
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-ui:${CF_UI_TAG:-latest}
+    image: ${CF_REGISTRY:-ghcr.io/ioc-project}/ioc-scale-cf-ui:${CF_UI_TAG:-latest}
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-mgmt-plane-ui
     ports:
@@ -173,7 +173,7 @@ services:
   # Port Mapping: 9002:9002 (HTTP)
   ioc-scale-cfn-svc:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cfn-svc/pkgs/container/ioc-scale-cfn-svc
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cfn-svc:${CFN_SVC_TAG:-latest}
+    image: ${CF_REGISTRY:-ghcr.io/ioc-project}/ioc-scale-cfn-svc:${CFN_SVC_TAG:-latest}
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cfn-svc
     restart: unless-stopped
@@ -220,7 +220,7 @@ services:
   # Port Mapping: 18001:18001 (gRPC), 18000:18000 (HTTP), host loopback only
   ioc-scale-cf-demo-ce:
     # Image Link: https://github.com/cisco-eti/ioc-scale-cf-demo-ce/pkgs/container/ioc-scale-cf-demo-ce%2Fdemo-ce
-    image: ${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scale-cf-demo-ce/demo-ce:${CF_DEMO_CE_TAG:-latest}
+    image: ${CF_REGISTRY:-ghcr.io/ioc-project}/ioc-scale-cf-demo-ce/demo-ce:${CF_DEMO_CE_TAG:-latest}
     platform: ${DOCKER_DEFAULT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-cf-demo-ce
     ports:
@@ -661,7 +661,7 @@ services:
   # Port Mapping: 9006:8081 (gRPC), 9005:8082 (HTTP). Host 8081 is oxp-api.
   # Image Link: https://github.com/cisco-eti/ioc-scaling-enforcement-proxy/pkgs/container/ioc-scaling-enforcement-mediation
   ioc-scale-enforcement-proxy-mediation:
-    image: ${ENFORCEMENT_PROXY_MEDIATION_IMAGE:-${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-mediation:${ENFORCEMENT_PROXY_MEDIATION_TAG:-latest}}
+    image: ${ENFORCEMENT_PROXY_MEDIATION_IMAGE:-${PROXY_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-mediation:${ENFORCEMENT_PROXY_MEDIATION_TAG:-latest}}
     container_name: ioc-scale-enforcement-proxy-mediation
     environment:
       AUDIT_PERSISTENCE_MODE: AUDIT_PERSISTENCE_MODE_CFN

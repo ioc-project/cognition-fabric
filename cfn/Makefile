@@ -1,9 +1,13 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 PROJECT_NAME=cfn
 GO_FILES=$(shell go list ./... | grep -v /vendor/)
 
 GO_BUILD_ENV ?= CGO_ENABLED=0
 BUILD_VERSION ?= latest
-IMAGE_NAME ?= ghcr.io/cisco-eti/ioc-scale-cfn-svc
+IMAGE_NAME ?= ghcr.io/ioc-project/ioc-scale-cfn-svc
 IMAGE_TAG ?= $(BUILD_VERSION)
 
 .PHONY: build

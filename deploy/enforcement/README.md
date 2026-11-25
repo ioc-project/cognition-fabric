@@ -39,8 +39,8 @@ it does not attach that sample to the proxy or migrate it to NOA A2A.
 ## Images and rollback
 
 The maintained source is [ioc-project/enforcement-proxy](https://github.com/ioc-project/enforcement-proxy).
-Its currently published images use `ghcr.io/cisco-eti`; a repository move does
-not establish a new package namespace. All four proxy defaults are `latest`:
+The `PROXY_REGISTRY` setting defaults to `ghcr.io/cisco-eti`. All four Proxy
+image tags default to `latest`.
 
 | Component | Package | Tag override | Full-reference override |
 | --- | --- | --- | --- |
@@ -49,8 +49,8 @@ not establish a new package namespace. All four proxy defaults are `latest`:
 | Wasm | `ioc-scaling-enforcement-proxy-wasm` | `ENFORCEMENT_WASM_TAG` | `ENFORCEMENT_WASM_IMAGE` |
 | SHADi | `ioc-scaling-enforcement-proxy-shadi-verifier` | `ENFORCEMENT_SHADI_TAG` | `ENFORCEMENT_SHADI_IMAGE` |
 
-A full reference wins over `CF_REGISTRY` and the component's tag. Settings in an
-existing root `.env` remain explicit overrides: for example an old
+A full reference takes precedence over `PROXY_REGISTRY` and the component's tag.
+Settings in an existing root `.env` remain explicit overrides. For example, an old
 `ENFORCEMENT_PROXY_MEDIATION_TAG=0.0.1-alpha` still selects alpha until the operator
 changes or removes it. The launcher never rewrites `.env`.
 

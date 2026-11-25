@@ -13,8 +13,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	api "github.com/cisco-eti/cognition-fabric/api/enforcement/v1"
 	"github.com/google/uuid"
+	api "github.com/ioc-project/cognition-fabric/api/enforcement/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"

@@ -54,20 +54,25 @@ the only profiled service; the Go Demo CE starts by default.
 Service registry/tag selectors can be overridden in root `.env` without editing
 Compose. Proxy components also accept full `image@sha256:...` references:
 
-- CF and enforcement proxy services (`ioc-scale-db`, `ioc-scale-cf-mgmt-svc`,
-  `ioc-scale-cf-mgmt-plane-ui`, `ioc-scale-cfn-svc`, `ioc-scale-cf-demo-ce`,
-  `ioc-scale-enforcement-proxy-mediation`):
+- CF and database services (`ioc-scale-db`, `ioc-scale-cf-mgmt-svc`,
+  `ioc-scale-cf-mgmt-plane-ui`, `ioc-scale-cfn-svc`, `ioc-scale-cf-demo-ce`):
   `CF_REGISTRY` plus `IOC_SCALE_DB_TAG`, `CF_MGMT_SVC_TAG`, `CF_UI_TAG`,
-  `CFN_SVC_TAG`, `CF_DEMO_CE_TAG`, `ENFORCEMENT_PROXY_MEDIATION_TAG`.
-  All four proxy components default to `latest`; the database stays pinned
-  to `0.2.0`. Other CF tags retain `latest`. Existing explicit `.env` tag values
-  still win. See [proxy image overrides and rollback](enforcement/README.md#images-and-rollback).
+  `CFN_SVC_TAG`, `CF_DEMO_CE_TAG`. The registry defaults to `ghcr.io/ioc-project`.
+  The database stays pinned to `0.2.0`, and CF application tags default to `latest`.
+- Enforcement Proxy services use `PROXY_REGISTRY`, which defaults to
+  `ghcr.io/cisco-eti`. The mediation, Envoy sidecar and Wasm, and SHADi verifier
+  image tags default to `latest`. See [Proxy image overrides and rollback](enforcement/README.md#images-and-rollback).
 - OXP workers: `OXP_REGISTRY` plus `OXP_IMG_TAG`.
 - `oxp-api`: `OXP_REGISTRY` plus `OXP_API_IMG_TAG`. The API is versioned
   separately from the workers. Set `OXP_API_IMAGE` only to override the full
   image reference.
 - NOA sample app: `CLARIS_REGISTRY` plus `NOA_IMAGE_TAG`.
 
+Existing `.env` values take precedence over these defaults. To adopt the new CF
+images in an existing configuration, change `CF_REGISTRY` to
+`ghcr.io/ioc-project`. If Proxy images previously used a custom `CF_REGISTRY`,
+set that location explicitly through `PROXY_REGISTRY`. OXP and NOA keep their
+existing registry defaults. Existing tag overrides remain supported.
 
 The database image source is in this directory. See
 [`docker-db/`](docker-db/) for the Dockerfile and how to publish a new tag.
@@ -217,6 +222,8 @@ See the root [`.env.example`](../.env.example) for all available configuration o
   CFN gRPC connection settings passed to mediation and enforcement adapters.
   Defaults are `ioc-scale-cfn-svc:9003`, `2s` and `true` for the local stack.
 - `CF_REGISTRY`, `*_TAG` - Source and version of the CF service images (see above)
+- `PROXY_REGISTRY`, `ENFORCEMENT_*_TAG`, `ENFORCEMENT_*_IMAGE` - Registry, tag and
+  full-image settings for the Proxy images. Full image references take precedence.
 - `OXP_REGISTRY`, `OXP_IMG_TAG`, `OXP_API_IMG_TAG` - Source and version of the OXP worker and API images
 - `AI_GATEWAY_API_KEY`, `OPENAI_API_KEY` - Required by `embedding`, `mce`, and
   `analysis`. Without them those workers exit on startup and restart in a loop.

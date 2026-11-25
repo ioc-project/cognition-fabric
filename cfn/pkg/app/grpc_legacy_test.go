@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	enforcementv1 "github.com/cisco-eti/cognition-fabric/api/enforcement/v1"
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/client/database"
+	enforcementv1 "github.com/ioc-project/cognition-fabric/api/enforcement/v1"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/client/database"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"

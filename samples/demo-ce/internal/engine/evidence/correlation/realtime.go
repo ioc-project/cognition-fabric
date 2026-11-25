@@ -12,12 +12,12 @@ import (
 	"reflect"
 	"sort"
 
-	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence/events"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/logging"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/oxp"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/pkg/config"
+	cev1 "github.com/ioc-project/cognition-fabric/api/ce/v1"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/engine/evidence"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/engine/evidence/events"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/logging"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/oxp"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/pkg/config"
 )
 
 // ExtraEventID is the key of the request's extra map that names the carrier's event. The CFN passes it from

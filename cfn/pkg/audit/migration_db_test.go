@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/config"
 	"github.com/google/uuid"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"

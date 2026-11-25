@@ -259,6 +259,10 @@ class DeploymentTests(unittest.TestCase):
                         )
 
     def test_latest_defaults_and_explicit_image_override_precedence(self):
+        registry_overrides = {
+            "CF_REGISTRY": "example.invalid/cf",
+            "PROXY_REGISTRY": "example.invalid/proxy",
+        }
         for name, (prefix, package) in IMAGE_SETTINGS.items():
             with self.subTest(service=name):
                 settings = self.config(("envoy", "shadi"))["services"]
@@ -267,19 +271,16 @@ class DeploymentTests(unittest.TestCase):
                 )
                 tagged = self.config(
                     ("envoy", "shadi"),
-                    extra={
-                        "CF_REGISTRY": "example.invalid/team",
-                        prefix + "_TAG": "known",
-                    },
+                    extra=registry_overrides | {prefix + "_TAG": "known"},
                 )
                 self.assertEqual(
                     tagged["services"][name]["image"],
-                    "example.invalid/team/" + package + ":known",
+                    "example.invalid/proxy/" + package + ":known",
                 )
                 pinned = "example.invalid/rollback@sha256:" + "a" * 64
                 selected = self.config(
                     ("envoy", "shadi"),
-                    extra={prefix + "_IMAGE": pinned, prefix + "_TAG": "ignored"},
+                    extra=registry_overrides | {prefix + "_IMAGE": pinned, prefix + "_TAG": "ignored"},
                 )
                 self.assertEqual(selected["services"][name]["image"], pinned)
 

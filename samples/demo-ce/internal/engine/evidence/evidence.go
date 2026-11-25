@@ -13,8 +13,8 @@ import (
 	"regexp"
 	"time"
 
-	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/pkg/config"
+	cev1 "github.com/ioc-project/cognition-fabric/api/ce/v1"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/pkg/config"
 )
 
 // Judge decides a request whose identity decision was ALLOW, from one kind of evidence. rules are the

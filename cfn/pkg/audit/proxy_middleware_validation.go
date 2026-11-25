@@ -9,8 +9,8 @@ import (
 	"strings"
 	"unicode"
 
-	api "github.com/cisco-eti/cognition-fabric/api/enforcement/v1"
 	"github.com/google/uuid"
+	api "github.com/ioc-project/cognition-fabric/api/enforcement/v1"
 )
 
 func validateMiddlewareContext(c *api.MiddlewareContext, localRejection bool) error {

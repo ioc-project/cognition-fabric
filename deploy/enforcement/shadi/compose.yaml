@@ -11,7 +11,7 @@
 # (see enforcement/shadi/README.md).
 services:
   ioc-scale-enforcement-proxy-shadi-verifier:
-    image: ${ENFORCEMENT_SHADI_IMAGE:-${CF_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-shadi-verifier:${ENFORCEMENT_SHADI_TAG:-latest}}
+    image: ${ENFORCEMENT_SHADI_IMAGE:-${PROXY_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-shadi-verifier:${ENFORCEMENT_SHADI_TAG:-latest}}
     platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-enforcement-proxy-shadi-verifier
     environment:

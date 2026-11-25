@@ -16,14 +16,14 @@ import (
 	"sync"
 	"time"
 
-	enforcementv1 "github.com/cisco-eti/cognition-fabric/api/enforcement/v1"
-	_ "github.com/cisco-eti/cognition-fabric/cfn/docs/api" // Swagger docs
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/audit"
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/client/database"
-	httpclient "github.com/cisco-eti/cognition-fabric/cfn/pkg/client/http"
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/config"
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/easyhttp"
-	"github.com/cisco-eti/cognition-fabric/cfn/pkg/tools/logger"
+	enforcementv1 "github.com/ioc-project/cognition-fabric/api/enforcement/v1"
+	_ "github.com/ioc-project/cognition-fabric/cfn/docs/api" // Swagger docs
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/audit"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/client/database"
+	httpclient "github.com/ioc-project/cognition-fabric/cfn/pkg/client/http"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/config"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/tools/easyhttp"
+	"github.com/ioc-project/cognition-fabric/cfn/pkg/tools/logger"
 	httpSwagger "github.com/swaggo/http-swagger"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"

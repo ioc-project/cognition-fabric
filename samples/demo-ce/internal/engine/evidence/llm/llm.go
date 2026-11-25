@@ -6,13 +6,13 @@ package llm
 
 import (
 	"encoding/json"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/engine/evidence/events"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/internal/inbox"
-	"github.com/cisco-eti/cognition-fabric/samples/demo-ce/pkg/config"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/engine/evidence"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/engine/evidence/events"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/internal/inbox"
+	"github.com/ioc-project/cognition-fabric/samples/demo-ce/pkg/config"
 	"time"
 
-	cev1 "github.com/cisco-eti/cognition-fabric/api/ce/v1"
+	cev1 "github.com/ioc-project/cognition-fabric/api/ce/v1"
 )
 
 // llm_input evidence: the application publishes the model request as an Observe llm.started event

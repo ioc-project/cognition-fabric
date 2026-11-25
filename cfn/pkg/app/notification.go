@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 	"time"
 
-	httpclient "github.com/cisco-eti/cognition-fabric/cfn/pkg/client/http"
+	httpclient "github.com/ioc-project/cognition-fabric/cfn/pkg/client/http"
 )
 
 // MASChange represents a detected MAS lifecycle change.
