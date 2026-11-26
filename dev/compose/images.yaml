@@ -80,7 +80,7 @@ services:
       - "127.0.0.1:18001:18001"
     environment:
       CFN_URL: http://host.docker.internal:9002
-      OXP_API_URL: http://oxp-api:8000
+      OXP_API_URL: http://ioc-analytics-api:8000
       ADVERTISED_GRPC_ADDRESS: ${CF_LOCAL_CE_HOST:-127.0.0.1}:18001
       ADVERTISED_HEALTH_URL: http://${CF_LOCAL_CE_HOST:-127.0.0.1}:18000
       CE_CONFIG_FILE: /etc/demo-ce/config.json
@@ -117,7 +117,7 @@ services:
       - "127.0.0.1:8082:8082"
     environment:
       CFN_URL: http://host.docker.internal:9002
-      COGNITION_STORE_URL: http://oxp-api:8000
+      COGNITION_STORE_URL: http://ioc-analytics-api:8000
       COGNITION_ENGINE_HOST: ${CF_LOCAL_CE_HOST:-127.0.0.1}
       GRPC_PORT: "50051"
       HTTP_PORT: "8080"

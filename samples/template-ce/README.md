@@ -40,7 +40,7 @@ From the repository root, with local infrastructure and CFN running, choose
 `task run:template-ce` for source or `task run:template-ce:image` for the
 published image. Stop the running Template CE task before switching modes.
 Set `CF_TEMPLATE_CE_TAG` in root `.env` or the shell to select an image tag. It
-defaults to `latest`. Both tasks set `HEALTH_PORT=8082` because OXP occupies
+defaults to `latest`. Both tasks set `HEALTH_PORT=8082` because the SCOPE API uses
 host port `8081` and CFN probes the health port the CE registers.
 
 ## Test

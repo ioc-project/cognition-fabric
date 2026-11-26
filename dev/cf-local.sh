@@ -28,9 +28,8 @@ cf_services=(
 infra_services=(
   ioc-scale-db ioc-scale-db-init
   rabbitmq neo4j clickhouse-server otel-collector
-  oxp-clickhouse-init oxp-rabbitmq-init oxp-api
-  norm embedding mce grouping analysis hierarchical-grouping
-  decision-block stateful-eval
+  scope-clickhouse-init scope-rabbitmq-init ioc-analytics-api
+  norm event-exporter
 )
 
 fail() {
@@ -154,7 +153,7 @@ run_cf_image() {
       ;;
     ioc-scale-cf-demo-ce|ioc-scale-cf-template-ce)
       require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
-      require_service http://localhost:8081/healthz 'OXP API'
+      require_service http://localhost:8081/healthz 'SCOPE API'
       if [[ "$service" = ioc-scale-cf-demo-ce ]]; then
         prepare_demo_config
         export CF_LOCAL_CE_CONFIG_FILE="$CE_CONFIG_FILE"
@@ -490,13 +489,13 @@ case "${1:-}" in
     require_service_container_stopped ioc-scale-cf-template-ce ioc-scale-cf-demo-ce
     require_ports_free 50051 8082 8080
     require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
-    require_service http://localhost:8081/healthz 'OXP API'
+    require_service http://localhost:8081/healthz 'SCOPE API'
     require_tool uv
     export CFN_URL=http://localhost:9002
     ce_host="$(source_ce_host)"
     export COGNITION_ENGINE_HOST="$ce_host"
     export GRPC_PORT=50051
-    # Use 8082 for health because OXP already occupies the default 8081.
+    # Use 8082 for health because the SCOPE API uses 8081.
     export HEALTH_PORT=8082 HTTP_PORT=8080
     # Registration defaults belong to the CE; forward only an explicit name override.
     [[ -z "${TEMPLATE_CE_NAME:-}" ]] || export CE_NAME="$TEMPLATE_CE_NAME"
@@ -515,7 +514,7 @@ case "${1:-}" in
     require_service_container_stopped ioc-scale-cf-demo-ce
     require_ports_free 18000 18001
     require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
-    require_service http://localhost:8081/healthz 'OXP API'
+    require_service http://localhost:8081/healthz 'SCOPE API'
     require_tool go
     export CFN_URL=http://localhost:9002
     export OXP_API_URL=http://localhost:8081

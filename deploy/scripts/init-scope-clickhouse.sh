@@ -6,7 +6,7 @@
 
 set -eu
 
-sleep "${OXP_INIT_DELAY_SECONDS:-5}"
+sleep "${SCOPE_INIT_DELAY_SECONDS:-5}"
 
 attempt=1
 while [ "$attempt" -le 30 ]; do
@@ -34,6 +34,6 @@ clickhouse-client \
     --user "$CLICKHOUSE_USERNAME" \
     --password "$CLICKHOUSE_PASSWORD" \
     --multiquery \
-    < /scripts/init-oxp-clickhouse.sql
+    < /scripts/init-scope-clickhouse.sql
 
 echo "ClickHouse-to-RabbitMQ bridge initialized"

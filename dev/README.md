@@ -72,10 +72,10 @@ cp .env.example .env
 ```
 
 Supply your own gateway/model credentials and `NEXTAUTH_SECRET`. Set
-`ENFORCEMENT_PLATFORM` for your host (`linux/arm64` or `linux/amd64`). OXP
+`ENFORCEMENT_PLATFORM` for your host (`linux/arm64` or `linux/amd64`). SCOPE
 infrastructure defaults to `linux/arm64`; on an Intel/AMD host, add
-`OXP_INFRA_PLATFORM=linux/amd64` to root `.env` so those containers run natively.
-OXP workers default to `linux/amd64`. Optional OXP and infrastructure tuning
+`SCOPE_INFRA_PLATFORM=linux/amd64` to root `.env` so those containers run natively.
+The SCOPE normalization worker defaults to `linux/amd64`. Optional SCOPE and infrastructure tuning
 variables are listed in the root template's "Optional infrastructure overrides"
 section. The root template keeps CF settings,
 required external configuration and deliberate overrides such as the ClickHouse
@@ -151,7 +151,7 @@ For notification tests, set `ENABLE_NOTIFICATIONS=true` in the root `.env`.
 | Go Demo CE HTTP / gRPC | `18000` / `18001` |
 | NOA API | `8125` |
 | A2A / MCP / Envoy | Internal to the MAS Compose project |
-| OXP API / OTel HTTP collector | `8081` / `4318` |
+| SCOPE API / OTel HTTP collector | `8081` / `4318` |
 
 Source listeners and the NOA API default to host loopback. `LOCAL_CF_BIND_HOST=0.0.0.0` is an explicit option
 for native Linux mixed source/image operation. Docker Desktop uses
@@ -225,7 +225,7 @@ task run:template-ce:image
 Choose source or image independently for each service, stopping its current
 foreground task before switching. Restart the chosen CE task after switching
 CFN source/image mode so its registered addresses match reachability. Both
-Template CE tasks serve and register health on `8082` so OXP can keep `8081`.
+Template CE tasks serve and register health on `8082` because the SCOPE API uses `8081`.
 Tags default to `latest` and can be set with `CF_MGMT_SVC_TAG`, `CFN_SVC_TAG`,
 `CF_UI_TAG`, `CF_DEMO_CE_TAG`, and `CF_TEMPLATE_CE_TAG`. `LOCAL_CF_MGMT_DB`
 selects another compatible local Management database. Shell overrides take

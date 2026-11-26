@@ -1,3 +1,8 @@
+-- Copyright 2026 Cisco Systems, Inc. and its affiliates
+--
+-- SPDX-License-Identifier: Apache-2.0
+
+-- The upstream SCOPE worker still uses the claris exchange.
 ALTER TABLE default.otel_traces
     ADD COLUMN IF NOT EXISTS session_id String MATERIALIZED
         multiIf(

@@ -24,7 +24,7 @@ The selected ports are:
 
 :::info Health port on the local CF stack
 Standalone runs default health to **8081**. Both `task run:template-ce` and
-`task run:template-ce:image` set `HEALTH_PORT=8082` because OXP already uses 8081.
+`task run:template-ce:image` set `HEALTH_PORT=8082` because the SCOPE API uses 8081.
 :::
 
 Check the health listener:
