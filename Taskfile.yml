@@ -81,6 +81,16 @@ tasks:
     cmds:
       - bash dev/cf-local.sh check
 
+  deploy:up:
+    desc: Start the CF deployment stack
+    cmds:
+      - make -C deploy up
+
+  deploy:down:
+    desc: Stop the CF deployment stack and preserve volumes
+    cmds:
+      - make -C deploy down
+
   infra:up:
     desc: Start Postgres and OXP infrastructure; start the MAS/proxy after onboarding
     silent: true

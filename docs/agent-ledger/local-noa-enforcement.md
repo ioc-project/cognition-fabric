@@ -7,11 +7,11 @@ for `NOA_MODE=published` / `NOA_ENFORCEMENT_MODE=proxy`. Source/direct retains t
 copied NOA's direct CFN adapter. Source/proxy is rejected; it cannot drive the
 new controller through the old host tool-service fixture.
 
-The [deployment Makefile](../../deploy/enforcement/README.md) is a separate
-workflow: it retains the existing non-A2A NOA image and can start optional proxy
-components with unprovisioned activation. MAS attachment and controller-owned
-activation remain the MAS developer's responsibility. Do not copy this local
-Task workflow's native NOA enrollment into platform deployment to update images.
+The [deployment Makefile](../../deploy/README.md#native-noa-a2a-with-envoy) can
+supply the platform for the native NOA task. Its `full-mas` profile runs the
+original non-A2A sample and its optional enforcement overlays use
+operator-provided attachment and activation. Native NOA enrollment belongs to
+the separate controller-owned project.
 
 `infra:up` starts platform dependencies without requiring a MAS. Start our CFN,
 Management, UI and chosen Demo/Template CE, onboard the separate A2A declaration,
@@ -52,9 +52,10 @@ cover the full MAS request. API ingress remains unmediated.
 CF source tasks have `:image` counterparts for management, CFN, UI, and Go Demo
 CE. These images share the source workflow's `cfn_mgmt_local` / `cfn_audit_local`
 databases, carry the `io.cisco.cf.local=true` ownership label, and run on the
-existing infrastructure network. NOA/proxy tasks accept these owned images but
-reject unrelated running CF containers from the standalone deployment. The
-published A2A application uses different transports/identities from the copied
+existing infrastructure network. Local tasks that manage those services check
+the ownership label. Native NOA uses CFN and collector endpoints from either
+platform and owns its own project. The published A2A application uses different
+transports/identities from the copied
 source sample. Its Observe session prefix is the fixed application name, not the
 onboarded MAS UUID. Treat that session ID as opaque; join application trace/span
 IDs to Proxy/CFN records carrying the controller's canonical MAS identity.

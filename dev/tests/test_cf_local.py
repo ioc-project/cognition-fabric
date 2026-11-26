@@ -53,6 +53,8 @@ if name == "docker":
         sys.exit(int(os.environ.get("MOCK_MIGRATION_EXIT", "0")))
     elif "up" in args:
         sys.exit(int(os.environ.get("MOCK_UP_EXIT", "0")))
+elif name == "curl" and args[-1] == os.environ.get("MOCK_HTTP_FAILURE_URL"):
+    sys.exit(22)
 elif name == "python3" and args and args[0].endswith("check_ports.py"):
     if os.environ.get("MOCK_BUSY_PORT") in args[1:]:
         print("Local CF: Port is in use", file=sys.stderr)
@@ -197,12 +199,17 @@ class LocalLauncherTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("already running", result.stderr)
 
-    def test_rejects_unowned_deployment_before_shutdown(self):
-        result = self.run_task("infra-down", MOCK_RUNNING="ioc-scale-cfn-svc",
-                               MOCK_UNOWNED="ioc-scale-cfn-svc")
-        self.assertNotEqual(result.returncode, 0)
-        self.assertIn("published deployment", result.stderr)
-        self.assertFalse(any("stop" in command["args"] for command in self.commands()))
+    def test_platform_tasks_reject_unowned_deployment(self):
+        for action, mode in [("infra-up", "published"), ("infra-down", "published"),
+                             ("run-full-mas", "published"), ("run-full-mas", "source")]:
+            with self.subTest(action=action, mode=mode):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task(action, NOA_MODE=mode, NOA_ENFORCEMENT_MODE="direct",
+                                       MOCK_RUNNING="ioc-scale-cfn-svc", MOCK_UNOWNED="ioc-scale-cfn-svc")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("published deployment", result.stderr)
+                self.assertFalse(any(c["tool"] == "uv" or {"up", "stop", "exec"} & set(c["args"])
+                                     for c in self.commands()))
 
     def test_source_cfn_accepts_local_management_image(self):
         result = self.run_task("run-cfn", MOCK_RUNNING="ioc-scale-cf-mgmt-svc")
@@ -280,21 +287,56 @@ class LocalLauncherTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(self.commands()[-1]["env"][key], expected)
 
-    def test_published_noa_proxy_accepts_local_cfn_image(self):
-        result = self.run_task(
-            "run-full-mas", NOA_MODE="published", NOA_ENFORCEMENT_MODE="proxy",
-            MOCK_RUNNING="ioc-scale-cfn-svc,otel-collector",
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
-        command = self.commands()[-1]
-        self.assertEqual(command["tool"], "uv")
-        args = command["args"]
-        self.assertEqual(args[-1], "up")
-        self.assertEqual(args[args.index("--python") + 1], ">=3.11")
-        self.assertIn("--no-project", args)
-        self.assertIn("--no-python-downloads", args)
-        self.assertTrue(args[args.index("python3") + 1].endswith("tools/noa_a2a.py"))
-        self.assertFalse(any("up" in c["args"] for c in self.commands() if c["tool"] == "docker"))
+    def test_published_noa_proxy_accepts_both_platforms(self):
+        mas_url = "http://localhost:9002/api/multi-agentic-systems/" + self.env["NOA_MAS_ID"]
+        for unowned in ("", "ioc-scale-cfn-svc"):
+            with self.subTest(makefile=bool(unowned)):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task(
+                    "run-full-mas", NOA_MODE="published", NOA_ENFORCEMENT_MODE="proxy",
+                    MOCK_RUNNING="ioc-scale-cfn-svc,otel-collector", MOCK_UNOWNED=unowned,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                commands = self.commands()
+                self.assertEqual([c["args"][-1] for c in commands if c["tool"] == "curl"], [
+                    "http://localhost:9002/api/internal/diagnostics/health", mas_url,
+                ])
+                self.assertEqual([c["args"] for c in commands if c["tool"] == "docker"], [["compose", "version"]])
+                command = commands[-1]
+                self.assertEqual(command["tool"], "uv")
+                args = command["args"]
+                self.assertEqual(args[-1], "up")
+                self.assertEqual(args[args.index("--python") + 1], ">=3.11")
+                self.assertIn("--no-project", args)
+                self.assertIn("--no-python-downloads", args)
+                self.assertTrue(args[args.index("python3") + 1].endswith("tools/noa_a2a.py"))
+
+    def test_published_noa_proxy_checks_platform_before_enrollment(self):
+        for path, message in [
+            ("/api/internal/diagnostics/health", "CFN is not ready"),
+            ("/api/multi-agentic-systems/" + self.env["NOA_MAS_ID"], "Assigned NOA MAS"),
+        ]:
+            with self.subTest(path=path):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task(
+                    "run-full-mas", NOA_MODE="published", NOA_ENFORCEMENT_MODE="proxy",
+                    MOCK_HTTP_FAILURE_URL="http://localhost:9002" + path,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(message, result.stderr)
+                self.assertFalse(any(c["tool"] == "uv" for c in self.commands()))
+
+    def test_native_noa_lifecycle_delegates_with_makefile_platform(self):
+        for action, verb in [("noa-status", "status"), ("proxy-logs", "logs"), ("noa-down", "down")]:
+            with self.subTest(action=action):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task(action, MOCK_RUNNING="ioc-scale-cfn-svc",
+                                       MOCK_UNOWNED="ioc-scale-cfn-svc")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                commands = self.commands()
+                self.assertEqual([c["args"] for c in commands if c["tool"] == "docker"], [["compose", "version"]])
+                self.assertEqual(commands[-1]["tool"], "uv")
+                self.assertEqual(commands[-1]["args"][-2:], [str(self.cfn / "dev/tools/noa_a2a.py"), verb])
 
     def test_published_direct_keeps_legacy_start_without_explicit_pull(self):
         result = self.run_task("run-full-mas", NOA_MODE="published", NOA_ENFORCEMENT_MODE="direct")

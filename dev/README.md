@@ -237,14 +237,14 @@ images, set that location in `PROXY_REGISTRY`.
 
 ## NOA onboarding and proxy mode
 
-The native workflow uses our existing CFN, Management, UI, OXP and selected Go
-Demo or Python Template CE. Its separate Compose project contains the MAS and
-its proxy; it does not deploy another CF platform.
+The native NOA workflow uses an existing CFN, Management, UI, OXP and selected
+CE. Start the platform through the local tasks or the [deployment Makefile](../deploy/README.md#native-noa-a2a-with-envoy).
+The MAS and its proxy run in a separate Compose project.
 
 1. Configure root `.env` with `NOA_MODE=published` and
-   `NOA_ENFORCEMENT_MODE=proxy`. Leave MAS IDs empty initially. Start infrastructure
-   and our CF/CE tasks as described above. `infra:up` requires no MAS and does not
-   start the proxy.
+   `NOA_ENFORCEMENT_MODE=proxy`. Leave MAS IDs empty initially. For the local
+   workflow, start `task infra:up` and the CF and CE tasks described above.
+   For the Makefile workflow, run `make -C deploy up` or `task deploy:up`.
 2. In Management UI, create a MAS using **JSON** mode and paste
    [`noa-a2a-mas.json`](../samples/noa-trip-planner/mas/noa-a2a-mas.json).
    Select the existing enabled, online CE before saving. Use a workspace assigned
@@ -254,10 +254,11 @@ its proxy; it does not deploy another CF platform.
    Custom identities can instead be supplied as upstream canonical JSON through
    `NOA_IDENTITY_FILE`; workload references must use this runtime's project and
    service names.
-4. For Go Demo CE, copy [`noa-demo-ce.example.json`](noa-demo-ce.example.json) into
+4. For Go Demo CE started by a local task, copy [`noa-demo-ce.example.json`](noa-demo-ce.example.json) into
    ignored local configuration, replace both ID placeholders, set `CE_CONFIG_FILE`
-   to that copy and restart only your Demo CE task. Template CE needs no policy
-   file. CE selection still comes from Management associations.
+   to that copy and restart your Demo CE task. For the Makefile deployment,
+   apply the same NOA policy using the [deployment guide](../deploy/README.md#native-noa-a2a-with-envoy).
+   Template CE needs no policy file. CE selection comes from Management associations.
 5. Wait until CFN exposes the assigned MAS at
    `http://localhost:9002/api/multi-agentic-systems/<MAS_ID>`. Check that its
    enabled, online CE associations select the CE you intend to use, including
@@ -306,8 +307,9 @@ task noa:down
 Private installation inputs live in `.local/noa-a2a/`; downloaded upstream files
 live in `.local/proxy-runtime/`. Do not edit generated routes, credentials or
 activation files. If startup fails, inspect `noa:status` and controller logs,
-then use `noa:down` before retrying. Existing standalone deployments from another
-workflow must be stopped by their owner; these tasks do not adopt them.
+then use `noa:down` before retrying. When using the Makefile platform, retire the
+native project with `task noa:down` before running `make -C deploy down` or
+`task deploy:down`.
 
 ## Checks and shutdown
 

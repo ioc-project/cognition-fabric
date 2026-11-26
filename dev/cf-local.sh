@@ -448,15 +448,17 @@ case "${1:-}" in
     validate_noa_modes
     mode="$NOA_MODE"
     require_docker_compose
-    require_local_cf_containers
     if [[ "$mode:$NOA_ENFORCEMENT_MODE" = published:proxy ]]; then
+      # The controller manages its own NOA project and only needs the platform APIs.
       require_env NOA_MAS_ID AI_GATEWAY_BASE_URL AI_GATEWAY_API_KEY
-      require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
+      require_service http://localhost:9002/api/internal/diagnostics/health 'CFN'
       require_service "http://localhost:9002/api/multi-agentic-systems/$NOA_MAS_ID" 'Assigned NOA MAS (onboard it and wait for the CFN heartbeat)'
       native_noa up
     elif [[ "$mode" = published ]]; then
+      require_local_cf_containers
       compose --profile full-mas up --no-build --no-deps noa-trip-planner
     else
+      require_local_cf_containers
       repo="$samples_dir/noa-trip-planner"
       [[ -f "$repo/pyproject.toml" && -f "$repo/src/noa_trip_planner/enforcement.py" ]] || fail "Missing CF-owned NOA source at $repo. Check the monorepo sample files."
       running="$(compose --profile full-mas ps --status running --services noa-trip-planner)" || fail "Could not inspect the NOA container. Check Docker Compose."

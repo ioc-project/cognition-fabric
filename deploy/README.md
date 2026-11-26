@@ -33,6 +33,20 @@ make -C deploy up enforcement=envoy    # after the selected flavor's setup below
 make -C deploy down                    # stop the stack, volumes are preserved
 ```
 
+With Go Task installed, you can also start and stop the default deployment from
+the monorepo root.
+
+```bash
+task deploy:up
+task deploy:down
+```
+
+Task loads the root `.env` before calling Make. The shortcuts pass no Makefile
+options. Use the Makefile directly for a custom `STACK_ENV` or to set options such
+as `profile` and `enforcement`. The Task shortcuts also read `COMPOSE_PROJECT_NAME`
+from the root `.env` when it is unset in the shell. `make -C deploy` reads it from
+the shell environment. Use the same entry point for both up and down.
+
 To use Compose directly from the monorepo root, load the same environment:
 
 ```bash
@@ -118,9 +132,41 @@ with an overlay compose file and example configs. They are not part of the base
 stack; start one with `make -C deploy up enforcement=envoy` or `enforcement=shadi`. Setup
 for each is in [`enforcement/README.md`](enforcement/README.md). Both adapters
 use CFN directly for decisions and audits. Their default examples start
-unprovisioned and reject protected traffic. Attaching/activating a MAS is a
-separate developer workflow; adding `profile=full-mas` preserves the existing
-NOA image and does not wire it to the proxy.
+unprovisioned and reject protected traffic. The `full-mas` profile runs the
+original standalone NOA sample. The native A2A workflow below supplies its own
+Envoy instance and controller-managed activation.
+
+### Native NOA A2A with Envoy
+
+1. Start the base platform with `make -C deploy up` or `task deploy:up`. Keep
+   CFN's HTTP and gRPC ports `9002` and `9003` and the OTel collector port
+   `4318` available to the NOA launcher. Keep the NOA API port free for the
+   native project.
+2. Register NOA and associate the online Demo CE in the deployed Management
+   instance. Follow the MAS registration and ID steps in the [NOA onboarding guide](../dev/README.md#noa-onboarding-and-proxy-mode)
+   and use `NOA_MAS_ID` and `NOA_MCP_SERVER_ID` from that deployment.
+3. Save a copy of the [NOA Demo CE policy](../dev/noa-demo-ce.example.json) as
+   `.local/deployment-noa-demo-ce.json`. Replace `REPLACE_WITH_NOA_MAS_ID` and
+   `REPLACE_WITH_NOA_MCP_SERVER_ID` with the deployment's IDs. If the CE serves
+   other MASes, include their existing policy entries in the copy. Set
+   `DEMO_CE_CONFIG_FILE=../.local/deployment-noa-demo-ce.json` in `.env` and run
+   `make -C deploy up` or `task deploy:up` again to apply the mount. Wait for
+   the associated CE to show as online in Management.
+
+4. Start native NOA and its controller-managed Envoy from the repository root:
+
+   ```bash
+   NOA_MODE=published NOA_ENFORCEMENT_MODE=proxy task run:full-mas
+   ```
+
+The native project uses the deployed CFN and collector and manages its own
+containers. It uses `PROXY_REGISTRY` and selects Proxy tags through
+`NOA_PROXY_*_TAG`. See [native image settings](../dev/README.md#noa-onboarding-and-proxy-mode).
+Before sending requests, check that `task noa:status` reports the deployment
+active and that the NOA API's `/ready` endpoint returns HTTP 200. Use
+`task proxy:logs` for the controller logs. Stop the foreground task or run
+`task noa:down` before bringing down the platform with `make -C deploy down`
+or `task deploy:down`.
 
 ## Services
 
