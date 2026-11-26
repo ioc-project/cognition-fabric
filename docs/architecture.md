@@ -11,8 +11,9 @@ Cognition Fabric (CF) connects multi-agent systems (MAS) to Cognition Engines
 configured interactions and asks the Cognition Fabric Node (CFN) for a
 disposition. CFN routes the request to one eligible CE and records audit
 evidence. The **System for Cognitive Observability, Provenance and Explainability
-(SCOPE)** processes MAS telemetry, owns the Cognition Store and serves Analytics
-APIs that CEs call directly.
+(SCOPE)** processes MAS telemetry and serves Analytics APIs for CE evidence reads.
+In the current implementation, it also hosts the Cognition Store API, through
+which CEs submit and retrieve findings.
 
 CF manages workspaces, CFN and CE registrations, and MAS definitions, including
 declared agents, tools, configuration and assignments. It tracks component
@@ -31,7 +32,7 @@ boundary.
 The monorepo builds the PostgreSQL-based **`ioc-scale-db`** image and deploys it
 as the shared database server for CF and SCOPE. The server hosts separate databases
 for CF Management inventory and configuration, CFN audit records, and the
-SCOPE-owned Cognition Store. The deployment stack and enforcement overlays live in
+Cognition Store. The deployment stack and enforcement overlays live in
 [`deploy/`](../deploy/README.md).
 
 ## Internal components
@@ -55,6 +56,10 @@ the MAS deployment at the level of its external interfaces.
 CE registration, MAS reads, evaluation, health probes and lifecycle callbacks
 are separate flows. RPC and HTTP responses return on the corresponding request
 connection.
+
+The CE-to-Cognition Store arrow represents logical reads and writes through
+SCOPE's Cognition Store API. The API service performs the database operations
+on the CE's behalf.
 
 ## State and identity
 
@@ -216,6 +221,30 @@ the standard deployment, that endpoint serves **Default Workspace**.
 
 The Management and CE OpenAPI documents define the full request schemas and
 response codes.
+
+### SCOPE Analytics and Cognition Store APIs
+
+CEs currently use two HTTP API groups served by SCOPE:
+
+| API | CE operation | Backing storage in the current stack |
+| --- | --- | --- |
+| **Analytics APIs** | Read telemetry and analysis evidence. | ClickHouse and Neo4j. |
+| **Cognition Store API** | Submit findings and retrieve previously stored CE data. | PostgreSQL database `cognition_store` in `ioc-scale-db`. |
+
+In the current [Compose stack](../deploy/docker-compose.yml), the
+`ioc-scale-oxp-api` container, using the `ioc-analytics-api` image, serves both
+API groups. The sample CEs use `GET` and `POST` on
+`/api/v1/cognition-store/findings`; see the
+[Demo CE client](../samples/demo-ce/internal/oxp/oxp.go) and
+[Template CE client](../samples/template-ce/src/cognition_store.py).
+
+The telemetry workers read spans and build or enrich the knowledge graph using
+ClickHouse and Neo4j. The PostgreSQL Cognition Store persists CE-submitted data
+through its API.
+
+Cognition Store's placement under SCOPE describes the current implementation.
+It may move under CF in a later release. Its future ownership and the release
+scope of any move remain open.
 
 ## Onboarding and configuration
 

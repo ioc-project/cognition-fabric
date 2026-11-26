@@ -6,8 +6,11 @@ interactions and calls CF's Enforcement API for runtime decisions. Active APIs
 for direct MAS engagement are planned.
 
 The standard CF deployment includes the **System for Cognitive Observability,
-Provenance and Explainability (SCOPE)**. SCOPE processes MAS telemetry, owns the
-Cognition Store and serves the Analytics APIs that CEs call directly.
+Provenance and Explainability (SCOPE)**. SCOPE processes MAS telemetry and serves
+Analytics APIs for CE evidence reads. In the current implementation, it also
+hosts the Cognition Store API, through which CEs submit and retrieve findings.
+Cognition Store may move under CF in a later release; its long-term placement
+remains open.
 
 Read the [Cognition Fabric architecture](docs/architecture.md) for the component
 diagram, API boundaries, and runtime flows.
