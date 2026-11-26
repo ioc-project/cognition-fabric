@@ -1,0 +1,9 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Notifications are opt-in. Add SCOPE filter expressions and reachable callbacks:
+# rules:
+#   - rule: 'type == "tool.completed"'
+#     callback_url: "http://host.docker.internal:9100/callback"
+rules: []

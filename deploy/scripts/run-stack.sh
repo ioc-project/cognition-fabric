@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-# Boot, inspect and stop the whole CF + OXP + enforcement proxy stack.
+# Boot, inspect and stop the whole CF + SCOPE + enforcement proxy stack.
 # Driven by the Makefile; run `make help` for the user-facing interface.
 set -euo pipefail
 
@@ -153,8 +153,8 @@ selected_services() {
   "${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} config --services
 }
 
-# Poll until each container is running/healthy, or exited 0. Workers that lack
-# API keys restart in a loop, so a timeout names the offenders instead of hanging.
+# Poll until each container is running/healthy, or exited 0. A timeout names
+# the services that have not settled instead of hanging.
 wait_for_stack() {
   local timeout="${STACK_WAIT_TIMEOUT:-180}"
   [[ "${timeout}" =~ ^[1-9][0-9]*$ ]] || die "STACK_WAIT_TIMEOUT must be positive seconds"
