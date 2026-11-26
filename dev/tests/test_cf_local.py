@@ -156,6 +156,13 @@ class LocalLauncherTests(unittest.TestCase):
             self.assertEqual(args[args.index("--project-directory") + 1], str(deployment))
             self.assertIn(str(deployment / "docker-compose.yml"), args)
             self.assertEqual(command["cwd"], str(deployment))
+        services = self.last_up()["args"]
+        self.assertIn("ioc-analytics-api", services)
+        self.assertIn("event-exporter", services)
+        self.assertIn("scope-clickhouse-init", services)
+        self.assertIn("scope-rabbitmq-init", services)
+        self.assertNotIn("embedding", services)
+        self.assertNotIn("mce", services)
 
     def test_missing_bundled_compose_fails_before_docker(self):
         (self.cfn / "deploy/docker-compose.yml").unlink()
@@ -450,10 +457,34 @@ class ImageComposeTests(unittest.TestCase):
                                  "ioc-scale-enforcement-proxy-shadi-verifier"):
                         if name in services:
                             self.assertTrue(services[name]["image"].startswith("ghcr.io/cisco-eti/"))
-                    self.assertEqual(services["oxp-api"]["environment"]["POSTGRES_PORT"], "5432")
+                    api = services["ioc-analytics-api"]
+                    self.assertEqual(api["environment"]["POSTGRES_PORT"], "5432")
+                    self.assertEqual(api["environment"]["SCOPE_API_RELOAD"], "false")
+                    self.assertEqual(api["environment"]["SCOPE_ENABLE_COGNITION_FABRIC_ENDPOINTS"], "true")
+                    self.assertEqual(api["environment"]["CACHE_ENABLED"], "false")
+                    self.assertEqual(services["ioc-scale-cf-demo-ce"]["environment"]["OXP_API_URL"],
+                                     "http://ioc-analytics-api:8000")
+                    retired = {"oxp-api", "embedding", "mce", "grouping", "analysis",
+                               "hierarchical-grouping", "decision-block", "stateful-eval"}
+                    self.assertFalse(retired.intersection(services))
+                    for name, image in (
+                        ("ioc-analytics-api", "scope-cognition-fabric-ioc-analytics-api"),
+                        ("event-exporter", "scope-cognition-fabric-event-exporter"),
+                        ("norm", "scope-norm-worker"),
+                    ):
+                        self.assertEqual(services[name]["image"],
+                                         f"ghcr.io/ioc-project/container-images/{image}:latest")
+                    exporter = services["event-exporter"]
+                    self.assertEqual(exporter["ports"][0]["published"], "4417")
+                    self.assertEqual(exporter["environment"]["GRPC_PORT"], "4417")
+                    self.assertEqual(exporter["volumes"][0]["target"], "/config.yaml")
+                    self.assertTrue(exporter["volumes"][0]["read_only"])
+                    for volume in ("oxp_clickhouse_data", "oxp_neo4j_data"):
+                        self.assertEqual(config["volumes"][volume]["name"],
+                                         f"ioc-scale-cf-deployment_{volume}")
                     self.assertEqual(services["ioc-scale-db"]["environment"]["POSTGRES_USER"],
                                      "postgresUser")
-                    self.assertNotIn("DEPLOYMENT_ONLY", services["oxp-api"]["environment"])
+                    self.assertNotIn("DEPLOYMENT_ONLY", api["environment"])
                     self.assertNotIn("DEPLOYMENT_ONLY", services["norm"]["environment"])
 
     def test_cf_and_proxy_registry_fallbacks_and_overrides_are_independent(self):
@@ -515,15 +546,63 @@ class ImageComposeTests(unittest.TestCase):
                         for name, repository in proxy_images.items():
                             self.assertEqual(services[name]["image"],
                                              f"{proxy_registry}/{repository}:0.0.1-alpha")
-                        self.assertTrue(services["oxp-api"]["image"].startswith(
-                            "ghcr.io/cisco-eti/oxp/container-images/"))
+                        self.assertTrue(services["ioc-analytics-api"]["image"].startswith(
+                            "ghcr.io/ioc-project/container-images/"))
                         self.assertTrue(services["noa-trip-planner"]["image"].startswith(
                             "ghcr.io/cisco-eti/claris/container-images/"))
 
+    def test_scope_image_defaults_and_overrides(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            deployment = root / "deploy"
+            deployment.mkdir()
+            composefile = deployment / "docker-compose.yml"
+            shutil.copyfile(ROOT_DIR / "deploy/docker-compose.yml", composefile)
+            envfile = root / ".env"
+            envfile.write_text(
+                "IOC_SCALE_DB_USER=test\nIOC_SCALE_DB_PASSWORD=test\n"
+                "ADMIN_USER_PASSWORD=test\nNEXTAUTH_SECRET=test\n"
+            )
+            base_env = {key: os.environ[key] for key in ("PATH", "HOME", "DOCKER_CONFIG")
+                        if key in os.environ}
+            custom = {
+                "SCOPE_REGISTRY": "registry.example.invalid/scope",
+                "SCOPE_IMG_TAG": "norm-test",
+                "SCOPE_API_IMG_TAG": "api-test",
+                "SCOPE_EVENT_EXPORTER_IMG_TAG": "exporter-test",
+                "SCOPE_ENABLE_COGNITION_FABRIC_ENDPOINTS": "false",
+                "EVENT_EXPORTER_CONFIG_FILE": str(root / "custom-rules.yaml"),
+            }
+            for overrides in ({}, custom, custom | {"SCOPE_API_IMAGE": "example.invalid/api@sha256:" + "a" * 64}):
+                with self.subTest(overrides=overrides):
+                    result = subprocess.run(
+                        ["docker", "compose", "--env-file", str(envfile), "-f",
+                         str(composefile), "config", "--format", "json"],
+                        env=base_env | overrides, capture_output=True, text=True,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    services = json.loads(result.stdout)["services"]
+                    registry = overrides.get("SCOPE_REGISTRY", "ghcr.io/ioc-project/container-images")
+                    for name, image, tag_key in (
+                        ("norm", "scope-norm-worker", "SCOPE_IMG_TAG"),
+                        ("ioc-analytics-api", "scope-cognition-fabric-ioc-analytics-api", "SCOPE_API_IMG_TAG"),
+                        ("event-exporter", "scope-cognition-fabric-event-exporter", "SCOPE_EVENT_EXPORTER_IMG_TAG"),
+                    ):
+                        expected = f"{registry}/{image}:{overrides.get(tag_key, 'latest')}"
+                        if name == "ioc-analytics-api":
+                            expected = overrides.get("SCOPE_API_IMAGE", expected)
+                        self.assertEqual(services[name]["image"], expected)
+                    self.assertEqual(
+                        services["ioc-analytics-api"]["environment"]["SCOPE_ENABLE_COGNITION_FABRIC_ENDPOINTS"],
+                        overrides.get("SCOPE_ENABLE_COGNITION_FABRIC_ENDPOINTS", "true"),
+                    )
+                    self.assertEqual(services["event-exporter"]["volumes"][0]["source"],
+                                     overrides.get("EVENT_EXPORTER_CONFIG_FILE",
+                                                   str(deployment / "event-exporter-config.yaml")))
+
     def test_infrastructure_reads_root_env_and_ignores_deployment_private_env(self):
         services = (
-            "oxp-api", "norm", "embedding", "mce", "grouping", "analysis",
-            "hierarchical-grouping", "decision-block", "stateful-eval", "noa-trip-planner",
+            "ioc-analytics-api", "norm", "noa-trip-planner",
         )
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -535,7 +614,7 @@ class ImageComposeTests(unittest.TestCase):
             base.write_text("services:\n" + "".join(
                 f"  {name}:\n    image: example.invalid/fixture\n"
                 "    env_file: .env\n    environment:\n      BASE_VALUE: preserved\n"
-                + ("      POSTGRES_PORT: ${IOC_SCALE_DB_PORT}\n" if name == "oxp-api" else "")
+                + ("      POSTGRES_PORT: ${IOC_SCALE_DB_PORT}\n" if name == "ioc-analytics-api" else "")
                 for name in services
             ))
             env = {key: value for key, value in os.environ.items()
@@ -557,7 +636,7 @@ class ImageComposeTests(unittest.TestCase):
                     for name in services:
                         expected = {"ROOT_MARKER": "from-monorepo", "BASE_VALUE": "preserved",
                                     "IOC_SCALE_DB_PORT": "5456"}
-                        if name == "oxp-api":
+                        if name == "ioc-analytics-api":
                             expected["POSTGRES_PORT"] = "5432"
                         self.assertEqual(model["services"][name]["environment"], expected)
 

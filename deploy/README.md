@@ -26,7 +26,7 @@ service is running, healthy or finished:
 
 ```bash
 make -C deploy status                  # list containers
-make -C deploy logs service=oxp-api    # follow one service (omit service= for all)
+make -C deploy logs service=ioc-analytics-api # follow one service (omit service= for all)
 make -C deploy pull                    # pull the configured images
 make -C deploy up enforcement=envoy    # add an optional enforcement flavor (or shadi)
 make -C deploy down                    # stop the stack, volumes are preserved
@@ -40,9 +40,9 @@ docker compose --env-file .env -f deploy/docker-compose.yml --profile full-mas u
 ```
 
 `make -C deploy up` waits up to 180 seconds (`STACK_WAIT_TIMEOUT`) and names any service
-that is not ready. The OXP workers `embedding`, `mce` and `analysis` restart in
-a loop without `AI_GATEWAY_API_KEY` and `OPENAI_API_KEY`, so they are the usual
-cause. The Compose project name is pinned to `ioc-scale-cf-deployment`, so the
+that is not ready. SCOPE normalization needs no LLM credentials; on-demand API
+metrics and the optional NOA sample may require them.
+The Compose project name is pinned to `ioc-scale-cf-deployment`, so the
 stack and its default network keep the same names from any checkout.
 See [`scripts/run-stack.sh`](scripts/run-stack.sh).
 
@@ -61,17 +61,42 @@ can be overridden in root `.env` without editing the compose file:
   independently of CF. The mediation image uses `ENFORCEMENT_PROXY_MEDIATION_TAG`;
   Envoy and SHADi overlays use their respective `ENFORCEMENT_*_TAG` settings.
   These deployment tags remain `0.0.1-alpha`.
-- OXP workers: `OXP_REGISTRY` plus `OXP_IMG_TAG`.
-- `oxp-api`: `OXP_REGISTRY` plus `OXP_API_IMG_TAG`. The API is versioned
-  separately from the workers. Set `OXP_API_IMAGE` only to override the full
-  image reference.
-- NOA sample app: `CLARIS_REGISTRY` plus `NOA_IMAGE_TAG`.
+- SCOPE images: `SCOPE_REGISTRY` defaults to `ghcr.io/ioc-project/container-images`.
+  `norm` uses `scope-norm-worker` with `SCOPE_IMG_TAG`.
+  `ioc-analytics-api` uses `scope-cognition-fabric-ioc-analytics-api` with
+  `SCOPE_API_IMG_TAG`; `event-exporter` uses `scope-cognition-fabric-event-exporter`
+  with `SCOPE_EVENT_EXPORTER_IMG_TAG`. All tags default to `latest`.
+  Set `SCOPE_API_IMAGE` only to override the full API image reference.
+- Legacy NOA sample app: `CLARIS_REGISTRY` plus `NOA_IMAGE_TAG`. Its existing
+  image is retained until a replacement is available.
 
 Existing `.env` values take precedence over these defaults. To adopt the new CF
 images in an existing configuration, change `CF_REGISTRY` to
 `ghcr.io/ioc-project`. If Proxy images previously used a custom `CF_REGISTRY`,
-set that location explicitly through `PROXY_REGISTRY`. OXP and NOA keep their
-existing registry defaults. Existing tag overrides remain supported.
+set that location explicitly through `PROXY_REGISTRY`.
+
+#### Migrating an existing deployment
+
+The SCOPE integration follows `scope/integrations/cognition-fabric`: only `norm`
+runs as a background worker; enrichment and metrics are served on demand by the
+API. The former `embedding`, `mce`, `grouping`, `analysis`,
+`hierarchical-grouping`, `decision-block` and `stateful-eval` containers and the
+MCE config mount have been removed.
+
+Update root `.env` overrides: replace `OXP_REGISTRY`, `OXP_IMG_TAG`,
+`OXP_API_IMG_TAG`, `OXP_API_IMAGE`, `OXP_POSTGRES_DB`, `OXP_INFRA_PLATFORM`,
+`OXP_INIT_DELAY_SECONDS` and `CLARIS_WORKER_PLATFORM` with the corresponding
+`SCOPE_*` settings (worker platform is `SCOPE_WORKER_PLATFORM`). Use the new
+registry above rather than carrying over the old registry value. Add
+`SCOPE_EVENT_EXPORTER_IMG_TAG` if pinning the exporter release.
+
+Before upgrading, stop the old deployment using its old Compose file. If it has
+already been replaced, inspect `docker compose --env-file .env -f
+deploy/docker-compose.yml ps -a --orphans` and remove only the retired containers
+owned by this deployment. Avoid blanket `--remove-orphans` cleanup: local CF and
+enforcement workflows can share this project. The project/network name and legacy
+`oxp_*` volume keys are intentionally unchanged so existing ClickHouse and Neo4j
+data is reused. Do not remove volumes during the upgrade.
 
 The database image source is in this directory. See
 [`docker-db/`](docker-db/) for the Dockerfile and how to publish a new tag.
@@ -103,7 +128,8 @@ Other settings: `CF_DEMO_CE_TAG` (image tag), `DEMO_CE_NAME` (name in CFN),
 `DEMO_CE_LOG_FORMAT` (`console` or `json`), `LOG_LEVEL`, and `NO_COLOR`.
 `CE_CONTEXT_WAIT`, `CE_CONTEXT_ATTEMPTS`, and `CE_CONTEXT_RETRY_WAIT` control
 context retries. Evidence is selected per content rule in the JSON file.
-The CE uses `http://oxp-api:8000` for runtime context and Cognition Store access.
+The CE uses `http://ioc-analytics-api:8000` for runtime context and Cognition Store access.
+Its `OXP_API_URL` environment variable retains the name supported by the CE image.
 Pre-call events can also be published to `http://ioc-scale-cf-demo-ce:18000/events`
 from the Compose network (or `http://localhost:18000/events` from the host).
 See the [Demo CE configuration reference](../samples/docs-site/content/demo-ce/configuration.md)
@@ -128,7 +154,7 @@ for each is in [`enforcement/README.md`](enforcement/README.md).
 | `ioc-scale-cf-demo-ce` | 18001 (gRPC), 18000 (HTTP), loopback only | Go Demo CE with JSON configuration; default. See [Demo CE](#demo-ce) |
 | `ioc-scale-enforcement-proxy-mediation` | 9006 (gRPC), 9005 (HTTP) | Enforcement proxy mediation core. Audit destination is CFN; no internal database configured. Bound to 127.0.0.1 |
 
-### OXP infrastructure
+### SCOPE infrastructure
 
 | Service | Port | Description |
 |---------|------|-------------|
@@ -136,6 +162,20 @@ for each is in [`enforcement/README.md`](enforcement/README.md).
 | `neo4j` | 7474 (HTTP), 7687 (Bolt) | Knowledge graph store |
 | `clickhouse-server` | 8123 (HTTP), 9009 (native TCP) | Raw telemetry store the workers read sessions from |
 | `otel-collector` | 4317 (OTLP gRPC), 4318 (OTLP HTTP) | Receives spans from instrumented apps and writes them to ClickHouse |
+| `ioc-analytics-api` | 8081 | SCOPE API with Cognition Fabric endpoints enabled and caching disabled |
+| `event-exporter` | 4417 (OTLP gRPC) | Receives runtime-event logs and delivers configured callback notifications |
+
+Unlike SCOPE's standalone integration, this deployment keeps bundled ClickHouse
+and the OTel Collector rather than requiring an external telemetry store.
+The API continues using the bundled `cognition_store` PostgreSQL database.
+No Redis cache or background enrichment containers are needed.
+
+Send runtime-event logs directly to `localhost:4417` from the host or
+`event-exporter:4417` on the Compose network. The collector's existing ClickHouse
+pipelines are unchanged; it does not forward logs to the exporter automatically.
+Notification rules in [`event-exporter-config.yaml`](event-exporter-config.yaml)
+are opt-in (`rules: []`). Add filter expressions and reachable callback URLs,
+or set `EVENT_EXPORTER_CONFIG_FILE` to a custom rules file.
 
 ClickHouse publishes its native port on host `9009` rather than `9000`, which
 already belongs to `ioc-scale-cf-mgmt-svc`. Inside the compose network it is
@@ -150,29 +190,23 @@ the pipeline.
 
 The collector writes spans, but it does not know about the columns the workers
 read or about RabbitMQ. Two one-shot services configure that connection on
-startup. `oxp-clickhouse-init` waits five seconds, adds the materialized trace
-columns, and creates the RabbitMQ-backed view. `oxp-rabbitmq-init` then binds
+startup. `scope-clickhouse-init` waits five seconds, adds the materialized trace
+columns, and creates the RabbitMQ-backed view. `scope-rabbitmq-init` then binds
 the `claris` exchange to the `new_session_in` queue declared by `norm`.
 
 The operations are idempotent and run automatically with `docker compose up`.
-Set `OXP_INIT_DELAY_SECONDS` to change the initial grace period. See
+The `claris` exchange and worker-internal `/claris` paths are still used by the
+upstream SCOPE image and must not be renamed.
+Set `SCOPE_INIT_DELAY_SECONDS` to change the initial grace period. See
 [`scripts/README.md`](scripts/README.md) for verification and recovery commands.
 
-### OXP workers
+### SCOPE worker
 
-Pipeline workers from OXP. They expose no ports and communicate over
-RabbitMQ, entering at `norm` and fanning out from there.
+The normalization worker exposes no ports and receives sessions over RabbitMQ.
 
 | Service | Description |
 |---------|-------------|
 | `norm` | Normalization; pipeline entry point |
-| `embedding` | Generates embeddings |
-| `mce` | Metric computation |
-| `grouping` | Session grouping |
-| `analysis` | Analysis layer |
-| `hierarchical-grouping` | Hierarchical grouping |
-| `decision-block` | Routes embedded sessions to evaluation queues |
-| `stateful-eval` | Stateful session evaluation |
 
 ### MAS sample app
 
@@ -205,7 +239,7 @@ See the root [`.env.example`](../.env.example) for all available configuration o
 - `ADMIN_USER_PASSWORD` - Admin password for mgmt backend
 - `BFF_GRPC_PORT`, `BFF_HTTP_PORT` - Host ports (bound to 127.0.0.1) for
   `ioc-scale-enforcement-proxy-mediation`. The defaults are `9006` (gRPC) and `9005` (HTTP), chosen so they do not
-  clash with `oxp-api` (host `8081`) or the enforcement proxy's own compose
+  clash with `ioc-analytics-api` (host `8081`) or the enforcement proxy's own compose
   (`8082`, `18083`).
 - `BFF_GRPC_ALLOW_INSECURE_LOCAL` - Defaults to `true` so the core starts without
   mTLS. Local development only; set it to `false` and configure TLS elsewhere.
@@ -217,18 +251,20 @@ See the root [`.env.example`](../.env.example) for all available configuration o
   Defaults are `ioc-scale-cfn-svc:9003`, `2s` and `true` for the local stack.
 - `CF_REGISTRY`, `*_TAG` - Source and version of the CF service images (see above)
 - `PROXY_REGISTRY`, `ENFORCEMENT_*_TAG` - Source and version of the enforcement images
-- `OXP_REGISTRY`, `OXP_IMG_TAG`, `OXP_API_IMG_TAG` - Source and version of the OXP worker and API images
-- `AI_GATEWAY_API_KEY`, `OPENAI_API_KEY` - Required by `embedding`, `mce`, and
-  `analysis`. Without them those workers exit on startup and restart in a loop.
-  The two are read by different workers and can hold the same gateway key.
-- `AI_GATEWAY_BASE_URL` - Endpoint the `embedding` worker calls. Set it when
-  using a gateway; it otherwise defaults to `https://api.openai.com/v1`.
+- `SCOPE_REGISTRY`, `SCOPE_IMG_TAG`, `SCOPE_API_IMG_TAG`,
+  `SCOPE_EVENT_EXPORTER_IMG_TAG` - Source and version of the SCOPE images
+- `SCOPE_API_IMAGE` - Optional full API image reference
+- `SCOPE_ENABLE_COGNITION_FABRIC_ENDPOINTS` - Defaults to `true`
+- `EVENT_EXPORTER_CONFIG_FILE` - Notification rules file, relative to `deploy/`
+- `OPENAI_API_KEY` - Optional LLM credentials for on-demand API metrics
+- `AI_GATEWAY_API_KEY`, `AI_GATEWAY_BASE_URL` - Credentials and endpoint for NOA
 - `CLICKHOUSE_*` - Read by the workers and the OTel collector. `CLICKHOUSE_HOST`
   defaults to the bundled `clickhouse-server`; set it to `host.docker.internal`
   to use an external instance instead.
-- `NEO4J_PASSWORD` - Shared by `neo4j`, `oxp-api` and the OXP workers; defaults to
+- `NEO4J_PASSWORD` - Shared by `neo4j`, `ioc-analytics-api` and `norm`; defaults to
   `testpassword` when unset. `NEO4J_USERNAME` (default `neo4j`) is shared the same way.
-- `OXP_INIT_DELAY_SECONDS` - Grace period before automatic ClickHouse/RabbitMQ
+- `SCOPE_POSTGRES_DB` - Cognition Store database, defaults to `cognition_store`
+- `SCOPE_INIT_DELAY_SECONDS` - Grace period before automatic ClickHouse/RabbitMQ
   bridge initialization starts. Defaults to 5 seconds.
 - `NOA_*` - The sample app. It reuses `AI_GATEWAY_BASE_URL` and
   `AI_GATEWAY_API_KEY`, so that key needs the chat model on its allow-list too.
@@ -240,15 +276,17 @@ See the root [`.env.example`](../.env.example) for all available configuration o
 
 Platform is set per service through the environment, because the images differ:
 
-- `CLARIS_WORKER_PLATFORM` (default `linux/amd64`) - the worker images are
-  published for amd64 only.
-- `OXP_INFRA_PLATFORM` (default `linux/arm64`) - RabbitMQ and Neo4j. These must
+- `SCOPE_WORKER_PLATFORM` (default `linux/amd64`) - API, normalization worker
+  and legacy NOA image.
+- `SCOPE_INFRA_PLATFORM` (default `linux/arm64`) - RabbitMQ, Neo4j, ClickHouse
+  and the OTel collector. These must
   match the host architecture; RabbitMQ's Erlang runtime crashes during
   feature-flag setup when emulated. Set to `linux/amd64` on an Intel/AMD host.
 
 ## Access
 
-Pulling the worker images requires access to the `cisco-eti` GHCR packages:
+Pulling the SCOPE images requires access to the `ioc-project` GHCR packages.
+Legacy NOA and enforcement images still use `cisco-eti` packages:
 
 ```bash
 echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_USERNAME" --password-stdin

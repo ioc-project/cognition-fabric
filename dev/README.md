@@ -72,10 +72,10 @@ cp .env.example .env
 ```
 
 Supply your own gateway/model credentials and `NEXTAUTH_SECRET`. Set
-`ENFORCEMENT_PLATFORM` for your host (`linux/arm64` or `linux/amd64`). OXP
+`ENFORCEMENT_PLATFORM` for your host (`linux/arm64` or `linux/amd64`). SCOPE
 infrastructure defaults to `linux/arm64`; on an Intel/AMD host, add
-`OXP_INFRA_PLATFORM=linux/amd64` to root `.env` so those containers run natively.
-OXP workers default to `linux/amd64`. Optional OXP and infrastructure tuning
+`SCOPE_INFRA_PLATFORM=linux/amd64` to root `.env` so those containers run natively.
+The SCOPE normalization worker defaults to `linux/amd64`. Optional SCOPE and infrastructure tuning
 variables are listed in the root template's "Optional infrastructure overrides"
 section. The root template keeps CF settings,
 required external configuration and deliberate overrides such as the ClickHouse

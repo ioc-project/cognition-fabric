@@ -1,3 +1,4 @@
+-- The upstream SCOPE worker still uses the claris exchange.
 ALTER TABLE default.otel_traces
     ADD COLUMN IF NOT EXISTS session_id String MATERIALIZED
         multiIf(

@@ -26,6 +26,7 @@ while [ "$attempt" -le 30 ]; do
     sleep 2
 done
 
+# Keep the exchange name used by the upstream SCOPE normalization worker.
 rabbitmqadmin \
     -H "$RABBITMQ_HOST" \
     -P "$RABBITMQ_MANAGEMENT_PORT" \
