@@ -225,9 +225,6 @@ and Observed remain independent, and an unavailable source never substitutes the
 other graph or its JSON. Stage 4 uses only the stored Management response;
 optional observed-source requests remain stage 5.
 
-The standalone [NOA declaration](../../samples/noa-trip-planner/mas/noa-mas-local.json)
-contains runtime agents, actual tools/assignments and a partial source projection.
-NOA's Python/HTTP tools are not MCP, so the declaration contains no invented MCP
-provider. No application code, instrumentation or runtime configuration changes
-are required. The operator can paste this JSON in a deployed UI without reading
-source files inside a cluster.
+The [NOA A2A declaration](../../samples/noa-trip-planner-a2a/mas/noa-a2a-mas.json)
+contains the networked agents, MCP server and tool assignments, and a partial
+topology. The operator can paste this JSON into the MAS form.

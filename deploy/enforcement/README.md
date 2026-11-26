@@ -1,7 +1,7 @@
 # Enforcement (optional)
 
-The platform starts CF, OXP, Demo CE and the published mediation compatibility
-service. Add one optional proxy flavor through the existing Makefile interface:
+The platform starts CF, SCOPE, and Demo CE. Add one optional Proxy flavor through
+the Makefile interface:
 
 | Flavor | Components | Configuration guide |
 | --- | --- | --- |
@@ -23,36 +23,33 @@ make -C deploy down
 
 Use `enforcement=shadi` for the other flavor. Only one flavor may exist at a time;
 `up` refuses if the other's containers exist, even stopped installer jobs.
-`status/logs/down` cover both flavors and all profiles. `down` preserves volumes.
+`status/logs/down` cover both flavors. `down` preserves volumes.
+`task deploy:up` reads `DEPLOY_ENFORCEMENT` from root `.env`. Set it to
+`envoy` or `shadi` to select an overlay, or leave it empty for the base stack.
 `config/pull` work before private startup files exist. `doctor` checks inputs but
 starts no containers; for Envoy it also prepares ignored bootstrap files.
 
-Both current adapters call CFN directly for decisions and audit delivery. Neither
-uses the base mediation service as a journal or activation controller. Mediation
-keeps its BFF API, CFN audit persistence mode and loopback ports for existing clients.
+Both adapters call CFN directly for decisions and audit delivery.
 
 This is component deployment. MAS attachment, identities, routes and controller
 activation belong to the MAS developer. Default examples are unprovisioned and
-reject protected traffic. `profile=full-mas` retains the existing NOA sample image;
-it does not attach that sample to the proxy or migrate it to NOA A2A.
+reject protected traffic. The [NOA A2A Task workflow](../../dev/README.md#noa-onboarding-and-proxy-mode)
+starts its own Envoy and enrolls its MAS with the Proxy controller.
 
-## Images and rollback
+## Proxy images
 
 The maintained source is [ioc-project/enforcement-proxy](https://github.com/ioc-project/enforcement-proxy).
-The `PROXY_REGISTRY` setting defaults to `ghcr.io/cisco-eti`. All four Proxy
+The `PROXY_REGISTRY` setting defaults to `ghcr.io/ioc-project`. All three Proxy
 image tags default to `latest`.
 
 | Component | Package | Tag override | Full-reference override |
 | --- | --- | --- | --- |
-| Mediation | `ioc-scaling-enforcement-mediation` | `ENFORCEMENT_PROXY_MEDIATION_TAG` | `ENFORCEMENT_PROXY_MEDIATION_IMAGE` |
-| Sidecar | `ioc-scaling-enforcement-proxy-sidecar` | `ENFORCEMENT_SIDECAR_TAG` | `ENFORCEMENT_SIDECAR_IMAGE` |
-| Wasm | `ioc-scaling-enforcement-proxy-wasm` | `ENFORCEMENT_WASM_TAG` | `ENFORCEMENT_WASM_IMAGE` |
-| SHADi | `ioc-scaling-enforcement-proxy-shadi-verifier` | `ENFORCEMENT_SHADI_TAG` | `ENFORCEMENT_SHADI_IMAGE` |
+| Sidecar | `ioc-sidecar` | `ENFORCEMENT_SIDECAR_TAG` | `ENFORCEMENT_SIDECAR_IMAGE` |
+| Wasm | `ioc-wasm` | `ENFORCEMENT_WASM_TAG` | `ENFORCEMENT_WASM_IMAGE` |
+| SHADi | `ioc-shadi-verifier` | `ENFORCEMENT_SHADI_TAG` | `ENFORCEMENT_SHADI_IMAGE` |
 
 A full reference takes precedence over `PROXY_REGISTRY` and the component's tag.
-Settings in an existing root `.env` remain explicit overrides. For example, an old
-`ENFORCEMENT_PROXY_MEDIATION_TAG=0.0.1-alpha` still selects alpha until the operator
-changes or removes it. The launcher never rewrites `.env`.
+Settings in an existing root `.env` remain explicit overrides.
 
 `make pull` explicitly refreshes selected images. Compose can also refresh
 `latest` during `up`, even when cached; `up` adds no extra pull command. Select
@@ -62,16 +59,14 @@ before updating. Treat sidecar/Wasm as a qualified pair. Example settings to fil
 with recorded digests in root `.env`:
 
 ```dotenv
-ENFORCEMENT_PROXY_MEDIATION_IMAGE=ghcr.io/cisco-eti/ioc-scaling-enforcement-mediation@sha256:<recorded-mediation-digest>
-ENFORCEMENT_SIDECAR_IMAGE=ghcr.io/cisco-eti/ioc-scaling-enforcement-proxy-sidecar@sha256:<recorded-sidecar-digest>
-ENFORCEMENT_WASM_IMAGE=ghcr.io/cisco-eti/ioc-scaling-enforcement-proxy-wasm@sha256:<recorded-wasm-digest>
-ENFORCEMENT_SHADI_IMAGE=ghcr.io/cisco-eti/ioc-scaling-enforcement-proxy-shadi-verifier@sha256:<recorded-shadi-digest>
+ENFORCEMENT_SIDECAR_IMAGE=ghcr.io/ioc-project/ioc-sidecar@sha256:<recorded-sidecar-digest>
+ENFORCEMENT_WASM_IMAGE=ghcr.io/ioc-project/ioc-wasm@sha256:<recorded-wasm-digest>
+ENFORCEMENT_SHADI_IMAGE=ghcr.io/ioc-project/ioc-shadi-verifier@sha256:<recorded-shadi-digest>
 ```
 
 For a deliberate upgrade or rollback, run `make -C deploy down`, select the
 compatible images and restore matching private configuration, then run
-`doctor`, `pull`, `up` with the chosen flavor/profile. Volumes are retained.
-An arbitrary old alpha image is not guaranteed to accept current configuration.
+`doctor`, `pull`, `up` with the chosen flavor. Volumes are retained.
 Envoy restarts after installer updates and is recreated after prepared content
 changes; uninterrupted plugin upgrades are not a deployment guarantee.
 
@@ -86,7 +81,6 @@ All host ports below bind to `127.0.0.1`.
 | `ioc-scale-enforcement-proxy-sidecar-installer` | none; exits successfully after install |
 | `ioc-scale-enforcement-proxy-wasm-installer` | none; exits successfully after install |
 | `ioc-scale-enforcement-proxy-shadi-verifier` | 9013 |
-| `ioc-scale-enforcement-proxy-mediation` | 9006 gRPC, 9005 HTTP; base service |
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
@@ -101,8 +95,7 @@ All host ports below bind to `127.0.0.1`.
 | `AUDIT_REDACT_PATTERNS` | token patterns | JSON regex list for capture redaction |
 | `ENFORCEMENT_PLATFORM` | `linux/arm64` | All optional flavor containers; use `linux/amd64` on Intel/AMD |
 
-Mediation retains `BFF_*` transport/host-port settings; those are separate from
-adapter audit delivery. Plaintext options are local development exceptions.
+Plaintext options are local development exceptions.
 The [root environment template](../../.env.example) lists optional paths and
 host-port overrides. Flavor guides describe read-only configuration mounts and
 MAS-owner handoff; upstream owns the authoritative schemas.

@@ -67,8 +67,7 @@ without rewriting existing operator configuration.
 
 The verifier requires `ENFORCEMENT_FAILURE_POSTURE=fail_closed` and
 `CF_ENFORCEMENT_TIMEOUT` below 4 seconds (default 2 seconds). Audit delivery uses
-`AUDIT_QUEUE_CAPACITY` and `AUDIT_RPC_TIMEOUT`, not the mediation service or
-`AUDIT_JOURNAL_*`.
+`AUDIT_QUEUE_CAPACITY` and `AUDIT_RPC_TIMEOUT` for direct delivery to CFN.
 
 The certificate script generates a throwaway CA, server certificate and a client
 certificate per URI, named after its last path segment. It refuses to overwrite

@@ -2,7 +2,7 @@
 
 This optional component runs Envoy, the published Go sidecar and traceparent
 Wasm filters, and a diagnostic Nginx upstream. Decisions and finalized audits go
-directly to CFN. The base mediation service remains for its own API clients.
+directly to CFN.
 
 This recipe starts components. MAS attachment, identities, routes and controller
 activation belong to the MAS developer. It does not attach NOA, onboard a MAS or
@@ -36,8 +36,6 @@ required; all runtime images are published, with no local image builds.
    make -C deploy logs service=ioc-scale-enforcement-proxy-envoy
    ```
 
-   To also start the existing NOA sample image, add `profile=full-mas` to
-   `doctor`, `pull` and `up`. This does not route its calls through Envoy.
    Switching flavors requires `make -C deploy down` first.
 
 4. Inspect the component and stop it when finished:

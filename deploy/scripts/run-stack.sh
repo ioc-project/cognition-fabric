@@ -17,7 +17,7 @@ project="${COMPOSE_PROJECT_NAME:-ioc-scale-cf-deployment}"
 
 usage() {
   cat <<'USAGE'
-Usage: make up|down|status|logs|config|pull|doctor [profile=full-mas] [enforcement=envoy|shadi] [service=<name>]
+Usage: make up|down|status|logs|config|pull|doctor [enforcement=envoy|shadi] [service=<name>]
        make help
 
 Environment:
@@ -29,7 +29,6 @@ Environment:
 (and healthy where a healthcheck exists) or has exited 0 (one-shot init jobs).
 `down` stops and removes containers and the network, and preserves volumes.
 `doctor` checks Docker, the environment file and the rendered Compose config.
-profile=full-mas adds the NOA sample app, which needs AI_GATEWAY_API_KEY.
 Demo CE needs a config file (demo-ce/config/config.json, or DEMO_CE_CONFIG_FILE).
 enforcement=envoy|shadi adds one optional enforcement flavor from enforcement/;
 it needs that flavor's config files (see enforcement/README.md). Only one flavor
@@ -48,20 +47,11 @@ action="${1:-up}"
 shift || true
 [[ $# -eq 0 ]] || die "${action} accepts no extra arguments"
 
-profile="${STACK_PROFILE:-}"
-case "${profile}" in
-  ""|full-mas) ;;
-  *) die "profile must be empty or full-mas" ;;
-esac
 enforcement="${STACK_ENFORCEMENT:-}"
 case "${enforcement}" in
   ""|envoy|shadi) ;;
   *) die "enforcement must be empty, envoy or shadi" ;;
 esac
-# Profiles are additive; the explicit flag below is the only selection made here.
-export COMPOSE_PROFILES=""
-profile_args=()
-[[ -z "${profile}" ]] || profile_args=(--profile "${profile}")
 compose_base=(docker compose -p "${project}" --project-directory "${root}" --env-file "${stack_env}" -f "${stack_compose}")
 # Selected flavor for up/config/pull/doctor.
 compose=("${compose_base[@]}")
@@ -90,12 +80,9 @@ preflight() {
   require_env
   require_value IOC_SCALE_DB_USER
   require_value IOC_SCALE_DB_PASSWORD
-  if [[ "${profile}" == "full-mas" ]]; then
-    require_value AI_GATEWAY_API_KEY
-  fi
   command -v python3 >/dev/null || die "python3 is required"
   local rendered
-  rendered="$("${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} config --format json)"
+  rendered="$("${compose[@]}" config --format json)"
   # Use Compose's resolved mounts rather than parsing dotenv path settings again.
   python3 -c '
 import json, pathlib, sys
@@ -143,14 +130,14 @@ refuse_other_flavor() {
   [[ -n "${enforcement}" ]] || return 0
   local other existing
   case "${enforcement}" in envoy) other=shadi ;; shadi) other=envoy ;; esac
-  existing="$("${compose_all[@]}" --profile '*' ps --all --services 2>/dev/null | sort)"
+  existing="$("${compose_all[@]}" ps --all --services 2>/dev/null | sort)"
   if [[ -n "$(comm -12 <(printf '%s\n' "${existing}") <(flavor_services "${other}") )" ]]; then
     die "enforcement flavor '${other}' is present; run 'make down' before starting '${enforcement}' (one flavor at a time)"
   fi
 }
 
 selected_services() {
-  "${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} config --services
+  "${compose[@]}" config --services
 }
 
 # Poll until each container is running/healthy, or exited 0. A timeout names
@@ -166,7 +153,7 @@ wait_for_stack() {
     services+=("${service}")
   done < <(selected_services)
   while :; do
-    pending="$("${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} ps --all --format json "${services[@]}" | python3 -c '
+    pending="$("${compose[@]}" ps --all --format json "${services[@]}" | python3 -c '
 import json, sys
 raw = sys.stdin.read().strip()
 rows = json.loads(raw) if raw.startswith("[") else [json.loads(l) for l in raw.splitlines() if l.strip()]
@@ -199,30 +186,29 @@ case "${action}" in
     preflight
     up_services=()
     while IFS= read -r service; do up_services+=("${service}"); done < <(selected_services)
-    "${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} up -d "${up_services[@]}"
+    "${compose[@]}" up -d "${up_services[@]}"
     wait_for_stack
     activation_note
     ;;
   down)
     require_env
-    # '*' also covers profiled services started with profile=full-mas.
-    "${compose_all[@]}" --profile '*' down
+    "${compose_all[@]}" down
     ;;
   status)
     require_env
-    "${compose_all[@]}" --profile '*' ps --all
+    "${compose_all[@]}" ps --all
     ;;
   logs)
     require_env
-    "${compose_all[@]}" --profile '*' logs --tail "${STACK_LOG_TAIL:-200}" -f ${STACK_SERVICE:+"${STACK_SERVICE}"}
+    "${compose_all[@]}" logs --tail "${STACK_LOG_TAIL:-200}" -f ${STACK_SERVICE:+"${STACK_SERVICE}"}
     ;;
   config)
     require_env
-    "${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} config
+    "${compose[@]}" config
     ;;
   pull)
     require_env
-    "${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} pull
+    "${compose[@]}" pull
     ;;
   doctor)
     preflight
@@ -231,7 +217,7 @@ case "${action}" in
     echo "compose config: ok"
     activation_note
     echo "images:"
-    "${compose[@]}" ${profile_args[@]+"${profile_args[@]}"} config --images | sort -u | sed 's/^/  /'
+    "${compose[@]}" config --images | sort -u | sed 's/^/  /'
     ;;
   *) usage >&2; exit 2 ;;
 esac
