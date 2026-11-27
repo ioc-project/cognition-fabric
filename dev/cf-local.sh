@@ -221,7 +221,7 @@ require_cf_checkouts() {
   require_checkout "$ui_dir" package.json
   require_checkout "$samples_dir/template-ce" pyproject.toml
   require_checkout "$samples_dir/demo-ce" go.mod
-  require_checkout "$samples_dir/noa-trip-planner" pyproject.toml
+  require_checkout "$samples_dir/noa-trip-planner-a2a" pyproject.toml
   [[ -f "$root_dir/go.work" ]] || fail "Missing root Go workspace."
 }
 
@@ -277,7 +277,7 @@ run_cf_tests() {
   printf 'CF tests: template CE\n'
   (cd "$samples_dir/template-ce" && uv run --frozen --extra test pytest)
   printf 'CF tests: NOA sample and declaration\n'
-  (cd "$samples_dir/noa-trip-planner" && uv run --frozen --group dev python -m pytest tests -q)
+  (cd "$samples_dir/noa-trip-planner-a2a" && uv run --frozen --group dev python -m pytest tests -q)
   printf 'CF tests: local development tools and automation\n'
   (cd "$root_dir" && task test:dev)
 }
@@ -308,15 +308,6 @@ run_cf_checks() {
   run_cf_tests
 }
 
-# NOA source/image selection and enforcement mode are independent settings.
-validate_noa_modes() {
-  export NOA_MODE="${NOA_MODE:-source}"
-  export NOA_ENFORCEMENT_MODE="${NOA_ENFORCEMENT_MODE:-direct}"
-  [[ "$NOA_MODE" = published || "$NOA_MODE" = source ]] || fail "Invalid NOA_MODE '$NOA_MODE'. Use published or source."
-  [[ "$NOA_ENFORCEMENT_MODE" = direct || "$NOA_ENFORCEMENT_MODE" = proxy ]] || fail "Invalid NOA_ENFORCEMENT_MODE '$NOA_ENFORCEMENT_MODE'. Use direct or proxy."
-  [[ "$NOA_MODE:$NOA_ENFORCEMENT_MODE" != source:proxy ]] || fail "The current proxy requires native NOA A2A. Set NOA_MODE=published for proxy mode, or use NOA_ENFORCEMENT_MODE=direct with source NOA."
-}
-
 native_noa() {
   require_tool uv
   # Upstream parses RFC3339 nanoseconds, which macOS's system Python 3.9 rejects.
@@ -334,7 +325,6 @@ case "${1:-}" in
     ;;
   infra-up)
     require_local_env
-    validate_noa_modes
     require_docker_compose
     require_local_cf_containers
     compose up -d "${infra_services[@]}"
@@ -450,36 +440,12 @@ case "${1:-}" in
     ;;
   run-full-mas)
     require_local_env
-    validate_noa_modes
-    mode="$NOA_MODE"
     require_docker_compose
-    require_local_cf_containers
-    if [[ "$mode:$NOA_ENFORCEMENT_MODE" = published:proxy ]]; then
-      require_env NOA_MAS_ID AI_GATEWAY_BASE_URL AI_GATEWAY_API_KEY
-      require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
-      require_service "http://localhost:9002/api/multi-agentic-systems/$NOA_MAS_ID" 'Assigned NOA MAS (onboard it and wait for the CFN heartbeat)'
-      native_noa up
-    elif [[ "$mode" = published ]]; then
-      compose --profile full-mas up --no-build --no-deps noa-trip-planner
-    else
-      repo="$samples_dir/noa-trip-planner"
-      [[ -f "$repo/pyproject.toml" && -f "$repo/src/noa_trip_planner/enforcement.py" ]] || fail "Missing CF-owned NOA source at $repo. Check the monorepo sample files."
-      running="$(compose --profile full-mas ps --status running --services noa-trip-planner)" || fail "Could not inspect the NOA container. Check Docker Compose."
-      [[ -z "$running" ]] || fail "The published NOA container is running. Stop it with: docker compose --profile full-mas stop noa-trip-planner"
-      running="$(compose ps --status running --services otel-collector)" || fail "Could not inspect the OTel collector. Check Docker Compose."
-      [[ "$running" = otel-collector ]] || fail "OTel collector is not running. Run 'task infra:up' first."
-      require_tool uv
-      require_env AI_GATEWAY_BASE_URL AI_GATEWAY_API_KEY
-      require_env NOA_MAS_ID
-      require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
-      [[ -d "$repo/.venv" ]] || fail "NOA dependencies are missing. Run 'uv sync --frozen' in $repo."
-      export NOA_API_HOST=127.0.0.1
-      export NOA_API_PORT="${NOA_API_PORT:-8125}"
-      export NOA_CFN_GRPC_TARGET=127.0.0.1:9003
-      export OTLP_HTTP_ENDPOINT=http://localhost:4318
-      cd "$repo"
-      exec uv run --no-sync main
-    fi
+    # Native NOA owns its Compose project and consumes the platform endpoints.
+    require_env NOA_MAS_ID AI_GATEWAY_BASE_URL AI_GATEWAY_API_KEY
+    require_service http://localhost:9002/api/internal/diagnostics/health 'CFN'
+    require_service "http://localhost:9002/api/multi-agentic-systems/$NOA_MAS_ID" 'Assigned NOA MAS (onboard it and wait for the CFN heartbeat)'
+    native_noa up
     ;;
   run-template-ce)
     require_local_env

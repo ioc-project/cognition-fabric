@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Run published NOA A2A with the upstream Enforcement Proxy installation."""
+"""Run the bundled NOA A2A app with the upstream Proxy runtime."""
 
 import argparse
 import fcntl
@@ -12,6 +12,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import urllib.request
@@ -20,7 +21,8 @@ import uuid
 
 
 ROOT = Path(__file__).resolve().parents[2]
-REVISION = "49c3004fde3ff22a48ef4c05f54a890ae9450c07"
+REVISION = "c98680b4c957dcd126b9516ccb5cdaa024261483"
+NOA_SAMPLE = Path("samples/noa-trip-planner-a2a")
 RUNTIME_FILES = (
     "scripts/lib/literal_dotenv.py",
     "scripts/lib/enforcement-images.sh",
@@ -32,10 +34,10 @@ RUNTIME_FILES = (
 )
 AGENTS = ("noa-moderator", "noa-schedule-agent", "noa-itinerary-agent", "noa-concierge-agent")
 IMAGE_SELECTORS = (
-    ("SIDECAR_IMAGE", "NOA_PROXY_SIDECAR_TAG", "ioc-scaling-enforcement-proxy-sidecar"),
-    ("TRACEPARENT_WASM_IMAGE", "NOA_PROXY_WASM_TAG", "ioc-scaling-enforcement-proxy-wasm"),
-    ("OPERATOR_DOCKER_IMAGE", "NOA_PROXY_OPERATOR_TAG", "ioc-scaling-enforcement-proxy-operator-docker"),
-    ("MCP_GUARD_IMAGE", "NOA_PROXY_MCP_GUARD_TAG", "ioc-scaling-enforcement-proxy-mcp-ingress-guard"),
+    ("SIDECAR_IMAGE", "NOA_PROXY_SIDECAR_TAG", "ioc-sidecar"),
+    ("TRACEPARENT_WASM_IMAGE", "NOA_PROXY_WASM_TAG", "ioc-wasm"),
+    ("OPERATOR_DOCKER_IMAGE", "NOA_PROXY_OPERATOR_TAG", "ioc-operator-docker"),
+    ("MCP_GUARD_IMAGE", "NOA_PROXY_MCP_GUARD_TAG", "ioc-mcp-ingress-guard"),
 )
 
 
@@ -97,21 +99,20 @@ def installation(settings, state, source, root=ROOT):
     project = (settings.get("COMPOSE_PROJECT_NAME") or "ioc-scale-cf-deployment") + "-noa-a2a"
     if not re.fullmatch(r"[a-z0-9][a-z0-9_-]*", project):
         raise ValueError("COMPOSE_PROJECT_NAME must be a valid Compose project name")
-    registry = settings.get("PROXY_REGISTRY") or "ghcr.io/cisco-eti"
+    registry = settings.get("PROXY_REGISTRY") or "ghcr.io/ioc-project"
     values = {key: reference(settings, key, tag, repository, registry)
               for key, tag, repository in IMAGE_SELECTORS}
     values.update(
         RUNTIME_ADAPTER="envoy",
-        # We explicitly pull below. Complete published refs take precedence in
-        # upstream's reuse mode, so enrollment neither rebuilds nor pulls again.
+        # Reuse the images prepared before enrollment.
         RUNTIME_IMAGES="local",
         RUNTIME_STATE_DIRECTORY=str(state / ".ioc-runtime"),
+        RUNTIME_ENVOY_TRUSTED_INGRESS_PEERS=json.dumps({"noa-moderator": ["api"]}),
         COMPOSE_PROJECT_NAME=project,
         COMPOSE_FILE=str(root / "dev/compose/noa-a2a.yaml"),
         COMPOSE_ENV_FILES="",
         RUNTIME_IDENTITY_FILE=str(state / "identities.json"),
-        NOA_A2A_IMAGE=reference(settings, "NOA_A2A_IMAGE", "NOA_A2A_TAG", "noa-trip-planner-a2a",
-                                settings.get("OXP_REGISTRY") or "ghcr.io/cisco-eti/oxp/container-images"),
+        NOA_A2A_IMAGE=f"local/{project}:dev",
         NOA_A2A_PLATFORM=settings.get("NOA_A2A_PLATFORM") or "linux/amd64",
         NOA_API_PORT=settings.get("NOA_API_PORT") or "8125",
         ENFORCEMENT_PLATFORM=settings.get("ENFORCEMENT_PLATFORM") or "linux/arm64",
@@ -227,6 +228,7 @@ def execute(action, settings=None, root=ROOT):
     environment["RUNTIME_ENV"] = str(env_file)
     environment["RUNTIME_STATE_DIRECTORY"] = str(state / ".ioc-runtime")
     environment["DEV_BUILD"] = "false"
+    environment["PYTHON"] = sys.executable
     launcher = ["bash", str(source / "scripts/runtime/run-enforcement-proxy-runtime.sh")]
     if action == "up":
         state.mkdir(parents=True, exist_ok=True, mode=0o700)
@@ -249,10 +251,12 @@ def execute(action, settings=None, root=ROOT):
                 private_write(candidate, content)
                 values["_env_file"] = str(candidate)
                 run(compose(values, source) + ["config", "--quiet"], env=environment)
-                # Pull once before publishing controller inputs or starting helpers.
-                for key in ("NOA_A2A_IMAGE", "MCP_GUARD_IMAGE", "SIDECAR_IMAGE", "TRACEPARENT_WASM_IMAGE"):
-                    platform = values["NOA_A2A_PLATFORM"] if key == "NOA_A2A_IMAGE" else values["ENFORCEMENT_PLATFORM"]
-                    run(["docker", "pull", "--platform", platform, values[key]], env=environment)
+                # Prepare images before publishing controller inputs or starting helpers.
+                run(["docker", "build", "--platform", values["NOA_A2A_PLATFORM"],
+                     "--tag", values["NOA_A2A_IMAGE"], str(root / NOA_SAMPLE)], env=environment)
+                for key in ("MCP_GUARD_IMAGE", "SIDECAR_IMAGE", "TRACEPARENT_WASM_IMAGE"):
+                    run(["docker", "pull", "--platform", values["ENFORCEMENT_PLATFORM"],
+                         values[key]], env=environment)
                 run(["docker", "pull", values["OPERATOR_DOCKER_IMAGE"]], env=environment)
                 run(["docker", "pull", "--platform", values["ENFORCEMENT_PLATFORM"],
                      "envoyproxy/envoy:contrib-v1.38.0"], env=environment)

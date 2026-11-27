@@ -15,4 +15,3 @@ services:
       # IOC_SCALE_DB_PORT is the published host port, not the Docker service port.
       POSTGRES_PORT: "5432"
   norm: *root-env
-  noa-trip-planner: *root-env

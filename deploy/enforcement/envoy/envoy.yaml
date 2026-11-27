@@ -1,4 +1,10 @@
-# Example Envoy bootstrap for the enforcement sidecar. Two listeners (inbound 18080,
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
+# Bootstrap template; make doctor/up binds the spec digest. Activation defaults to
+# unprovisioned: only the MAS owner's controller may issue/renew a real lease.
+# Two listeners (inbound 18080,
 # outbound 18081), each running the traceparent Wasm filter, then the Go sidecar
 # filter, then the router. Keep that order. Both read /etc/sidecar/sidecar-spec.yaml.
 # The cluster below points at ioc-scale-enforcement-proxy-upstream (a test echo server); retarget it
@@ -45,7 +51,7 @@ static_resources:
                       plugin_name: ioc_sidecar_core
                       plugin_config:
                         "@type": type.googleapis.com/google.protobuf.StringValue
-                        value: '{"spec_path":"/etc/sidecar/sidecar-spec.yaml","direction":"inbound"}'
+                        value: '{"spec_path":"/etc/sidecar/sidecar-spec.yaml","spec_sha256":"__SIDECAR_SPEC_SHA256__","direction":"inbound","activation_file":"/etc/sidecar/activation/control.json","activation_epoch":"unprovisioned","activation_generation":"unprovisioned"}'
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -87,7 +93,7 @@ static_resources:
                       plugin_name: ioc_sidecar_core
                       plugin_config:
                         "@type": type.googleapis.com/google.protobuf.StringValue
-                        value: '{"spec_path":"/etc/sidecar/sidecar-spec.yaml","direction":"outbound"}'
+                        value: '{"spec_path":"/etc/sidecar/sidecar-spec.yaml","spec_sha256":"__SIDECAR_SPEC_SHA256__","direction":"outbound","activation_file":"/etc/sidecar/activation/control.json","activation_epoch":"unprovisioned","activation_generation":"unprovisioned"}'
                   - name: envoy.filters.http.router
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

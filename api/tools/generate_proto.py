@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""Generate Go API and NOA Python bindings from the canonical protos only."""
+"""Generate Go API bindings from the canonical protos only."""
 import argparse
 import difflib
 import os
@@ -16,18 +16,6 @@ API = ROOT / "api"
 MODULE = "github.com/ioc-project/cognition-fabric/api"
 PROTOC = os.environ.get("PROTOC", "protoc")
 PROTOS = [API / "ce/proto/ce/v1/ce.proto", API / "enforcement/proto/enforcement/v1/enforcement.proto"]
-PYTHON_HEADER = (
-    "# Copyright 2026 Cisco Systems, Inc. and its affiliates\n"
-    "#\n"
-    "# SPDX-License-Identifier: Apache-2.0\n\n"
-)
-
-
-def add_python_header(source):
-    if source.startswith("# -*- coding:"):
-        encoding, _, source = source.partition("\n")
-        return encoding + "\n" + PYTHON_HEADER + source
-    return PYTHON_HEADER + source
 
 
 def check_tool(command, expected):
@@ -67,14 +55,7 @@ def main():
         if not args.check:
             for relative in current_paths - generated_paths:
                 (API / relative).unlink()
-        python_output = output / "noa"
-        python_output.mkdir()
-        enforcement = PROTOS[1]
-        subprocess.run([PROTOC, "-I", str(enforcement.parent), "--python_out=" + str(python_output), str(enforcement)], check=True)
-        binding = (python_output / "enforcement_pb2.py").read_text().replace("'enforcement_pb2'", "'noa_trip_planner.generated.enforcement_pb2'")
-        target = ROOT / "samples/noa-trip-planner/src/noa_trip_planner/generated/enforcement_pb2.py"
-        synchronize(target, add_python_header(binding).encode(), args.check)
-    print("Canonical Go and NOA bindings are current." if args.check else "Generated canonical Go and NOA bindings.")
+    print("Canonical Go bindings are current." if args.check else "Generated canonical Go bindings.")
 
 
 if __name__ == "__main__":

@@ -1,23 +1,24 @@
-# Local NOA enforcement modes
+# Local NOA A2A enforcement
 
 **Scope:** The monorepo's local source/image workflow and its bundled NOA application.
 
-**Guidance:** Root tasks use published native NOA A2A with the maintained proxy
-for `NOA_MODE=published` / `NOA_ENFORCEMENT_MODE=proxy`. Source/direct retains the
-copied NOA's direct CFN adapter. Source/proxy is rejected; it cannot drive the
-new controller through the old host tool-service fixture.
+**Guidance:** `task run:full-mas` uses the bundled native A2A source with
+the maintained Envoy Proxy runtime. The
+[deployment Makefile](../../deploy/README.md#mas-sample-app) can supply the CF
+platform. The NOA task checks CFN health and MAS assignment, then enrolls NOA
+in its own Compose project.
 
 `infra:up` starts platform dependencies without requiring a MAS. Start our CFN,
 Management, UI and chosen Demo/Template CE, onboard the separate A2A declaration,
 then set its canonical MAS and generated MCP server IDs before `run:full-mas`.
 The controller owns only a separate MAS Compose project. It generates routes,
 credentials and activation; do not synthesize a static activation lease or enrol
-the CF/OXP project. Published images require no local image builds.
+the CF/SCOPE project.
 
-Image selection follows CF `:image`: default custom tags to latest, preserve
-explicit tag/full-reference overrides, pull before starting, then reuse those
-images. The wrapper passes complete published references to upstream's local
-reuse mode with builds disabled, avoiding an extra pull during enrollment.
+Proxy images use short package names in `ghcr.io/ioc-project` by default.
+Preserve explicit tag and full-reference overrides. The wrapper builds NOA
+locally and pulls the published Proxy images before enrollment. The controller
+reuses those images with builds disabled.
 Preserve upstream's reviewed launcher/recipe as cached external dependencies,
 including its literal dotenv parser and license. Source access may require gh
 authentication while the upstream repository is private.
@@ -41,26 +42,17 @@ Keep public API ingress outside startup-fenced applications. Qualification of
 the 49c3004 runtime on Docker Desktop hit the compiled three-second Compose
 read timeout with ports on the moderator; a separate API forwarder permitted
 activation. Its DNS must follow moderator replacements and its timeout must
-cover the full MAS request. API ingress remains unmediated.
+cover the full MAS request. The controller trusts the API service as the
+moderator's ingress peer.
 
 CF source tasks have `:image` counterparts for Management, CFN, UI, Go Demo CE,
 and Python Template CE. These images carry the `io.cisco.cf.local=true` ownership
 label and run on the existing infrastructure network. Management and CFN use the
 source workflow's `cfn_mgmt_local` and `cfn_audit_local` databases, respectively.
-NOA/proxy tasks accept these owned images and reject unrelated running CF
-containers from the standalone deployment. The
-published A2A application uses different transports/identities from the copied
-source sample. Its Observe session prefix is the fixed application name, not the
-onboarded MAS UUID. Treat that session ID as opaque; join application trace/span
-IDs to Proxy/CFN records carrying the controller's canonical MAS identity.
-Selecting a CF image must not implicitly switch NOA modes.
-
-CF and DB images default to `ghcr.io/ioc-project` through `CF_REGISTRY`.
-Proxy image selection uses `PROXY_REGISTRY` independently and defaults to
-`ghcr.io/cisco-eti` in both deployment overlays and the native NOA helper. OXP
-and NOA keep their existing separate registry selectors. Preserve tag/full-image
-overrides; moving CF must not implicitly move the Proxy or change its versions.
-Existing `.env` entries still override defaults and are migrated manually.
+Platform tasks check container ownership. NOA uses the host-published CFN and
+collector endpoints from either workflow. The NOA Observe session prefix is the
+application name. Join trace and span IDs to Proxy and CFN records carrying the
+controller's canonical MAS identity.
 
 CE advertised addresses depend on whether CFN runs on the host or in a
 container. Restart CEs after changing CFN's implementation so they re-register
@@ -79,25 +71,11 @@ require an explicit `LOCAL_CF_BIND_HOST` IPv4 override. Port checks must cover
 IPv4 and IPv6 listeners: a reusable IPv4 wildcard bind can miss macOS loopback
 listeners, and removing reuse alone still misses IPv6-only sockets.
 
-The local application is based on upstream `noa-trip-planner/`; the separate
-`noa-trip-planner-a2a/` has different transports and dependencies. Compare upstream
-changes by application, retain the CFN/proxy integration, and update the local
-lockfile when adopting a shared Observe SDK update.
-
-For coalition experiments against the local CF stack, prefer the copied HTTP
-runner with the running source NOA (`http://localhost:8125` by default). Its
-`available_agents` selection changes the graph's specialists, while selected
-agents retain the source application's direct CFN adapter. The upstream
-in-process runner bypasses the CF launcher's environment setup. Keep the
-application's checkpoint message history in `/ask` responses so the experiment
-runner can count the actual messages.
-
-Both template and demo CEs answer CFN's `Evaluate` calls for either the direct
-source adapter or native A2A/proxy runtime. The local Template CE source and image
-tasks use health port 8082 separately from notification port 8080. The source
-task runs `uv run --frozen` to synchronize locked dependencies after source
-updates. When switching CEs, the chosen CE must be associated, enabled, and
-online; CFN does not select a CE based on which local task was started last.
+Both Template CE and Demo CE answer CFN's `Evaluate` calls for native NOA A2A.
+The local Template CE source and image tasks use health port 8082 and
+notification port 8080. The source task runs `uv run --frozen` to synchronize
+locked dependencies after source updates. When switching CEs, update the MAS
+association and verify that the chosen CE is enabled and online.
 
 Keep the root tasks and `dev/cf-local.sh` in sync: `run:template-ce` runs Python
 from `samples/template-ce/`, while `run:demo-ce` builds
@@ -125,9 +103,9 @@ execution. Identity-based routing does not establish content-evidence readiness.
 Validate real producer audit delivery separately from CF's ingestion contract.
 
 **Evidence:** [Local workflow](../../dev/README.md#noa-onboarding-and-proxy-mode),
-[NOA integration](../../samples/noa-trip-planner/README.md#published-noa-a2a-and-enforcement-proxy), and
+[NOA integration](../../samples/noa-trip-planner-a2a/README.md), and
 [local launcher](../../dev/cf-local.sh).
 
 **Revisit when:** Upstream runtime, image, startup, identity or proxy
-configuration contracts change. Use the integration-test skill as a template;
-its source-only prerequisites and proposed-tool spans do not fit native A2A.
+configuration contracts change. Verify native NOA startup, live decisions, and
+audit readback when changing the runtime revision or Proxy images.

@@ -12,7 +12,7 @@ contracts used to govern multi-agent systems. The shared stack is configured in
 | [cf-ui/](cf-ui/README.md) | Management user interface |
 | [samples/demo-ce/](samples/demo-ce/README.md) | Go policy-driven Cognition Engine |
 | [samples/template-ce/](samples/template-ce/README.md) | Python reference Cognition Engine |
-| [samples/noa-trip-planner/](samples/noa-trip-planner/README.md) | Source NOA integration driver and MAS declarations |
+| [samples/noa-trip-planner-a2a/](samples/noa-trip-planner-a2a/README.md) | Native NOA A2A sample and MAS declaration |
 | [samples/docs-site/](samples/docs-site/README.md) | CE documentation site |
 | [dev/](dev/README.md) | Local launchers, Compose overrides, and development checks |
 | [deploy/](deploy/README.md) | Shared Compose stack, enforcement overlays, and database image source |

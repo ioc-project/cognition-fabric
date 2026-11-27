@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -53,43 +54,35 @@ class NativeNoaTests(unittest.TestCase):
 
     def test_image_defaults_and_explicit_reference_precedence(self):
         values = self.values()
-        for key, _, repository in NOA.IMAGE_SELECTORS:
-            self.assertEqual(values[key], f"ghcr.io/cisco-eti/{repository}:latest")
-        self.assertTrue(values["NOA_A2A_IMAGE"].endswith("/noa-trip-planner-a2a:latest"))
+        expected = {"SIDECAR_IMAGE": "ioc-sidecar", "TRACEPARENT_WASM_IMAGE": "ioc-wasm",
+                    "OPERATOR_DOCKER_IMAGE": "ioc-operator-docker", "MCP_GUARD_IMAGE": "ioc-mcp-ingress-guard"}
+        for key, repository in expected.items():
+            self.assertEqual(values[key], f"ghcr.io/ioc-project/{repository}:latest")
+        self.assertEqual(values["NOA_A2A_IMAGE"], "local/ioc-scale-cf-deployment-noa-a2a:dev")
         values = self.values(
             PROXY_REGISTRY="registry.example.invalid/proxy/",
             NOA_PROXY_SIDECAR_TAG="older",
             NOA_PROXY_WASM_TAG="overridden-by-full-reference",
             TRACEPARENT_WASM_IMAGE="custom/wasm@sha256:" + "a" * 64,
-            NOA_A2A_TAG="trip-version",
         )
         self.assertEqual(values["SIDECAR_IMAGE"],
-                         "registry.example.invalid/proxy/ioc-scaling-enforcement-proxy-sidecar:older")
+                         "registry.example.invalid/proxy/ioc-sidecar:older")
         self.assertEqual(values["TRACEPARENT_WASM_IMAGE"], "custom/wasm@sha256:" + "a" * 64)
-        self.assertTrue(values["NOA_A2A_IMAGE"].endswith(":trip-version"))
         self.assertEqual(values["RUNTIME_IMAGES"], "local")
         self.assertEqual(values["RUNTIME_STATE_DIRECTORY"], str(self.state / ".ioc-runtime"))
+        self.assertEqual(json.loads(values["RUNTIME_ENVOY_TRUSTED_INGRESS_PEERS"]),
+                         {"noa-moderator": ["api"]})
         self.assertEqual(values["CF_ENFORCEMENT_ADDRESS"], "host.docker.internal:9003")
 
-    def test_cf_registry_does_not_select_proxy_or_noa_images(self):
-        values = self.values(CF_REGISTRY="ghcr.io/ioc-project")
-        for key, _, repository in NOA.IMAGE_SELECTORS:
-            self.assertEqual(values[key], f"ghcr.io/cisco-eti/{repository}:latest")
-        self.assertEqual(values["NOA_A2A_IMAGE"],
-                         "ghcr.io/cisco-eti/oxp/container-images/noa-trip-planner-a2a:latest")
+    def test_cf_registry_does_not_select_proxy_images(self):
+        values = self.values(CF_REGISTRY="registry.example.invalid/cf")
+        self.assertEqual(values["SIDECAR_IMAGE"], "ghcr.io/ioc-project/ioc-sidecar:latest")
         values = self.values(CF_REGISTRY="registry.example.invalid/cf",
-                             PROXY_REGISTRY="registry.example.invalid/proxy",
-                             OXP_REGISTRY="registry.example.invalid/oxp")
+                             PROXY_REGISTRY="registry.example.invalid/proxy")
         for key, _, repository in NOA.IMAGE_SELECTORS:
             self.assertEqual(values[key], f"registry.example.invalid/proxy/{repository}:latest")
-        self.assertEqual(values["NOA_A2A_IMAGE"],
-                         "registry.example.invalid/oxp/noa-trip-planner-a2a:latest")
 
-    def test_legacy_deployment_tags_do_not_select_native_proxy_images(self):
-        values = self.values(ENFORCEMENT_SIDECAR_TAG="0.0.1-alpha",
-                             ENFORCEMENT_WASM_TAG="0.0.1-alpha")
-        self.assertTrue(values["SIDECAR_IMAGE"].endswith(":latest"))
-        self.assertTrue(values["TRACEPARENT_WASM_IMAGE"].endswith(":latest"))
+    def test_noa_proxy_tags_select_each_component(self):
         values = self.values(NOA_PROXY_WASM_TAG="wasm-version",
                              NOA_PROXY_OPERATOR_TAG="operator-version",
                              NOA_PROXY_MCP_GUARD_TAG="guard-version")
@@ -104,7 +97,7 @@ class NativeNoaTests(unittest.TestCase):
         self.assertEqual(document["workloads"][-1]["mcp_server_id"], MCP)
         self.assertTrue(all(values["COMPOSE_PROJECT_NAME"] in w["workload_ref"]
                             for w in document["workloads"]))
-        declaration = json.loads((ROOT / "samples/noa-trip-planner/mas/noa-a2a-mas.json").read_text())
+        declaration = json.loads((ROOT / "samples/noa-trip-planner-a2a/mas/noa-a2a-mas.json").read_text())
         self.assertEqual({a["agent_id"] for a in declaration["agents"]},
                          set(NOA.AGENTS) | {"noa-llm"})
         self.assertEqual(len(declaration["mcp_servers"]), 1)
@@ -112,7 +105,7 @@ class NativeNoaTests(unittest.TestCase):
             NOA.identity(self.settings | {"NOA_MCP_SERVER_ID": ""}, "example", self.root)
 
     def test_a2a_topology_references_declared_agents_and_mcp_tools(self):
-        directory = ROOT / "samples/noa-trip-planner/mas"
+        directory = ROOT / "samples/noa-trip-planner-a2a/mas"
         declaration = json.loads((directory / "noa-a2a-mas.json").read_text())
         self.assertEqual(len(declaration["topologies"]), 1)
         graph = declaration["topologies"][0]
@@ -147,13 +140,13 @@ class NativeNoaTests(unittest.TestCase):
         self.assertEqual(providers, native)
         self.assertEqual(len(declaration["tools"]), len(native))
 
-        local = json.loads((directory / "noa-mas-local.json").read_text())["topologies"][0]
-        aliases = {"moderator": "noa-moderator", "schedule_agent": "noa-schedule-agent",
-                   "itinerary_agent": "noa-itinerary-agent", "concierge_agent": "noa-concierge-agent"}
-        expected_edges = [{**edge, "source": aliases.get(edge["source"], edge["source"]),
-                           "target": aliases.get(edge["target"], edge["target"])}
-                          for edge in local["edges"]]
-        self.assertEqual(graph["edges"], expected_edges)
+        edges = {(edge["source"], edge["target"]) for edge in graph["edges"]}
+        self.assertEqual(edges, {
+            ("__start__", "noa-moderator"), ("noa-moderator", "__end__"),
+            *(("noa-moderator", agent) for agent in agents - {"noa-moderator"}),
+            *((agent, "noa-moderator") for agent in agents - {"noa-moderator"}),
+        })
+
 
     def test_custom_identity_cannot_silently_select_another_mas(self):
         path = self.root / "custom.json"
@@ -223,7 +216,12 @@ class NativeNoaTests(unittest.TestCase):
         self.execute(record)
         pull_indices = [i for i, (c, _) in enumerate(commands) if c[:2] == ["docker", "pull"]]
         starts = [i for i, (c, _) in enumerate(commands) if "up" in c]
-        self.assertEqual(len(pull_indices), 8)
+        self.assertEqual(len(pull_indices), 7)
+        builds = [(i, c) for i, (c, _) in enumerate(commands) if c[:2] == ["docker", "build"]]
+        self.assertEqual(len(builds), 1)
+        build_index, build = builds[0]
+        self.assertEqual(build[-1], str(self.root / NOA.NOA_SAMPLE))
+        self.assertLess(build_index, min(starts))
         self.assertLess(max(pull_indices), min(starts))
         helper = next(c for c, _ in commands if "up" in c and c[0] == "docker")
         self.assertIn("--pull", helper)
@@ -238,6 +236,19 @@ class NativeNoaTests(unittest.TestCase):
         for command, options in commands:
             if command[0] == "bash":
                 self.assertEqual(options["env"]["RUNTIME_STATE_DIRECTORY"], str(self.state / ".ioc-runtime"))
+                self.assertEqual(options["env"]["PYTHON"], sys.executable)
+
+    def test_source_build_uses_its_own_image_tag(self):
+        remote_image = "registry.example.invalid/noa:current"
+        self.settings["NOA_A2A_IMAGE"] = remote_image
+        commands = []
+        with patch.dict(os.environ, {"NOA_A2A_IMAGE": remote_image}):
+            self.execute(lambda command, **options: commands.append((command, options)))
+        build, options = next((c, o) for c, o in commands if c[:2] == ["docker", "build"])
+        local_image = "local/ioc-scale-cf-deployment-noa-a2a:dev"
+        self.assertEqual(build[build.index("--tag") + 1], local_image)
+        self.assertEqual(options["env"]["NOA_A2A_IMAGE"], local_image)
+        self.assertFalse(any(remote_image in command for command, _ in commands))
 
     def test_down_before_first_start_needs_no_source_download_or_docker(self):
         with patch.object(NOA, "runtime_source") as source:

@@ -1,4 +1,9 @@
 {
+  "activation": {
+    "path": "/run/shadi-verifier/activation.json",
+    "epoch": "unprovisioned",
+    "generation": "unprovisioned"
+  },
   "hosts": [
     {
       "certificate_uri": "spiffe://ioc.example/hosts/sender",

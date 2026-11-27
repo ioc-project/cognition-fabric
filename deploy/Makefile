@@ -1,13 +1,14 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 SHELL := /bin/sh
 .DEFAULT_GOAL := help
 
-# Optional: profile=full-mas adds the NOA sample app; enforcement=envoy|shadi
-# adds an enforcement flavor; service=<name> narrows logs.
-profile ?=
+# enforcement=envoy|shadi adds a Proxy adapter; service=<name> narrows logs.
 enforcement ?=
 service ?=
 
-export STACK_PROFILE := $(profile)
 export STACK_ENFORCEMENT := $(enforcement)
 export STACK_SERVICE := $(service)
 
