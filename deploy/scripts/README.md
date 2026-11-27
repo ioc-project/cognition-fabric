@@ -33,20 +33,16 @@ one-shot services appear as `Exited (0)` after successful initialization:
 
 ## 1. Start the stack
 
-Run the stack commands below from `deploy/`, with the monorepo root `.env` configured.
+Start CF and onboard NOA using the
+[NOA A2A setup](../../dev/README.md#noa-onboarding-and-proxy-mode). Run
+`task run:full-mas` from the monorepo root.
+
+Run the Compose commands below from `deploy/`, with the monorepo root
+`.env` configured.
 
 ```bash
 set -a; source ../.env; set +a    # credentials for the commands below
-docker compose --env-file ../.env --profile full-mas up -d
 ```
-
-The profile adds the NOA trip planner, which needs `AI_GATEWAY_API_KEY` in
-the root `.env` with the chat model on its allow-list. The remaining containers start
-either way — leave the profile off if you are pointing your own instrumented
-app at `http://localhost:4318` instead.
-
-Having the app up now is fine — it starts tracing on its first request, not at
-startup, so it emits nothing until step 4.
 
 Wait until `ioc-scale-scope-clickhouse` and `ioc-scale-scope-rabbitmq` are healthy
 and both initializer services have exited successfully. The workers restart a
@@ -80,9 +76,7 @@ curl -X POST http://localhost:8125/ask \
   -d '{"question":"Plan a 1-day trip to Celestia"}'
 ```
 
-Port 8125 rather than 8000, which belongs to `ioc-scale-cf-cognition-engine`.
-`NOA_API_PORT` in the root `.env` moves the published port; the app always listens on
-8125 inside the container.
+Set `NOA_API_PORT` in root `.env` to change the host port.
 
 **Then wait about five minutes.** The request returning is not the end of the
 session. `ioa-observe-sdk` emits the `session.end` span — the one that triggers
@@ -90,21 +84,6 @@ the whole pipeline — from a background watcher, 5 minutes after the session's
 last activity (`SESSION_IDLE_TIMEOUT_SECONDS = 300`, checked every 30s). Until
 then the spans sit in ClickHouse and Neo4j stays empty, which is expected, not
 a fault.
-
-To flush it immediately instead, stop the app — its `atexit` handler emits the
-span on the way out:
-
-```bash
-docker stop ioc-scale-noa-trip-planner
-```
-
-To run from a local checkout instead, skip the profile and start it by hand
-from the repo's `samples/noa-trip-planner/`, with `OTLP_HTTP_ENDPOINT` set to
-`http://localhost:4318`:
-
-```bash
-uv run --env-file .env python api.py
-```
 
 ## 3. Verify
 
@@ -266,12 +245,6 @@ statements must be present and above the `ALTER`s.
 **`application_id` / `agent_id` empty** — harmless. Not every app emits those
 attributes; only `session_id` matters here.
 
-**No spans at all after calling `/ask`** — check the app itself:
-
-```bash
-docker logs ioc-scale-noa-trip-planner --tail 30
-```
-
-A missing or unauthorised `AI_GATEWAY_API_KEY` fails the request before any
-span is emitted. `docker compose --env-file ../.env down` also leaves this container running,
-since it is profiled — use `docker compose --env-file ../.env --profile full-mas down`.
+**No spans after calling `/ask`** — inspect the NOA runtime with
+`task noa:status` and `task proxy:logs`. Check that `AI_GATEWAY_API_KEY`
+allows the configured chat model.

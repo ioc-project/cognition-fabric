@@ -3,20 +3,17 @@
 CFN accepts finalized Proxy evidence through
 `ioc.cf.enforcement.v1.Enforcement/AppendAuditRecord`. CF owns the
 [proto](../proto/enforcement/v1/enforcement.proto) and generated client.
-The Proxy consumes CF's definitions, following the same dependency direction as
-`GetDisposition`. Its builder/codec can keep the existing field, enum and oneof
-names. Binary compatibility with the Proxy-owned AuditService is not required.
+The [Enforcement Proxy](https://github.com/ioc-project/enforcement-proxy)
+uses CF's generated client to deliver finalized records directly to CFN.
+See the [Proxy delivery contract](https://github.com/ioc-project/enforcement-proxy/blob/main/docs/specs/audit-persistence-settings.md)
+for its bounded queue, retries and receipt handling.
 
-This CF implementation provides the receiving, persistence and read/UI path.
-CFN's own `GetDisposition` audit is a separate, asynchronous best-effort write;
-its RPC response does not carry the persistence guarantee of `AppendAuditRecord`.
-The Proxy's real CFN delivery client is separate integration work; its pending
-logging client is not evidence of delivery. The contract reference used here is
-Proxy commit [`ac537e2d96189d8e123f8f6ec4d1ef37628d3694`](https://github.com/cisco-eti/ioc-scaling-enforcement-proxy/commit/ac537e2d96189d8e123f8f6ec4d1ef37628d3694).
+CFN's own `GetDisposition` audit is a separate, asynchronous best-effort write.
+`AppendAuditRecord` acknowledges a committed record.
 
 ## Records and validation
 
-One unary request contains `record: AuditRecord`. Accept final Envoy/legacy
+One unary request contains `record: AuditRecord`. Accept final Envoy
 mediation records, SHADi authorizations and response observations, and OpenShell
 middleware authorizations and response observations. Each has its own canonical
 UUID `audit_record_id` and valid `recorded_at`. An observation may arrive before
@@ -56,9 +53,7 @@ configuration and complete requests accordingly before delivery is enabled;
 there is no negotiation or receiver-side truncation.
 
 Requests above the hard transport cap never reach the handler and can still get
-`RESOURCE_EXHAUSTED`. The existing journal retries that code while holding its
-current record. Validate producer bounds on every forwarding hop; increasing a
-transport limit alone does not eliminate that failure mode.
+`RESOURCE_EXHAUSTED`. Configure capture limits to fit the append request cap.
 
 ## Storage and acknowledgements
 
@@ -83,8 +78,7 @@ An atomic insert commits before `OK {audit_record_id: <submitted ID>}`. Repeatin
 the same ID and message value returns the same receipt without changing the row.
 Map order/JSON formatting do not affect equality. Different contents under the
 same ID return `INVALID_ARGUMENT` without overwriting anything. A lost receipt
-after commit can be retried safely. CFN never returns `ALREADY_EXISTS` for a
-conflict, since the current journal treats that as success.
+after commit can be retried safely.
 
 | Failure | gRPC code |
 | --- | --- |
@@ -102,9 +96,6 @@ PostgreSQL text-length (`22001`) and character encoding/translation
 (`22021`, `22P05`) errors are permanent record rejections. Other class-22 errors,
 such as server-expression failures, remain `INTERNAL` rather than causing the
 Proxy to discard potentially valid evidence.
-The Proxy integration must check receipt IDs and propagate errors; the existing
-pending client/journal does not yet implement that receipt check or the complete
-target permanent-error classifier.
 
 ## Outcomes and operational success
 
@@ -183,8 +174,7 @@ qualification. No new application-authentication exchange is introduced here.
 Run the CFN tests with an isolated `POSTGRES_TEST_DB`, Management audit tests, UI
 `npm run test:audit` and type checks. The five [record fixtures](../../../cfn/pkg/audit/testdata)
 cover all variants. Qualify actual Proxy delivery separately, including receipt
-checking, retries, permanent errors and outage recovery; the logging-only client
-cannot satisfy issue #41's complete production-path acceptance.
+checking, retries, permanent errors and outage recovery.
 
 With the `cf-mgmt/.venv` and `cf-ui/` dependencies installed, set
 `CF_AUDIT_WORKSPACE_VERIFY=1` and run

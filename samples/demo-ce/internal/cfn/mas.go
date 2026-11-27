@@ -1,3 +1,7 @@
+// Copyright 2026 Cisco Systems, Inc. and its affiliates
+//
+// SPDX-License-Identifier: Apache-2.0
+
 package cfn
 
 import (
@@ -89,7 +93,10 @@ func (l *Lifecycle) NotificationHandler(w http.ResponseWriter, r *http.Request) 
 		MASID     string `json:"mas_id"`
 		Timestamp string `json:"timestamp"`
 	}
-	_ = json.NewDecoder(io.LimitReader(r.Body, 65536)).Decode(&payload)
+	if err := json.NewDecoder(io.LimitReader(r.Body, 65536)).Decode(&payload); err == nil {
+		slog.Info("received MAS notification", "event", "mas.notification", "stage", "CFN",
+			"event_type", payload.EventType, "mas_id", payload.MASID, "timestamp", payload.Timestamp)
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(`{"status":"received"}`))

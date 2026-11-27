@@ -100,7 +100,7 @@ go install github.com/swaggo/swag/cmd/swag@latest
 | `make fmt` | Auto-fix code formatting |
 | `make docs` | Generate OpenAPI docs from code annotations |
 | `make docs-check` | Verify API docs are up-to-date |
-| `make proto` | Generate CE/Enforcement Go bindings and local NOA Enforcement Python bindings |
+| `make proto` | Generate CE and Enforcement Go bindings |
 | `make proto-check` | Verify gRPC code is up-to-date |
 | `make build` | Build Docker image |
 | `make run` | Run service locally |
@@ -197,8 +197,8 @@ grpcurl -plaintext -d '{
 **Regenerating gRPC code:**
 
 Use protoc **35.1**, protoc-gen-go **v1.36.12** and protoc-gen-go-grpc **v1.6.2**
-to reproduce the checked-in CE and Enforcement bindings, including the local NOA
-Python client. Download protoc for your platform from the
+to reproduce the checked-in CE and Enforcement Go bindings. Download protoc
+for your platform from the
 [35.1 release](https://github.com/protocolbuffers/protobuf/releases/tag/v35.1)
 and add its `bin` directory to PATH. Other versions can produce different generated
 headers and fail the freshness check without a contract change.
@@ -215,8 +215,8 @@ make proto
 make proto-check
 ```
 
-`proto-check` compares generated Go filenames/content and NOA Python bindings
-against temporary output without changing the working tree. Template CE bindings
+`proto-check` compares generated Go filenames and contents against temporary
+output without changing the working tree. Template CE bindings
 are checked with its locked Python generator. Every active binding is generated
 directly from canonical `api/` protos; no active proto copies remain in samples.
 Use the pinned protoc executable on PATH (or an absolute executable path in

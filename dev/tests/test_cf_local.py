@@ -31,7 +31,7 @@ keys = (
     "POSTGRES_DB", "POSTGRES_AUDIT_DB", "COGNITION_ENGINE_HOST",
     "ADVERTISED_GRPC_ADDRESS", "ADVERTISED_HEALTH_URL", "CF_LOCAL_CE_HOST",
     "CF_LOCAL_CE_CONFIG_FILE", "CF_LOCAL_CE_MAS_FILE", "CFN_SVC_TAG",
-    "CF_MGMT_SVC_TAG", "CF_UI_TAG", "CF_DEMO_CE_TAG", "NOA_CFN_GRPC_TARGET",
+    "CF_MGMT_SVC_TAG", "CF_UI_TAG", "CF_DEMO_CE_TAG",
     "GRPC_LISTEN_ADDRESS", "HTTP_LISTEN_ADDRESS", "LOCAL_CF_MGMT_DB", "GOWORK", "CF_LOCAL_ENV_FILE",
 )
 with open(os.environ["MOCK_LOG"], "a") as log:
@@ -53,6 +53,8 @@ if name == "docker":
         sys.exit(int(os.environ.get("MOCK_MIGRATION_EXIT", "0")))
     elif "up" in args:
         sys.exit(int(os.environ.get("MOCK_UP_EXIT", "0")))
+elif name == "curl" and args[-1] == os.environ.get("MOCK_HTTP_FAILURE_URL"):
+    sys.exit(22)
 elif name == "python3" and args and args[0].endswith("check_ports.py"):
     if os.environ.get("MOCK_BUSY_PORT") in args[1:]:
         print("Local CF: Port is in use", file=sys.stderr)
@@ -97,11 +99,9 @@ class LocalLauncherTests(unittest.TestCase):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.touch()
         (self.cfn / "policy.json").write_text('{"mas": []}')
-        noa = self.cfn / "samples/noa-trip-planner"
-        (noa / "src/noa_trip_planner").mkdir(parents=True)
-        (noa / "src/noa_trip_planner/enforcement.py").touch()
+        noa = self.cfn / "samples/noa-trip-planner-a2a"
+        noa.mkdir(parents=True)
         (noa / "pyproject.toml").touch()
-        (noa / ".venv").mkdir()
         binaries = workspace / "bin"
         binaries.mkdir()
         tool = binaries / "fake-tool"
@@ -287,35 +287,48 @@ class LocalLauncherTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(self.commands()[-1]["env"][key], expected)
 
-    def test_published_noa_proxy_accepts_local_cfn_image(self):
-        result = self.run_task(
-            "run-full-mas", NOA_MODE="published", NOA_ENFORCEMENT_MODE="proxy",
-            MOCK_RUNNING="ioc-scale-cfn-svc,otel-collector",
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
-        command = self.commands()[-1]
-        self.assertEqual(command["tool"], "uv")
-        args = command["args"]
-        self.assertEqual(args[-1], "up")
-        self.assertEqual(args[args.index("--python") + 1], ">=3.11")
-        self.assertIn("--no-project", args)
-        self.assertIn("--no-python-downloads", args)
-        self.assertTrue(args[args.index("python3") + 1].endswith("tools/noa_a2a.py"))
-        self.assertFalse(any("up" in c["args"] for c in self.commands() if c["tool"] == "docker"))
+    def test_native_noa_accepts_task_and_makefile_platforms(self):
+        mas_url = "http://localhost:9002/api/multi-agentic-systems/" + self.env["NOA_MAS_ID"]
+        for unowned in ("", "ioc-scale-cfn-svc"):
+            with self.subTest(makefile=bool(unowned)):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task(
+                    "run-full-mas", MOCK_RUNNING="ioc-scale-cfn-svc,otel-collector",
+                    MOCK_UNOWNED=unowned,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                commands = self.commands()
+                self.assertEqual([c["args"][-1] for c in commands if c["tool"] == "curl"], [
+                    "http://localhost:9002/api/internal/diagnostics/health", mas_url,
+                ])
+                self.assertEqual(
+                    [c["args"] for c in commands if c["tool"] == "docker"], [["compose", "version"]],
+                )
+                command = commands[-1]
+                self.assertEqual(command["tool"], "uv")
+                args = command["args"]
+                self.assertEqual(args[-1], "up")
+                self.assertEqual(args[args.index("--python") + 1], ">=3.11")
+                self.assertIn("--no-project", args)
+                self.assertIn("--no-python-downloads", args)
+                self.assertTrue(args[args.index("python3") + 1].endswith("tools/noa_a2a.py"))
 
-    def test_published_direct_keeps_legacy_start_without_explicit_pull(self):
-        result = self.run_task("run-full-mas", NOA_MODE="published", NOA_ENFORCEMENT_MODE="direct")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        commands = self.commands()
-        self.assertFalse(any("pull" in command["args"] for command in commands))
-        starts = [command for command in commands if "up" in command["args"]]
-        self.assertEqual(len(starts), 1)
-        self.assertEqual(starts[0]["args"][-6:],
-                         ["--profile", "full-mas", "up", "--no-build", "--no-deps", "noa-trip-planner"])
+    def test_native_noa_requires_healthy_cfn_and_assigned_mas(self):
+        for endpoint, message in [
+            ("/api/internal/diagnostics/health", "CFN is not ready"),
+            ("/api/multi-agentic-systems/" + self.env["NOA_MAS_ID"], "Assigned NOA MAS"),
+        ]:
+            with self.subTest(endpoint=endpoint):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task(
+                    "run-full-mas", MOCK_HTTP_FAILURE_URL="http://localhost:9002" + endpoint,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(message, result.stderr)
+                self.assertFalse(any(c["tool"] == "uv" for c in self.commands()))
 
-    def test_infra_proxy_mode_bootstraps_before_mas_onboarding(self):
-        result = self.run_task("infra-up", NOA_MODE="published",
-                               NOA_ENFORCEMENT_MODE="proxy", NOA_MAS_ID="")
+    def test_infra_bootstraps_before_mas_onboarding(self):
+        result = self.run_task("infra-up", NOA_MAS_ID="")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse(any("noa_a2a.py" in " ".join(c["args"]) for c in self.commands()))
         self.assertFalse(any("enforcement-proxy" in " ".join(c["args"]) for c in self.commands()))
@@ -328,12 +341,11 @@ class LocalLauncherTests(unittest.TestCase):
         self.assertIn("ioc-scale-cfn-svc", stops[0]["args"])
         self.assertIn("ioc-scale-db", stops[1]["args"])
 
-    def test_down_retires_native_mas_before_cf_even_after_switching_mode(self):
+    def test_down_retires_native_mas_before_cf(self):
         directory = self.cfn / ".local/noa-a2a"
         directory.mkdir(parents=True)
         (directory / "installation.env").touch()
-        result = self.run_task("infra-down", MOCK_RUNNING="ioc-scale-cfn-svc",
-                               NOA_ENFORCEMENT_MODE="direct")
+        result = self.run_task("infra-down", MOCK_RUNNING="ioc-scale-cfn-svc")
         self.assertEqual(result.returncode, 0, result.stderr)
         commands = self.commands()
         retire = next(i for i, c in enumerate(commands)
@@ -352,7 +364,6 @@ class LocalLauncherTests(unittest.TestCase):
             ("run-cfn", "cfn"),
             ("run-cfn-mgmt", "cf-mgmt"),
             ("run-template-ce", "samples/template-ce"),
-            ("run-full-mas", "samples/noa-trip-planner"),
             ("run-demo-ce", "samples/demo-ce"),
         ]:
             with self.subTest(action=action):
@@ -366,10 +377,10 @@ class LocalLauncherTests(unittest.TestCase):
         self.assertEqual([x["args"][0] for x in go_commands], ["build"])
         self.assertFalse(any("-modfile" in arg for x in go_commands for arg in x["args"]))
 
-    def test_source_proxy_is_rejected_before_starting_services(self):
-        result = self.run_task("run-full-mas", NOA_MODE="source", NOA_ENFORCEMENT_MODE="proxy")
+    def test_noa_requires_onboarding_before_starting_services(self):
+        result = self.run_task("run-full-mas", NOA_MAS_ID="")
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("NOA_MODE=published", result.stderr)
+        self.assertIn("Set NOA_MAS_ID", result.stderr)
         self.assertFalse(any("up" in c["args"] or "pull" in c["args"] for c in self.commands()))
 
     def test_all_eight_suites_are_in_aggregate_and_test_database_is_isolated(self):
@@ -382,7 +393,7 @@ class LocalLauncherTests(unittest.TestCase):
                 expected = {
                     ("make", "api"), ("make", "cfn"), ("poetry", "cf-mgmt"),
                     ("npm", "cf-ui"), ("go", "samples/demo-ce"),
-                    ("uv", "samples/template-ce"), ("uv", "samples/noa-trip-planner"),
+                    ("uv", "samples/template-ce"), ("uv", "samples/noa-trip-planner-a2a"),
                     ("task", "."),
                 }
                 covered = {(x["tool"], str(Path(x["cwd"]).relative_to(self.cfn)))
@@ -451,12 +462,11 @@ class ImageComposeTests(unittest.TestCase):
                         self.assertTrue(services[name]["image"].startswith("ghcr.io/ioc-project/"))
                     self.assertEqual(services["ioc-scale-db"]["image"],
                                      "ghcr.io/ioc-project/ioc-scale-db:0.2.0")
-                    for name in ("ioc-scale-enforcement-proxy-mediation",
-                                 "ioc-scale-enforcement-proxy-sidecar-installer",
+                    for name in ("ioc-scale-enforcement-proxy-sidecar-installer",
                                  "ioc-scale-enforcement-proxy-wasm-installer",
                                  "ioc-scale-enforcement-proxy-shadi-verifier"):
                         if name in services:
-                            self.assertTrue(services[name]["image"].startswith("ghcr.io/cisco-eti/"))
+                            self.assertTrue(services[name]["image"].startswith("ghcr.io/ioc-project/"))
                     api = services["ioc-analytics-api"]
                     self.assertEqual(api["environment"]["POSTGRES_PORT"], "5432")
                     self.assertEqual(api["environment"]["SCOPE_API_RELOAD"], "false")
@@ -493,17 +503,17 @@ class ImageComposeTests(unittest.TestCase):
             deployment = root / "deploy"
             deployment.mkdir()
             shutil.copyfile(ROOT_DIR / "deploy/docker-compose.yml", deployment / "docker-compose.yml")
-            # Exercise Compose fallbacks independently of .env.example's registry values.
+            # Check Compose fallbacks without the corresponding template settings.
             template = (ROOT_DIR / ".env.example").read_text().splitlines()
             envfile = root / ".env"
-            envfile.write_text("\n".join(line for line in template
-                                         if not line.startswith(("CF_REGISTRY=", "PROXY_REGISTRY="))))
+            selectors = ("CF_REGISTRY=", "PROXY_REGISTRY=")
+            envfile.write_text("\n".join(line for line in template if not line.startswith(selectors)))
             base_env = {key: os.environ[key] for key in ("PATH", "HOME", "DOCKER_CONFIG")
                         if key in os.environ}
             cases = (
-                ({}, "ghcr.io/ioc-project", "ghcr.io/cisco-eti"),
+                ({}, "ghcr.io/ioc-project", "ghcr.io/ioc-project"),
                 ({"CF_REGISTRY": "registry.example.invalid/cf"},
-                 "registry.example.invalid/cf", "ghcr.io/cisco-eti"),
+                 "registry.example.invalid/cf", "ghcr.io/ioc-project"),
                 ({"PROXY_REGISTRY": "registry.example.invalid/proxy"},
                  "ghcr.io/ioc-project", "registry.example.invalid/proxy"),
                 ({"CF_REGISTRY": "registry.example.invalid/cf",
@@ -526,30 +536,27 @@ class ImageComposeTests(unittest.TestCase):
                         result = subprocess.run(
                             ["docker", "compose", "--env-file", str(envfile),
                              "-f", str(deployment / "docker-compose.yml"), "-f", str(overlay),
-                             "--profile", "full-mas", "config", "--format", "json"],
+                             "config", "--format", "json"],
                             env=base_env | overrides, capture_output=True, text=True,
                         )
                         self.assertEqual(result.returncode, 0, result.stderr)
                         services = json.loads(result.stdout)["services"]
                         for name, suffix in cf_images.items():
                             self.assertEqual(services[name]["image"], f"{cf_registry}/{suffix}")
-                        proxy_images = {
-                            "ioc-scale-enforcement-proxy-mediation": "ioc-scaling-enforcement-mediation",
-                        }
                         if flavor == "envoy":
-                            proxy_images.update({
-                                "ioc-scale-enforcement-proxy-sidecar-installer": "ioc-scaling-enforcement-proxy-sidecar",
-                                "ioc-scale-enforcement-proxy-wasm-installer": "ioc-scaling-enforcement-proxy-wasm",
-                            })
+                            proxy_images = {
+                                "ioc-scale-enforcement-proxy-sidecar-installer": "ioc-sidecar",
+                                "ioc-scale-enforcement-proxy-wasm-installer": "ioc-wasm",
+                            }
                         else:
-                            proxy_images["ioc-scale-enforcement-proxy-shadi-verifier"] = "ioc-scaling-enforcement-proxy-shadi-verifier"
+                            proxy_images = {
+                                "ioc-scale-enforcement-proxy-shadi-verifier": "ioc-shadi-verifier",
+                            }
                         for name, repository in proxy_images.items():
                             self.assertEqual(services[name]["image"],
-                                             f"{proxy_registry}/{repository}:0.0.1-alpha")
+                                             f"{proxy_registry}/{repository}:latest")
                         self.assertTrue(services["ioc-analytics-api"]["image"].startswith(
                             "ghcr.io/ioc-project/container-images/"))
-                        self.assertTrue(services["noa-trip-planner"]["image"].startswith(
-                            "ghcr.io/cisco-eti/claris/container-images/"))
 
     def test_scope_image_defaults_and_overrides(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -602,7 +609,7 @@ class ImageComposeTests(unittest.TestCase):
 
     def test_infrastructure_reads_root_env_and_ignores_deployment_private_env(self):
         services = (
-            "ioc-analytics-api", "norm", "noa-trip-planner",
+            "ioc-analytics-api", "norm",
         )
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

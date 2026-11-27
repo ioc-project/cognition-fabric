@@ -1,83 +1,101 @@
 # Enforcement (optional)
 
-Optional enforcement flavors for the stack. The base stack already runs the
-control plane (`ioc-scale-enforcement-proxy-mediation`) and CF; this
-directory adds one enforcement point in front of an application. Nothing here
-starts unless you ask for it, so `make up` stays light.
+The platform starts CF, SCOPE, and Demo CE. Add one optional Proxy flavor through
+the Makefile interface:
 
-| Flavor | What it runs | Use it when |
-|--------|--------------|-------------|
-| [`envoy/`](envoy/) | Envoy with the Go sidecar and traceparent Wasm filters, plus a test upstream | You mediate HTTP traffic (for example MCP or tool calls) |
-| [`shadi/`](shadi/) | The Go sender-authorization API (verifier) | You gate agent-to-agent sends from trusted SHADi hosts over SLIM |
+| Flavor | Components | Configuration guide |
+| --- | --- | --- |
+| Envoy | Envoy, Go/Wasm installers and a diagnostic Nginx upstream | [Envoy setup](envoy/README.md) |
+| SHADi | Private mTLS sender verifier; hosts/SLIM remain external | [SHADi setup](shadi/README.md) |
 
-Run the commands below from `deploy/`, with the monorepo root `.env` configured.
-Pick one. Both talk to CF at `ioc-scale-cfn-svc:9003` and write audit records to
-`ioc-scale-enforcement-proxy-mediation`.
+Run from the monorepo root after the platform prerequisites in
+[`deploy/README.md`](../README.md). Follow the selected guide to prepare private
+inputs before starting:
 
 ```bash
-make up enforcement=envoy
-make up enforcement=shadi
-make down                    # covers both flavors and keeps volumes
+make -C deploy doctor enforcement=envoy
+make -C deploy pull enforcement=envoy
+make -C deploy up enforcement=envoy
+make -C deploy status
+make -C deploy logs service=ioc-scale-enforcement-proxy-envoy
+make -C deploy down
 ```
 
-Only one flavor can exist at a time: `make up` refuses to start one while the other's
-containers are present, even stopped ones, and tells you to run `make down` first.
-Each flavor needs config you provide;
-`make up` stops early and says which file is missing:
+Use `enforcement=shadi` for the other flavor. Only one flavor may exist at a time;
+`up` refuses if the other's containers exist, even stopped installer jobs.
+`status/logs/down` cover both flavors. `down` preserves volumes.
+`task deploy:up` reads `DEPLOY_ENFORCEMENT` from root `.env`. Set it to
+`envoy` or `shadi` to select an overlay, or leave it empty for the base stack.
+`config/pull` work before private startup files exist. `doctor` checks inputs but
+starts no containers; for Envoy it also prepares ignored bootstrap files.
 
-- `envoy`: `enforcement/envoy/sidecar-spec.yaml`, copied from
-  [`sidecar-spec.example.yaml`](envoy/sidecar-spec.example.yaml).
-- `shadi`: `enforcement/shadi/config/` with `config.json`, `ca.crt`, `server.crt`
-  and `server.key`. See [`shadi/README.md`](shadi/README.md).
+Both adapters call CFN directly for decisions and audit delivery.
 
-Both files are gitignored. The `compose.yaml` in each directory is an overlay for
-the main compose file, so you can also run it by hand from `deploy/`:
+This is component deployment. MAS attachment, identities, routes and controller
+activation belong to the MAS developer. Default examples are unprovisioned and
+reject protected traffic. The [NOA A2A Task workflow](../../dev/README.md#noa-onboarding-and-proxy-mode)
+starts its own Envoy and enrolls its MAS with the Proxy controller.
 
-```bash
-docker compose --env-file ../.env -f docker-compose.yml -f enforcement/envoy/compose.yaml up -d
+## Proxy images
+
+The maintained source is [ioc-project/enforcement-proxy](https://github.com/ioc-project/enforcement-proxy).
+The `PROXY_REGISTRY` setting defaults to `ghcr.io/ioc-project`. All three Proxy
+image tags default to `latest`.
+
+| Component | Package | Tag override | Full-reference override |
+| --- | --- | --- | --- |
+| Sidecar | `ioc-sidecar` | `ENFORCEMENT_SIDECAR_TAG` | `ENFORCEMENT_SIDECAR_IMAGE` |
+| Wasm | `ioc-wasm` | `ENFORCEMENT_WASM_TAG` | `ENFORCEMENT_WASM_IMAGE` |
+| SHADi | `ioc-shadi-verifier` | `ENFORCEMENT_SHADI_TAG` | `ENFORCEMENT_SHADI_IMAGE` |
+
+A full reference takes precedence over `PROXY_REGISTRY` and the component's tag.
+Settings in an existing root `.env` remain explicit overrides.
+
+`make pull` explicitly refreshes selected images. Compose can also refresh
+`latest` during `up`, even when cached; `up` adds no extra pull command. Select
+full digest references to retain a known working release. Record the selected
+image digests, compatible Envoy version, platform and private configuration
+before updating. Treat sidecar/Wasm as a qualified pair. Example settings to fill
+with recorded digests in root `.env`:
+
+```dotenv
+ENFORCEMENT_SIDECAR_IMAGE=ghcr.io/ioc-project/ioc-sidecar@sha256:<recorded-sidecar-digest>
+ENFORCEMENT_WASM_IMAGE=ghcr.io/ioc-project/ioc-wasm@sha256:<recorded-wasm-digest>
+ENFORCEMENT_SHADI_IMAGE=ghcr.io/ioc-project/ioc-shadi-verifier@sha256:<recorded-shadi-digest>
 ```
 
-## Services and containers
+For a deliberate upgrade or rollback, run `make -C deploy down`, select the
+compatible images and restore matching private configuration, then run
+`doctor`, `pull`, `up` with the chosen flavor. Volumes are retained.
+Envoy restarts after installer updates and is recreated after prepared content
+changes; uninterrupted plugin upgrades are not a deployment guarantee.
 
-Each service has the same name as its container, `ioc-scale-<name>`.
+## Services and settings
 
-| Service | Host port | Flavor |
-|---------|-----------|--------|
-| `ioc-scale-enforcement-proxy-envoy` | 9010, 9011, 9012 | envoy |
-| `ioc-scale-enforcement-proxy-upstream` | none | envoy |
-| `ioc-scale-enforcement-proxy-sidecar-installer` | none | envoy (runs once) |
-| `ioc-scale-enforcement-proxy-wasm-installer` | none | envoy (runs once) |
-| `ioc-scale-enforcement-proxy-shadi-verifier` | 9013 | shadi |
+All host ports below bind to `127.0.0.1`.
 
-Use the service name with `make logs service=<name>`.
+| Service | Host ports |
+| --- | --- |
+| `ioc-scale-enforcement-proxy-envoy` | 9010 inbound, 9011 outbound, 9012 admin |
+| `ioc-scale-enforcement-proxy-upstream` | none; diagnostic echo only |
+| `ioc-scale-enforcement-proxy-sidecar-installer` | none; exits successfully after install |
+| `ioc-scale-enforcement-proxy-wasm-installer` | none; exits successfully after install |
+| `ioc-scale-enforcement-proxy-shadi-verifier` | 9013 |
 
-## Shared settings
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `CF_ENFORCEMENT_ADDRESS` | `ioc-scale-cfn-svc:9003` | CFN decision/audit endpoint |
+| `CF_ENFORCEMENT_ALLOW_PLAINTEXT` | `true` | Explicit local plaintext transport |
+| `CF_ENFORCEMENT_TIMEOUT` | `2s` | CF call deadline; SHADi requires below 4s |
+| `ENFORCEMENT_FAILURE_POSTURE` | `fail_closed` | SHADi requires this value |
+| `AUDIT_QUEUE_CAPACITY` | `256` | Bounded adapter audit delivery queue |
+| `AUDIT_RPC_TIMEOUT` | `2s` | Audit delivery RPC deadline |
+| `MAX_MEDIATED_BODY_BYTES` | `1048576` | Mediated body limit |
+| `AUDIT_CAPTURE_MAX_BYTES` | `65536` | Audit capture limit |
+| `AUDIT_REDACT_PATTERNS` | token patterns | JSON regex list for capture redaction |
+| `ENFORCEMENT_PLATFORM` | `linux/arm64` | All optional flavor containers; use `linux/amd64` on Intel/AMD |
 
-All have defaults suited to the local stack; set them in the root `.env` to change them.
-
-| Variable | Default | Meaning |
-|----------|---------|---------|
-| `CF_ENFORCEMENT_ADDRESS` | `ioc-scale-cfn-svc:9003` | CF gRPC endpoint |
-| `CF_ENFORCEMENT_ALLOW_PLAINTEXT` | `true` | Local CF is plaintext; TLS is the client default |
-| `CF_ENFORCEMENT_TIMEOUT` | `2s` | CF call deadline |
-| `ENFORCEMENT_FAILURE_POSTURE` | `fail_closed` | What happens when CF cannot decide |
-| `AUDIT_JOURNAL_ADDRESS` | `ioc-scale-enforcement-proxy-mediation:8081` | Where audit records go |
-| `AUDIT_JOURNAL_ALLOW_INSECURE_LOCAL` | `true` | Plaintext journal; `ioc-scale-enforcement-proxy-mediation` must allow it too (`BFF_GRPC_ALLOW_INSECURE_LOCAL`) |
-| `AUDIT_JOURNAL_QUEUE_CAPACITY` | `256` | In-memory queue for final audit records. Overflow is counted, never blocks enforcement |
-| `MAX_MEDIATED_BODY_BYTES` | `1048576` | Largest body mediated |
-| `AUDIT_CAPTURE_MAX_BYTES` | `65536` | Largest body captured for audit |
-| `AUDIT_REDACT_PATTERNS` | token patterns | JSON array of regexes redacted from captured bodies |
-| `ENFORCEMENT_PLATFORM` | `linux/arm64` | Architecture of every enforcement container. The Envoy plugin and Envoy must match, so this ignores `DOCKER_DEFAULT_PLATFORM`. Use `linux/amd64` on an Intel host |
-| `PROXY_REGISTRY` | `ghcr.io/cisco-eti` | Proxy image registry, independent of `CF_REGISTRY` |
-| `ENFORCEMENT_SIDECAR_TAG`, `ENFORCEMENT_WASM_TAG`, `ENFORCEMENT_SHADI_TAG` | `0.0.1-alpha` | Image tags (registry is `PROXY_REGISTRY`) |
-
-The two plaintext flags are a local-development exception to mTLS. Do not use
-them anywhere else.
-
-Host ports, all on 127.0.0.1: Envoy `9010` (inbound), `9011` (outbound), `9012`
-(admin); SHADi verifier `9013`. They are clear of the base stack and of the
-proxy repo's own compose.
-
-The configs here are examples taken from the `ioc-scaling-enforcement-proxy`
-repo, which owns the filters, the verifier and the specs. Check its docs for the
-authoritative field reference.
+Plaintext options are local development exceptions.
+The [root environment template](../../.env.example) lists optional paths and
+host-port overrides. Flavor guides describe read-only configuration mounts and
+MAS-owner handoff; upstream owns the authoritative schemas.

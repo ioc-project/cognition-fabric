@@ -21,8 +21,8 @@ protoc-gen-go v1.36.12 and protoc-gen-go-grpc v1.6.2. Compiler/plugin version
 headers affect freshness even without a contract change. Compare generated
 `.pb.go` filenames and contents, including expected files missing locally and
 present untracked files. CI gates image builds/publication on this check.
-Go and NOA Python bindings are generated directly from the canonical protos in
-`api/`; compare the bindings against fresh output.
+Go and Template CE's Python bindings are generated from the canonical protos
+in `api/`. Compare the bindings against fresh output.
 The legacy compatibility fixtures remain outside current generation.
 
 Audit JSON validity does not establish jsonb storage validity. Reject actual NUL

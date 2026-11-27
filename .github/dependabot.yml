@@ -1,3 +1,7 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 version: 2
 updates:
   - package-ecosystem: gomod
@@ -7,13 +11,13 @@ updates:
     directories: [/cf-mgmt]
     schedule: {interval: weekly}
   - package-ecosystem: uv
-    directories: [/samples/template-ce, /samples/noa-trip-planner]
+    directories: [/samples/template-ce, /samples/noa-trip-planner-a2a]
     schedule: {interval: weekly}
   - package-ecosystem: npm
     directories: [/cf-ui, /samples/docs-site]
     schedule: {interval: weekly}
   - package-ecosystem: docker
-    directories: [/cfn, /cf-mgmt, /cf-ui/ci/docker, /samples/demo-ce, /samples/template-ce]
+    directories: [/cfn, /cf-mgmt, /cf-ui/ci/docker, /samples/demo-ce, /samples/template-ce, /samples/noa-trip-planner-a2a]
     schedule: {interval: weekly}
   - package-ecosystem: github-actions
     directory: /

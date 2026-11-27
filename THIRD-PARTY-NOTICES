@@ -7,7 +7,7 @@ cfn
 
 # Third-Party Notices
 
-This file records the direct runtime components used by CFN and its bundled NOA
+This file records runtime components used by CFN and its bundled NOA A2A
 application. It follows the approved component-notice format; it is not an
 exhaustive transitive dependency or build/test-tool inventory. Version details
 are recorded in `go.mod`, `go.sum`, and NOA's `pyproject.toml` and `uv.lock`.
@@ -537,9 +537,153 @@ THE SOFTWARE.
 
 ---
 
+### a2a-sdk
+
+- **Version**: 1.2.3
+- **License**: Apache-2.0
+- **Source**: https://github.com/a2aproject/a2a-python
+
+The Apache License 2.0 text is provided in LICENSE.md.
+
+---
+
+### griffe
+
+- **Version**: 1.15.0
+- **License**: ISC
+- **Source**: https://github.com/mkdocstrings/griffe
+
+ISC License
+
+Copyright (c) 2021, Timothée Mazzucotelli
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted, provided that the above
+copyright notice and this permission notice appear in all copies.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+---
+
+### langchain
+
+- **Version**: 1.4.2
+- **License**: MIT
+- **Source**: https://github.com/langchain-ai/langchain
+
+MIT License
+
+Copyright (c) LangChain, Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+### mcp
+
+- **Version**: 2.2.0
+- **License**: MIT
+- **Source**: https://github.com/modelcontextprotocol/python-sdk
+
+MIT License
+
+Copyright (c) 2024 Anthropic, PBC
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+### pydantic-settings
+
+- **Version**: 2.15.0
+- **License**: MIT
+- **Source**: https://github.com/pydantic/pydantic-settings
+
+The MIT License (MIT)
+
+Copyright (c) 2022 Samuel Colvin and other contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+### slim-bindings
+
+- **Version**: 3.3.8
+- **License**: Apache-2.0
+- **Source**: https://github.com/agntcy/slim-bindings
+
+The Apache License 2.0 text is provided in LICENSE.md.
+
+---
+
+### slima2a
+
+- **Version**: 0.9.3
+- **License**: Apache-2.0
+- **Source**: https://github.com/agntcy/slim
+
+The Apache License 2.0 text is provided in LICENSE.md.
+
+---
+
 ### fastapi
 
-- **Version**: 0.123.0
+- **Version**: 0.141.1
 - **License**: MIT
 - **Copyright**: Copyright (c) 2018 Sebastián Ramírez
 - **Source**: https://github.com/fastapi/fastapi
@@ -570,7 +714,7 @@ THE SOFTWARE.
 
 ### uvicorn
 
-- **Version**: 0.38.0
+- **Version**: 0.54.0
 - **License**: BSD-3-Clause
 - **Copyright**: Copyright © 2017-present, [Encode OSS Ltd](https://www.encode.io/).
 - **Source**: https://github.com/Kludex/uvicorn
@@ -607,7 +751,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ### langchain-core
 
-- **Version**: 1.2.7
+- **Version**: 1.6.5
 - **License**: MIT
 - **Copyright**: Copyright (c) LangChain, Inc.
 - **Source**: https://github.com/langchain-ai/langchain
@@ -638,7 +782,7 @@ SOFTWARE.
 
 ### langchain-openai
 
-- **Version**: 1.0.2
+- **Version**: 1.6.6
 - **License**: MIT
 - **Copyright**: Copyright (c) 2023 LangChain, Inc.
 - **Source**: https://github.com/langchain-ai/langchain
@@ -669,7 +813,7 @@ SOFTWARE.
 
 ### langgraph
 
-- **Version**: 1.0.3
+- **Version**: 1.2.12
 - **License**: MIT
 - **Copyright**: Copyright (c) 2024 LangChain, Inc.
 - **Source**: https://github.com/langchain-ai/langgraph
@@ -700,16 +844,16 @@ SOFTWARE.
 
 ### networkx
 
-- **Version**: 3.5
+- **Version**: 3.7
 - **License**: BSD-3-Clause
-- **Copyright**: Copyright (c) 2004-2025, NetworkX Developers
+- **Copyright**: Copyright (c) 2004-2026, NetworkX Developers
 - **Source**: https://github.com/networkx/networkx
 
 NetworkX is distributed with the 3-clause BSD license.
 
 ::
 
-   Copyright (c) 2004-2025, NetworkX Developers
+   Copyright (c) 2004-2026, NetworkX Developers
    Aric Hagberg <hagberg@lanl.gov>
    Dan Schult <dschult@colgate.edu>
    Pieter Swart <swart@lanl.gov>
@@ -747,7 +891,7 @@ NetworkX is distributed with the 3-clause BSD license.
 
 ### ipython
 
-- **Version**: 9.7.0
+- **Version**: 9.17.1
 - **License**: BSD-3-Clause
 - **Copyright**: Copyright (c) IPython Development Team.; Copyright (c) 2008-Present, IPython Development Team; Copyright (c) 2001-2007, Fernando Perez <fernando.perez@colorado.edu>; Copyright (c) 2001, Janko Hauser <jhauser@zscout.de>; Copyright (c) 2001, Nathaniel Gray <n8gray@caltech.edu>
 - **Source**: https://github.com/ipython/ipython
@@ -836,7 +980,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ### python-dotenv
 
-- **Version**: 1.2.1
+- **Version**: 1.2.3
 - **License**: BSD-3-Clause
 - **Copyright**: Copyright (c) 2014, Saurabh Kumar (python-dotenv), 2013, Ted Tieken (django-dotenv-rw), 2013, Jacob Kaplan-Moss (django-dotenv)
 - **Source**: https://github.com/theskumar/python-dotenv
@@ -1082,9 +1226,9 @@ Apache License
 
 ---
 
-### grpcio
+### grpcio (NOA A2A runtime dependency)
 
-- **Version**: 1.76.0
+- **Version**: 1.84.0
 - **License**: Apache-2.0
 - **Copyright**: Copyright 2016, Google Inc.
 - **Source**: https://github.com/grpc/grpc
@@ -1701,7 +1845,7 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 
 ---
 
-### protobuf
+### protobuf (NOA A2A runtime dependency)
 
 - **Version**: 7.36.2
 - **License**: BSD-3-Clause
