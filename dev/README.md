@@ -229,13 +229,16 @@ started by `infra:up`. The DB tag is `0.2.0`.
 
 The native workflow uses CFN, Management, UI, SCOPE, and the selected CE
 from either the local Task workflow or the
-[Makefile deployment](../deploy/README.md#mas-sample-app). NOA and its Proxy
+[deployment Task](../deploy/README.md#mas-sample-app). NOA and its Proxy
 run in a separate Compose project.
 
 1. Set `AI_GATEWAY_BASE_URL` and `AI_GATEWAY_API_KEY` in root `.env`.
    Start CF and a CE through the local tasks or start the base deployment
-   with `make -C deploy up`. To refresh the images and start the base deployment,
-   run `task deploy:up` with `DEPLOY_ENFORCEMENT` unset or empty.
+   with `task deploy:up` and `DEPLOY_ENFORCEMENT` unset or empty. The Task
+   starts Template CE by default. Use `DEPLOY_CE=demo task deploy:up` for Demo
+   CE. See [custom CE deployment](../deploy/README.md#run-your-own-ce)
+   to start CF with your own CE. The [direct Make alternative](../deploy/README.md#direct-make-alternative)
+   uses Demo CE.
 2. In Management UI, create a MAS using **JSON** mode and paste
    [`noa-a2a-mas.json`](../samples/noa-trip-planner-a2a/mas/noa-a2a-mas.json).
    Select the existing enabled, online CE before saving. Use a workspace assigned
@@ -245,7 +248,7 @@ run in a separate Compose project.
    Custom identities can instead be supplied as upstream canonical JSON through
    `NOA_IDENTITY_FILE`; workload references must use this runtime's project and
    service names.
-4. For Go Demo CE on the Makefile stack, follow the
+4. If you selected Go Demo CE on the deployment stack, follow the
    [deployment policy setup](../deploy/README.md#noa-demo-ce-policy). For Go Demo
    CE started by a local task, copy [the policy example](noa-demo-ce.example.json)
    into `.local/`, replace both ID placeholders, set `CE_CONFIG_FILE` to that
@@ -294,8 +297,9 @@ task noa:down
 Private installation inputs live in `.local/noa-a2a/`; downloaded upstream files
 live in `.local/proxy-runtime/`. Do not edit generated routes, credentials or
 activation files. If startup fails, inspect `noa:status` and controller logs,
-then use `noa:down` before retrying. For the Makefile workflow, stop NOA with
-`task noa:down` before running `make -C deploy down` or `task deploy:down`.
+then use `noa:down` before retrying. Stop NOA with `task noa:down` before stopping
+the platform with `task deploy:down` or, for the direct Make path,
+`make -C deploy down`.
 Run `task noa:down` before updating to a checkout with a different pinned
 Proxy runtime so the launcher retires its own installation.
 

@@ -26,25 +26,38 @@ OpenSSL is also needed for the optional development certificate generator.
    reference. For component startup, leave epoch/generation unprovisioned and the
    lease file absent. Do not write a fake lease to enable traffic.
 
-3. Check, pull and start the selected flavor:
+3. Start the deployment with the SHADi flavor:
 
    ```bash
-   make -C deploy doctor enforcement=shadi
-   make -C deploy pull enforcement=shadi
-   make -C deploy up enforcement=shadi
-   make -C deploy status
-   make -C deploy logs service=ioc-scale-enforcement-proxy-shadi-verifier
+   DEPLOY_ENFORCEMENT=shadi task deploy:up
    ```
 
 4. Check the private listener with a generated client certificate:
 
    ```bash
    curl --cacert deploy/enforcement/shadi/config/ca.crt --cert deploy/enforcement/shadi/config/sender.crt --key deploy/enforcement/shadi/config/sender.key https://localhost:9013/metrics
-   make -C deploy down
+   task deploy:down
    ```
 
    `/metrics` confirms listener access, not activated enforcement. A valid client
    certificate is mandatory. `down` preserves application/database volumes.
+
+### Direct Make alternative
+
+Prepare the [Demo CE policy](../../README.md#demo-ce) and follow the
+[direct Make environment setup](../../README.md#direct-make-alternative).
+Run `make -C deploy down` first if switching from the Envoy flavor.
+
+```bash
+make -C deploy doctor enforcement=shadi
+make -C deploy pull enforcement=shadi
+make -C deploy up enforcement=shadi
+make -C deploy status
+make -C deploy logs service=ioc-scale-enforcement-proxy-shadi-verifier
+```
+
+After startup, use the same private listener check from step 4 and stop the stack
+with `make -C deploy down`.
 
 ## Configuration contract
 

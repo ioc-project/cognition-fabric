@@ -82,9 +82,14 @@ tasks:
       - bash dev/cf-local.sh check
 
   deploy:up:
-    desc: Pull deployment images and start CF with the selected enforcement flavor
+    desc: Pull deployment images and start CF with the selected CE and enforcement flavor
     cmds:
       - |
+        export STACK_CE="${DEPLOY_CE:-template}"
+        case "$STACK_CE" in
+          template|demo|none) ;;
+          *) printf '%s\n' 'DEPLOY_CE must be template, demo, or none' >&2; exit 2 ;;
+        esac
         set -- ${DEPLOY_ENFORCEMENT:+"enforcement=$DEPLOY_ENFORCEMENT"}
         case "${DEPLOY_PULL:-true}" in
           true) make -C deploy pull "$@" || exit $? ;;

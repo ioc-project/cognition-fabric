@@ -4,41 +4,32 @@ Deployment configurations for the IOC Scale - Cognition Fabric (CF) stack.
 
 ## Quick Start
 
-Run these commands from the monorepo root. Install Docker with Compose 2.24.4+
-and Python 3; the launcher uses Python for preflight and readiness checks.
+Run these commands from the monorepo root. Install Make, Docker with Compose
+2.24.4+, and Python 3 for the launcher's preflight and readiness checks. Install
+Go Task for the `task deploy:*` commands.
 
 1. Copy the root environment template and fill in your credentials:
    ```bash
    cp .env.example .env
    ```
 
-2. Edit `deploy/demo-ce/config/config.json` with your MAS id and agent identities
-   (see [Demo CE](#demo-ce)).
-
-3. Use the Makefile to check configuration and start the stack:
+2. Start the stack with the published Template CE:
    ```bash
-   make -C deploy doctor
-   make -C deploy up
+   task deploy:up
    ```
 
-The Makefile loads root `.env`, checks the required settings and waits until every
-service is running, healthy or finished:
+3. Stop the stack and preserve its volumes:
+   ```bash
+   task deploy:down
+   ```
 
-```bash
-make -C deploy status                  # list containers
-make -C deploy logs service=ioc-analytics-api  # follow one service (omit service= for all)
-make -C deploy pull                    # pull the configured images
-make -C deploy up enforcement=envoy    # after the selected flavor's setup below
-make -C deploy down                    # stop the stack, volumes are preserved
-```
+Set `DEPLOY_CE` in root `.env` or override it for a single Task run.
 
-With Go Task installed, you can also start and stop the deployment from
-the monorepo root.
-
-```bash
-task deploy:up
-task deploy:down
-```
+| Value | CE started by `task deploy:up` |
+|---|---|
+| `template` (default) | Published [Python Template CE](#template-ce) |
+| `demo` | Published [Go Demo CE](#demo-ce) |
+| `none` | Platform only, ready for [your own CE](#run-your-own-ce) |
 
 By default, `task deploy:up` pulls the configured images before starting the
 stack. To skip the explicit pull, set `DEPLOY_PULL=false` in root `.env` or run
@@ -49,38 +40,72 @@ Set `DEPLOY_ENFORCEMENT=envoy` in root `.env` to start the Envoy overlay with
 `task deploy:up`. Complete the [Envoy setup](enforcement/envoy/README.md) first.
 Use `shadi` for the SHADi overlay or leave the value empty for the base stack.
 Override the setting for one run with `DEPLOY_ENFORCEMENT= task deploy:up`.
-To switch an already running deployment, run `task deploy:down` before
-bringing it back up with the new selection.
+To change the CE or enforcement flavor, run `task deploy:down` before bringing
+the deployment back up with the new selection.
 
-Task loads root `.env` before calling Make. Use Make directly to set a custom
-`STACK_ENV`. The Task shortcuts pick up
-`COMPOSE_PROJECT_NAME` from root `.env` when it is unset in the shell.
-Direct Make reads that setting from the shell. Use the same entry point for
-startup and shutdown if you set the project name in `.env`.
+SCOPE normalization needs no LLM credentials. On-demand API metrics may require them.
 
-To use Compose directly from the monorepo root, load the same environment:
+### Direct Make alternative
+
+Task loads root `.env` before calling the deployment Makefile for image
+pulls, startup, and shutdown. `DEPLOY_CE`, `DEPLOY_ENFORCEMENT`, and `DEPLOY_PULL`
+are Task settings. Direct Make starts Go Demo CE and takes the optional Proxy
+flavor from the `enforcement` argument.
+
+For direct Make, use the root `.env` from the quick start and edit
+`deploy/demo-ce/config/config.json` with your MAS ID and agent identities.
+See [Demo CE](#demo-ce) for policy setup.
+
+Use the Makefile to check configuration and start the stack:
+
+```bash
+make -C deploy doctor
+make -C deploy up
+```
+
+The Makefile launcher uses root `.env`, checks the required settings, and waits
+until every service is running, healthy, or finished. `make -C deploy up` waits
+up to 180 seconds by default (`STACK_WAIT_TIMEOUT`) and names any service that
+is still pending. Task uses the same readiness check.
+
+```bash
+make -C deploy status                         # list containers
+make -C deploy logs service=ioc-analytics-api  # follow one service (omit service= for all)
+make -C deploy pull                           # pull the configured images
+make -C deploy up enforcement=envoy           # after the selected flavor's setup below
+make -C deploy down                           # stop the stack, preserving volumes
+```
+
+Use Make directly to set a custom `STACK_ENV`. The Task shortcuts pick up
+`COMPOSE_PROJECT_NAME` from root `.env` when it is unset in the shell. Direct
+Make reads that setting from the shell. Use the same entry point for startup
+and shutdown if you set the project name in `.env`. The default is
+`ioc-scale-cf-deployment`, so the stack and its default network keep the same
+names from any checkout.
+See [`scripts/run-stack.sh`](scripts/run-stack.sh).
+
+### Direct Compose
+
+To start the base stack with Demo CE using Compose directly from the monorepo
+root, load the same environment:
 
 ```bash
 docker compose --env-file .env -f deploy/docker-compose.yml up -d
 ```
 
-`make -C deploy up` waits up to 180 seconds (`STACK_WAIT_TIMEOUT`) and names any service
-that is not ready. SCOPE normalization needs no LLM credentials; on-demand API
-metrics may require them.
-The default Compose project name is `ioc-scale-cf-deployment`, so the
-stack and its default network keep the same names from any checkout.
-See [`scripts/run-stack.sh`](scripts/run-stack.sh).
+### Images
 
 The stack uses published images. CF, SCOPE, and Proxy images come from GHCR.
-Envoy and Nginx use their published Docker Hub images. The Go Demo CE starts by default.
+Envoy and Nginx use their published Docker Hub images.
 
 Service registry/tag selectors can be overridden in root `.env` without editing
 Compose. Proxy components also accept full `image@sha256:...` references:
 
 - CF and database services (`ioc-scale-db`, `ioc-scale-cf-mgmt-svc`,
-  `ioc-scale-cf-mgmt-plane-ui`, `ioc-scale-cfn-svc`, `ioc-scale-cf-demo-ce`):
-  `CF_REGISTRY` plus `IOC_SCALE_DB_TAG`, `CF_MGMT_SVC_TAG`, `CF_UI_TAG`,
-  `CFN_SVC_TAG`, `CF_DEMO_CE_TAG`. The registry defaults to `ghcr.io/ioc-project`.
+  `ioc-scale-cf-mgmt-plane-ui`, `ioc-scale-cfn-svc`, `ioc-scale-cf-demo-ce`, and
+  `ioc-scale-cf-deploy-template-ce`) use `CF_REGISTRY` with `IOC_SCALE_DB_TAG`,
+  `CF_MGMT_SVC_TAG`, `CF_UI_TAG`, `CFN_SVC_TAG`, `CF_DEMO_CE_TAG`, and
+  `CF_TEMPLATE_CE_TAG`. The registry defaults to `ghcr.io/ioc-project`.
   The database stays pinned to `0.2.0`, and CF application tags default to `latest`.
 - Enforcement Proxy services use `PROXY_REGISTRY`, which defaults to
   `ghcr.io/ioc-project`. The packages are `ioc-sidecar`, `ioc-wasm`, and
@@ -122,11 +147,20 @@ data is reused. Do not remove volumes during the upgrade.
 The database image source is in this directory. See
 [`docker-db/`](docker-db/) for the Dockerfile and how to publish a new tag.
 
+### Template CE
+
+The published [Template CE](../samples/template-ce/README.md) starts by default
+with `task deploy:up` and uses `TEMPLATE_CE_DECISION` for its sample verdict.
+The deployment waits for its health listener on port `8082`. In Management,
+verify that the CE is online, then associate it with the MAS it should evaluate.
+
 ### Demo CE
 
 `ioc-scale-cf-demo-ce` is the Go [Demo CE](../samples/demo-ce/README.md).
 It registers with CFN and evaluates identity and content rules per MAS from a
-JSON config file. It is the default CE for both `make -C deploy up` and the direct Compose commands above.
+JSON config file. Direct `make -C deploy up` and base Compose start Demo CE.
+To select it through Task, use `DEPLOY_CE=demo task deploy:up` after preparing
+the policy file below.
 
 The CE waits for CFN to become healthy, then registers with `enforcing_url`
 and `enforcing_endpoint` for gRPC, plus `health_url` and `health_endpoint`
@@ -134,8 +168,9 @@ and `enforcing_endpoint` for gRPC, plus `health_url` and `health_endpoint`
 PATCH after a conflict. The CE sends no heartbeats after registration; CFN
 probes its health endpoint. `/readyz` returns 200 after registration succeeds.
 
-When upgrading, run `make -C deploy pull` before `make -C deploy up` so CFN, management and Demo CE
-use current images with compatible registration fields.
+When upgrading through Make, run `make -C deploy pull` before
+`make -C deploy up` so CFN, Management, and Demo CE use current images with
+compatible registration fields.
 
 The config file is [`demo-ce/config/config.json`](demo-ce/config/config.json), a generic
 starter mounted read-only at `/etc/demo-ce/config.json` through `CE_CONFIG_FILE`.
@@ -144,6 +179,7 @@ example identities (`my-agent`, `my-tool`, `my-llm`) with those your MAS submits
 A MAS that is not listed in the file is denied. To use your own file, set
 `DEMO_CE_CONFIG_FILE` in `.env`; relative paths resolve from `deploy/`.
 `make -C deploy up` checks that the file exists before starting services.
+Task performs the same check when `DEPLOY_CE=demo`.
 
 Other settings: `CF_DEMO_CE_TAG` (image tag), `DEMO_CE_NAME` (name in CFN),
 `DEMO_CE_LOG_FORMAT` (`console` or `json`), `LOG_LEVEL`, and `NO_COLOR`.
@@ -156,15 +192,49 @@ from the Compose network (or `http://localhost:18000/events` from the host).
 See the [Demo CE configuration reference](../samples/docs-site/content/demo-ce/configuration.md)
 for the file format.
 
+### Run your own CE
+
+```bash
+DEPLOY_CE=none task deploy:up
+```
+
+Start your CE separately after CFN is healthy. The `task run:*-ce` launchers
+belong to the local CF workflow. For a Template-derived host process on Docker
+Desktop, run the following from `samples/template-ce/` with available ports:
+
+```bash
+CFN_URL=http://127.0.0.1:9002 \
+  COGNITION_ENGINE_HOST=host.docker.internal \
+  COGNITION_STORE_URL=http://127.0.0.1:8081 \
+  GRPC_PORT=50051 HEALTH_PORT=8082 HTTP_PORT=8080 \
+  uv run --frozen python -m src
+```
+
+CFN needs to reach the CE's advertised gRPC and HTTP listeners. On Linux Docker
+Engine, use a reachable host address and bind the listeners there, or run the CE
+in a container on the deployment network.
+
+For a container, join `<COMPOSE_PROJECT_NAME>_default` as an external network.
+The default is `ioc-scale-cf-deployment_default`. Use
+`http://ioc-scale-cfn-svc:9002` for registration and
+`http://ioc-analytics-api:8000` for SCOPE evidence. Advertise the CE's own
+network name and ports. Stop or disconnect the custom container before
+`task deploy:down` to let Compose remove the network. Recreate or reconnect it
+after the next startup.
+
+Verify the CE is online in Management and associate it with the intended MAS.
+
 ### Enforcement (optional)
 
 [`enforcement/`](enforcement/) holds two optional flavors, `envoy` (Envoy with the
 Go sidecar and Wasm filters) and `shadi` (the sender-authorization verifier), each
-with an overlay compose file and example configs. They are not part of the base
-stack; start one with `make -C deploy up enforcement=envoy` or `enforcement=shadi`. Setup
-for each is in [`enforcement/README.md`](enforcement/README.md). Both adapters
-use CFN directly for decisions and audits. Their default examples start
-unprovisioned and reject protected traffic. Attaching/activating a MAS is a
+with a Compose overlay and example configs. Enable either overlay explicitly.
+Follow the selected [setup guide](enforcement/README.md), then set
+`DEPLOY_ENFORCEMENT=envoy` or `DEPLOY_ENFORCEMENT=shadi` and run `task deploy:up`.
+For direct Make, use `make -C deploy up enforcement=envoy` or
+`make -C deploy up enforcement=shadi`. Both adapters use CFN directly for
+decisions and audits. Their default examples start unprovisioned and reject
+protected traffic. Attaching/activating a MAS is a
 developer workflow. For native NOA A2A, follow the
 [onboarding and Task setup](../dev/README.md#noa-onboarding-and-proxy-mode).
 
@@ -176,7 +246,8 @@ developer workflow. For native NOA A2A, follow the
 | `ioc-scale-cf-mgmt-svc` | 9000 | Management backend API |
 | `ioc-scale-cf-mgmt-plane-ui` | 9001 | Management plane UI (Next.js) |
 | `ioc-scale-cfn-svc` | 9002 (HTTP), 9003 (gRPC) | Cognition Fabric Node |
-| `ioc-scale-cf-demo-ce` | 18001 (gRPC), 18000 (HTTP), loopback only | Go Demo CE with JSON configuration; default. See [Demo CE](#demo-ce) |
+| `ioc-scale-cf-deploy-template-ce` | 50051 (gRPC), 8082 (health), 8080 (notifications), loopback only | Python Template CE, default for Task |
+| `ioc-scale-cf-demo-ce` | 18001 (gRPC), 18000 (HTTP), loopback only | Go Demo CE with JSON configuration, default for direct Make and base Compose. See [Demo CE](#demo-ce) |
 
 ### SCOPE infrastructure
 
@@ -235,19 +306,22 @@ The normalization worker exposes no ports and receives sessions over RabbitMQ.
 ### MAS sample app
 
 For the [bundled NOA A2A MAS](../samples/noa-trip-planner-a2a/README.md), start
-the base platform with `make -C deploy up` or run `task deploy:up` with
-`DEPLOY_ENFORCEMENT` unset or empty. Follow the
-[NOA onboarding guide](../dev/README.md#noa-onboarding-and-proxy-mode) using the
-MAS and MCP server IDs from this deployment.
+the base platform with `task deploy:up` and `DEPLOY_ENFORCEMENT` unset or empty.
+For direct Make, use `make -C deploy up` with the Demo CE policy below.
+Follow the [NOA onboarding guide](../dev/README.md#noa-onboarding-and-proxy-mode)
+using the MAS and MCP server IDs from this deployment.
 
 Keep CFN's HTTP and gRPC ports `9002` and `9003` and the collector port
 `4318` reachable. `task run:full-mas` builds NOA from this checkout and
 starts its own Envoy and controller in a separate Compose project. The
 [standalone overlays](enforcement/README.md) are available for component testing.
 Stop the foreground task or run `task noa:down` before stopping CF with
-`make -C deploy down` or `task deploy:down`.
+`task deploy:down` or, for the direct Make path, `make -C deploy down`.
 
 #### NOA Demo CE policy
+
+This setup applies when you select Demo CE with `DEPLOY_CE=demo task deploy:up`
+or use the direct Make alternative.
 
 Copy [the NOA Demo CE policy](../dev/noa-demo-ce.example.json) into `.local/`
 and replace the MAS and MCP server ID placeholders. Include the existing
@@ -255,6 +329,8 @@ policies for any other MASes served by this Demo CE. Set `DEMO_CE_CONFIG_FILE`
 in root `.env` to the policy path relative to `deploy/`, for example
 `../.local/noa-demo-ce.json`. Rerun the deployment startup command to apply
 the policy and wait for the associated CE to show as online in Management.
+
+#### Verify the NOA sample
 
 Send a request once `task run:full-mas` reports NOA ready.
 

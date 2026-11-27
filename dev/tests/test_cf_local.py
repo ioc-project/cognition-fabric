@@ -32,7 +32,7 @@ keys = (
     "ADVERTISED_GRPC_ADDRESS", "ADVERTISED_HEALTH_URL", "CF_LOCAL_CE_HOST",
     "CF_LOCAL_CE_CONFIG_FILE", "CF_LOCAL_CE_MAS_FILE", "CFN_SVC_TAG",
     "CF_MGMT_SVC_TAG", "CF_UI_TAG", "CF_DEMO_CE_TAG", "CF_TEMPLATE_CE_TAG",
-    "GRPC_LISTEN_ADDRESS", "HTTP_LISTEN_ADDRESS", "LOCAL_CF_MGMT_DB", "GOWORK", "CF_LOCAL_ENV_FILE",
+    "GRPC_LISTEN_ADDRESS", "HTTP_LISTEN_ADDRESS", "LOCAL_CF_MGMT_DB", "GOWORK", "CF_LOCAL_ENV_FILE", "STACK_CE",
 )
 with open(os.environ["MOCK_LOG"], "a") as log:
     log.write(json.dumps({"tool": name, "args": args, "cwd": os.getcwd(),
@@ -493,6 +493,38 @@ class LocalLauncherTests(unittest.TestCase):
                     [(command["tool"], command["args"]) for command in self.commands()],
                     [("make", ["-C", "deploy", *step]) for step in steps],
                 )
+
+    @unittest.skipUnless(shutil.which("task"), "Task CLI is not installed")
+    def test_deploy_up_ce_selection(self):
+        cases = (
+            ("", {}, "template"),
+            ("demo", {}, "demo"),
+            ("demo", {"DEPLOY_CE": "template"}, "template"),
+            ("demo", {"DEPLOY_CE": "none"}, "none"),
+            ("demo", {"DEPLOY_CE": ""}, "template"),
+            ("invalid", {}, None),
+        )
+        for dotenv, overrides, expected in cases:
+            with self.subTest(dotenv=dotenv, overrides=overrides):
+                self.log.unlink(missing_ok=True)
+                (self.cfn / ".env").write_text(
+                    f"DEPLOY_CE={dotenv}\n" if dotenv else ""
+                )
+                result = subprocess.run(
+                    [shutil.which("task"), "--dir", str(self.cfn), "deploy:up"],
+                    env=self.env | overrides, capture_output=True, text=True,
+                )
+                calls = self.commands()
+                if expected is None:
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertIn("DEPLOY_CE must be template, demo, or none", result.stderr)
+                    self.assertEqual(calls, [])
+                else:
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(
+                        [(call["args"][-1], call["env"]["STACK_CE"]) for call in calls],
+                        [("pull", expected), ("up", expected)],
+                    )
 
 
 @unittest.skipUnless(shutil.which("docker"), "Docker Compose CLI is not installed")
