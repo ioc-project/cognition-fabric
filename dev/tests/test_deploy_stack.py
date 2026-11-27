@@ -116,6 +116,12 @@ with open(os.environ["MOCK_LOG"], "a") as f:
     f.write(json.dumps(args) + "\n")
 if args == ["info"]:
     sys.exit(0)
+if args[0] == "ps":
+    print(os.environ.get("PROJECT_SERVICES", ""))
+    sys.exit(0)
+if os.environ.get("CHECK_CE_ISOLATION") and ("pull" in args or "up" in args):
+    assert os.environ.get("COMPOSE_PROFILES") == ""
+    assert os.environ.get("COMPOSE_REMOVE_ORPHANS") == "false"
 if "config" in args:
     os.execv(os.environ["REAL_DOCKER"], [os.environ["REAL_DOCKER"], *args])
 if "ps" in args:
@@ -141,6 +147,7 @@ class DeploymentTests(unittest.TestCase):
             "scripts/run-stack.sh",
             "scripts/prepare-envoy.py",
             "demo-ce/config/config.json",
+            "ce/compose.yaml",
             "enforcement/envoy/compose.yaml",
             "enforcement/envoy/envoy.yaml",
             "enforcement/envoy/sidecar-spec.example.yaml",
@@ -361,6 +368,8 @@ class DeploymentTests(unittest.TestCase):
             selected = next(c for c in calls if command in c)
             self.assertTrue(any("/envoy/compose.yaml" in a for a in selected))
             self.assertTrue(any("/shadi/compose.yaml" in a for a in selected))
+            self.assertIn("deploy-demo-ce", selected)
+            self.assertIn("deploy-template-ce", selected)
         self.assertFalse((self.root / ".local/deploy-envoy").exists())
 
     def test_refuses_other_flavor_before_starting(self):
@@ -369,6 +378,110 @@ class DeploymentTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("run 'make down'", result.stderr)
         self.assertFalse(any("up" in call for call in self.calls()))
+
+    def test_ce_selection_limits_pull_and_startup_to_the_selected_services(self):
+        demo = "ioc-scale-cf-demo-ce"
+        template = "ioc-scale-cf-deploy-template-ce"
+        self.envoy_spec()
+        self.shadi_config()
+        self.append_env("COMPOSE_PROFILES=*\nCOMPOSE_REMOVE_ORPHANS=true")
+        for selection, expected in (
+            ("template", {template}), ("demo", {demo}), ("none", set()),
+        ):
+            for flavor in (None, "envoy", "shadi"):
+                with self.subTest(selection=selection, flavor=flavor):
+                    extra = {
+                        "STACK_CE": selection, "COMPOSE_PROFILES": "*",
+                        "COMPOSE_REMOVE_ORPHANS": "true", "CHECK_CE_ISOLATION": "1",
+                    }
+                    Path(self.env["MOCK_LOG"]).unlink(missing_ok=True)
+                    for action in ("pull", "up"):
+                        result = self.run_make(action, flavor, extra)
+                        self.assertEqual(result.returncode, 0, result.stderr)
+                    calls = self.calls()
+                    up = next(args for args in calls if "up" in args)
+                    pull = next(args for args in calls if "pull" in args)
+                    self.assertEqual(pull[:-1], up[:up.index("up")])
+                    self.assertSetEqual(set(up) & {demo, template}, expected)
+                    self.assertIn("ioc-scale-cfn-svc", up)
+                    self.assertIn("ioc-analytics-api", up)
+                    if flavor:
+                        self.assertIn(SERVICE if flavor == "envoy" else SHADI, up)
+                    result = subprocess.run(
+                        [DOCKER, *pull[:-1], "config", "--format", "json"],
+                        env=self.env | extra | {"COMPOSE_PROFILES": ""},
+                        capture_output=True, text=True,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    services = json.loads(result.stdout)["services"]
+                    self.assertSetEqual(services.keys() & {demo, template}, expected)
+                    if selection == "template":
+                        ce = services[template]
+                        self.assertEqual(ce["image"], "ghcr.io/ioc-project/ioc-scale-cf-demo-ce/template-ce:latest")
+                        self.assertEqual(ce["environment"]["CE_NAME"], "template-ce")
+                        self.assertEqual(ce["environment"]["COGNITION_ENGINE_HOST"], template)
+                        self.assertEqual(ce["environment"]["CFN_URL"], "http://ioc-scale-cfn-svc:9002")
+                        self.assertEqual(ce["environment"]["COGNITION_STORE_URL"], "http://ioc-analytics-api:8000")
+                        self.assertEqual(ce["environment"]["ENABLE_NOTIFICATIONS"], "true")
+                        self.assertEqual(ce["environment"]["HTTP_PORT"], "8080")
+                        self.assertEqual(ce["environment"]["GRPC_PORT"], "50051")
+                        self.assertEqual(ce["environment"]["HEALTH_PORT"], "8082")
+                        self.assertCountEqual(
+                            [(p["host_ip"], p["published"], p["target"]) for p in ce["ports"]],
+                            [("127.0.0.1", str(port), port) for port in (8080, 50051, 8082)],
+                        )
+                        self.assertIn("http://127.0.0.1:8082/healthz", ce["healthcheck"]["test"][-1])
+                        self.assertEqual(ce["depends_on"]["ioc-scale-cfn-svc"]["condition"], "service_healthy")
+
+    def test_demo_policy_is_required_only_when_demo_is_selected(self):
+        (self.deploy / "demo-ce/config/config.json").unlink()
+        for selection in ("template", "none"):
+            result = self.run_make("up", extra={"STACK_CE": selection})
+            self.assertEqual(result.returncode, 0, result.stderr)
+        for extra in ({}, {"STACK_CE": "demo"}):
+            result = self.run_make("up", extra=extra)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("demo-ce/config/config.json", result.stderr)
+
+    def test_ce_switch_and_teardown_respect_ownership(self):
+        demo = "ioc-scale-cf-demo-ce"
+        template = "ioc-scale-cf-deploy-template-ce"
+        local_template = "ioc-scale-cf-template-ce"
+        cases = (
+            ("none", f"{demo}||created", "'task deploy:down'"),
+            ("demo", f"{template}||restarting", "'task deploy:down'"),
+            (None, f"{template}||running", "'make -C deploy down'"),
+            ("template", f"{demo}|true|running", "local CF workflow"),
+            ("none", "ioc-scale-cfn-svc|true|exited", "docker rm ioc-scale-cfn-svc"),
+            ("template", f"{local_template}|true|running", "uses the Template CE ports"),
+        )
+        for selection, service, diagnostic in cases:
+            with self.subTest(selection=selection, service=service):
+                extra = {"PROJECT_SERVICES": service}
+                if selection is not None:
+                    extra["STACK_CE"] = selection
+                result = self.run_make("up", extra=extra)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(diagnostic, result.stderr)
+        result = self.run_make("down", extra={"PROJECT_SERVICES": f"{demo}|true|exited"})
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(f"docker rm {demo}", result.stderr)
+        self.assertNotIn("task infra:down", result.stderr)
+        self.assertFalse(any("up" in args or "down" in args for args in self.calls()))
+        result = self.run_make("down", extra={
+            "STACK_CE": "none", "PROJECT_SERVICES": f"{template}||running",
+        })
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("--remove-orphans=false", self.calls()[-1])
+        self.assertIn("deploy-demo-ce", self.calls()[-1])
+        self.assertIn("deploy-template-ce", self.calls()[-1])
+        for state in ("exited", "created"):
+            with self.subTest(local_template_state=state):
+                result = self.run_make("up", extra={
+                    "STACK_CE": "template",
+                    "PROJECT_SERVICES": f"{demo}|true|exited\n{local_template}|true|{state}",
+                })
+                self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":

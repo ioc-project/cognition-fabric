@@ -1,7 +1,8 @@
 # Enforcement (optional)
 
-The platform starts CF, SCOPE, and Demo CE. Add one optional Proxy flavor through
-the Makefile interface:
+The deployment Task supports two optional Proxy flavors. It starts CF and
+SCOPE with the [selected CE](../README.md#quick-start), which defaults to
+Template CE.
 
 | Flavor | Components | Configuration guide |
 | --- | --- | --- |
@@ -13,6 +14,21 @@ Run from the monorepo root after the platform prerequisites in
 inputs before starting:
 
 ```bash
+DEPLOY_ENFORCEMENT=envoy task deploy:up
+```
+
+Use `DEPLOY_ENFORCEMENT=shadi` for the other flavor. You can also set
+`DEPLOY_ENFORCEMENT` in root `.env` and run `task deploy:up`, or leave it empty
+for the base stack. Run `task deploy:down` before switching flavors, even when
+the other flavor only has stopped installers. Shutdown preserves volumes.
+
+### Direct Make alternative
+
+The Task calls the [deployment Makefile](../README.md#direct-make-alternative).
+For direct Make, prepare the Demo CE policy along with the flavor's private
+inputs. Use `enforcement=shadi` for SHADi.
+
+```bash
 make -C deploy doctor enforcement=envoy
 make -C deploy pull enforcement=envoy
 make -C deploy up enforcement=envoy
@@ -21,13 +37,14 @@ make -C deploy logs service=ioc-scale-enforcement-proxy-envoy
 make -C deploy down
 ```
 
-Use `enforcement=shadi` for the other flavor. Only one flavor may exist at a time;
-`up` refuses if the other's containers exist, even stopped installer jobs.
-`status/logs/down` cover both flavors. `down` preserves volumes.
-`task deploy:up` reads `DEPLOY_ENFORCEMENT` from root `.env`. Set it to
-`envoy` or `shadi` to select an overlay, or leave it empty for the base stack.
-`config/pull` work before private startup files exist. `doctor` checks inputs but
-starts no containers; for Envoy it also prepares ignored bootstrap files.
+Only one flavor may exist at a time. `up` refuses if the other flavor's
+containers exist, including stopped installer jobs. Run `make -C deploy down`
+before switching. `status`, `logs`, and `down` cover both flavors. Shutdown
+preserves volumes.
+
+`config` and `pull` work before private startup files exist. `doctor` checks
+inputs without starting containers and prepares the ignored bootstrap files
+for Envoy.
 
 Both adapters call CFN directly for decisions and audit delivery.
 
@@ -51,12 +68,13 @@ image tags default to `latest`.
 A full reference takes precedence over `PROXY_REGISTRY` and the component's tag.
 Settings in an existing root `.env` remain explicit overrides.
 
-`make pull` explicitly refreshes selected images. Compose can also refresh
-`latest` during `up`, even when cached; `up` adds no extra pull command. Select
-full digest references to retain a known working release. Record the selected
-image digests, compatible Envoy version, platform and private configuration
-before updating. Treat sidecar/Wasm as a qualified pair. Example settings to fill
-with recorded digests in root `.env`:
+`task deploy:up` refreshes selected images by default. For direct Make, use
+`make -C deploy pull` with the chosen flavor to explicitly refresh its images.
+Direct `up` uses Compose's pull policy, which can refresh `latest` even when the
+image is cached. Select full digest references to retain a known working release.
+Record the selected image digests, compatible Envoy version, platform and private
+configuration before updating. Treat sidecar/Wasm as a qualified pair. Example
+settings to fill with recorded digests in root `.env`:
 
 ```dotenv
 ENFORCEMENT_SIDECAR_IMAGE=ghcr.io/ioc-project/ioc-sidecar@sha256:<recorded-sidecar-digest>
@@ -64,9 +82,13 @@ ENFORCEMENT_WASM_IMAGE=ghcr.io/ioc-project/ioc-wasm@sha256:<recorded-wasm-digest
 ENFORCEMENT_SHADI_IMAGE=ghcr.io/ioc-project/ioc-shadi-verifier@sha256:<recorded-shadi-digest>
 ```
 
-For a deliberate upgrade or rollback, run `make -C deploy down`, select the
-compatible images and restore matching private configuration, then run
-`doctor`, `pull`, `up` with the chosen flavor. Volumes are retained.
+For a deliberate upgrade or rollback, run `task deploy:down`, select the
+compatible images and restore matching private configuration. Then run
+`task deploy:up` with `DEPLOY_PULL=true` and the chosen `DEPLOY_ENFORCEMENT`
+setting. With direct Make, run `make -C deploy down`, select the compatible
+images and restore matching private configuration, then run `doctor`, `pull`,
+and `up` with the chosen flavor. Both shutdown paths preserve volumes.
+
 Envoy restarts after installer updates and is recreated after prepared content
 changes; uninterrupted plugin upgrades are not a deployment guarantee.
 

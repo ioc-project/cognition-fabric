@@ -8,6 +8,11 @@ the maintained Envoy Proxy runtime. The
 platform. The NOA task checks CFN health and MAS assignment, then enrolls NOA
 in its own Compose project.
 
+`task deploy:up` defaults to Template CE. `DEPLOY_CE=demo` selects
+Demo CE and `none` leaves CE startup to the operator. When switching CEs,
+verify the selected CE is online and update the test MAS association before
+running NOA. Direct `make -C deploy up` starts Demo CE.
+
 `infra:up` starts platform dependencies without requiring a MAS. Start our CFN,
 Management, UI and chosen Demo/Template CE, onboard the separate A2A declaration,
 then set its canonical MAS and generated MCP server IDs before `run:full-mas`.

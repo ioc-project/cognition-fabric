@@ -52,12 +52,29 @@ case "${enforcement}" in
   ""|envoy|shadi) ;;
   *) die "enforcement must be empty, envoy or shadi" ;;
 esac
+ce="${STACK_CE:-}"
+case "${ce}" in
+  ""|demo|template|none) ;;
+  *) die "CE selection must be template, demo, or none" ;;
+esac
+
+demo_service=ioc-scale-cf-demo-ce
+template_service=ioc-scale-cf-deploy-template-ce
+local_template_service=ioc-scale-cf-template-ce
 compose_base=(docker compose -p "${project}" --project-directory "${root}" --env-file "${stack_env}" -f "${stack_compose}")
-# Selected flavor for up/config/pull/doctor.
+# Selected CE and enforcement flavor for up/config/pull/doctor.
 compose=("${compose_base[@]}")
+if [[ -n "${ce}" ]]; then
+  # The Task selector owns profile activation and preserves other project containers.
+  export COMPOSE_PROFILES= COMPOSE_REMOVE_ORPHANS=false
+  compose+=(-f "${root}/ce/compose.yaml")
+  [[ "${ce}" == none ]] || compose+=(--profile "deploy-${ce}-ce")
+fi
 [[ -z "${enforcement}" ]] || compose+=(-f "${root}/enforcement/${enforcement}/compose.yaml")
-# down/status/logs cover every flavor so nothing is left orphaned.
-compose_all=("${compose_base[@]}" -f "${root}/enforcement/envoy/compose.yaml" -f "${root}/enforcement/shadi/compose.yaml")
+# down/status/logs cover both CEs and every enforcement flavor.
+compose_all=("${compose_base[@]}" -f "${root}/ce/compose.yaml"
+             --profile deploy-demo-ce --profile deploy-template-ce
+             -f "${root}/enforcement/envoy/compose.yaml" -f "${root}/enforcement/shadi/compose.yaml")
 
 # Read a literal KEY=value from the env file without sourcing it.
 env_value() {
@@ -91,7 +108,9 @@ try:
     def mount(service, target):
         return pathlib.Path(next(v["source"] for v in services[service]["volumes"]
                                  if v["target"] == target))
-    files = [mount("ioc-scale-cf-demo-ce", "/etc/demo-ce/config.json")]
+    files = []
+    if "ioc-scale-cf-demo-ce" in services:
+        files.append(mount("ioc-scale-cf-demo-ce", "/etc/demo-ce/config.json"))
     if sys.argv[1] == "shadi":
         directory = mount("ioc-scale-enforcement-proxy-shadi-verifier", "/run/shadi-verifier")
         files += [directory / name for name in ("config.json", "ca.crt", "server.crt", "server.key")]
@@ -140,6 +159,43 @@ selected_services() {
   "${compose[@]}" config --services
 }
 
+check_project_ownership() {
+  local containers service local_dev state
+  containers="$(docker ps --all --filter "label=com.docker.compose.project=${project}" \
+    --filter label=com.docker.compose.oneoff=False \
+    --format '{{.Label "com.docker.compose.service"}}|{{.Label "io.cisco.cf.local"}}|{{.State}}')"
+  while IFS='|' read -r service local_dev state; do
+    if [[ "${local_dev}" == true ]]; then
+      case "${service}" in
+        "${local_template_service}")
+          if [[ "${action}" == up && "${ce}" == template && "${state}" =~ ^(running|restarting|paused)$ ]]; then
+            die "${service} uses the Template CE ports. Stop its local task or run 'task infra:down' before starting the deployment Template CE."
+          fi
+          ;;
+        "${demo_service}"|ioc-scale-cf-mgmt-svc|ioc-scale-cfn-svc|ioc-scale-cf-mgmt-plane-ui)
+          if [[ "${service}" == "${demo_service}" && "${action}" == up && "${ce:-demo}" != demo && "${state}" == exited ]]; then
+            continue
+          fi
+          if [[ "${state}" == exited || "${state}" == created ]]; then
+            die "${service} belongs to the local CF workflow. Run 'docker rm ${service}' to remove the stopped container."
+          fi
+          die "${service} belongs to the local CF workflow. Stop its foreground task, then run 'docker rm ${service}' to remove the stopped container."
+          ;;
+      esac
+      continue
+    fi
+    [[ "${action}" == up ]] || continue
+    case "${service}" in
+      "${demo_service}")
+        [[ "${ce:-demo}" == demo ]] || die "Demo CE is present. Run 'make -C deploy down' or 'task deploy:down' before changing the deployment CE."
+        ;;
+      "${template_service}")
+        [[ "${ce:-demo}" == template ]] || die "Template CE is present. Run 'make -C deploy down' or 'task deploy:down' before changing the deployment CE."
+        ;;
+    esac
+  done <<< "${containers}"
+}
+
 # Poll until each container is running/healthy, or exited 0. A timeout names
 # the services that have not settled instead of hanging.
 wait_for_stack() {
@@ -182,6 +238,7 @@ for name in sys.argv[1:]:
 case "${action}" in
   up)
     require_env
+    check_project_ownership
     refuse_other_flavor
     preflight
     up_services=()
@@ -192,7 +249,8 @@ case "${action}" in
     ;;
   down)
     require_env
-    "${compose_all[@]}" down
+    check_project_ownership
+    "${compose_all[@]}" down --remove-orphans=false
     ;;
   status)
     require_env

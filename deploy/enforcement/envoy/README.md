@@ -11,9 +11,9 @@ are rejected. Registering MAS/agent IDs alone is insufficient for activation.
 
 ## Start from the monorepo root
 
-Complete the root environment and Demo CE setup in
-[`deploy/README.md`](../../README.md). Docker Compose 2.24.4+ and Python 3 are
-required; all runtime images are published, with no local image builds.
+Complete the environment setup in [`deploy/README.md`](../../README.md).
+Docker Compose 2.24.4+ and Python 3 are required. The deployment uses published
+images for all components.
 
 1. Copy the private route example:
 
@@ -26,28 +26,41 @@ required; all runtime images are published, with no local image builds.
    `upstream` points at Nginx, which echoes the received `traceparent`. It does
    not forward requests to NOA. Placeholder IDs describe the configuration shape.
 
-3. Check, pull and start:
+3. Start the deployment with the Envoy flavor:
 
    ```bash
-   make -C deploy doctor enforcement=envoy
-   make -C deploy pull enforcement=envoy
-   make -C deploy up enforcement=envoy
-   make -C deploy status
-   make -C deploy logs service=ioc-scale-enforcement-proxy-envoy
+   DEPLOY_ENFORCEMENT=envoy task deploy:up
    ```
 
-   Switching flavors requires `make -C deploy down` first.
+   Switching flavors requires `task deploy:down` first.
 
 4. Inspect the component and stop it when finished:
 
    ```bash
    curl -i http://127.0.0.1:9010/replace-with-exact-path
    curl -s http://127.0.0.1:9012/stats
-   make -C deploy down
+   task deploy:down
    ```
 
    Protected example traffic is rejected without activation. An unmatched path
    can pass to Nginx; a 200 there does not prove enforcement. `down` keeps volumes.
+
+### Direct Make alternative
+
+Prepare the [Demo CE policy](../../README.md#demo-ce) and follow the
+[direct Make environment setup](../../README.md#direct-make-alternative).
+Run `make -C deploy down` first if switching from the SHADi flavor.
+
+```bash
+make -C deploy doctor enforcement=envoy
+make -C deploy pull enforcement=envoy
+make -C deploy up enforcement=envoy
+make -C deploy status
+make -C deploy logs service=ioc-scale-enforcement-proxy-envoy
+```
+
+After startup, use the same component checks from step 4 and stop the stack
+with `make -C deploy down`.
 
 ## Configuration and preparation
 
@@ -72,11 +85,13 @@ The template is an input, not a ready-to-run bootstrap. Both Go filter reference
 require the digest and an activation reference with epoch/generation. The example
 references `/etc/sidecar/activation/control.json` with unprovisioned values.
 
-`doctor` starts no containers. `config/pull` work before private inputs exist;
-`status/logs/down` work after they are removed. Before using Compose directly,
-run `doctor` and repeat it when inputs change. Makefile `up` recreates Envoy after
-prepared content changes and restarts it after installer updates so the running
-process loads the selected plugin/Wasm artifacts.
+`doctor` prepares the bootstrap without starting containers. `config` and
+`pull` work before private inputs exist. `status`, `logs`, and `down` work after
+the inputs are removed. Before using Compose directly, run
+`make -C deploy doctor enforcement=envoy` and repeat it when inputs change.
+Makefile `up` recreates Envoy after prepared content changes and restarts it
+after installer updates so the running process loads the selected plugin and
+Wasm artifacts. `task deploy:up` uses the same launcher.
 
 Keep Envoy `contrib-v1.38.0` with a compatible sidecar. All four overlay services
 use `ENFORCEMENT_PLATFORM` (default `linux/arm64`; use `linux/amd64` on Intel/AMD).

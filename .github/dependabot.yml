@@ -6,19 +6,67 @@ version: 2
 updates:
   - package-ecosystem: gomod
     directories: [/api, /cfn, /samples/demo-ce]
-    schedule: {interval: weekly}
+    schedule: {interval: monthly}
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
   - package-ecosystem: pip
     directories: [/cf-mgmt]
-    schedule: {interval: weekly}
+    schedule: {interval: monthly}
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
   - package-ecosystem: uv
     directories: [/samples/template-ce, /samples/noa-trip-planner-a2a]
-    schedule: {interval: weekly}
+    schedule: {interval: monthly}
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
   - package-ecosystem: npm
     directories: [/cf-ui, /samples/docs-site]
-    schedule: {interval: weekly}
+    schedule: {interval: monthly}
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
   - package-ecosystem: docker
     directories: [/cfn, /cf-mgmt, /cf-ui/ci/docker, /samples/demo-ce, /samples/template-ce, /samples/noa-trip-planner-a2a]
-    schedule: {interval: weekly}
+    schedule: {interval: monthly}
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+      security:
+        applies-to: security-updates
+        patterns: ["*"]
   - package-ecosystem: github-actions
     directory: /
-    schedule: {interval: weekly}
+    schedule: {interval: monthly}
+    groups:
+      minor-and-patch:
+        applies-to: version-updates
+        update-types: [minor, patch]
+        patterns: ["*"]
+      security:
+        applies-to: security-updates
+        patterns: ["*"]

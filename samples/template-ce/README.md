@@ -1,8 +1,9 @@
 # Template CE
 
 Template Cognition Engine implementing the `ioc.ce.v1.CognitionEngine` gRPC contract.
-The implementation, Dockerfile and tests are retained for CE teams. The repository's Compose deployment
-runs `demo-ce`; use the local instructions below to run this template.
+The implementation, Dockerfile and tests are available for CE teams.
+The [deployment Task](../../deploy/README.md#template-ce) starts the published
+Template CE by default.
 
 ## Overview
 
