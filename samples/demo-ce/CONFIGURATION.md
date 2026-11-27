@@ -1,14 +1,11 @@
----
-title: Configure Demo CE
----
-
 # Configure Demo CE
 
 ## Rule file
 
-`CE_CONFIG_FILE` defaults to `/etc/demo-ce/config.json`. The root Compose file mounts
-`demo-ce/config/config.json` there read-only. The engine reads it at startup; recreate or restart
-the CE after changing it.
+`CE_CONFIG_FILE` defaults to `/etc/demo-ce/config.json`. The
+[sample Compose file](../docker-compose.yml) mounts `demo-ce/config/config.json`
+there read-only. The engine reads it at startup. Recreate or restart the CE
+after changing it. For the shared stack, see [deployment setup](../../deploy/README.md#demo-ce).
 
 Use per-MAS configuration to keep the demonstration's scopes explicit:
 
@@ -97,8 +94,9 @@ wait for explicit definitions; an absent list is not the same as a known empty l
 | `LOG_LEVEL` | `info` | Logging threshold |
 | `NO_COLOR` | Empty | Non-empty disables console colors |
 
-Native runs read these environment variables directly. The root Compose file wires a subset;
-add other variables to its `environment` block when you need them in the container.
+Native runs read these environment variables directly. The sample Compose file
+wires a subset. Add other variables to its `environment` block when you need
+them in the container.
 
 ## Context timing
 

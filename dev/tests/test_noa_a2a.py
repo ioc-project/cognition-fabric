@@ -46,11 +46,17 @@ class NativeNoaTests(unittest.TestCase):
         self.settings = {
             "AI_GATEWAY_BASE_URL": "https://model.example.invalid/v1",
             "AI_GATEWAY_API_KEY": "fixture-$()-with-quotes-'",
+            "NOA_LLM_MODEL": "provider/model",
             "NOA_MAS_ID": MAS, "NOA_MCP_SERVER_ID": MCP,
         }
 
     def values(self, **changes):
         return NOA.installation(self.settings | changes, self.state, self.source, self.root)
+
+    def test_model_is_required_and_forwarded_unchanged(self):
+        with self.assertRaisesRegex(ValueError, "Set NOA_LLM_MODEL"):
+            self.values(NOA_LLM_MODEL="")
+        self.assertEqual(self.values()["NOA_LLM_MODEL"], self.settings["NOA_LLM_MODEL"])
 
     def test_image_defaults_and_explicit_reference_precedence(self):
         values = self.values()

@@ -5,7 +5,6 @@
 | [demo-ce/](demo-ce/README.md) | Go CE with per-MAS identity and content policies |
 | [template-ce/](template-ce/README.md) | Python reference CE with registration, health, and MAS notifications |
 | [noa-trip-planner-a2a/](noa-trip-planner-a2a/README.md) | Native NOA A2A workload with Proxy enforcement and onboarding |
-| [docs-site/](docs-site/README.md) | Docusaurus documentation for the CE samples |
 
 The shared CE and Enforcement contracts live in [api/](../api/README.md).
 Go samples depend on the local API module; Python bindings are generated from

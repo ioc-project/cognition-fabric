@@ -30,6 +30,7 @@ This set follows the org TOME template list. Each file notes its category:
 | Document | What it is |
 |----------|------------|
 | [`glossary.md`](glossary.md) | Source definitions, one `##` heading per term. **Start here if a term is unfamiliar.** |
+| [`site/`](site/index.md) | Public documentation site source. See [preview and publication](releases.md#documentation-deployment). |
 | [`target-architecture.md`](target-architecture.md) | Longer-term CF design and planned capabilities. |
 | [`agent-ledger/`](agent-ledger/README.md) | Agent working guidance, separate from curated ADRs. |
 | [`decisions/`](decisions/README.md) | Curated, numbered CFN architecture decision records. |

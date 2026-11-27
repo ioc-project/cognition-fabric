@@ -97,7 +97,26 @@ the total image-job duration.
 
 ## Documentation deployment
 
-The [Pages workflow](../.github/workflows/pages.yaml) publishes one site containing
-the CE documentation and the Management API viewer/schema under `/mgmt-api/`.
-Configure the Pages source and deployment environment as described in the
-[site maintenance guide](../samples/docs-site/content/contributing.md#github-pages).
+The [Pages workflow](../.github/workflows/pages.yaml) publishes the
+[Cognition Fabric documentation site](https://ioc-project.github.io/cognition-fabric/).
+The source is in [`docs/site/`](site/index.md). The architecture diagram is
+shared with [the repository architecture document](architecture.md).
+
+Use Python 3.11 or newer to build and preview the site from the repository root.
+
+```sh
+python3 -m venv .local/pages-venv
+. .local/pages-venv/bin/activate
+python -m pip install -r docs/requirements.txt
+python -m mkdocs build --strict
+python -m mkdocs serve --strict
+```
+
+Open `http://127.0.0.1:8000/cognition-fabric/`. The static build is in
+`.local/pages/`. PR CI runs the strict build for review. GitHub Pages uses
+**GitHub Actions** as its source and the `github-pages` deployment environment.
+The workflow runs on site changes pushed to `main` or when dispatched on
+`main`.
+
+Before publishing the quickstart, verify its images and pinned Proxy runtime
+can be retrieved from a clean environment and follow the guide end to end.

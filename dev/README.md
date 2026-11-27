@@ -232,14 +232,18 @@ from either the local Task workflow or the
 [Makefile deployment](../deploy/README.md#mas-sample-app). NOA and its Proxy
 run in a separate Compose project.
 
-1. Set `AI_GATEWAY_BASE_URL` and `AI_GATEWAY_API_KEY` in root `.env`.
+1. Set `AI_GATEWAY_BASE_URL`, `AI_GATEWAY_API_KEY` and `NOA_LLM_MODEL` in root
+   `.env`. Existing gateway users can explicitly set their current model alias.
    Start CF and a CE through the local tasks or start the base deployment
    with `make -C deploy up`. The equivalent Task shortcut is
    `task deploy:up` with `DEPLOY_ENFORCEMENT` unset or empty.
 2. In Management UI, create a MAS using **JSON** mode and paste
    [`noa-a2a-mas.json`](../samples/noa-trip-planner-a2a/mas/noa-a2a-mas.json).
-   Select the existing enabled, online CE before saving. Use a workspace assigned
-   to this CFN. See [onboarding](../samples/noa-trip-planner-a2a/mas/README.md).
+   Management attaches auto-associated CEs such as the default Template CE
+   on save. For a CE configured for manual association, switch to **Form**
+   mode and select it before saving. Verify that the intended CE is enabled
+   and online in the workspace assigned to this CFN. See
+   [onboarding](../samples/noa-trip-planner-a2a/mas/README.md).
 3. Read back that MAS. Set root `NOA_MAS_ID` to its canonical ID and
    `NOA_MCP_SERVER_ID` to `mcp_servers[0].id`. Keep the declaration's agent IDs.
    Custom identities can instead be supplied as upstream canonical JSON through

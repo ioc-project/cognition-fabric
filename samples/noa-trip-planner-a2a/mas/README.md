@@ -1,8 +1,10 @@
 # Onboard the NOA A2A MAS
 
 Paste [`noa-a2a-mas.json`](noa-a2a-mas.json) into JSON mode at
-`/mas/create` in CF Management. Select an enabled, online Cognition Engine in
-the workspace served by your CFN and save the MAS.
+`/mas/create` in a workspace served by your CFN and save the MAS. Management
+attaches auto-associated Cognition Engines such as the default Template CE.
+For a manual association, switch to Form mode and select the CE before saving.
+Check the saved MAS for the intended enabled, online CE.
 
 Copy the MAS ID into `NOA_MAS_ID` and the ID of the declared MCP server
 (`mcp_servers[0].id`) into `NOA_MCP_SERVER_ID` in the monorepo root `.env`.

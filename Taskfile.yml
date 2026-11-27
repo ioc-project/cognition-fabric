@@ -23,7 +23,7 @@ tasks:
       - bash dev/cf-local.sh test
 
   test:dev:
-    desc: Test local launchers, helpers, release dispatch and Pages staging without starting services
+    desc: Test local launchers, helpers and CI automation without starting services
     dir: cf-mgmt
     cmds:
       - poetry run python -m unittest discover -s ../dev/tests -v

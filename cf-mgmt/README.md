@@ -1,7 +1,6 @@
 # Internet of Cognition (IOC) - Cognition Fabric Node (CFN) Management Backend Service
 
 [![Docker](https://img.shields.io/badge/docker-ghcr.io-blue?logo=docker)](https://github.com/orgs/cisco-eti/packages/container/package/ioc-scale-cf-mgmt-svc)
-[![GitHub Pages Site](https://img.shields.io/badge/GitHub%20Pages-Visit-green?logo=github)](../samples/docs-site/README.md)
 
 IoC CFN Management Backend Service - FastAPI backend for workspaces, users, API keys, Cognitive Fabric Nodes, and Multi-Agentic Systems
 
@@ -173,4 +172,8 @@ This project uses third-party open source components. See [THIRD-PARTY-NOTICES](
 See [MAS metadata](../api/mgmt/docs/MAS_METADATA.md) for the optional Stage 3 contract,
 snapshot semantics, atomic reference validation and additive migration.
 
-Management API documentation is generated locally into [the canonical schema](../api/mgmt/openapi/openapi.json). Run `task generate-openapi-spec` or the nonmutating `task check-openapi-spec` from this folder. The root Pages deployment serves its viewer under `/mgmt-api/`.
+Management API documentation is generated locally into
+[the canonical schema](../api/mgmt/openapi/openapi.json). Run
+`task generate-openapi-spec` or the nonmutating `task check-openapi-spec` from
+this folder. A running Management server serves interactive documentation at
+`/api/docs` and `/redoc`.

@@ -12,7 +12,7 @@ After register or PATCH it pulls currently associated MAS IDs from CFN, then sta
 lifecycle notifications. CFN probes health every couple of seconds to decide whether the CE is online,
 so the CE sends no heartbeats. Associated MAS state is for lifecycle logging only; it is not a policy source.
 
-See the [documentation site source](../docs-site/README.md) for the full Demo CE guide.
+See the [configuration reference](CONFIGURATION.md) for policy and environment settings.
 
 ## Evaluation response
 

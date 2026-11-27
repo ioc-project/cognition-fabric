@@ -14,6 +14,8 @@ remains open.
 
 Read the [Cognition Fabric architecture](docs/architecture.md) for the component
 diagram, API boundaries, and runtime flows.
+Visit the [documentation site](https://ioc-project.github.io/cognition-fabric/)
+for the API overview and Getting Started guides.
 
 - **CF Management** manages workspaces, MAS definitions, CE registrations, and
   configuration.
@@ -39,7 +41,7 @@ database server for CF and SCOPE in the [deployment stack](deploy/README.md).
 | [samples/demo-ce/](samples/demo-ce/README.md) | Go policy-driven Cognition Engine |
 | [samples/template-ce/](samples/template-ce/README.md) | Python reference Cognition Engine |
 | [samples/noa-trip-planner-a2a/](samples/noa-trip-planner-a2a/README.md) | Native NOA A2A sample and MAS declaration |
-| [samples/docs-site/](samples/docs-site/README.md) | CE documentation site |
+| [docs/site/](docs/site/index.md) | Cognition Fabric documentation site |
 | [dev/](dev/README.md) | Local launchers, Compose overrides, and development checks |
 | [deploy/](deploy/README.md) | Shared Compose stack, enforcement overlays, and database image source |
 | [docs/](docs/README.md) | CF-wide architecture, decisions, contracts, and operating guidance |

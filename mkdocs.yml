@@ -1,0 +1,69 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
+site_name: Cognition Fabric
+site_description: Governance and enforcement for multi-agent systems.
+site_url: https://ioc-project.github.io/cognition-fabric/
+repo_url: https://github.com/ioc-project/cognition-fabric
+repo_name: ioc-project/cognition-fabric
+edit_uri: edit/main/docs/site/
+
+docs_dir: docs/site
+site_dir: .local/pages
+hooks:
+  - docs/pages.py
+watch:
+  - docs/assets/cf-architecture-context.svg
+
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: black
+    accent: cyan
+  font:
+    text: Inter
+    code: Roboto Mono
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.indexes
+    - navigation.top
+    - navigation.footer
+    - toc.follow
+    - content.code.copy
+    - content.action.edit
+    - search.suggest
+    - search.highlight
+
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+
+plugins:
+  - search
+
+validation:
+  nav:
+    omitted_files: warn
+  links:
+    absolute_links: warn
+    unrecognized_links: warn
+    anchors: warn
+
+nav:
+  - Overview: index.md
+  - Analytics: analytics.md
+  - Active: active.md
+  - Enforcement: enforcement.md
+  - Getting Started:
+      - getting-started/index.md
+      - Quickstart: getting-started/quickstart.md
+      - Cognition Engine walkthrough: getting-started/cognition-engine.md
+      - Develop from source: getting-started/develop.md

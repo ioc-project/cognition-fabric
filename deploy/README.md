@@ -148,7 +148,7 @@ The CE uses `http://ioc-analytics-api:8000` for runtime context and Cognition St
 Its `OXP_API_URL` environment variable retains the name supported by the CE image.
 Pre-call events can also be published to `http://ioc-scale-cf-demo-ce:18000/events`
 from the Compose network (or `http://localhost:18000/events` from the host).
-See the [Demo CE configuration reference](../samples/docs-site/content/demo-ce/configuration.md)
+See the [Demo CE configuration reference](../samples/demo-ce/CONFIGURATION.md)
 for the file format.
 
 ### Enforcement (optional)

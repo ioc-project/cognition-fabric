@@ -19,7 +19,7 @@ x-agent: &agent
     A2A_HTTP_URLS: '{"schedule_agent":"http://noa-schedule-agent:8000","itinerary_agent":"http://noa-itinerary-agent:8000","concierge_agent":"http://noa-concierge-agent:8000"}'
     AI_GATEWAY_BASE_URL: ${AI_GATEWAY_BASE_URL:?Configure the model gateway}
     AI_GATEWAY_API_KEY: ${AI_GATEWAY_API_KEY:?Configure the model credential}
-    NOA_LLM_MODEL: ${NOA_LLM_MODEL:-azure/gpt-4o}
+    NOA_LLM_MODEL: ${NOA_LLM_MODEL:?Set the provider model name}
     NOA_ENABLE_SIMULATED_DELAY: "false"
     AGENT_REQUEST_TIMEOUT_SECONDS: "240"
     OTLP_HTTP_ENDPOINT: http://telemetry-relay:4318

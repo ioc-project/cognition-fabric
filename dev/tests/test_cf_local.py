@@ -129,6 +129,7 @@ class LocalLauncherTests(unittest.TestCase):
             CE_CONFIG_FILE="policy.json",
             AI_GATEWAY_BASE_URL="http://example.invalid/v1",
             AI_GATEWAY_API_KEY="test",
+            NOA_LLM_MODEL="provider/model",
             NOA_MAS_ID="00000000-0000-0000-0000-000000000001",
         )
 
@@ -425,6 +426,12 @@ class LocalLauncherTests(unittest.TestCase):
         result = self.run_task("run-full-mas", NOA_MAS_ID="")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("Set NOA_MAS_ID", result.stderr)
+        self.assertFalse(any("up" in c["args"] or "pull" in c["args"] for c in self.commands()))
+
+    def test_noa_requires_explicit_model_before_starting_services(self):
+        result = self.run_task("run-full-mas", NOA_LLM_MODEL="")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("Set NOA_LLM_MODEL", result.stderr)
         self.assertFalse(any("up" in c["args"] or "pull" in c["args"] for c in self.commands()))
 
     def test_all_eight_suites_are_in_aggregate_and_test_database_is_isolated(self):

@@ -8,13 +8,13 @@ updates:
     directories: [/api, /cfn, /samples/demo-ce]
     schedule: {interval: weekly}
   - package-ecosystem: pip
-    directories: [/cf-mgmt]
+    directories: [/cf-mgmt, /docs]
     schedule: {interval: weekly}
   - package-ecosystem: uv
     directories: [/samples/template-ce, /samples/noa-trip-planner-a2a]
     schedule: {interval: weekly}
   - package-ecosystem: npm
-    directories: [/cf-ui, /samples/docs-site]
+    directories: [/cf-ui]
     schedule: {interval: weekly}
   - package-ecosystem: docker
     directories: [/cfn, /cf-mgmt, /cf-ui/ci/docker, /samples/demo-ce, /samples/template-ce, /samples/noa-trip-planner-a2a]
