@@ -68,7 +68,7 @@
     "@uiw/codemirror-extensions-langs": "^4.23.6",
     "@uiw/react-codemirror": "^4.23.6",
     "autoprefixer": "^10.4.20",
-    "axios": "^1.19.0",
+    "axios": "^1.21.1",
     "brace-expansion": "^2.1.4",
     "buffer": "^6.0.3",
     "eslint": "^9.17.0",
