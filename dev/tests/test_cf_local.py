@@ -65,6 +65,8 @@ elif name == "go" and args[0] == "build":
     target = Path(args[args.index("-o") + 1])
     target.write_text(Path(__file__).read_text())
     target.chmod(0o755)
+elif name == "make" and args[:3] == ["-C", "deploy", "pull"]:
+    sys.exit(int(os.environ.get("MOCK_PULL_EXIT", "0")))
 '''
 
 
@@ -116,7 +118,7 @@ class LocalLauncherTests(unittest.TestCase):
         self.env = dict(os.environ)
         # Do not inherit developer configuration into the fixtures.
         for key in list(self.env):
-            if key.startswith(("CF_", "CFN_", "CE_", "NOA_", "MOCK_", "LOCAL_CF_")):
+            if key.startswith(("CF_", "CFN_", "CE_", "DEPLOY_", "NOA_", "MOCK_", "LOCAL_CF_")):
                 del self.env[key]
         self.env.update(
             PATH=f"{binaries}:{os.environ['PATH']}",
@@ -462,6 +464,35 @@ class LocalLauncherTests(unittest.TestCase):
         )
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(self.last_up()["env"]["CFN_SVC_TAG"], "123")
+
+    @unittest.skipUnless(shutil.which("task"), "Task CLI is not installed")
+    def test_deploy_up_refresh_policy(self):
+        cases = (
+            ("default", "", {}, [["pull"], ["up"]], True),
+            ("empty", "DEPLOY_PULL=\n", {}, [["pull"], ["up"]], True),
+            ("envoy", "DEPLOY_PULL=true\nDEPLOY_ENFORCEMENT=envoy\n", {},
+             [["pull", "enforcement=envoy"], ["up", "enforcement=envoy"]], True),
+            ("shell opt-out", "DEPLOY_PULL=true\nDEPLOY_ENFORCEMENT=shadi\n",
+             {"DEPLOY_PULL": "false"}, [["up", "enforcement=shadi"]], True),
+            ("dotenv opt-out", "DEPLOY_PULL=false\n", {}, [["up"]], True),
+            ("invalid", "DEPLOY_PULL=never\n", {}, [], False),
+            ("pull failure", "", {"MOCK_PULL_EXIT": "7"}, [["pull"]], False),
+        )
+        for name, dotenv, settings, steps, success in cases:
+            with self.subTest(name=name):
+                self.log.unlink(missing_ok=True)
+                (self.cfn / ".env").write_text(dotenv)
+                result = subprocess.run(
+                    [shutil.which("task"), "--dir", str(self.cfn), "deploy:up"],
+                    env=self.env | settings, capture_output=True, text=True,
+                )
+                self.assertEqual(result.returncode == 0, success, result.stderr)
+                if name == "invalid":
+                    self.assertIn("DEPLOY_PULL must be true or false", result.stderr)
+                self.assertEqual(
+                    [(command["tool"], command["args"]) for command in self.commands()],
+                    [("make", ["-C", "deploy", *step]) for step in steps],
+                )
 
 
 @unittest.skipUnless(shutil.which("docker"), "Docker Compose CLI is not installed")

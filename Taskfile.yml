@@ -82,9 +82,16 @@ tasks:
       - bash dev/cf-local.sh check
 
   deploy:up:
-    desc: Start the CF deployment stack with the selected enforcement flavor
+    desc: Pull deployment images and start CF with the selected enforcement flavor
     cmds:
-      - make -C deploy up ${DEPLOY_ENFORCEMENT:+"enforcement=$DEPLOY_ENFORCEMENT"}
+      - |
+        set -- ${DEPLOY_ENFORCEMENT:+"enforcement=$DEPLOY_ENFORCEMENT"}
+        case "${DEPLOY_PULL:-true}" in
+          true) make -C deploy pull "$@" || exit $? ;;
+          false) ;;
+          *) printf '%s\n' 'DEPLOY_PULL must be true or false' >&2; exit 2 ;;
+        esac
+        make -C deploy up "$@"
 
   deploy:down:
     desc: Stop the CF deployment stack and preserve volumes

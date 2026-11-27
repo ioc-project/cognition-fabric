@@ -234,8 +234,8 @@ run in a separate Compose project.
 
 1. Set `AI_GATEWAY_BASE_URL` and `AI_GATEWAY_API_KEY` in root `.env`.
    Start CF and a CE through the local tasks or start the base deployment
-   with `make -C deploy up`. The equivalent Task shortcut is
-   `task deploy:up` with `DEPLOY_ENFORCEMENT` unset or empty.
+   with `make -C deploy up`. To refresh the images and start the base deployment,
+   run `task deploy:up` with `DEPLOY_ENFORCEMENT` unset or empty.
 2. In Management UI, create a MAS using **JSON** mode and paste
    [`noa-a2a-mas.json`](../samples/noa-trip-planner-a2a/mas/noa-a2a-mas.json).
    Select the existing enabled, online CE before saving. Use a workspace assigned

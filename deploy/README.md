@@ -40,12 +40,17 @@ task deploy:up
 task deploy:down
 ```
 
+By default, `task deploy:up` pulls the configured images before starting the
+stack. To skip the explicit pull, set `DEPLOY_PULL=false` in root `.env` or run
+`DEPLOY_PULL=false task deploy:up` for one run. Compose still applies its usual
+pull policy during startup.
+
 Set `DEPLOY_ENFORCEMENT=envoy` in root `.env` to start the Envoy overlay with
 `task deploy:up`. Complete the [Envoy setup](enforcement/envoy/README.md) first.
-Use `shadi` for the SHADi overlay or leave the value empty to run plain
-`make -C deploy up`. Override the setting for one run with
-`DEPLOY_ENFORCEMENT= task deploy:up`. To switch an already running deployment,
-run `task deploy:down` before bringing it back up with the new selection.
+Use `shadi` for the SHADi overlay or leave the value empty for the base stack.
+Override the setting for one run with `DEPLOY_ENFORCEMENT= task deploy:up`.
+To switch an already running deployment, run `task deploy:down` before
+bringing it back up with the new selection.
 
 Task loads root `.env` before calling Make. Use Make directly to set a custom
 `STACK_ENV`. The Task shortcuts pick up
