@@ -5,15 +5,13 @@
 """Moderator Agent implementation."""
 
 import logging
-import os
 from collections.abc import Sequence
 from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
 from langchain_core.tools import BaseTool
-from langchain_openai import ChatOpenAI
 from noa_trip_planner.delay import apply_simulated_delay
-from noa_trip_planner.http_clients import model_client_options
+from noa_trip_planner.http_clients import create_model_client
 
 logger = logging.getLogger(__name__)
 
@@ -32,19 +30,7 @@ class ModeratorAgent:
         self.tools = tuple(tools)
         self.max_tool_iterations = max_tool_iterations
 
-        base_url = os.environ.get("AI_GATEWAY_BASE_URL")
-        api_key = os.environ.get("AI_GATEWAY_API_KEY")
-
-        # Allow model override via environment variable (default: azure/gpt-4o for LiteLLM)
-        model_name = os.environ.get("NOA_LLM_MODEL", "azure/gpt-4o")
-
-        self.llm = llm or ChatOpenAI(
-            model=model_name,
-            temperature=0,
-            base_url=base_url,
-            api_key=api_key,
-            **model_client_options(),
-        )
+        self.llm = llm if llm is not None else create_model_client()
         self.llm_with_tools = (
             self.llm.bind_tools(self.tools) if self.tools else self.llm
         )

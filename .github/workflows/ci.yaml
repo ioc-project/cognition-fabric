@@ -262,26 +262,15 @@ jobs:
         run: python .github/scripts/release_target.py --validate-all
 
   docs:
-    name: Combined Pages artifact build
+    name: Cognition Fabric Pages build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
-      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: samples/docs-site/package-lock.json
-      - run: npm ci --prefix samples/docs-site
-      - name: Build site at project subpath
-        run: npm run build --prefix samples/docs-site
-        env:
-          PAGES_URL: https://cisco-eti.github.io/cognition-fabric/
-      - run: python3 .github/scripts/build_pages.py --output "$RUNNER_TEMP/pages-project"
-      - name: Build site at root path
-        run: npm run build --prefix samples/docs-site
-        env:
-          PAGES_URL: https://example.invalid/
-      - run: python3 .github/scripts/build_pages.py --output "$RUNNER_TEMP/pages-root"
+          python-version: '3.11'
+      - run: python -m pip install -r docs/requirements.txt
+      - run: python -m mkdocs build --strict --site-dir "$RUNNER_TEMP/pages"
 
   images:
     name: Image (${{ matrix.component }})

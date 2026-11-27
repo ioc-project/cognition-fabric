@@ -442,7 +442,7 @@ case "${1:-}" in
     require_local_env
     require_docker_compose
     # Native NOA owns its Compose project and consumes the platform endpoints.
-    require_env NOA_MAS_ID AI_GATEWAY_BASE_URL AI_GATEWAY_API_KEY
+    require_env NOA_MAS_ID AI_GATEWAY_BASE_URL AI_GATEWAY_API_KEY NOA_LLM_MODEL
     require_service http://localhost:9002/api/internal/diagnostics/health 'CFN'
     require_service "http://localhost:9002/api/multi-agentic-systems/$NOA_MAS_ID" 'Assigned NOA MAS (onboard it and wait for the CFN heartbeat)'
     native_noa up

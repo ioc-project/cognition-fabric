@@ -1,8 +1,36 @@
 # Cognition Fabric
 
-Cognition Fabric provides the management plane, node runtime, and CE/enforcement
-contracts used to govern multi-agent systems. The shared stack is configured in
-`deploy/`; OXP remains an external integration.
+Cognition Fabric (CF) connects multi-agent systems (MAS) to Cognition Engines
+(CEs) for governance and enforcement. The Enforcement Proxy mediates configured
+interactions and calls CF's Enforcement API for runtime decisions. Active APIs
+for direct MAS engagement are planned.
+
+The standard CF deployment includes the **System for Cognitive Observability,
+Provenance and Explainability (SCOPE)**. SCOPE processes MAS telemetry and serves
+Analytics APIs for CE evidence reads. In the current implementation, it also
+hosts the Cognition Store API, through which CEs submit and retrieve findings.
+Cognition Store may move under CF in a later release; its long-term placement
+remains open.
+
+Read the [Cognition Fabric architecture](docs/architecture.md) for the component
+diagram, API boundaries, and runtime flows.
+Visit the [documentation site](https://ioc-project.github.io/cognition-fabric/)
+for the API overview and Getting Started guides.
+
+- **CF Management** manages workspaces, MAS definitions, CE registrations, and
+  configuration.
+- **CF UI** provides the web interface for administration and audit inspection.
+- **Cognition Fabric Node (CFN)** exposes runtime APIs, routes enforcement
+  requests to CEs, probes their health, and sends MAS lifecycle notifications.
+
+The monorepo builds six container images. CF Management, CF UI, and CFN each
+have an application image. The [Go Demo CE](samples/demo-ce/README.md) shows a
+working policy engine, and the [Python Template CE](samples/template-ce/README.md)
+provides a starting point for a new CE. The sixth image,
+[`ioc-scale-db`](deploy/docker-db/README.md), provides the shared PostgreSQL
+database server for CF and SCOPE in the [deployment stack](deploy/README.md).
+
+## Repository layout
 
 | Folder | Purpose |
 | --- | --- |
@@ -13,7 +41,7 @@ contracts used to govern multi-agent systems. The shared stack is configured in
 | [samples/demo-ce/](samples/demo-ce/README.md) | Go policy-driven Cognition Engine |
 | [samples/template-ce/](samples/template-ce/README.md) | Python reference Cognition Engine |
 | [samples/noa-trip-planner-a2a/](samples/noa-trip-planner-a2a/README.md) | Native NOA A2A sample and MAS declaration |
-| [samples/docs-site/](samples/docs-site/README.md) | CE documentation site |
+| [docs/site/](docs/site/index.md) | Cognition Fabric documentation site |
 | [dev/](dev/README.md) | Local launchers, Compose overrides, and development checks |
 | [deploy/](deploy/README.md) | Shared Compose stack, enforcement overlays, and database image source |
 | [docs/](docs/README.md) | CF-wide architecture, decisions, contracts, and operating guidance |
@@ -27,7 +55,7 @@ Do not run a second copy of an already-running service.
 Components are versioned independently with folder-prefixed tags. See the
 [release procedure](docs/releases.md) and [API audience guide](api/README.md).
 
-Track issues in the [CF issue tracker](https://github.com/cisco-eti/ioc-scale-cfn-svc/issues).
+Track issues in the [CF issue tracker](https://github.com/ioc-project/cognition-fabric/issues).
 
 ## License and attribution
 

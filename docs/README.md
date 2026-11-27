@@ -17,7 +17,7 @@ This set follows the org TOME template list. Each file notes its category:
 |----------|----------|------------|
 | [`charter.md`](charter.md) | stable | The problem, why now, alignment, scope, ICP, goals, and KPIs. **The highest-value document here.** |
 | [`roadmap.md`](roadmap.md) | generated | Epic-only roadmap snapshot. |
-| [`architecture.md`](architecture.md) | source | Releases 1–3 architecture of record. |
+| [`architecture.md`](architecture.md) | source | Current Cognition Fabric implementation. |
 | [`discussions/`](discussions/README.md) | generated | Open questions and discussions. |
 | [`team-assignments.md`](team-assignments.md) | stable | Roster, leadership and decision responsibility, advisors, partner engagement owners. |
 | [`dependencies.md`](dependencies.md) | source + generated | Project-level dependency edges. |
@@ -30,7 +30,8 @@ This set follows the org TOME template list. Each file notes its category:
 | Document | What it is |
 |----------|------------|
 | [`glossary.md`](glossary.md) | Source definitions, one `##` heading per term. **Start here if a term is unfamiliar.** |
-| [`target-architecture.md`](target-architecture.md) | Longer-term CF target; distinguish it from the Releases 1–3 architecture. |
+| [`site/`](site/index.md) | Public documentation site source. See [preview and publication](releases.md#documentation-deployment). |
+| [`target-architecture.md`](target-architecture.md) | Longer-term CF design and planned capabilities. |
 | [`agent-ledger/`](agent-ledger/README.md) | Agent working guidance, separate from curated ADRs. |
 | [`decisions/`](decisions/README.md) | Curated, numbered CFN architecture decision records. |
 | [`specs/`](specs/README.md) | Behavioural specs and API contracts. |

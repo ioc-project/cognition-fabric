@@ -1,33 +1,39 @@
 # Longer-term target architecture
 
-This document describes the broader CF target and planned API surface. For the Releases 1–3 architecture and current integration boundaries, see [architecture.md](architecture.md).
+This document describes the broader CF target and planned API surface. See
+[architecture.md](architecture.md) for the current implementation.
 
 <!-- kind: source · source of truth: GitHub (this file) -->
-
-This describes a longer-term Cognition Fabric (CF) target and does not define the current Releases 1–3 deployment.
 
 ## High-level architecture
 
 ![CF High Level Architecture](assets/CF_high_level_architecture.png)
 
-This historical concept diagram uses older API labels. CF owns two API tiers:
-Active (planned) and Enforcing. Analytics APIs and the Cognition Store are
-currently owned by OXP; CEs access OXP directly.
+In the historical concept diagram, OXP refers to the **System for Cognitive
+Observability, Provenance and Explainability (SCOPE)**. CF owns two API tiers,
+Active (planned) and Enforcing. SCOPE owns the Analytics APIs. The current
+implementation places Cognition Store and its API under SCOPE; a move under CF
+in a later release remains an open possibility.
 
 ## Components
 
-### 1. OXP + Cognition Store (OXP-owned)
+### 1. SCOPE and the Cognition Store
 
-The data layer, currently owned by OXP, providing:
+SCOPE provides the telemetry and analytics data layer for CEs. It also hosts the
+Cognition Store API in the current implementation.
+
 - **Temporal KG** — temporal knowledge graph
 - **Latent space** — vector embeddings
 - **Symbolic space** — symbolic representations
 - **KV** — key-value storage
 - **Cognition** — cognitive state
 
-Fed by **Observability/OXP** through realtime ingestion, with **Otel Telemetry** as an upstream source.
+The historical diagram uses Cognition Store for this broader data-layer concept.
+In the [current implementation](architecture.md#scope-analytics-and-cognition-store-apis),
+SCOPE's telemetry pipeline uses ClickHouse and Neo4j, while the PostgreSQL
+Cognition Store persists CE-submitted data through its API.
 
-### 2. CF APIs (Active, Enforcing) and OXP Analytics APIs
+### 2. CF APIs (Active, Enforcing) and SCOPE Analytics APIs
 
 CF owns two API tiers:
 
@@ -36,13 +42,14 @@ CF owns two API tiers:
 | **Active** | Active Cognition Fabric APIs (planned) | Direct MAS engagement — CEs send messages, query tools |
 | **Enforcing** | Enforcing Cognition Fabric APIs | Enforcement decisions; content modification and injection remain target capabilities |
 
-Analytics APIs are owned and served directly by OXP. CEs query OXP for traces,
-trajectories, metrics and Cognition Store findings.
+Analytics APIs are owned and served directly by SCOPE. CEs query them for traces,
+trajectories and metrics, and use the Cognition Store API to submit and retrieve
+findings.
 
-The diagram shows:
 - **Active Cognition Fabric APIs** (labelled Interactive in the historical diagram) receiving messages to/from MAS and tool calling
 - **Enforcing Cognition Fabric APIs** handling L9 messages/tool calls with disposition
-- **OXP Analytics APIs** providing read access to the OXP-owned Cognition Store
+- **SCOPE Analytics APIs** providing read access to telemetry and analysis evidence
+- **Cognition Store API**, currently hosted by SCOPE, providing read and write access to CE-submitted data
 
 ### 3. CF CE Support
 
@@ -75,19 +82,19 @@ The **Cognition Fabric Node (CFN)** handles:
 2. **Enforcement Point** — in-path enforcement via the Enforcement Proxy
 3. Planned Active APIs support direct MAS engagement; Enforcing APIs support enforcement decisions
 
-### CE to OXP and Cognition Store
+### CE to SCOPE and the Cognition Store
 
-1. CEs publish and query findings through the OXP-owned Cognition Store interfaces
-2. OXP owns trace ingestion, trajectory reconstruction and Analytics APIs
-3. Otel Telemetry feeds into Observability/OXP; CF does not proxy Analytics reads
+1. CEs publish and query findings through the Cognition Store API, currently hosted by SCOPE
+2. SCOPE owns trace ingestion, trajectory reconstruction and Analytics APIs
+3. OpenTelemetry data flows into SCOPE, and CEs call its Analytics APIs directly
 
-Notification requirements remain subject to the OXP/CE contract.
+Notification requirements remain subject to the SCOPE/CE contract.
 
 ### CE interactions
 
 1. COGS CEs are planned consumers of Active APIs for direct MAS engagement
 2. GAT CEs connect to Enforcing APIs to issue dispositions
-3. CEs query OXP's Analytics APIs directly for read-only access
+3. CEs query SCOPE's Analytics APIs directly for read-only access
 
 ## Key contracts
 
@@ -104,7 +111,9 @@ CF deploys as a set of microservices:
 - **Cognition Fabric Node** — API gateway, CE routing
 - **Audit service** — compliance logging
 
-The Cognition Store and Analytics APIs are external OXP-owned dependencies.
+SCOPE runs alongside the CF services in the
+[standard CF deployment](architecture.md#purpose-and-boundary). In the current
+implementation it also hosts the Cognition Store API.
 
 ## Related documents
 

@@ -126,11 +126,10 @@ def installation(settings, state, source, root=ROOT):
         AUDIT_QUEUE_CAPACITY=settings.get("AUDIT_QUEUE_CAPACITY") or "256",
         AUDIT_RPC_TIMEOUT=settings.get("AUDIT_RPC_TIMEOUT") or "2s",
     )
-    for key in ("AI_GATEWAY_BASE_URL", "AI_GATEWAY_API_KEY"):
+    for key in ("AI_GATEWAY_BASE_URL", "AI_GATEWAY_API_KEY", "NOA_LLM_MODEL"):
         if not settings.get(key):
             raise ValueError(f"Set {key} in the root .env")
         values[key] = settings[key]
-    values["NOA_LLM_MODEL"] = settings.get("NOA_LLM_MODEL") or "azure/gpt-4o"
     values["NOA_OTLP_UPSTREAM"] = settings.get("NOA_OTLP_UPSTREAM") or "http://host.docker.internal:4318"
     port = int(values["NOA_API_PORT"])
     if not 1 <= port <= 65535:

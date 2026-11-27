@@ -12,8 +12,11 @@ deployment configuration.
 ## Run with CF
 
 Follow the [local setup](../../dev/README.md#noa-onboarding-and-proxy-mode)
-to start CF and onboard [the NOA MAS](mas/README.md). From the monorepo root,
-run `task run:full-mas`. The task builds the app from this directory and pulls
+to start CF and onboard [the NOA MAS](mas/README.md). In root `.env`, set
+`AI_GATEWAY_BASE_URL` to your OpenAI-compatible Chat Completions base URL,
+`AI_GATEWAY_API_KEY` to the provider credential, and `NOA_LLM_MODEL` to the
+provider's tool-capable model name. From the monorepo root, run
+`task run:full-mas`. The task builds the app from this directory and pulls
 the Proxy sidecar, Wasm module, operator, and MCP ingress guard from GHCR.
 The API listens on `http://127.0.0.1:8125` by default.
 

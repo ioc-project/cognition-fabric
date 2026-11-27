@@ -107,7 +107,8 @@ notification listener and is advertised as `notification_url`. Both local CF tas
 use health port `8082`. Concurrent standalone instances need separate network
 namespaces or distinct port triples.
 
-See the [documentation site source](../docs-site/README.md) for setup and extension guidance.
+See the [Cognition Engine walkthrough](../../docs/site/getting-started/cognition-engine.md)
+for how the sample registers and evaluates interactions.
 
 ## MAS lifecycle summaries
 

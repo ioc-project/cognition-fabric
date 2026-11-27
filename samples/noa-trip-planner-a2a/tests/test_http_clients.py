@@ -32,3 +32,24 @@ def test_partial_client_identity_is_rejected():
 
 def test_default_model_client_stays_native():
     assert http_clients.model_client_options(Settings(_env_file=None)) == {}
+
+
+def test_model_client_requires_explicit_model(monkeypatch):
+    monkeypatch.delenv("NOA_LLM_MODEL", raising=False)
+    with pytest.raises(ValueError, match="Set NOA_LLM_MODEL"):
+        http_clients.create_model_client()
+
+
+def test_model_client_uses_provider_configuration(monkeypatch):
+    monkeypatch.setenv("NOA_LLM_MODEL", "provider/model")
+    monkeypatch.setenv("AI_GATEWAY_BASE_URL", "https://model.example.test/v1")
+    monkeypatch.setenv("AI_GATEWAY_API_KEY", "fixture-key")
+    monkeypatch.setattr(http_clients, "ChatOpenAI", lambda **options: options)
+    monkeypatch.setattr(http_clients, "model_client_options", lambda: {})
+
+    assert http_clients.create_model_client() == {
+        "temperature": 0,
+        "model": "provider/model",
+        "base_url": "https://model.example.test/v1",
+        "api_key": "fixture-key",
+    }

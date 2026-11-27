@@ -4,10 +4,12 @@
 
 """Optional HTTP client identity and trace propagation for configured transports."""
 import json
+import os
 import ssl
 
 import httpx
 import httpx2
+from langchain_openai import ChatOpenAI
 from opentelemetry.propagate import inject
 
 from noa_trip_planner.settings import Settings
@@ -66,6 +68,21 @@ def model_client_options(settings: Settings | None = None) -> dict:
     if _model_client is None:
         _model_client = http_client(settings)
     return {"http_async_client": _model_client, "max_retries": 0}
+
+
+def create_model_client() -> ChatOpenAI:
+    """Use the provider and model configured for this sample."""
+    options = {}
+    for argument, name in (
+        ("model", "NOA_LLM_MODEL"),
+        ("base_url", "AI_GATEWAY_BASE_URL"),
+        ("api_key", "AI_GATEWAY_API_KEY"),
+    ):
+        value = os.environ.get(name)
+        if not value:
+            raise ValueError(f"Set {name} before starting NOA")
+        options[argument] = value
+    return ChatOpenAI(temperature=0, **options, **model_client_options())
 
 
 async def close_model_client() -> None:
