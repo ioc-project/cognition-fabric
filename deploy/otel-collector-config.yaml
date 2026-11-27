@@ -11,6 +11,10 @@ processors:
   batch: {}
 
 exporters:
+  otlp/event-exporter:
+    endpoint: "http://event-exporter:4417"
+    tls:
+      insecure: true
   clickhouse:
     endpoint: "tcp://clickhouse-server:9000"
     database: "default"
@@ -32,4 +36,4 @@ service:
     logs:
       receivers: [otlp]
       processors: [batch]
-      exporters: [clickhouse]
+      exporters: [clickhouse, otlp/event-exporter]
