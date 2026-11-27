@@ -2,15 +2,15 @@
 
 Run these commands from the `cognition-fabric` repository root. The local tasks
 run CF components from this checkout and use [deploy/](../deploy/README.md) to
-start Postgres and OXP infrastructure. Published native NOA A2A and Enforcement
-Proxy start together after MAS onboarding; CF source/image choices stay independent.
+start Postgres and SCOPE infrastructure. The bundled NOA A2A app and Enforcement
+Proxy start together after MAS onboarding.
 
 ## Fresh checkout
 
 Clone the repository, then work from its root:
 
 ```bash
-git clone https://github.com/cisco-eti/cognition-fabric.git
+git clone https://github.com/ioc-project/cognition-fabric.git
 cd cognition-fabric
 ```
 
@@ -27,14 +27,14 @@ initializes the local databases and registers the CF services.
 | `cf-ui/` | Next.js Management UI |
 | `samples/demo-ce/` | Go policy-driven CE |
 | `samples/template-ce/` | Python CE with MAS notifications |
-| `samples/noa-trip-planner/` | Source NOA, local tools, experiments and MAS declarations |
+| `samples/noa-trip-planner-a2a/` | Bundled NOA A2A sample and MAS declaration |
 | `dev/` | Launcher, Compose overrides, helper tools and regression tests |
 | `deploy/` | Shared Compose stack, enforcement overlays and database image source |
 
 Install Docker with Compose v2.24.4+, Task, Go 1.25.9+, Python 3.11+, Poetry, uv,
 Node.js 20 (at least 20.9) and npm. The Go modules use the shared API module
 within this repository through `go.work` and relative module replacements.
-Pulling private published container images requires GHCR access, including OXP or
+Pulling private published container images requires GHCR access, including SCOPE or
 Proxy images. Authenticate Docker before starting them when required. The NOA
 proxy launcher also downloads reviewed upstream runtime files into ignored local
 cache. If that source repository requires authentication, install GitHub CLI
@@ -51,7 +51,7 @@ go -C cfn mod download
 go -C samples/demo-ce mod download
 npm --prefix cf-ui ci
 (cd samples/template-ce && uv sync --frozen --extra test)
-(cd samples/noa-trip-planner && uv sync --frozen --group dev)
+(cd samples/noa-trip-planner-a2a && uv sync --frozen --group dev)
 ```
 
 Install the pinned proto tools described in [API development](../api/README.md)
@@ -72,17 +72,16 @@ cp .env.example .env
 ```
 
 Supply your own gateway/model credentials and `NEXTAUTH_SECRET`. Set
-`ENFORCEMENT_PLATFORM` for your host (`linux/arm64` or `linux/amd64`). OXP
+`ENFORCEMENT_PLATFORM` for your host (`linux/arm64` or `linux/amd64`). SCOPE
 infrastructure defaults to `linux/arm64`; on an Intel/AMD host, add
-`OXP_INFRA_PLATFORM=linux/amd64` to root `.env` so those containers run natively.
-OXP workers default to `linux/amd64`. Optional OXP and infrastructure tuning
+`SCOPE_INFRA_PLATFORM=linux/amd64` to root `.env` so those containers run natively.
+The SCOPE normalization worker defaults to `linux/amd64`. Optional SCOPE and infrastructure tuning
 variables are listed in the root template's "Optional infrastructure overrides"
 section. The root template keeps CF settings,
 required external configuration and deliberate overrides such as the ClickHouse
 database shared with the OTel collector. Root tasks
-load `.env` automatically, so mode settings do not need inline overrides.
-The monorepo Compose override also uses this file for OXP and published NOA
-container environments. The standalone [deployment workflow](../deploy/README.md)
+load `.env` automatically. The monorepo Compose override also uses this file
+for SCOPE container environments. The standalone [deployment workflow](../deploy/README.md)
 also loads root `.env`. Compose
 2.24.4+ is required for replacing the inherited environment-file list with
 [`!override`](https://docs.docker.com/reference/compose-file/merge/#replace-value).
@@ -102,24 +101,16 @@ own onboarding and its agent/tool identities, then set
 `CE_MAS_FILE` to supply the existing MAS ID. Source and image tasks use the same
 private policy. No launcher creates MAS/CE associations for the operator.
 
-Select the NOA implementation and enforcement path in root `.env`:
+Set the NOA identities in root `.env` after
+[onboarding the MAS](#noa-onboarding-and-proxy-mode):
 
 ```dotenv
-NOA_MODE=published
-NOA_ENFORCEMENT_MODE=proxy
 NOA_MAS_ID=
 NOA_MCP_SERVER_ID=
 ```
 
-Leave `NOA_MAS_ID` empty until you onboard the MAS through your own Management
-instance, then fill in the returned ID before starting NOA. Template CE can
-start before that onboarding and does not need the Go Demo CE policy file.
-
-`NOA_MODE` accepts `source` or `published`. Published/proxy selects the native
-NOA A2A image with the maintained Envoy controller; source/direct keeps the
-copied application's direct CFN adapter. Source/proxy is rejected. The existing
-published/direct option runs the standalone deployment sample without attaching
-the proxy; it does not provide the source adapter's direct CFN enforcement.
+Template CE can start before onboarding and does not need the Go Demo CE policy
+file.
 
 ## Start infrastructure and services
 
@@ -151,7 +142,7 @@ For notification tests, set `ENABLE_NOTIFICATIONS=true` in the root `.env`.
 | Go Demo CE HTTP / gRPC | `18000` / `18001` |
 | NOA API | `8125` |
 | A2A / MCP / Envoy | Internal to the MAS Compose project |
-| OXP API / OTel HTTP collector | `8081` / `4318` |
+| SCOPE API / OTel HTTP collector | `8081` / `4318` |
 
 Source listeners and the NOA API default to host loopback. `LOCAL_CF_BIND_HOST=0.0.0.0` is an explicit option
 for native Linux mixed source/image operation. Docker Desktop uses
@@ -219,45 +210,46 @@ task run:cfn-mgmt:image
 task run:cfn:image
 task run:cf-ui:image
 task run:demo-ce:image
+task run:template-ce:image
 ```
 
 Choose source or image independently for each service, stopping its current
 foreground task before switching. Restart the chosen CE task after switching
-CFN source/image mode so its registered addresses match reachability. Tags remain
-`CF_MGMT_SVC_TAG`, `CFN_SVC_TAG`, `CF_UI_TAG`, and `CF_DEMO_CE_TAG` with default
-`latest`; `LOCAL_CF_MGMT_DB` deliberately selects another compatible local
-Management database. Shell overrides take precedence over root Task dotenv.
+CFN source/image mode so its registered addresses match reachability. Both
+Template CE tasks serve and register health on `8082` because the SCOPE API uses `8081`.
+Tags default to `latest` and can be set with `CF_MGMT_SVC_TAG`, `CFN_SVC_TAG`,
+`CF_UI_TAG`, `CF_DEMO_CE_TAG`, and `CF_TEMPLATE_CE_TAG`. `LOCAL_CF_MGMT_DB`
+selects another compatible local Management database. Shell overrides take
+precedence over root Task dotenv.
 
 `CF_REGISTRY` defaults to `ghcr.io/ioc-project` for CF images and the shared DB
-started by `infra:up`; the DB tag remains `0.2.0`. Existing `.env` values override
-the defaults, so change `CF_REGISTRY` explicitly to adopt the new registry in an
-existing configuration. Proxy images use `PROXY_REGISTRY` independently, defaulting
-to `ghcr.io/cisco-eti`. If a custom CF registry previously also hosted your Proxy
-images, set that location in `PROXY_REGISTRY`.
+started by `infra:up`. The DB tag is `0.2.0`.
 
 ## NOA onboarding and proxy mode
 
-The native workflow uses our existing CFN, Management, UI, OXP and selected Go
-Demo or Python Template CE. Its separate Compose project contains the MAS and
-its proxy; it does not deploy another CF platform.
+The native workflow uses CFN, Management, UI, SCOPE, and the selected CE
+from either the local Task workflow or the
+[Makefile deployment](../deploy/README.md#mas-sample-app). NOA and its Proxy
+run in a separate Compose project.
 
-1. Configure root `.env` with `NOA_MODE=published` and
-   `NOA_ENFORCEMENT_MODE=proxy`. Leave MAS IDs empty initially. Start infrastructure
-   and our CF/CE tasks as described above. `infra:up` requires no MAS and does not
-   start the proxy.
+1. Set `AI_GATEWAY_BASE_URL` and `AI_GATEWAY_API_KEY` in root `.env`.
+   Start CF and a CE through the local tasks or start the base deployment
+   with `make -C deploy up`. The equivalent Task shortcut is
+   `task deploy:up` with `DEPLOY_ENFORCEMENT` unset or empty.
 2. In Management UI, create a MAS using **JSON** mode and paste
-   [`noa-a2a-mas.json`](../samples/noa-trip-planner/mas/noa-a2a-mas.json).
+   [`noa-a2a-mas.json`](../samples/noa-trip-planner-a2a/mas/noa-a2a-mas.json).
    Select the existing enabled, online CE before saving. Use a workspace assigned
-   to this CFN. See [onboarding](../samples/noa-trip-planner/mas/README.md).
+   to this CFN. See [onboarding](../samples/noa-trip-planner-a2a/mas/README.md).
 3. Read back that MAS. Set root `NOA_MAS_ID` to its canonical ID and
    `NOA_MCP_SERVER_ID` to `mcp_servers[0].id`. Keep the declaration's agent IDs.
    Custom identities can instead be supplied as upstream canonical JSON through
    `NOA_IDENTITY_FILE`; workload references must use this runtime's project and
    service names.
-4. For Go Demo CE, copy [`noa-demo-ce.example.json`](noa-demo-ce.example.json) into
-   ignored local configuration, replace both ID placeholders, set `CE_CONFIG_FILE`
-   to that copy and restart only your Demo CE task. Template CE needs no policy
-   file. CE selection still comes from Management associations.
+4. For Go Demo CE on the Makefile stack, follow the
+   [deployment policy setup](../deploy/README.md#noa-demo-ce-policy). For Go Demo
+   CE started by a local task, copy [the policy example](noa-demo-ce.example.json)
+   into `.local/`, replace both ID placeholders, set `CE_CONFIG_FILE` to that
+   copy, and restart your Demo CE task. Template CE uses its configured verdict.
 5. Wait until CFN exposes the assigned MAS at
    `http://localhost:9002/api/multi-agentic-systems/<MAS_ID>`. Check that its
    enabled, online CE associations select the CE you intend to use, including
@@ -267,12 +259,11 @@ its proxy; it does not deploy another CF platform.
    task run:full-mas
    ```
 
-The task pulls the selected images, starts the native application helpers, and
-lets the upstream controller generate routes, client credentials and activation.
-It waits for controller qualification, then remains in the foreground showing
-controller logs. Ctrl+C retires the MAS/proxy and stops its Compose services,
-retaining state and volumes. The upstream controller remains available for
-enrollment. No application or proxy image is built locally.
+The task builds the [bundled NOA A2A application](../samples/noa-trip-planner-a2a/README.md)
+and pulls the Proxy images. The controller generates routes, client credentials,
+and activation. The task waits for readiness, then follows controller logs.
+Ctrl+C retires the MAS and stops its Compose services while preserving state
+and volumes.
 
 ```text
 Client -> NOA API :8125 -> moderator
@@ -282,20 +273,17 @@ Client -> NOA API :8125 -> moderator
                        +-- allowed A2A / MCP / LLM requests -> real upstream
 ```
 
-The API ingress is unmediated, as in the upstream Envoy demo. Agent networks are
-internal. The MCP server and Envoy share a guarded namespace; only the guard
+The controller trusts the API service as the moderator's ingress peer.
+Agent networks are internal. The MCP server and Envoy share a guarded namespace; only the guard
 initializer receives BPF/NET_ADMIN. Docker Desktop/Linux kernel support is
 required. A small OTLP relay forwards telemetry to our existing collector.
-The maintained proxy sends audit directly to CFN; this path uses no mediation
-service or source NOA tool server.
+The Proxy sends audits directly to CFN.
 
-Custom NOA/proxy images default to `latest`. Each explicit start pulls the
-selected references once, then starts them without a second pull. Proxy images
-use `PROXY_REGISTRY`; native NOA A2A keeps its existing `OXP_REGISTRY` default.
-Use `NOA_A2A_TAG`, the `NOA_PROXY_*_TAG` selectors or full image overrides to select
-another compatible build. Envoy keeps the upstream ABI-compatible version.
-Changing image versions can require matching configuration changes, as with CF
-images. Ordinary starts require the previous MAS runtime to be retired/stopped.
+The Proxy pulls `ioc-sidecar`, `ioc-wasm`, `ioc-operator-docker`, and
+`ioc-mcp-ingress-guard` from `PROXY_REGISTRY` (`ghcr.io/ioc-project` by default).
+Tags default to `latest`. Set `NOA_PROXY_*_TAG` or a full image reference
+to select a compatible build. `NOA_A2A_PLATFORM` selects the application image
+architecture, and `ENFORCEMENT_PLATFORM` selects the Proxy architecture.
 
 ```bash
 task noa:status
@@ -306,8 +294,10 @@ task noa:down
 Private installation inputs live in `.local/noa-a2a/`; downloaded upstream files
 live in `.local/proxy-runtime/`. Do not edit generated routes, credentials or
 activation files. If startup fails, inspect `noa:status` and controller logs,
-then use `noa:down` before retrying. Existing standalone deployments from another
-workflow must be stopped by their owner; these tasks do not adopt them.
+then use `noa:down` before retrying. For the Makefile workflow, stop NOA with
+`task noa:down` before running `make -C deploy down` or `task deploy:down`.
+Run `task noa:down` before updating to a checkout with a different pinned
+Proxy runtime so the launcher retires its own installation.
 
 ## Checks and shutdown
 
@@ -335,8 +325,3 @@ uses its supplied isolated database with `INTEGRATION_SKIP_DB=true`.
 Stop foreground tasks with Ctrl+C. `task infra:down` stops only owned local CF
 images, the native MAS/proxy and infrastructure; it keeps volumes. It refuses to stop
 unowned services from the standalone published Deployment workflow.
-
-## Enforcement setup
-
-Use the [published NOA A2A workflow](#noa-onboarding-and-proxy-mode) for network
-proxy enforcement. Source NOA runs with `NOA_ENFORCEMENT_MODE=direct`.

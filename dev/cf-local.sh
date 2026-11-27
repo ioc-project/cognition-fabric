@@ -23,13 +23,13 @@ cf_services=(
   ioc-scale-cf-mgmt-plane-ui
   ioc-scale-cfn-svc
   ioc-scale-cf-demo-ce
+  ioc-scale-cf-template-ce
 )
 infra_services=(
   ioc-scale-db ioc-scale-db-init
   rabbitmq neo4j clickhouse-server otel-collector
-  oxp-clickhouse-init oxp-rabbitmq-init oxp-api
-  norm embedding mce grouping analysis hierarchical-grouping
-  decision-block stateful-eval
+  scope-clickhouse-init scope-rabbitmq-init ioc-analytics-api
+  norm event-exporter
 )
 
 fail() {
@@ -80,7 +80,7 @@ require_docker_compose() {
 }
 
 running_cf_services() {
-  compose ps --status running --services "${cf_services[@]}"
+  image_compose ps --status running --services "${cf_services[@]}"
 }
 
 require_local_cf_containers() {
@@ -96,10 +96,10 @@ require_local_cf_containers() {
 }
 
 require_service_container_stopped() {
-  local service="$1" running
+  local running
   require_local_cf_containers
-  running="$(compose ps --status running --services "$service")" || fail "Could not inspect $service."
-  [[ -z "$running" ]] || fail "$service is already running. Stop its image task with Ctrl+C before starting another instance."
+  running="$(image_compose ps --status running --services "$@")" || fail "Could not inspect $*."
+  [[ -z "$running" ]] || fail "${running%%$'\n'*} is already running. Stop its image task with Ctrl+C before starting another instance."
 }
 
 require_ports_free() {
@@ -115,7 +115,7 @@ require_local_postgres() {
 
 cfn_runs_in_container() {
   local running
-  running="$(compose ps --status running --services ioc-scale-cfn-svc)" || fail "Could not inspect CFN."
+  running="$(image_compose ps --status running --services ioc-scale-cfn-svc)" || fail "Could not inspect CFN."
   [[ "$running" = ioc-scale-cfn-svc ]]
 }
 
@@ -151,20 +151,22 @@ run_cf_image() {
     ioc-scale-cfn-svc|ioc-scale-cf-mgmt-plane-ui)
       require_service http://localhost:9000/health 'Local CF management'
       ;;
-    ioc-scale-cf-demo-ce)
+    ioc-scale-cf-demo-ce|ioc-scale-cf-template-ce)
       require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
-      require_service http://localhost:8081/healthz 'OXP API'
-      prepare_demo_config
-      export CF_LOCAL_CE_CONFIG_FILE="$CE_CONFIG_FILE"
-      if [[ -n "${CE_MAS_FILE:-}" ]]; then
-        [[ -f "$CE_MAS_FILE" ]] || fail "MAS file not found at $CE_MAS_FILE."
-        export CF_LOCAL_CE_MAS_FILE="$CE_MAS_FILE"
-      else
-        mkdir -p "$local_dir/ce"
-        touch "$local_dir/ce/mas-id"
+      require_service http://localhost:8081/healthz 'SCOPE API'
+      if [[ "$service" = ioc-scale-cf-demo-ce ]]; then
+        prepare_demo_config
+        export CF_LOCAL_CE_CONFIG_FILE="$CE_CONFIG_FILE"
+        if [[ -n "${CE_MAS_FILE:-}" ]]; then
+          [[ -f "$CE_MAS_FILE" ]] || fail "MAS file not found at $CE_MAS_FILE."
+          export CF_LOCAL_CE_MAS_FILE="$CE_MAS_FILE"
+        else
+          mkdir -p "$local_dir/ce"
+          touch "$local_dir/ce/mas-id"
+        fi
       fi
       if cfn_runs_in_container; then
-        export CF_LOCAL_CE_HOST=ioc-scale-cf-demo-ce
+        export CF_LOCAL_CE_HOST="$service"
       else
         export CF_LOCAL_CE_HOST=127.0.0.1
       fi
@@ -219,7 +221,7 @@ require_cf_checkouts() {
   require_checkout "$ui_dir" package.json
   require_checkout "$samples_dir/template-ce" pyproject.toml
   require_checkout "$samples_dir/demo-ce" go.mod
-  require_checkout "$samples_dir/noa-trip-planner" pyproject.toml
+  require_checkout "$samples_dir/noa-trip-planner-a2a" pyproject.toml
   [[ -f "$root_dir/go.work" ]] || fail "Missing root Go workspace."
 }
 
@@ -275,7 +277,7 @@ run_cf_tests() {
   printf 'CF tests: template CE\n'
   (cd "$samples_dir/template-ce" && uv run --frozen --extra test pytest)
   printf 'CF tests: NOA sample and declaration\n'
-  (cd "$samples_dir/noa-trip-planner" && uv run --frozen --group dev python -m pytest tests -q)
+  (cd "$samples_dir/noa-trip-planner-a2a" && uv run --frozen --group dev python -m pytest tests -q)
   printf 'CF tests: local development tools and automation\n'
   (cd "$root_dir" && task test:dev)
 }
@@ -306,15 +308,6 @@ run_cf_checks() {
   run_cf_tests
 }
 
-# NOA source/image selection and enforcement mode are independent settings.
-validate_noa_modes() {
-  export NOA_MODE="${NOA_MODE:-source}"
-  export NOA_ENFORCEMENT_MODE="${NOA_ENFORCEMENT_MODE:-direct}"
-  [[ "$NOA_MODE" = published || "$NOA_MODE" = source ]] || fail "Invalid NOA_MODE '$NOA_MODE'. Use published or source."
-  [[ "$NOA_ENFORCEMENT_MODE" = direct || "$NOA_ENFORCEMENT_MODE" = proxy ]] || fail "Invalid NOA_ENFORCEMENT_MODE '$NOA_ENFORCEMENT_MODE'. Use direct or proxy."
-  [[ "$NOA_MODE:$NOA_ENFORCEMENT_MODE" != source:proxy ]] || fail "The current proxy requires native NOA A2A. Set NOA_MODE=published for proxy mode, or use NOA_ENFORCEMENT_MODE=direct with source NOA."
-}
-
 native_noa() {
   require_tool uv
   # Upstream parses RFC3339 nanoseconds, which macOS's system Python 3.9 rejects.
@@ -332,7 +325,6 @@ case "${1:-}" in
     ;;
   infra-up)
     require_local_env
-    validate_noa_modes
     require_docker_compose
     require_local_cf_containers
     compose up -d "${infra_services[@]}"
@@ -363,6 +355,9 @@ case "${1:-}" in
     ;;
   run-demo-ce-image)
     run_cf_image ioc-scale-cf-demo-ce 18000 18001
+    ;;
+  run-template-ce-image)
+    run_cf_image ioc-scale-cf-template-ce 50051 8080 8082
     ;;
   proxy-logs)
     require_local_env
@@ -445,58 +440,34 @@ case "${1:-}" in
     ;;
   run-full-mas)
     require_local_env
-    validate_noa_modes
-    mode="$NOA_MODE"
     require_docker_compose
-    require_local_cf_containers
-    if [[ "$mode:$NOA_ENFORCEMENT_MODE" = published:proxy ]]; then
-      require_env NOA_MAS_ID AI_GATEWAY_BASE_URL AI_GATEWAY_API_KEY
-      require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
-      require_service "http://localhost:9002/api/multi-agentic-systems/$NOA_MAS_ID" 'Assigned NOA MAS (onboard it and wait for the CFN heartbeat)'
-      native_noa up
-    elif [[ "$mode" = published ]]; then
-      compose --profile full-mas up --no-build --no-deps noa-trip-planner
-    else
-      repo="$samples_dir/noa-trip-planner"
-      [[ -f "$repo/pyproject.toml" && -f "$repo/src/noa_trip_planner/enforcement.py" ]] || fail "Missing CF-owned NOA source at $repo. Check the monorepo sample files."
-      running="$(compose --profile full-mas ps --status running --services noa-trip-planner)" || fail "Could not inspect the NOA container. Check Docker Compose."
-      [[ -z "$running" ]] || fail "The published NOA container is running. Stop it with: docker compose --profile full-mas stop noa-trip-planner"
-      running="$(compose ps --status running --services otel-collector)" || fail "Could not inspect the OTel collector. Check Docker Compose."
-      [[ "$running" = otel-collector ]] || fail "OTel collector is not running. Run 'task infra:up' first."
-      require_tool uv
-      require_env AI_GATEWAY_BASE_URL AI_GATEWAY_API_KEY
-      require_env NOA_MAS_ID
-      require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
-      [[ -d "$repo/.venv" ]] || fail "NOA dependencies are missing. Run 'uv sync --frozen' in $repo."
-      export NOA_API_HOST=127.0.0.1
-      export NOA_API_PORT="${NOA_API_PORT:-8125}"
-      export NOA_CFN_GRPC_TARGET=127.0.0.1:9003
-      export OTLP_HTTP_ENDPOINT=http://localhost:4318
-      cd "$repo"
-      exec uv run --no-sync main
-    fi
+    # Native NOA owns its Compose project and consumes the platform endpoints.
+    require_env NOA_MAS_ID AI_GATEWAY_BASE_URL AI_GATEWAY_API_KEY
+    require_service http://localhost:9002/api/internal/diagnostics/health 'CFN'
+    require_service "http://localhost:9002/api/multi-agentic-systems/$NOA_MAS_ID" 'Assigned NOA MAS (onboard it and wait for the CFN heartbeat)'
+    native_noa up
     ;;
   run-template-ce)
     require_local_env
     repo="$samples_dir/template-ce"
     require_checkout "$repo" pyproject.toml
     require_docker_compose
-    require_service_container_stopped ioc-scale-cf-demo-ce
+    require_service_container_stopped ioc-scale-cf-template-ce ioc-scale-cf-demo-ce
     require_ports_free 50051 8082 8080
     require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
-    require_service http://localhost:8081/healthz 'OXP API'
+    require_service http://localhost:8081/healthz 'SCOPE API'
     require_tool uv
     export CFN_URL=http://localhost:9002
     ce_host="$(source_ce_host)"
     export COGNITION_ENGINE_HOST="$ce_host"
     export GRPC_PORT=50051
-    # The template CE starts separate health and notification servers; both default to 8080.
+    # Use 8082 for health because the SCOPE API uses 8081.
     export HEALTH_PORT=8082 HTTP_PORT=8080
     # Registration defaults belong to the CE; forward only an explicit name override.
     [[ -z "${TEMPLATE_CE_NAME:-}" ]] || export CE_NAME="$TEMPLATE_CE_NAME"
     export COGNITION_STORE_URL=http://localhost:8081
     cd "$repo"
-    require_service_container_stopped ioc-scale-cf-demo-ce
+    require_service_container_stopped ioc-scale-cf-template-ce ioc-scale-cf-demo-ce
     # Sync locked runtime dependencies after source updates, preserving installed extras.
     exec uv run --frozen python -m src
     ;;
@@ -509,7 +480,7 @@ case "${1:-}" in
     require_service_container_stopped ioc-scale-cf-demo-ce
     require_ports_free 18000 18001
     require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
-    require_service http://localhost:8081/healthz 'OXP API'
+    require_service http://localhost:8081/healthz 'SCOPE API'
     require_tool go
     export CFN_URL=http://localhost:9002
     export OXP_API_URL=http://localhost:8081

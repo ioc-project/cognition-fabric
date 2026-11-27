@@ -30,12 +30,11 @@ only. The shared audit tables are internal. OXP interfaces are owned by OXP.
 
 CE Go bindings are in `ce/v1`, Enforcement bindings in `enforcement/v1`.
 CFN and Go Demo CE use local module replacements, with the root `go.work` for
-local development. Python Template CE and NOA bindings are generated directly
+local development. Python Template CE bindings are generated directly
 from the canonical protos here; there are no active sample proto copies.
 
-Run `make -C api proto` from the repository root to regenerate Go and Python
-bindings; `make -C api proto-check` generates temporary output and compares it to
-the current working tree. The Go/NOA compiler is protoc 35.1 with protoc-gen-go
+Run `make -C api proto` from the repository root to regenerate Go bindings; `make -C api proto-check` generates temporary output and compares it to
+the current working tree. The Go compiler is protoc 35.1 with protoc-gen-go
 v1.36.12 and protoc-gen-go-grpc 1.6.2. `PROTOC` can select the pinned compiler;
 plugins must be on PATH. Template CE uses its locked grpcio-tools environment.
 Run `make -C api test` and `make -C api lint` for module checks; CFN tests also

@@ -4,7 +4,7 @@
 | --- | --- |
 | [demo-ce/](demo-ce/README.md) | Go CE with per-MAS identity and content policies |
 | [template-ce/](template-ce/README.md) | Python reference CE with registration, health, and MAS notifications |
-| [noa-trip-planner/](noa-trip-planner/README.md) | Source NOA workload with direct/proxy enforcement and onboarding declarations |
+| [noa-trip-planner-a2a/](noa-trip-planner-a2a/README.md) | Native NOA A2A workload with Proxy enforcement and onboarding |
 | [docs-site/](docs-site/README.md) | Docusaurus documentation for the CE samples |
 
 The shared CE and Enforcement contracts live in [api/](../api/README.md).

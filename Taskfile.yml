@@ -30,18 +30,18 @@ tasks:
       - poetry run python -m unittest discover -s ../.github/tests -v
 
   test:noa:
-    desc: Test NOA with fake LLMs and in-memory telemetry, including MAS declaration consistency
-    dir: samples/noa-trip-planner
+    desc: Test the bundled native NOA A2A application
+    dir: samples/noa-trip-planner-a2a
     cmds:
       - uv run --frozen --group dev python -m pytest tests -q
 
   proto:
-    desc: Regenerate shared Go and sample Python bindings from canonical API contracts
+    desc: Regenerate shared Go bindings from canonical API contracts
     cmds:
       - make -C api proto
 
   proto:check:
-    desc: Check generated Go and Python bindings without changing the reviewed tree
+    desc: Check generated Go bindings without changing the reviewed tree
     cmds:
       - make -C api proto-check
 
@@ -81,6 +81,16 @@ tasks:
     cmds:
       - bash dev/cf-local.sh check
 
+  deploy:up:
+    desc: Start the CF deployment stack with the selected enforcement flavor
+    cmds:
+      - make -C deploy up ${DEPLOY_ENFORCEMENT:+"enforcement=$DEPLOY_ENFORCEMENT"}
+
+  deploy:down:
+    desc: Stop the CF deployment stack and preserve volumes
+    cmds:
+      - make -C deploy down
+
   infra:up:
     desc: Start Postgres and OXP infrastructure; start the MAS/proxy after onboarding
     silent: true
@@ -100,7 +110,7 @@ tasks:
       - bash dev/cf-local.sh proxy-logs
 
   noa:status:
-    desc: Show the local published NOA A2A and proxy status
+    desc: Show the local NOA A2A and Proxy status
     silent: true
     cmds:
       - bash dev/cf-local.sh noa-status
@@ -153,6 +163,12 @@ tasks:
     cmds:
       - bash dev/cf-local.sh run-template-ce
 
+  run:template-ce:image:
+    desc: Pull CF_TEMPLATE_CE_TAG (default latest) and run the Python template CE
+    silent: true
+    cmds:
+      - bash dev/cf-local.sh run-template-ce-image
+
   run:demo-ce:
     desc: Run the Go demo CE from source using CE_CONFIG_FILE against local CFN and OXP
     silent: true
@@ -166,7 +182,7 @@ tasks:
       - bash dev/cf-local.sh run-demo-ce-image
 
   run:full-mas:
-    desc: Run NOA using NOA_MODE and NOA_ENFORCEMENT_MODE from .env
+    desc: Build and run native NOA A2A with the Enforcement Proxy
     silent: true
     cmds:
       - bash dev/cf-local.sh run-full-mas

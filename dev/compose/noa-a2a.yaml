@@ -36,7 +36,7 @@ x-agent: &agent
 
 services:
   # Keep published ports outside the controller's startup-fenced applications.
-  # Forward the native API without a local application wrapper or image build.
+  # Forward requests to the native moderator API.
   api:
     image: nginx:alpine
     volumes:

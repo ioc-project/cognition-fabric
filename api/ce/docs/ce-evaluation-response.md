@@ -95,8 +95,7 @@ protoc-gen-go-grpc v1.6.2. From the repository root, `task proto` generates both
 and Enforcement bindings; `task proto:check` compares fresh temporary output with
 the current files, including uncommitted files, checking both `.pb.go` filenames
 and contents under `api/ce/v1/` and `api/enforcement/v1/`.
-Generation reads the canonical Enforcement proto directly and regenerates the
-NOA Python binding; no active sample proto copy remains.
+Go and Template CE's Python bindings use the canonical protos under `api/`.
 CI installs the pinned compiler/plugins and runs this check before image builds or
 publication. See the [setup commands](../../../cfn/README.md#grpc-enforcement-api).
 `PROTOC` can select an absolute path to the pinned compiler executable.

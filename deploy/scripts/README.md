@@ -26,29 +26,25 @@ app --OTLP--> otel-collector --> ClickHouse.otel_traces
 The stack configures the ClickHouse-to-RabbitMQ path automatically. Two
 one-shot services appear as `Exited (0)` after successful initialization:
 
-- `oxp-clickhouse-init` waits five seconds, polls for the collector-created
-  `otel_traces` table, and applies [`init-oxp-clickhouse.sql`](init-oxp-clickhouse.sql).
-- `oxp-rabbitmq-init` waits for `norm` to declare `new_session_in`, then binds
+- `scope-clickhouse-init` waits five seconds, polls for the collector-created
+  `otel_traces` table, and applies [`init-scope-clickhouse.sql`](init-scope-clickhouse.sql).
+- `scope-rabbitmq-init` waits for `norm` to declare `new_session_in`, then binds
   that queue to the `claris` exchange.
 
 ## 1. Start the stack
 
-Run the stack commands below from `deploy/`, with the monorepo root `.env` configured.
+Start CF and onboard NOA using the
+[NOA A2A setup](../../dev/README.md#noa-onboarding-and-proxy-mode). Run
+`task run:full-mas` from the monorepo root.
+
+Run the Compose commands below from `deploy/`, with the monorepo root
+`.env` configured.
 
 ```bash
 set -a; source ../.env; set +a    # credentials for the commands below
-docker compose --env-file ../.env --profile full-mas up -d
 ```
 
-The profile adds the NOA trip planner, which needs `AI_GATEWAY_API_KEY` in
-the root `.env` with the chat model on its allow-list. The other 15 containers start
-either way — leave the profile off if you are pointing your own instrumented
-app at `http://localhost:4318` instead.
-
-Having the app up now is fine — it starts tracing on its first request, not at
-startup, so it emits nothing until step 4.
-
-Wait until `ioc-scale-oxp-clickhouse` and `ioc-scale-oxp-rabbitmq` are healthy
+Wait until `ioc-scale-scope-clickhouse` and `ioc-scale-scope-rabbitmq` are healthy
 and both initializer services have exited successfully. The workers restart a
 few times while RabbitMQ comes up; that is expected.
 
@@ -58,15 +54,15 @@ as the stack is up — you do not need to send a span first.
 Check initialization status:
 
 ```bash
-docker compose --env-file ../.env ps -a oxp-clickhouse-init oxp-rabbitmq-init
-docker compose --env-file ../.env logs oxp-clickhouse-init oxp-rabbitmq-init
+docker compose --env-file ../.env ps -a scope-clickhouse-init scope-rabbitmq-init
+docker compose --env-file ../.env logs scope-clickhouse-init scope-rabbitmq-init
 ```
 
 Both scripts are idempotent. If either service fails because a dependency took
 longer than its retry window, rerun them after the stack settles:
 
 ```bash
-docker compose --env-file ../.env up oxp-clickhouse-init oxp-rabbitmq-init
+docker compose --env-file ../.env up scope-clickhouse-init scope-rabbitmq-init
 ```
 
 ## 2. Ask the app something
@@ -80,9 +76,7 @@ curl -X POST http://localhost:8125/ask \
   -d '{"question":"Plan a 1-day trip to Celestia"}'
 ```
 
-Port 8125 rather than 8000, which belongs to `ioc-scale-cf-cognition-engine`.
-`NOA_API_PORT` in the root `.env` moves the published port; the app always listens on
-8125 inside the container.
+Set `NOA_API_PORT` in root `.env` to change the host port.
 
 **Then wait about five minutes.** The request returning is not the end of the
 session. `ioa-observe-sdk` emits the `session.end` span — the one that triggers
@@ -90,21 +84,6 @@ the whole pipeline — from a background watcher, 5 minutes after the session's
 last activity (`SESSION_IDLE_TIMEOUT_SECONDS = 300`, checked every 30s). Until
 then the spans sit in ClickHouse and Neo4j stays empty, which is expected, not
 a fault.
-
-To flush it immediately instead, stop the app — its `atexit` handler emits the
-span on the way out:
-
-```bash
-docker stop ioc-scale-noa-trip-planner
-```
-
-To run from a local checkout instead, skip the profile and start it by hand
-from `claris-sample-apps/noa-trip-planner`, with `OTLP_HTTP_ENDPOINT` set to
-`http://localhost:4318`:
-
-```bash
-uv run --env-file .env python api.py
-```
 
 ## 3. Verify
 
@@ -123,7 +102,7 @@ Messages moved — `new_session_in` should have a consumer, and
 `default_otel_traces_end_rmq` should not be piling up:
 
 ```bash
-docker exec ioc-scale-oxp-rabbitmq rabbitmqctl list_queues \
+docker exec ioc-scale-scope-rabbitmq rabbitmqctl list_queues \
   name messages consumers
 ```
 
@@ -131,13 +110,13 @@ Worker picked it up — look for `Processing session_id:`, then `Normalized
 run_id=... -> N nodes, M edges`, then `Neo4j push complete`:
 
 ```bash
-docker logs ioc-scale-oxp-norm --tail 20
+docker logs ioc-scale-scope-norm --tail 20
 ```
 
 Graph populated:
 
 ```bash
-docker exec ioc-scale-oxp-neo4j cypher-shell -u neo4j -p "$NEO4J_PASSWORD" \
+docker exec ioc-scale-scope-neo4j cypher-shell -u neo4j -p "$NEO4J_PASSWORD" \
   "MATCH (n) RETURN labels(n)[0] AS label, count(*) AS count ORDER BY count DESC;"
 ```
 
@@ -266,12 +245,6 @@ statements must be present and above the `ALTER`s.
 **`application_id` / `agent_id` empty** — harmless. Not every app emits those
 attributes; only `session_id` matters here.
 
-**No spans at all after calling `/ask`** — check the app itself:
-
-```bash
-docker logs ioc-scale-noa-trip-planner --tail 30
-```
-
-A missing or unauthorised `AI_GATEWAY_API_KEY` fails the request before any
-span is emitted. `docker compose --env-file ../.env down` also leaves this container running,
-since it is profiled — use `docker compose --env-file ../.env --profile full-mas down`.
+**No spans after calling `/ask`** — inspect the NOA runtime with
+`task noa:status` and `task proxy:logs`. Check that `AI_GATEWAY_API_KEY`
+allows the configured chat model.

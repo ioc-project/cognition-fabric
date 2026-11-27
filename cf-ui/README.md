@@ -161,6 +161,6 @@ OXP/CFN requests. In edit mode the graph is replaced by provided-topology JSON
 using the existing Save/Cancel flow. Browsing never writes metadata or node
 positions, and background refresh failures retain loaded data and unsaved edits.
 See the [CFN metadata contract](../docs/discussions/0006-mas-onboarding-metadata.md)
-and [NOA pasteable declaration](../samples/noa-trip-planner/mas/README.md).
+and [NOA pasteable declaration](../samples/noa-trip-planner-a2a/mas/README.md).
 
 Generate Management API types with `npm run generate:api`; `npm run check:api` compares without rewriting files. Both consume the committed [canonical schema](../api/mgmt/openapi/openapi.json), so no running Management service is needed. `CFN_UI_API_BASE_URL` continues to configure application requests and image builds.

@@ -40,7 +40,7 @@ below provide the onboarding, application traffic, telemetry and enforcement sho
 | OXP runtime context API | [ioc-scaling-oxp](https://github.com/cisco-eti/ioc-scaling-oxp), [API source](https://github.com/cisco-eti/ioc-scaling-oxp/tree/main/ioc-analytics-api/api) | Serves realtime events and session spans used to resolve the current input and causal context |
 | Cognition Store API | [cognition_store.py](https://github.com/cisco-eti/ioc-scaling-oxp/blob/main/ioc-analytics-api/api/oxp/api/api_v1/endpoints/cognition_store.py) in the same OXP repository | Reads prior findings and accepts the final ALLOW/DENY finding; it is not a separate CE |
 | Observe SDK | [agntcy/observe](https://github.com/agntcy/observe) | Instruments the MAS and publishes runtime events for OXP and the CE inbox |
-| Enforcement proxy | [ioc-scaling-enforcement-proxy](https://github.com/cisco-eti/ioc-scaling-enforcement-proxy) | Envoy integration and mediation of A2A/MCP/LLM calls through CFN |
+| Enforcement proxy | [Enforcement Proxy](https://github.com/ioc-project/enforcement-proxy) | Envoy integration and mediation of A2A/MCP/LLM calls through CFN |
 | NOA demo orchestration | [ioc-scaling-demos / noa](https://github.com/cisco-eti/ioc-scaling-demos/tree/main/noa) | Runs the demo with Compose and selects the enforcement adapter |
 | NOA application sources | [oxp-sample-apps](https://github.com/cisco-eti/oxp-sample-apps) | Source repository for the NOA trip-planner applications used by the demo |
 | CF management API | [cf-mgmt/](../../cf-mgmt) | Management API behind manual MAS onboarding and CE association |

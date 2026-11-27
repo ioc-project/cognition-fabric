@@ -24,10 +24,12 @@ class CIStatusTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         source = (WORKFLOWS / "ci.yaml").read_text()
-        job = source.split("\n  ci-status:\n", 1)[1]
+        job = source.split("\n  ci-summary:\n", 1)[1]
+        if not re.search(r"(?m)^    name: ci-summary$", job):
+            raise AssertionError("ci-summary must report the organization’s required check name")
         block = re.search(r"(?m)^        run: \|\n((?:          [^\n]*\n|\n)+)", job)
         if not block:
-            raise AssertionError("CI Status must have an executable status check")
+            raise AssertionError("ci-summary must have an executable status check")
         # Execute the workflow's actual script, including its JSON/boolean handling.
         cls.script = textwrap.dedent(block[1])
 
@@ -105,7 +107,7 @@ class ImagePublishingTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         source = (WORKFLOWS / "ci.yaml").read_text()
-        job = source.split("\n  images:\n", 1)[1].split("\n  ci-status:\n", 1)[0]
+        job = source.split("\n  images:\n", 1)[1].split("\n  ci-summary:\n", 1)[0]
         cls.login = re.search(r"docker/login-action@[^\n]+\n        if: ([^\n]+)", job)[1]
         cls.push = re.search(r"(?m)^          push: (.+)$", job)[1]
         cls.platforms = re.search(r"(?m)^          platforms: >-\n((?:            .*\n)+)", job)[1]

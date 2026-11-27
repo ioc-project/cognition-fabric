@@ -189,11 +189,11 @@ jobs:
           docker exec -e PYTHONPATH=/home/app/src -w /tmp template-ce-smoke /home/app/.venv/bin/python /tmp/smoke_image.py
 
   noa:
-    name: NOA sample and onboarding tests
+    name: NOA A2A sample tests and image smoke
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: samples/noa-trip-planner
+        working-directory: samples/noa-trip-planner-a2a
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
@@ -202,6 +202,23 @@ jobs:
           version: '0.13.7'
       - run: uv sync --frozen --group dev
       - run: uv run --frozen --group dev python -m pytest tests -q
+      - name: Build and check the NOA image
+        run: |
+          docker build --tag noa-a2a:smoke .
+          docker run --rm --network none -i --entrypoint /app/bin/python noa-a2a:smoke - <<'PY'
+          from importlib.metadata import distribution
+          from os import X_OK, access
+
+          from noa_trip_planner.tooling.operations import GRAPH_FILE, list_documents
+
+          scripts = distribution("noa-trip-planner-a2a").entry_points
+          for name in ("main", "mcp-server"):
+              assert access(f"/app/bin/{name}", X_OK), name
+              assert callable(scripts[name].load()), name
+          assert GRAPH_FILE.is_file(), GRAPH_FILE
+          for collection in ("concierge_agent", "schedule_agent"):
+              assert list_documents(collection), collection
+          PY
 
   generation:
     name: Protobuf and internal Swagger drift
@@ -337,8 +354,8 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.component }}
           provenance: false
 
-  ci-status:
-    name: CI Status
+  ci-summary:
+    name: ci-summary
     if: always()
     needs: [api, cfn, management, ui, demo-ce, template-ce, noa, generation, automation, docs, images]
     runs-on: ubuntu-latest

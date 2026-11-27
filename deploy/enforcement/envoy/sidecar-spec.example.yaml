@@ -1,6 +1,12 @@
+# Copyright 2026 Cisco Systems, Inc. and its affiliates
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # Copy to sidecar-spec.yaml (gitignored) and keep only the routes that should be
 # mediated. The sidecar filter reads the table for the listener's own direction:
 # inbound = 18080 (host 9010), outbound = 18081 (host 9011).
+# This generic example targets Nginx, not NOA. Protected traffic is rejected until
+# the MAS owner attaches/activates its runtime; registering IDs alone is not enough.
 #
 # upstream_cluster is the Envoy cluster name in envoy.yaml, not a DNS name.
 # This plaintext local setup opts out of source authentication with

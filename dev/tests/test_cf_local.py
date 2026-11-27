@@ -31,7 +31,7 @@ keys = (
     "POSTGRES_DB", "POSTGRES_AUDIT_DB", "COGNITION_ENGINE_HOST",
     "ADVERTISED_GRPC_ADDRESS", "ADVERTISED_HEALTH_URL", "CF_LOCAL_CE_HOST",
     "CF_LOCAL_CE_CONFIG_FILE", "CF_LOCAL_CE_MAS_FILE", "CFN_SVC_TAG",
-    "CF_MGMT_SVC_TAG", "CF_UI_TAG", "CF_DEMO_CE_TAG", "NOA_CFN_GRPC_TARGET",
+    "CF_MGMT_SVC_TAG", "CF_UI_TAG", "CF_DEMO_CE_TAG", "CF_TEMPLATE_CE_TAG",
     "GRPC_LISTEN_ADDRESS", "HTTP_LISTEN_ADDRESS", "LOCAL_CF_MGMT_DB", "GOWORK", "CF_LOCAL_ENV_FILE",
 )
 with open(os.environ["MOCK_LOG"], "a") as log:
@@ -53,6 +53,8 @@ if name == "docker":
         sys.exit(int(os.environ.get("MOCK_MIGRATION_EXIT", "0")))
     elif "up" in args:
         sys.exit(int(os.environ.get("MOCK_UP_EXIT", "0")))
+elif name == "curl" and args[-1] == os.environ.get("MOCK_HTTP_FAILURE_URL"):
+    sys.exit(22)
 elif name == "python3" and args and args[0].endswith("check_ports.py"):
     if os.environ.get("MOCK_BUSY_PORT") in args[1:]:
         print("Local CF: Port is in use", file=sys.stderr)
@@ -97,11 +99,9 @@ class LocalLauncherTests(unittest.TestCase):
             path.parent.mkdir(parents=True, exist_ok=True)
             path.touch()
         (self.cfn / "policy.json").write_text('{"mas": []}')
-        noa = self.cfn / "samples/noa-trip-planner"
-        (noa / "src/noa_trip_planner").mkdir(parents=True)
-        (noa / "src/noa_trip_planner/enforcement.py").touch()
+        noa = self.cfn / "samples/noa-trip-planner-a2a"
+        noa.mkdir(parents=True)
         (noa / "pyproject.toml").touch()
-        (noa / ".venv").mkdir()
         binaries = workspace / "bin"
         binaries.mkdir()
         tool = binaries / "fake-tool"
@@ -147,15 +147,30 @@ class LocalLauncherTests(unittest.TestCase):
 
     def test_deployment_is_bundled_in_the_monorepo(self):
         deployment = self.cfn / "deploy"
-        result = self.run_task("infra-up")
+        project = "test-cf-local"
+        result = self.run_task("infra-up", COMPOSE_PROJECT_NAME=project)
         self.assertEqual(result.returncode, 0, result.stderr)
         commands = [x for x in self.commands() if "--project-directory" in x["args"]]
-        self.assertTrue(commands)
+        image_status = [x for x in commands if "ps" in x["args"] and "ioc-scale-cfn-svc" in x["args"]]
+        self.assertEqual(len(image_status), 1)
+        self.assertIn("ioc-scale-cf-template-ce", image_status[0]["args"])
         for command in commands:
             args = command["args"]
-            self.assertEqual(args[args.index("--project-directory") + 1], str(deployment))
-            self.assertIn(str(deployment / "docker-compose.yml"), args)
+            self.assertEqual(args[args.index("-p") + 1], project)
+            directory, compose_file = (
+                (self.cfn, self.cfn / "dev/compose/images.yaml") if command in image_status
+                else (deployment, deployment / "docker-compose.yml")
+            )
+            self.assertEqual(args[args.index("--project-directory") + 1], str(directory))
+            self.assertIn(str(compose_file), args)
             self.assertEqual(command["cwd"], str(deployment))
+        services = self.last_up()["args"]
+        self.assertIn("ioc-analytics-api", services)
+        self.assertIn("event-exporter", services)
+        self.assertIn("scope-clickhouse-init", services)
+        self.assertIn("scope-rabbitmq-init", services)
+        self.assertNotIn("embedding", services)
+        self.assertNotIn("mce", services)
 
     def test_missing_bundled_compose_fails_before_docker(self):
         (self.cfn / "deploy/docker-compose.yml").unlink()
@@ -171,6 +186,7 @@ class LocalLauncherTests(unittest.TestCase):
             ("cfn", "ioc-scale-cfn-svc", "CFN_SVC_TAG"),
             ("cf-ui", "ioc-scale-cf-mgmt-plane-ui", "CF_UI_TAG"),
             ("demo-ce", "ioc-scale-cf-demo-ce", "CF_DEMO_CE_TAG"),
+            ("template-ce", "ioc-scale-cf-template-ce", "CF_TEMPLATE_CE_TAG"),
         ]:
             with self.subTest(task=task):
                 result = self.run_task(f"run-{task}-image", **{tag: "123"})
@@ -191,11 +207,30 @@ class LocalLauncherTests(unittest.TestCase):
         self.assertFalse(any("up" in command["args"] for command in self.commands()))
 
     def test_refuses_running_counterpart(self):
-        for task in ("run-cfn", "run-cfn-image"):
-            with self.subTest(task=task):
-                result = self.run_task(task, MOCK_RUNNING="ioc-scale-cfn-svc")
+        for task, service in [
+            ("run-cfn", "ioc-scale-cfn-svc"),
+            ("run-cfn-image", "ioc-scale-cfn-svc"),
+            ("run-template-ce", "ioc-scale-cf-template-ce"),
+            ("run-template-ce-image", "ioc-scale-cf-template-ce"),
+            ("run-template-ce", "ioc-scale-cf-demo-ce"),
+        ]:
+            with self.subTest(task=task, running=service):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task(task, MOCK_RUNNING=service)
                 self.assertNotEqual(result.returncode, 0)
-                self.assertIn("already running", result.stderr)
+                self.assertIn(f"{service} is already running", result.stderr)
+                self.assertFalse(any(command["tool"] == "uv" or "pull" in command["args"]
+                                     or "up" in command["args"] for command in self.commands()))
+
+    def test_template_ce_image_refuses_busy_source_ports_before_pulling(self):
+        for port in ("50051", "8080", "8082"):
+            with self.subTest(port=port):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task("run-template-ce-image", MOCK_BUSY_PORT=port)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("in use", result.stderr)
+                self.assertFalse(any("pull" in command["args"] or "up" in command["args"]
+                                     for command in self.commands()))
 
     def test_rejects_unowned_deployment_before_shutdown(self):
         result = self.run_task("infra-down", MOCK_RUNNING="ioc-scale-cfn-svc",
@@ -270,6 +305,21 @@ class LocalLauncherTests(unittest.TestCase):
                 self.assertEqual(env["CF_LOCAL_CE_HOST"], host)
                 self.assertEqual(env["CF_LOCAL_CE_CONFIG_FILE"], str(self.cfn / "policy.json"))
 
+    def test_template_ce_image_advertises_for_active_cfn_without_demo_config(self):
+        for running, host in [("ioc-scale-db", "127.0.0.1"),
+                              ("ioc-scale-db,ioc-scale-cfn-svc", "ioc-scale-cf-template-ce")]:
+            with self.subTest(host=host):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task("run-template-ce-image", MOCK_RUNNING=running,
+                                       CE_CONFIG_FILE="", CE_MAS_FILE="missing-mas")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(self.last_up()["env"]["CF_LOCAL_CE_HOST"], host)
+                self.assertEqual([command["args"][-1] for command in self.commands()
+                                  if command["tool"] == "curl"], [
+                    "http://localhost:9002/api/internal/diagnostics/health",
+                    "http://localhost:8081/healthz",
+                ])
+
     def test_source_ce_advertises_for_image_cfn(self):
         for action, key, expected in [
             ("run-template-ce", "COGNITION_ENGINE_HOST", "host.docker.internal"),
@@ -280,53 +330,66 @@ class LocalLauncherTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(self.commands()[-1]["env"][key], expected)
 
-    def test_published_noa_proxy_accepts_local_cfn_image(self):
-        result = self.run_task(
-            "run-full-mas", NOA_MODE="published", NOA_ENFORCEMENT_MODE="proxy",
-            MOCK_RUNNING="ioc-scale-cfn-svc,otel-collector",
-        )
-        self.assertEqual(result.returncode, 0, result.stderr)
-        command = self.commands()[-1]
-        self.assertEqual(command["tool"], "uv")
-        args = command["args"]
-        self.assertEqual(args[-1], "up")
-        self.assertEqual(args[args.index("--python") + 1], ">=3.11")
-        self.assertIn("--no-project", args)
-        self.assertIn("--no-python-downloads", args)
-        self.assertTrue(args[args.index("python3") + 1].endswith("tools/noa_a2a.py"))
-        self.assertFalse(any("up" in c["args"] for c in self.commands() if c["tool"] == "docker"))
+    def test_native_noa_accepts_task_and_makefile_platforms(self):
+        mas_url = "http://localhost:9002/api/multi-agentic-systems/" + self.env["NOA_MAS_ID"]
+        for unowned in ("", "ioc-scale-cfn-svc"):
+            with self.subTest(makefile=bool(unowned)):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task(
+                    "run-full-mas", MOCK_RUNNING="ioc-scale-cfn-svc,otel-collector",
+                    MOCK_UNOWNED=unowned,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+                commands = self.commands()
+                self.assertEqual([c["args"][-1] for c in commands if c["tool"] == "curl"], [
+                    "http://localhost:9002/api/internal/diagnostics/health", mas_url,
+                ])
+                self.assertEqual(
+                    [c["args"] for c in commands if c["tool"] == "docker"], [["compose", "version"]],
+                )
+                command = commands[-1]
+                self.assertEqual(command["tool"], "uv")
+                args = command["args"]
+                self.assertEqual(args[-1], "up")
+                self.assertEqual(args[args.index("--python") + 1], ">=3.11")
+                self.assertIn("--no-project", args)
+                self.assertIn("--no-python-downloads", args)
+                self.assertTrue(args[args.index("python3") + 1].endswith("tools/noa_a2a.py"))
 
-    def test_published_direct_keeps_legacy_start_without_explicit_pull(self):
-        result = self.run_task("run-full-mas", NOA_MODE="published", NOA_ENFORCEMENT_MODE="direct")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        commands = self.commands()
-        self.assertFalse(any("pull" in command["args"] for command in commands))
-        starts = [command for command in commands if "up" in command["args"]]
-        self.assertEqual(len(starts), 1)
-        self.assertEqual(starts[0]["args"][-6:],
-                         ["--profile", "full-mas", "up", "--no-build", "--no-deps", "noa-trip-planner"])
+    def test_native_noa_requires_healthy_cfn_and_assigned_mas(self):
+        for endpoint, message in [
+            ("/api/internal/diagnostics/health", "CFN is not ready"),
+            ("/api/multi-agentic-systems/" + self.env["NOA_MAS_ID"], "Assigned NOA MAS"),
+        ]:
+            with self.subTest(endpoint=endpoint):
+                self.log.unlink(missing_ok=True)
+                result = self.run_task(
+                    "run-full-mas", MOCK_HTTP_FAILURE_URL="http://localhost:9002" + endpoint,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(message, result.stderr)
+                self.assertFalse(any(c["tool"] == "uv" for c in self.commands()))
 
-    def test_infra_proxy_mode_bootstraps_before_mas_onboarding(self):
-        result = self.run_task("infra-up", NOA_MODE="published",
-                               NOA_ENFORCEMENT_MODE="proxy", NOA_MAS_ID="")
+    def test_infra_bootstraps_before_mas_onboarding(self):
+        result = self.run_task("infra-up", NOA_MAS_ID="")
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertFalse(any("noa_a2a.py" in " ".join(c["args"]) for c in self.commands()))
         self.assertFalse(any("enforcement-proxy" in " ".join(c["args"]) for c in self.commands()))
 
     def test_down_stops_owned_images_before_infrastructure(self):
-        result = self.run_task("infra-down", MOCK_RUNNING="ioc-scale-cfn-svc")
+        result = self.run_task("infra-down", MOCK_RUNNING="ioc-scale-cf-template-ce")
         self.assertEqual(result.returncode, 0, result.stderr)
         stops = [command for command in self.commands() if "stop" in command["args"]]
         self.assertEqual(len(stops), 2)
         self.assertIn("ioc-scale-cfn-svc", stops[0]["args"])
+        self.assertIn("ioc-scale-cf-template-ce", stops[0]["args"])
         self.assertIn("ioc-scale-db", stops[1]["args"])
 
-    def test_down_retires_native_mas_before_cf_even_after_switching_mode(self):
+    def test_down_retires_native_mas_before_cf(self):
         directory = self.cfn / ".local/noa-a2a"
         directory.mkdir(parents=True)
         (directory / "installation.env").touch()
-        result = self.run_task("infra-down", MOCK_RUNNING="ioc-scale-cfn-svc",
-                               NOA_ENFORCEMENT_MODE="direct")
+        result = self.run_task("infra-down", MOCK_RUNNING="ioc-scale-cfn-svc")
         self.assertEqual(result.returncode, 0, result.stderr)
         commands = self.commands()
         retire = next(i for i, c in enumerate(commands)
@@ -345,7 +408,6 @@ class LocalLauncherTests(unittest.TestCase):
             ("run-cfn", "cfn"),
             ("run-cfn-mgmt", "cf-mgmt"),
             ("run-template-ce", "samples/template-ce"),
-            ("run-full-mas", "samples/noa-trip-planner"),
             ("run-demo-ce", "samples/demo-ce"),
         ]:
             with self.subTest(action=action):
@@ -359,10 +421,10 @@ class LocalLauncherTests(unittest.TestCase):
         self.assertEqual([x["args"][0] for x in go_commands], ["build"])
         self.assertFalse(any("-modfile" in arg for x in go_commands for arg in x["args"]))
 
-    def test_source_proxy_is_rejected_before_starting_services(self):
-        result = self.run_task("run-full-mas", NOA_MODE="source", NOA_ENFORCEMENT_MODE="proxy")
+    def test_noa_requires_onboarding_before_starting_services(self):
+        result = self.run_task("run-full-mas", NOA_MAS_ID="")
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("NOA_MODE=published", result.stderr)
+        self.assertIn("Set NOA_MAS_ID", result.stderr)
         self.assertFalse(any("up" in c["args"] or "pull" in c["args"] for c in self.commands()))
 
     def test_all_eight_suites_are_in_aggregate_and_test_database_is_isolated(self):
@@ -375,7 +437,7 @@ class LocalLauncherTests(unittest.TestCase):
                 expected = {
                     ("make", "api"), ("make", "cfn"), ("poetry", "cf-mgmt"),
                     ("npm", "cf-ui"), ("go", "samples/demo-ce"),
-                    ("uv", "samples/template-ce"), ("uv", "samples/noa-trip-planner"),
+                    ("uv", "samples/template-ce"), ("uv", "samples/noa-trip-planner-a2a"),
                     ("task", "."),
                 }
                 covered = {(x["tool"], str(Path(x["cwd"]).relative_to(self.cfn)))
@@ -444,16 +506,39 @@ class ImageComposeTests(unittest.TestCase):
                         self.assertTrue(services[name]["image"].startswith("ghcr.io/ioc-project/"))
                     self.assertEqual(services["ioc-scale-db"]["image"],
                                      "ghcr.io/ioc-project/ioc-scale-db:0.2.0")
-                    for name in ("ioc-scale-enforcement-proxy-mediation",
-                                 "ioc-scale-enforcement-proxy-sidecar-installer",
+                    for name in ("ioc-scale-enforcement-proxy-sidecar-installer",
                                  "ioc-scale-enforcement-proxy-wasm-installer",
                                  "ioc-scale-enforcement-proxy-shadi-verifier"):
                         if name in services:
-                            self.assertTrue(services[name]["image"].startswith("ghcr.io/cisco-eti/"))
-                    self.assertEqual(services["oxp-api"]["environment"]["POSTGRES_PORT"], "5432")
+                            self.assertTrue(services[name]["image"].startswith("ghcr.io/ioc-project/"))
+                    api = services["ioc-analytics-api"]
+                    self.assertEqual(api["environment"]["POSTGRES_PORT"], "5432")
+                    self.assertEqual(api["environment"]["SCOPE_API_RELOAD"], "false")
+                    self.assertEqual(api["environment"]["SCOPE_ENABLE_COGNITION_FABRIC_ENDPOINTS"], "true")
+                    self.assertEqual(api["environment"]["CACHE_ENABLED"], "false")
+                    self.assertEqual(services["ioc-scale-cf-demo-ce"]["environment"]["OXP_API_URL"],
+                                     "http://ioc-analytics-api:8000")
+                    retired = {"oxp-api", "embedding", "mce", "grouping", "analysis",
+                               "hierarchical-grouping", "decision-block", "stateful-eval"}
+                    self.assertFalse(retired.intersection(services))
+                    for name, image in (
+                        ("ioc-analytics-api", "scope-cognition-fabric-ioc-analytics-api"),
+                        ("event-exporter", "scope-cognition-fabric-event-exporter"),
+                        ("norm", "scope-norm-worker"),
+                    ):
+                        self.assertEqual(services[name]["image"],
+                                         f"ghcr.io/ioc-project/container-images/{image}:latest")
+                    exporter = services["event-exporter"]
+                    self.assertEqual(exporter["ports"][0]["published"], "4417")
+                    self.assertEqual(exporter["environment"]["GRPC_PORT"], "4417")
+                    self.assertEqual(exporter["volumes"][0]["target"], "/config.yaml")
+                    self.assertTrue(exporter["volumes"][0]["read_only"])
+                    for volume in ("oxp_clickhouse_data", "oxp_neo4j_data"):
+                        self.assertEqual(config["volumes"][volume]["name"],
+                                         f"ioc-scale-cf-deployment_{volume}")
                     self.assertEqual(services["ioc-scale-db"]["environment"]["POSTGRES_USER"],
                                      "postgresUser")
-                    self.assertNotIn("DEPLOYMENT_ONLY", services["oxp-api"]["environment"])
+                    self.assertNotIn("DEPLOYMENT_ONLY", api["environment"])
                     self.assertNotIn("DEPLOYMENT_ONLY", services["norm"]["environment"])
 
     def test_cf_and_proxy_registry_fallbacks_and_overrides_are_independent(self):
@@ -462,17 +547,17 @@ class ImageComposeTests(unittest.TestCase):
             deployment = root / "deploy"
             deployment.mkdir()
             shutil.copyfile(ROOT_DIR / "deploy/docker-compose.yml", deployment / "docker-compose.yml")
-            # Exercise Compose fallbacks independently of .env.example's registry values.
+            # Check Compose fallbacks without the corresponding template settings.
             template = (ROOT_DIR / ".env.example").read_text().splitlines()
             envfile = root / ".env"
-            envfile.write_text("\n".join(line for line in template
-                                         if not line.startswith(("CF_REGISTRY=", "PROXY_REGISTRY="))))
+            selectors = ("CF_REGISTRY=", "PROXY_REGISTRY=")
+            envfile.write_text("\n".join(line for line in template if not line.startswith(selectors)))
             base_env = {key: os.environ[key] for key in ("PATH", "HOME", "DOCKER_CONFIG")
                         if key in os.environ}
             cases = (
-                ({}, "ghcr.io/ioc-project", "ghcr.io/cisco-eti"),
+                ({}, "ghcr.io/ioc-project", "ghcr.io/ioc-project"),
                 ({"CF_REGISTRY": "registry.example.invalid/cf"},
-                 "registry.example.invalid/cf", "ghcr.io/cisco-eti"),
+                 "registry.example.invalid/cf", "ghcr.io/ioc-project"),
                 ({"PROXY_REGISTRY": "registry.example.invalid/proxy"},
                  "ghcr.io/ioc-project", "registry.example.invalid/proxy"),
                 ({"CF_REGISTRY": "registry.example.invalid/cf",
@@ -495,35 +580,80 @@ class ImageComposeTests(unittest.TestCase):
                         result = subprocess.run(
                             ["docker", "compose", "--env-file", str(envfile),
                              "-f", str(deployment / "docker-compose.yml"), "-f", str(overlay),
-                             "--profile", "full-mas", "config", "--format", "json"],
+                             "config", "--format", "json"],
                             env=base_env | overrides, capture_output=True, text=True,
                         )
                         self.assertEqual(result.returncode, 0, result.stderr)
                         services = json.loads(result.stdout)["services"]
                         for name, suffix in cf_images.items():
                             self.assertEqual(services[name]["image"], f"{cf_registry}/{suffix}")
-                        proxy_images = {
-                            "ioc-scale-enforcement-proxy-mediation": "ioc-scaling-enforcement-mediation",
-                        }
                         if flavor == "envoy":
-                            proxy_images.update({
-                                "ioc-scale-enforcement-proxy-sidecar-installer": "ioc-scaling-enforcement-proxy-sidecar",
-                                "ioc-scale-enforcement-proxy-wasm-installer": "ioc-scaling-enforcement-proxy-wasm",
-                            })
+                            proxy_images = {
+                                "ioc-scale-enforcement-proxy-sidecar-installer": "ioc-sidecar",
+                                "ioc-scale-enforcement-proxy-wasm-installer": "ioc-wasm",
+                            }
                         else:
-                            proxy_images["ioc-scale-enforcement-proxy-shadi-verifier"] = "ioc-scaling-enforcement-proxy-shadi-verifier"
+                            proxy_images = {
+                                "ioc-scale-enforcement-proxy-shadi-verifier": "ioc-shadi-verifier",
+                            }
                         for name, repository in proxy_images.items():
                             self.assertEqual(services[name]["image"],
-                                             f"{proxy_registry}/{repository}:0.0.1-alpha")
-                        self.assertTrue(services["oxp-api"]["image"].startswith(
-                            "ghcr.io/cisco-eti/oxp/container-images/"))
-                        self.assertTrue(services["noa-trip-planner"]["image"].startswith(
-                            "ghcr.io/cisco-eti/claris/container-images/"))
+                                             f"{proxy_registry}/{repository}:latest")
+                        self.assertTrue(services["ioc-analytics-api"]["image"].startswith(
+                            "ghcr.io/ioc-project/container-images/"))
+
+    def test_scope_image_defaults_and_overrides(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            deployment = root / "deploy"
+            deployment.mkdir()
+            composefile = deployment / "docker-compose.yml"
+            shutil.copyfile(ROOT_DIR / "deploy/docker-compose.yml", composefile)
+            envfile = root / ".env"
+            envfile.write_text(
+                "IOC_SCALE_DB_USER=test\nIOC_SCALE_DB_PASSWORD=test\n"
+                "ADMIN_USER_PASSWORD=test\nNEXTAUTH_SECRET=test\n"
+            )
+            base_env = {key: os.environ[key] for key in ("PATH", "HOME", "DOCKER_CONFIG")
+                        if key in os.environ}
+            custom = {
+                "SCOPE_REGISTRY": "registry.example.invalid/scope",
+                "SCOPE_IMG_TAG": "norm-test",
+                "SCOPE_API_IMG_TAG": "api-test",
+                "SCOPE_EVENT_EXPORTER_IMG_TAG": "exporter-test",
+                "SCOPE_ENABLE_COGNITION_FABRIC_ENDPOINTS": "false",
+                "EVENT_EXPORTER_CONFIG_FILE": str(root / "custom-rules.yaml"),
+            }
+            for overrides in ({}, custom, custom | {"SCOPE_API_IMAGE": "example.invalid/api@sha256:" + "a" * 64}):
+                with self.subTest(overrides=overrides):
+                    result = subprocess.run(
+                        ["docker", "compose", "--env-file", str(envfile), "-f",
+                         str(composefile), "config", "--format", "json"],
+                        env=base_env | overrides, capture_output=True, text=True,
+                    )
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    services = json.loads(result.stdout)["services"]
+                    registry = overrides.get("SCOPE_REGISTRY", "ghcr.io/ioc-project/container-images")
+                    for name, image, tag_key in (
+                        ("norm", "scope-norm-worker", "SCOPE_IMG_TAG"),
+                        ("ioc-analytics-api", "scope-cognition-fabric-ioc-analytics-api", "SCOPE_API_IMG_TAG"),
+                        ("event-exporter", "scope-cognition-fabric-event-exporter", "SCOPE_EVENT_EXPORTER_IMG_TAG"),
+                    ):
+                        expected = f"{registry}/{image}:{overrides.get(tag_key, 'latest')}"
+                        if name == "ioc-analytics-api":
+                            expected = overrides.get("SCOPE_API_IMAGE", expected)
+                        self.assertEqual(services[name]["image"], expected)
+                    self.assertEqual(
+                        services["ioc-analytics-api"]["environment"]["SCOPE_ENABLE_COGNITION_FABRIC_ENDPOINTS"],
+                        overrides.get("SCOPE_ENABLE_COGNITION_FABRIC_ENDPOINTS", "true"),
+                    )
+                    self.assertEqual(services["event-exporter"]["volumes"][0]["source"],
+                                     overrides.get("EVENT_EXPORTER_CONFIG_FILE",
+                                                   str(deployment / "event-exporter-config.yaml")))
 
     def test_infrastructure_reads_root_env_and_ignores_deployment_private_env(self):
         services = (
-            "oxp-api", "norm", "embedding", "mce", "grouping", "analysis",
-            "hierarchical-grouping", "decision-block", "stateful-eval", "noa-trip-planner",
+            "ioc-analytics-api", "norm",
         )
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -535,7 +665,7 @@ class ImageComposeTests(unittest.TestCase):
             base.write_text("services:\n" + "".join(
                 f"  {name}:\n    image: example.invalid/fixture\n"
                 "    env_file: .env\n    environment:\n      BASE_VALUE: preserved\n"
-                + ("      POSTGRES_PORT: ${IOC_SCALE_DB_PORT}\n" if name == "oxp-api" else "")
+                + ("      POSTGRES_PORT: ${IOC_SCALE_DB_PORT}\n" if name == "ioc-analytics-api" else "")
                 for name in services
             ))
             env = {key: value for key, value in os.environ.items()
@@ -557,7 +687,7 @@ class ImageComposeTests(unittest.TestCase):
                     for name in services:
                         expected = {"ROOT_MARKER": "from-monorepo", "BASE_VALUE": "preserved",
                                     "IOC_SCALE_DB_PORT": "5456"}
-                        if name == "oxp-api":
+                        if name == "ioc-analytics-api":
                             expected["POSTGRES_PORT"] = "5432"
                         self.assertEqual(model["services"][name]["environment"], expected)
 
@@ -583,10 +713,11 @@ class ImageComposeTests(unittest.TestCase):
                 "ADMIN_USER_PASSWORD=test\nIOC_SCALE_DB_USER=test\n"
                 "IOC_SCALE_DB_PASSWORD=test\nNEXTAUTH_SECRET=test\n"
                 "CF_MGMT_SVC_TAG=mgmt-test\nCFN_SVC_TAG=cfn-test\n"
-                "CF_UI_TAG=ui-test\nCF_DEMO_CE_TAG=ce-test\n"
+                "CF_UI_TAG=ui-test\nCF_DEMO_CE_TAG=ce-test\nCF_TEMPLATE_CE_TAG=template-test\n"
             )
             env = {key: value for key, value in os.environ.items()
-                   if not key.startswith(("CF_", "CFN_", "COMPOSE_"))}
+                   if not key.startswith(("CF_", "CFN_", "COMPOSE_", "TEMPLATE_CE_"))
+                   and key != "ENABLE_NOTIFICATIONS"}
             env.update(CF_LOCAL_CE_CONFIG_FILE=str(Path(temporary) / "policy.json"),
                        CF_LOCAL_CE_MAS_FILE=str(Path(temporary) / "mas-id"))
             result = subprocess.run(
@@ -598,12 +729,13 @@ class ImageComposeTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, result.stderr)
             config = json.loads(result.stdout)
             services = config["services"]
-            self.assertEqual(len(services), 4)
+            self.assertEqual(len(services), 5)
             for name, tag in [
                 ("ioc-scale-cf-mgmt-svc", "mgmt-test"),
                 ("ioc-scale-cfn-svc", "cfn-test"),
                 ("ioc-scale-cf-mgmt-plane-ui", "ui-test"),
                 ("ioc-scale-cf-demo-ce", "ce-test"),
+                ("ioc-scale-cf-template-ce", "template-test"),
             ]:
                 service = services[name]
                 self.assertTrue(service["image"].endswith(":" + tag))
@@ -615,17 +747,45 @@ class ImageComposeTests(unittest.TestCase):
                              "cfn_mgmt_local")
             self.assertEqual(services["ioc-scale-cfn-svc"]["environment"]["POSTGRES_AUDIT_DB"],
                              "cfn_audit_local")
+            template = services["ioc-scale-cf-template-ce"]
+            self.assertEqual(template["image"], "ghcr.io/ioc-project/ioc-scale-cf-demo-ce/template-ce:template-test")
+            self.assertEqual(template["container_name"], "ioc-scale-cf-template-ce")
+            self.assertEqual(template["environment"], {
+                "CFN_URL": "http://host.docker.internal:9002",
+                "COGNITION_STORE_URL": "http://ioc-analytics-api:8000",
+                "COGNITION_ENGINE_HOST": "127.0.0.1",
+                "GRPC_PORT": "50051",
+                "HTTP_PORT": "8080",
+                "HEALTH_PORT": "8082",
+                "CE_NAME": "template-ce",
+                "TEMPLATE_CE_DECISION": "allow",
+                "ENABLE_NOTIFICATIONS": "true",
+            })
+            self.assertCountEqual(
+                [(port["host_ip"], port["published"], port["target"]) for port in template["ports"]],
+                [("127.0.0.1", str(port), port) for port in (50051, 8080, 8082)],
+            )
             self.assertTrue(config["networks"]["default"]["external"])
-            env["LOCAL_CF_MGMT_DB"] = "cfn_mgmt_image"
-            env["CF_REGISTRY"] = "registry.example.invalid/cf"
+            env.update(
+                LOCAL_CF_MGMT_DB="cfn_mgmt_image",
+                CF_REGISTRY="registry.example.invalid/cf",
+                TEMPLATE_CE_NAME="local-template",
+                TEMPLATE_CE_DECISION="deny",
+                ENABLE_NOTIFICATIONS="false",
+            )
             result = subprocess.run(result.args, env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
+            services = json.loads(result.stdout)["services"]
             self.assertEqual(
-                json.loads(result.stdout)["services"]["ioc-scale-cf-mgmt-svc"]["environment"]["POSTGRES_DB"],
+                services["ioc-scale-cf-mgmt-svc"]["environment"]["POSTGRES_DB"],
                 "cfn_mgmt_image",
             )
+            template_env = services["ioc-scale-cf-template-ce"]["environment"]
+            self.assertEqual(template_env["CE_NAME"], "local-template")
+            self.assertEqual(template_env["TEMPLATE_CE_DECISION"], "deny")
+            self.assertEqual(template_env["ENABLE_NOTIFICATIONS"], "false")
             self.assertTrue(all(service["image"].startswith("registry.example.invalid/cf/")
-                                for service in json.loads(result.stdout)["services"].values()))
+                                for service in services.values()))
 
 
 if __name__ == "__main__":

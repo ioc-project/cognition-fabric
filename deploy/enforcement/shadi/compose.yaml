@@ -5,18 +5,15 @@
 # SHADi enforcement flavor: the Go sender-authorization API (verifier). Trusted
 # SHADi hosts reach it over mTLS and talk to each other directly over SLIM; deploy
 # those separately. Overlay for the main stack; run from the repo root:
-#   make up enforcement=shadi
-# or: docker compose -f docker-compose.yml -f enforcement/shadi/compose.yaml up -d
+#   make -C deploy up enforcement=shadi
+# or: docker compose --env-file .env -f deploy/docker-compose.yml -f deploy/enforcement/shadi/compose.yaml up -d
 # Needs enforcement/shadi/config/ with config.json, ca.crt, server.crt, server.key
 # (see enforcement/shadi/README.md).
 services:
   ioc-scale-enforcement-proxy-shadi-verifier:
-    image: ${PROXY_REGISTRY:-ghcr.io/cisco-eti}/ioc-scaling-enforcement-proxy-shadi-verifier:${ENFORCEMENT_SHADI_TAG:-0.0.1-alpha}
+    image: ${ENFORCEMENT_SHADI_IMAGE:-${PROXY_REGISTRY:-ghcr.io/ioc-project}/ioc-shadi-verifier:${ENFORCEMENT_SHADI_TAG:-latest}}
     platform: ${ENFORCEMENT_PLATFORM:-linux/arm64}
     container_name: ioc-scale-enforcement-proxy-shadi-verifier
-    depends_on:
-      ioc-scale-enforcement-proxy-mediation:
-        condition: service_started
     environment:
       SHADI_VERIFIER_CONFIG: /run/shadi-verifier/config.json
       SHADI_VERIFIER_TLS_CA_FILE: /run/shadi-verifier/ca.crt
@@ -27,12 +24,8 @@ services:
       CF_ENFORCEMENT_TIMEOUT: ${CF_ENFORCEMENT_TIMEOUT:-2s}
       CF_ENFORCEMENT_ALLOW_PLAINTEXT: ${CF_ENFORCEMENT_ALLOW_PLAINTEXT:-true}
       ENFORCEMENT_FAILURE_POSTURE: ${ENFORCEMENT_FAILURE_POSTURE:-fail_closed}
-      AUDIT_JOURNAL_ADDRESS: ${AUDIT_JOURNAL_ADDRESS:-ioc-scale-enforcement-proxy-mediation:8081}
-      AUDIT_JOURNAL_QUEUE_CAPACITY: ${AUDIT_JOURNAL_QUEUE_CAPACITY:-256}
-      AUDIT_JOURNAL_RPC_TIMEOUT: ${AUDIT_JOURNAL_RPC_TIMEOUT:-2s}
-      # Local development only. ioc-scale-enforcement-proxy-mediation must allow plaintext too
-      # (BFF_GRPC_ALLOW_INSECURE_LOCAL).
-      AUDIT_JOURNAL_ALLOW_INSECURE_LOCAL: ${AUDIT_JOURNAL_ALLOW_INSECURE_LOCAL:-true}
+      AUDIT_QUEUE_CAPACITY: ${AUDIT_QUEUE_CAPACITY:-256}
+      AUDIT_RPC_TIMEOUT: ${AUDIT_RPC_TIMEOUT:-2s}
       MAX_MEDIATED_BODY_BYTES: ${MAX_MEDIATED_BODY_BYTES:-1048576}
       AUDIT_CAPTURE_MAX_BYTES: ${AUDIT_CAPTURE_MAX_BYTES:-65536}
       AUDIT_REDACT_PATTERNS: ${AUDIT_REDACT_PATTERNS:-["(?i)token=[^&\\s]+","(?i)\"token\"\\s*:\\s*\"[^\"]+\""]}
