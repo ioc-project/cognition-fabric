@@ -23,6 +23,7 @@ cf_services=(
   ioc-scale-cf-mgmt-plane-ui
   ioc-scale-cfn-svc
   ioc-scale-cf-demo-ce
+  ioc-scale-cf-template-ce
 )
 infra_services=(
   ioc-scale-db ioc-scale-db-init
@@ -79,7 +80,7 @@ require_docker_compose() {
 }
 
 running_cf_services() {
-  compose ps --status running --services "${cf_services[@]}"
+  image_compose ps --status running --services "${cf_services[@]}"
 }
 
 require_local_cf_containers() {
@@ -95,10 +96,10 @@ require_local_cf_containers() {
 }
 
 require_service_container_stopped() {
-  local service="$1" running
+  local running
   require_local_cf_containers
-  running="$(compose ps --status running --services "$service")" || fail "Could not inspect $service."
-  [[ -z "$running" ]] || fail "$service is already running. Stop its image task with Ctrl+C before starting another instance."
+  running="$(image_compose ps --status running --services "$@")" || fail "Could not inspect $*."
+  [[ -z "$running" ]] || fail "${running%%$'\n'*} is already running. Stop its image task with Ctrl+C before starting another instance."
 }
 
 require_ports_free() {
@@ -114,7 +115,7 @@ require_local_postgres() {
 
 cfn_runs_in_container() {
   local running
-  running="$(compose ps --status running --services ioc-scale-cfn-svc)" || fail "Could not inspect CFN."
+  running="$(image_compose ps --status running --services ioc-scale-cfn-svc)" || fail "Could not inspect CFN."
   [[ "$running" = ioc-scale-cfn-svc ]]
 }
 
@@ -150,20 +151,22 @@ run_cf_image() {
     ioc-scale-cfn-svc|ioc-scale-cf-mgmt-plane-ui)
       require_service http://localhost:9000/health 'Local CF management'
       ;;
-    ioc-scale-cf-demo-ce)
+    ioc-scale-cf-demo-ce|ioc-scale-cf-template-ce)
       require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
       require_service http://localhost:8081/healthz 'SCOPE API'
-      prepare_demo_config
-      export CF_LOCAL_CE_CONFIG_FILE="$CE_CONFIG_FILE"
-      if [[ -n "${CE_MAS_FILE:-}" ]]; then
-        [[ -f "$CE_MAS_FILE" ]] || fail "MAS file not found at $CE_MAS_FILE."
-        export CF_LOCAL_CE_MAS_FILE="$CE_MAS_FILE"
-      else
-        mkdir -p "$local_dir/ce"
-        touch "$local_dir/ce/mas-id"
+      if [[ "$service" = ioc-scale-cf-demo-ce ]]; then
+        prepare_demo_config
+        export CF_LOCAL_CE_CONFIG_FILE="$CE_CONFIG_FILE"
+        if [[ -n "${CE_MAS_FILE:-}" ]]; then
+          [[ -f "$CE_MAS_FILE" ]] || fail "MAS file not found at $CE_MAS_FILE."
+          export CF_LOCAL_CE_MAS_FILE="$CE_MAS_FILE"
+        else
+          mkdir -p "$local_dir/ce"
+          touch "$local_dir/ce/mas-id"
+        fi
       fi
       if cfn_runs_in_container; then
-        export CF_LOCAL_CE_HOST=ioc-scale-cf-demo-ce
+        export CF_LOCAL_CE_HOST="$service"
       else
         export CF_LOCAL_CE_HOST=127.0.0.1
       fi
@@ -353,6 +356,9 @@ case "${1:-}" in
   run-demo-ce-image)
     run_cf_image ioc-scale-cf-demo-ce 18000 18001
     ;;
+  run-template-ce-image)
+    run_cf_image ioc-scale-cf-template-ce 50051 8080 8082
+    ;;
   proxy-logs)
     require_local_env
     require_docker_compose
@@ -446,7 +452,7 @@ case "${1:-}" in
     repo="$samples_dir/template-ce"
     require_checkout "$repo" pyproject.toml
     require_docker_compose
-    require_service_container_stopped ioc-scale-cf-demo-ce
+    require_service_container_stopped ioc-scale-cf-template-ce ioc-scale-cf-demo-ce
     require_ports_free 50051 8082 8080
     require_service http://localhost:9002/api/internal/diagnostics/health 'Local CFN'
     require_service http://localhost:8081/healthz 'SCOPE API'
@@ -455,13 +461,13 @@ case "${1:-}" in
     ce_host="$(source_ce_host)"
     export COGNITION_ENGINE_HOST="$ce_host"
     export GRPC_PORT=50051
-    # The template CE starts separate health and notification servers; both default to 8080.
+    # Use 8082 for health because the SCOPE API uses 8081.
     export HEALTH_PORT=8082 HTTP_PORT=8080
     # Registration defaults belong to the CE; forward only an explicit name override.
     [[ -z "${TEMPLATE_CE_NAME:-}" ]] || export CE_NAME="$TEMPLATE_CE_NAME"
     export COGNITION_STORE_URL=http://localhost:8081
     cd "$repo"
-    require_service_container_stopped ioc-scale-cf-demo-ce
+    require_service_container_stopped ioc-scale-cf-template-ce ioc-scale-cf-demo-ce
     # Sync locked runtime dependencies after source updates, preserving installed extras.
     exec uv run --frozen python -m src
     ;;

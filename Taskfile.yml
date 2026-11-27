@@ -163,6 +163,12 @@ tasks:
     cmds:
       - bash dev/cf-local.sh run-template-ce
 
+  run:template-ce:image:
+    desc: Pull CF_TEMPLATE_CE_TAG (default latest) and run the Python template CE
+    silent: true
+    cmds:
+      - bash dev/cf-local.sh run-template-ce-image
+
   run:demo-ce:
     desc: Run the Go demo CE from source using CE_CONFIG_FILE against local CFN and OXP
     silent: true

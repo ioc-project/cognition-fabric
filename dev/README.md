@@ -142,7 +142,7 @@ For notification tests, set `ENABLE_NOTIFICATIONS=true` in the root `.env`.
 | Go Demo CE HTTP / gRPC | `18000` / `18001` |
 | NOA API | `8125` |
 | A2A / MCP / Envoy | Internal to the MAS Compose project |
-| OXP API / OTel HTTP collector | `8081` / `4318` |
+| SCOPE API / OTel HTTP collector | `8081` / `4318` |
 
 Source listeners and the NOA API default to host loopback. `LOCAL_CF_BIND_HOST=0.0.0.0` is an explicit option
 for native Linux mixed source/image operation. Docker Desktop uses
@@ -210,14 +210,17 @@ task run:cfn-mgmt:image
 task run:cfn:image
 task run:cf-ui:image
 task run:demo-ce:image
+task run:template-ce:image
 ```
 
 Choose source or image independently for each service, stopping its current
 foreground task before switching. Restart the chosen CE task after switching
-CFN source/image mode so its registered addresses match reachability. Tags remain
-`CF_MGMT_SVC_TAG`, `CFN_SVC_TAG`, `CF_UI_TAG`, and `CF_DEMO_CE_TAG` with default
-`latest`; `LOCAL_CF_MGMT_DB` deliberately selects another compatible local
-Management database. Shell overrides take precedence over root Task dotenv.
+CFN source/image mode so its registered addresses match reachability. Both
+Template CE tasks serve and register health on `8082` because the SCOPE API uses `8081`.
+Tags default to `latest` and can be set with `CF_MGMT_SVC_TAG`, `CFN_SVC_TAG`,
+`CF_UI_TAG`, `CF_DEMO_CE_TAG`, and `CF_TEMPLATE_CE_TAG`. `LOCAL_CF_MGMT_DB`
+selects another compatible local Management database. Shell overrides take
+precedence over root Task dotenv.
 
 `CF_REGISTRY` defaults to `ghcr.io/ioc-project` for CF images and the shared DB
 started by `infra:up`. The DB tag is `0.2.0`.

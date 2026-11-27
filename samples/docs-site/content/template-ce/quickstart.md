@@ -22,10 +22,9 @@ The selected ports are:
 | Health | `8081` | `GET /healthz` |
 | Notifications | `8080` | `POST /notification` and `GET /health` |
 
-:::info Image vs CF source stack
-The published image and a native `uv run` default health to **8081**.
-`task run:template-ce` on the CF source stack sets `HEALTH_PORT=8082` because OXP already uses 8081.
-Do not change CFN deploy ports to match the image.
+:::info Health port on the local CF stack
+Standalone runs default health to **8081**. Both `task run:template-ce` and
+`task run:template-ce:image` set `HEALTH_PORT=8082` because the SCOPE API uses 8081.
 :::
 
 Check the health listener:

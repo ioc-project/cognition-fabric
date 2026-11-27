@@ -45,13 +45,14 @@ activation. Its DNS must follow moderator replacements and its timeout must
 cover the full MAS request. The controller trusts the API service as the
 moderator's ingress peer.
 
-CF source tasks have `:image` counterparts for management, CFN, UI, and Go Demo
-CE. These images share the source workflow's `cfn_mgmt_local` / `cfn_audit_local`
-databases, carry the `io.cisco.cf.local=true` ownership label, and run on the
-existing infrastructure network. Platform tasks check container ownership.
-NOA uses the host-published CFN and collector endpoints from either workflow. The
-NOA Observe session prefix is the application name. Join trace and span IDs
-to Proxy and CFN records carrying the controller's canonical MAS identity.
+CF source tasks have `:image` counterparts for Management, CFN, UI, Go Demo CE,
+and Python Template CE. These images carry the `io.cisco.cf.local=true` ownership
+label and run on the existing infrastructure network. Management and CFN use the
+source workflow's `cfn_mgmt_local` and `cfn_audit_local` databases, respectively.
+Platform tasks check container ownership. NOA uses the host-published CFN and
+collector endpoints from either workflow. The NOA Observe session prefix is the
+application name. Join trace and span IDs to Proxy and CFN records carrying the
+controller's canonical MAS identity.
 
 CE advertised addresses depend on whether CFN runs on the host or in a
 container. Restart CEs after changing CFN's implementation so they re-register
@@ -70,12 +71,11 @@ require an explicit `LOCAL_CF_BIND_HOST` IPv4 override. Port checks must cover
 IPv4 and IPv6 listeners: a reusable IPv4 wildcard bind can miss macOS loopback
 listeners, and removing reuse alone still misses IPv6-only sockets.
 
-Both template and demo CEs answer CFN's `Evaluate` calls for the native
-A2A/Proxy runtime. The local
-template task assigns health port 8082 separately from its fixed notification port
-8080, and runs `uv run --frozen` to synchronize locked dependencies after source
-updates. When switching CEs, the chosen CE must be associated, enabled, and
-online; CFN does not select a CE based on which local task was started last.
+Both Template CE and Demo CE answer CFN's `Evaluate` calls for native NOA A2A.
+The local Template CE source and image tasks use health port 8082 and
+notification port 8080. The source task runs `uv run --frozen` to synchronize
+locked dependencies after source updates. When switching CEs, update the MAS
+association and verify that the chosen CE is enabled and online.
 
 Keep the root tasks and `dev/cf-local.sh` in sync: `run:template-ce` runs Python
 from `samples/template-ce/`, while `run:demo-ce` builds
@@ -85,9 +85,9 @@ overrides are `DEMO_CE_NAME` and `TEMPLATE_CE_NAME`, forwarded to native
 `CE_NAME` only when explicitly configured. Names, versions and CE types
 otherwise come from each CE's own registration defaults. Remove obsolete
 policy-CE aliases from the launcher, examples and local configuration. The
-shared Compose project now contains
-only `ioc-scale-cf-demo-ce`; do not query the removed policy CE service in the
-source-workflow container guard.
+deployment Compose file declares the Go Demo CE. The local image Compose file
+also declares `ioc-scale-cf-template-ce` for `run:template-ce:image` on the same
+Compose project. Query both CE image services through the local image file.
 
 The Go CE registers a base `health_url` plus a separate `health_endpoint=/healthz`.
 Set `ADVERTISED_HEALTH_URL=http://<reachable-host>:18000` in the local runner, without the

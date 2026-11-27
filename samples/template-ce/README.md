@@ -25,8 +25,6 @@ uv run python -m src
 ```
 
 Server runs on `localhost:50051` (gRPC), notifications on `8080`, health on `8081`.
-The published image uses those same ports. `task run:template-ce` on the CF source
-stack sets `HEALTH_PORT=8082` because OXP already occupies 8081.
 
 ### With integrations
 
@@ -35,6 +33,15 @@ export CFN_URL="http://localhost:9002"
 export COGNITION_STORE_URL="http://localhost:8081"
 uv run python -m src
 ```
+
+## Run against the local CF stack
+
+From the repository root, with local infrastructure and CFN running, choose
+`task run:template-ce` for source or `task run:template-ce:image` for the
+published image. Stop the running Template CE task before switching modes.
+Set `CF_TEMPLATE_CE_TAG` in root `.env` or the shell to select an image tag. It
+defaults to `latest`. Both tasks set `HEALTH_PORT=8082` because the SCOPE API uses
+host port `8081` and CFN probes the health port the CE registers.
 
 ## Test
 
@@ -96,9 +103,9 @@ Returns CE metadata.
 ### Listener ports
 
 Defaults are gRPC `50051`, notifications `8080`, health `8081`. `HTTP_PORT` binds the
-notification listener and is advertised as `notification_url`. On the CF source stack,
-`task run:template-ce` keeps health on `8082`. Concurrent instances need separate
-network namespaces or distinct port triples.
+notification listener and is advertised as `notification_url`. Both local CF tasks
+use health port `8082`. Concurrent standalone instances need separate network
+namespaces or distinct port triples.
 
 See the [documentation site source](../docs-site/README.md) for setup and extension guidance.
 

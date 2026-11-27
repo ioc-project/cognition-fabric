@@ -354,8 +354,8 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.component }}
           provenance: false
 
-  ci-status:
-    name: CI Status
+  ci-summary:
+    name: ci-summary
     if: always()
     needs: [api, cfn, management, ui, demo-ce, template-ce, noa, generation, automation, docs, images]
     runs-on: ubuntu-latest
