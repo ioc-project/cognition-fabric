@@ -180,7 +180,7 @@ developer workflow. For native NOA A2A, follow the
 | `rabbitmq` | 5672 (AMQP), 15672 (management UI) | Message broker for the worker pipeline |
 | `neo4j` | 7474 (HTTP), 7687 (Bolt) | Knowledge graph store |
 | `clickhouse-server` | 8123 (HTTP), 9009 (native TCP) | Raw telemetry store the workers read sessions from |
-| `otel-collector` | 4317 (OTLP gRPC), 4318 (OTLP HTTP) | Receives spans from instrumented apps and writes them to ClickHouse |
+| `otel-collector` | 4317 (OTLP gRPC), 4318 (OTLP HTTP) | Writes telemetry to ClickHouse and forwards logs to `event-exporter` |
 | `ioc-analytics-api` | 8081 | SCOPE API with Cognition Fabric endpoints enabled and caching disabled |
 | `event-exporter` | 4417 (OTLP gRPC) | Receives runtime-event logs and delivers configured callback notifications |
 
@@ -189,9 +189,16 @@ and the OTel Collector rather than requiring an external telemetry store.
 The API continues using the bundled `cognition_store` PostgreSQL database.
 No Redis cache or background enrichment containers are needed.
 
-Send runtime-event logs directly to `localhost:4417` from the host or
-`event-exporter:4417` on the Compose network. The collector's existing ClickHouse
-pipelines are unchanged; it does not forward logs to the exporter automatically.
+Send all OTLP telemetry (traces, metrics, and logs) to `http://localhost:4318`
+from the host or `http://otel-collector:4318` on the Compose network. The collector
+writes telemetry to ClickHouse and automatically forwards OTLP logs to
+`event-exporter`.
+
+Apps that bypass the collector can send runtime-event logs directly over OTLP
+gRPC to `localhost:4417` from the host or `event-exporter:4417` on the Compose
+network. Do not send the same logs to both endpoints, as this can trigger
+duplicate callbacks.
+
 Notification rules in [`event-exporter-config.yaml`](event-exporter-config.yaml)
 are opt-in (`rules: []`). Add filter expressions and reachable callback URLs,
 or set `EVENT_EXPORTER_CONFIG_FILE` to a custom rules file.
@@ -200,10 +207,6 @@ ClickHouse publishes its native port on host `9009` rather than `9000`, which
 already belongs to `ioc-scale-cf-mgmt-svc`. Inside the compose network it is
 still reached on `9000`, which is what
 [`otel-collector-config.yaml`](otel-collector-config.yaml) points at.
-
-Point an instrumented application at `http://localhost:4318` (or
-`http://otel-collector:4318` from inside the network) to get its traces into
-the pipeline.
 
 #### Connecting ClickHouse to the workers
 
